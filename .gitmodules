@@ -1,0 +1,3 @@
+[submodule "WitherTorch.CrossNative"]
+	path = WitherTorch.CrossNative
+	url = https://github.com/WitherTorch/WitherTorch.CrossNative.git
