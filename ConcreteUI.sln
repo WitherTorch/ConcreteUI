@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35919.96 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConcreteUI", "ConcreteUI\ConcreteUI.csproj", "{F2F37D63-C724-428F-9B24-9710621BA498}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "方案項目", "方案項目", "{8DDC4786-5FC8-F15C-1CA5-9F41FD4BEB75}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		GlobalAssemblyInfo.cs = GlobalAssemblyInfo.cs
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WitherTorch.CrossNative", "WitherTorch.CrossNative\WitherTorch.CrossNative\WitherTorch.CrossNative.csproj", "{EA010212-AA79-51A9-92CB-82381C41465A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WitherTorch.CrossNative.Windows", "WitherTorch.CrossNative\WitherTorch.CrossNative.Windows\WitherTorch.CrossNative.Windows.csproj", "{F774A145-0A93-33D1-84AD-2B1A057E152F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConcreteUI.Graphics", "ConcreteUI.Graphics\ConcreteUI.Graphics.csproj", "{4070C608-2F07-46D4-80E9-AC281AC357EA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F2F37D63-C724-428F-9B24-9710621BA498}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2F37D63-C724-428F-9B24-9710621BA498}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2F37D63-C724-428F-9B24-9710621BA498}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2F37D63-C724-428F-9B24-9710621BA498}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EA010212-AA79-51A9-92CB-82381C41465A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA010212-AA79-51A9-92CB-82381C41465A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA010212-AA79-51A9-92CB-82381C41465A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA010212-AA79-51A9-92CB-82381C41465A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F774A145-0A93-33D1-84AD-2B1A057E152F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F774A145-0A93-33D1-84AD-2B1A057E152F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F774A145-0A93-33D1-84AD-2B1A057E152F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F774A145-0A93-33D1-84AD-2B1A057E152F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4070C608-2F07-46D4-80E9-AC281AC357EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4070C608-2F07-46D4-80E9-AC281AC357EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4070C608-2F07-46D4-80E9-AC281AC357EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4070C608-2F07-46D4-80E9-AC281AC357EA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2C0AA2C8-8B1B-4BC8-8823-07EF38F7AF4F}
+	EndGlobalSection
+EndGlobal

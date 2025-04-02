@@ -1,0 +1,22 @@
+﻿[*.cs]
+
+# IDE0090: 使用 'new(...)'
+csharp_style_implicit_object_creation_when_type_is_apparent = false
+
+# IDE0290: 使用主要建構函式
+csharp_style_prefer_primary_constructors = false
+
+# CA1069: 列舉值不應重複
+dotnet_diagnostic.CA1069.severity = none
+
+# CA1401: 不應看得見 P/Invoke
+dotnet_diagnostic.CA1401.severity = none
+
+# IDE0301: 簡化集合初始化
+dotnet_diagnostic.IDE0301.severity = none
+
+# IDE0305: 簡化集合初始化
+dotnet_diagnostic.IDE0305.severity = none
+
+# IDE0028: 簡化集合初始化
+dotnet_diagnostic.IDE0028.severity = none
