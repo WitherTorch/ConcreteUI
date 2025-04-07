@@ -18,12 +18,11 @@ namespace ConcreteUI.Test
     internal sealed class MainWindow : TabbedWindow
     {
         private readonly UnwrappableList<UIElement>[] _elementLists = new UnwrappableList<UIElement>[3];
-        private readonly InputMethod _ime;
+        private InputMethod _ime;
 
         public MainWindow(CoreWindow parent) : base(parent, ["頁面A"])
         {
             InitializeBaseInformation();
-            _ime = new InputMethod(this);
         }
 
         private void InitializeBaseInformation()
@@ -55,6 +54,7 @@ namespace ConcreteUI.Test
 
         protected override void InitializeElements()
         {
+            _ime = new InputMethod(this);
             UnwrappableList<UIElement> elementList = new UnwrappableList<UIElement>();
             Button button = new Button(this)
             {
