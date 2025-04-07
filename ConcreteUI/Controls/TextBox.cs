@@ -242,6 +242,7 @@ namespace ConcreteUI.Controls
         [Inline(InlineBehavior.Remove)]
         private DWriteTextLayout CreateVirtualTextLayout()
         {
+            Thread.MemoryBarrier();
             DWriteTextLayout result = TextFormatUtils.CreateTextLayout(_text, _fontName, _alignment, _fontSize);
             if (result is null)
                 return null;
@@ -896,7 +897,7 @@ namespace ConcreteUI.Controls
                 return;
             }
 
-            int pos = MathHelper.MakeSigned(layout.HitTestPoint(pointX, pointY, out bool isTrailingHit, out bool isInside).TextPosition);
+            int pos = MathHelper.MakeSigned(layout.HitTestPoint(pointX, pointY, out SysBool isTrailingHit, out SysBool isInside).TextPosition);
             layout.Dispose();
             if (isTrailingHit)
             {
@@ -931,7 +932,7 @@ namespace ConcreteUI.Controls
                 layout.Dispose();
                 return;
             }
-            int pos = MathHelper.MakeSigned(layout.HitTestPoint(pointX, pointY, out bool isTrailingHit, out bool isInside).TextPosition);
+            int pos = MathHelper.MakeSigned(layout.HitTestPoint(pointX, pointY, out SysBool isTrailingHit, out SysBool isInside).TextPosition);
             layout.Dispose();
             if (isTrailingHit)
             {
@@ -964,7 +965,7 @@ namespace ConcreteUI.Controls
             _this.Update();
         }
 
-        private int GetCaretIndexFromPoint(PointF point, out bool isInside)
+        private int GetCaretIndexFromPoint(PointF point, out SysBool isInside)
         {
             PointF viewportPoint = ViewportPoint;
             float viewportLeft = MathF.Floor(Location.X + UIConstants.ElementMarginHalf) - viewportPoint.X;
@@ -976,7 +977,7 @@ namespace ConcreteUI.Controls
                 isInside = false;
                 return 0;
             }
-            int result = MathHelper.MakeSigned(layout.HitTestPoint(point.X - viewportLeft, point.Y - viewportTop, out bool isTrailingHit, out isInside).TextPosition);
+            int result = MathHelper.MakeSigned(layout.HitTestPoint(point.X - viewportLeft, point.Y - viewportTop, out SysBool isTrailingHit, out isInside).TextPosition);
             layout.Dispose();
             if (isTrailingHit)
             {
@@ -1020,7 +1021,7 @@ namespace ConcreteUI.Controls
                 {
                     this.clicks = clicks = 1;
                 }
-                int caretIndex = GetCaretIndexFromPoint(args.Location, out bool isInside);
+                int caretIndex = GetCaretIndexFromPoint(args.Location, out SysBool isInside);
                 switch (clicks)
                 {
                     case 1:

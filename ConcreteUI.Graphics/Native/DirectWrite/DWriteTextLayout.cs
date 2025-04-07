@@ -1,17 +1,18 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
-using ConcreteUI.Graphics;
-
 using InlineMethod;
 
 using LocalsInit;
-using WitherTorch.Common.Windows;
+
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
+using WitherTorch.Common.Windows;
+using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics.Native.DirectWrite
 {
@@ -830,14 +831,14 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// <param name="point">The point to hit-test, relative to the top-left location of the layout box.</param>
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public DWriteHitTestMetrics HitTestPoint(PointF point, out bool isTrailingHit, out bool isInside)
+        public DWriteHitTestMetrics HitTestPoint(PointF point, out SysBool isTrailingHit, out SysBool isInside)
             => HitTestPoint(point.X, point.Y, out isTrailingHit, out isInside);
 
         /// <inheritdoc cref="HitTestPoint(float, float, bool*, bool*)"/>
         /// <param name="point">The point to hit-test, relative to the top-left location of the layout box.</param>
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public DWriteHitTestMetrics HitTestPoint(PointF point, bool* isTrailingHit, bool* isInside)
+        public DWriteHitTestMetrics HitTestPoint(PointF point, SysBool* isTrailingHit, SysBool* isInside)
             => HitTestPoint(point.X, point.Y, isTrailingHit, isInside);
 
         /// <summary>
@@ -858,7 +859,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         ///  is set to false, this structure represents the geometry enclosing the edge closest to the hit-test location.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public DWriteHitTestMetrics HitTestPoint(float pointX, float pointY, out bool isTrailingHit, out bool isInside)
+        public DWriteHitTestMetrics HitTestPoint(float pointX, float pointY, out SysBool isTrailingHit, out SysBool isInside)
             => HitTestPoint(pointX, pointY, UnsafeHelper.AsPointerOut(out isTrailingHit), UnsafeHelper.AsPointerOut(out isInside));
 
         /// <summary>
@@ -880,12 +881,12 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         ///  is set to false, this structure represents the geometry enclosing the edge closest to the hit-test location.
         /// </returns>
         [LocalsInit(false)]
-        public DWriteHitTestMetrics HitTestPoint(float pointX, float pointY, bool* isTrailingHit, bool* isInside)
+        public DWriteHitTestMetrics HitTestPoint(float pointX, float pointY, SysBool* isTrailingHit, SysBool* isInside)
         {
             DWriteHitTestMetrics hitTestMetrics;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.HitTestPoint);
-            int hr = ((delegate*<void*, float, float, bool*, bool*, DWriteHitTestMetrics*, int>)functionPointer)(nativePointer,
+            int hr = ((delegate*<void*, float, float, SysBool*, SysBool*, DWriteHitTestMetrics*, int>)functionPointer)(nativePointer,
                 pointX, pointY, isTrailingHit, isInside, &hitTestMetrics);
             if (hr >= 0)
                 return hitTestMetrics;
@@ -927,7 +928,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             DWriteHitTestMetrics hitTestMetrics;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.HitTestTextPosition);
-            int hr = ((delegate*<void*, uint, bool, float*, float*, DWriteHitTestMetrics*, int>)functionPointer)(nativePointer,
+            int hr = ((delegate*<void*, uint, SysBool, float*, float*, DWriteHitTestMetrics*, int>)functionPointer)(nativePointer,
                 textPosition, isTrailingHit, pointX, pointY, &hitTestMetrics);
             if (hr >= 0)
                 return hitTestMetrics;

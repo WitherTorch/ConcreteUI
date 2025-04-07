@@ -53,8 +53,6 @@ namespace ConcreteUI.Utils
 
         public bool TryCreateFluentUIFontIcon(uint unicodeValue, SizeF size, out FontIcon icon)
         {
-            UnsafeHelper.SkipInit(out icon);
-
             DWriteFont[] fonts = _fluentSymbolFonts;
             string[] fontNames = _fluentSymbolFontNames;
             for (int i = 0, length = fonts.Length; i < length; i++)
@@ -62,6 +60,7 @@ namespace ConcreteUI.Utils
                 if (TryCreateFontIconCore(fonts[i], fontNames[i], unicodeValue, size, out icon))
                     return true;
             }
+            icon = null;
             return false;
         }
 
@@ -75,10 +74,11 @@ namespace ConcreteUI.Utils
 
         private static bool TryCreateFontIconCore(DWriteFont font, string fontName, uint unicodeValue, SizeF size, out FontIcon icon)
         {
-            UnsafeHelper.SkipInit(out icon);
-
             if (font is null || !font.HasCharacter(unicodeValue))
+            {
+                icon = null;
                 return false;
+            }
             icon = new FontIcon(fontName, unicodeValue, size);
             return true;
         }

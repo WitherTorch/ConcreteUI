@@ -136,13 +136,14 @@ namespace ConcreteUI.Graphics
 
         private bool TryGetPresentingRects(double dpiScaleFactor, out ArrayPool<Rect> pool, out Rect[] rects, out int count)
         {
-            UnsafeHelper.SkipInit(out pool);
-            UnsafeHelper.SkipInit(out rects);
-
             UnwrappableList<Rect> list = _list;
             count = list.Count;
             if (count <= 0)
+            {
+                pool = null;
+                rects = null;
                 return false;
+            }
             UnwrappableList<bool> typeList = _typeList;
             list.Clear();
             typeList.Clear();
