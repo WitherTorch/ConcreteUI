@@ -162,8 +162,8 @@ namespace ConcreteUI.Controls
                 context.FillRoundedRectangle(new D2D1RoundedRectangle() { RadiusX = 3, RadiusY = 3, Rect = (RectF)_scrollBarScrollButtonBounds },
                     GetButtonStateBrush(_scrollButtonState));
                 FontIconResources resources = FontIconResources.Instance;
-                resources.DrawScrollBarUpButton(context, _scrollBarUpButtonBounds.Location, GetButtonStateBrush(_scrollUpButtonState));
-                resources.DrawScrollBarDownButton(context, _scrollBarDownButtonBounds.Location, GetButtonStateBrush(_scrollDownButtonState));
+                resources.DrawScrollBarUpButton(context, (RectangleF)_scrollBarUpButtonBounds, GetButtonStateBrush(_scrollUpButtonState));
+                resources.DrawScrollBarDownButton(context, (RectangleF)_scrollBarDownButtonBounds, GetButtonStateBrush(_scrollDownButtonState));
                 context.PopAxisAlignedClip();
                 if (!redrawAll)
                     collector.MarkAsDirty(scrollBarBounds);

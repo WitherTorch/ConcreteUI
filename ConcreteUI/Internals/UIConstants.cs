@@ -41,6 +41,6 @@ namespace ConcreteUI.Internals
 
         public static readonly SizeF TitleBarButtonSize = new SizeF(TitleBarButtonSizeWidth, TitleBarButtonSizeHeight);
         public static readonly SizeF TitleBarIconSize = new SizeF(TitleBarIconSizeWidth, TitleBarIconSizeHeight);
-        public static readonly SizeF ScrollBarScrollButtonSize = new SizeF(ScrollBarButtonWidth, ScrollBarButtonWidth);
+        public static readonly SizeF ScrollBarScrollButtonSize = new SizeF(ScrollBarScrollButtonWidth, ScrollBarScrollButtonWidth);
     }
 }

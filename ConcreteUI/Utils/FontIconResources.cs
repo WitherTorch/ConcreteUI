@@ -7,6 +7,8 @@ using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Internals;
 
+using InlineMethod;
+
 namespace ConcreteUI.Utils
 {
     internal sealed class FontIconResources : IDisposable
@@ -131,16 +133,28 @@ namespace ConcreteUI.Utils
             => _comboBoxDropdownIconDict.GetOrAdd(buttonHeight, GetComboBoxDropDownIcon)?.Render(context, point, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawScrollBarUpButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) => _scrollUpIcon?.Render(context, point, brush);
+        public void DrawScrollBarUpButton(D2D1DeviceContext context, in RectangleF targetRect, D2D1Brush brush) 
+            => _scrollUpIcon?.Render(context, GetTargetPointForScrollBar(targetRect), brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawScrollBarDownButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) => _scrollDownIcon?.Render(context, point, brush);
+        public void DrawScrollBarDownButton(D2D1DeviceContext context, in RectangleF targetRect, D2D1Brush brush) 
+            => _scrollDownIcon?.Render(context, GetTargetPointForScrollBar(targetRect), brush);
 
+        [Inline(InlineBehavior.Remove)]
         private static PointF AdjustPointForTitleBar(PointF original)
         {
             original.X += (UIConstants.TitleBarButtonSizeWidth - UIConstants.TitleBarIconSizeWidth) * 0.5f;
             original.Y += (UIConstants.TitleBarButtonSizeHeight - UIConstants.TitleBarIconSizeHeight) * 0.5f;
             return original;
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static PointF GetTargetPointForScrollBar(in RectangleF targetRect)
+        {
+            PointF result = targetRect.Location;
+            result.X += (targetRect.Width - UIConstants.ScrollBarScrollButtonWidth) * 0.5f;
+            result.Y += (targetRect.Height - UIConstants.ScrollBarScrollButtonWidth) * 0.5f;
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

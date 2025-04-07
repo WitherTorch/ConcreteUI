@@ -823,6 +823,7 @@ namespace ConcreteUI.Window
             controller?.Lock();
             DisposeHelper.SwapDisposeInterlocked(ref _resourceProvider, provider);
             ApplyThemeCore(provider);
+            ConcreteUtils.ResetBlur(this);
             WeakReference<CoreWindow>[] windowListSnapshot = GetWindowListSnapshot(_childrenReferenceList, out ArrayPool<WeakReference<CoreWindow>> pool, out int count);
             if (windowListSnapshot is not null)
             {

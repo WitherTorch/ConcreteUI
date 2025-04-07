@@ -5,6 +5,7 @@ using ConcreteUI.Controls;
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Input;
 using ConcreteUI.Theme;
+using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
 using WitherTorch.Common.Collections;
@@ -63,6 +64,7 @@ namespace ConcreteUI.Test
                 TopCalculation = new PageDependedCalculation(LayoutProperty.Top),
                 HeightCalculation = new FixedCalculation(26)
             };
+            button.Click += Button_Click;
             TextBox textBox = new TextBox(this, _ime)
             {
                 LeftCalculation = new ElementDependedCalculation(button, LayoutProperty.Right, MarginType.Outside),
@@ -71,12 +73,39 @@ namespace ConcreteUI.Test
                 HeightCalculation = new FixedCalculation(26),
                 FontSize = 14,
             };
+            ListBox listBox = new ListBox(this)
+            {
+                Mode = ListBoxMode.Some,
+                LeftCalculation = new PageDependedCalculation(LayoutProperty.Left),
+                TopCalculation = new ElementDependedCalculation(button, LayoutProperty.Bottom, MarginType.Outside),
+                WidthCalculation = new FixedCalculation(250),
+                BottomCalculation = new PageDependedCalculation(LayoutProperty.Bottom),
+            };
+            for (int i = 0; i < 200; i++)
+                listBox.Items.Add("物件 " + i.ToString());
             button.WidthCalculation = new Button.AutoWidthCalculation(button);
             elementList.Add(button);
             elementList.Add(textBox);
+            elementList.Add(listBox);
             _elementLists[0] = elementList;
             _elementLists[1] = new();
             _elementLists[2] = new();
+        }
+
+        private void Button_Click(UIElement sender, in MouseInteractEventArgs args)
+        {
+            if (Theme.IsDarkTheme)
+            {
+                if (!ThemeManager.TryGetThemeContext("#light", out IThemeContext themeContext))
+                    return;
+                ThemeManager.CurrentTheme = themeContext;
+            }
+            else
+            {
+                if (!ThemeManager.TryGetThemeContext("#dark", out IThemeContext themeContext))
+                    return;
+                ThemeManager.CurrentTheme = themeContext;
+            }
         }
 
         protected override void Dispose(bool disposing)
