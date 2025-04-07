@@ -473,8 +473,16 @@ namespace ConcreteUI.Window
                 DWriteTextLayout titleLayout;
                 if ((Interlocked.Exchange(ref _updateFlags, Booleans.FalseLong) & (long)UpdateFlags.ChangeTitle) == (long)UpdateFlags.ChangeTitle)
                 {
-                    titleLayout = GraphicsUtils.CreateTitleTextLayout(_text, 26);
-                    DisposeHelper.SwapDispose(ref _titleLayout, titleLayout);
+                    DWriteFactory factory = SharedResources.DWriteFactory;
+                    DWriteTextFormat titleFormat = Interlocked.Exchange(ref _titleLayout, null);
+                    if (titleFormat is null || titleFormat.IsDisposed)
+                    {
+                        titleFormat = factory.CreateTextFormat(_resourceProvider.FontName, UIConstants.TitleFontSize);
+                        titleFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
+                    }
+                    titleLayout = GraphicsUtils.CreateCustomTextLayout(_text, titleFormat, 26);
+                    titleFormat.Dispose();
+                    DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
                 }
                 else
                 {
@@ -788,7 +796,6 @@ namespace ConcreteUI.Window
             if (items.HasAnyItem())
             {
                 ContextMenu contextMenu = new ContextMenu(this, items);
-                contextMenu.ApplyTheme(_resourceProvider);
                 contextMenu.ItemClicked += CloseContextMenu;
                 contextMenu.Location = location;
                 if (location.X + contextMenu.Width >= Width + _drawingOffsetX * 2)
@@ -812,6 +819,8 @@ namespace ConcreteUI.Window
 
         protected void ApplyTheme(ThemeResourceProvider provider)
         {
+            RenderingController controller = _controller;
+            controller?.Lock();
             DisposeHelper.SwapDisposeInterlocked(ref _resourceProvider, provider);
             ApplyThemeCore(provider);
             WeakReference<CoreWindow>[] windowListSnapshot = GetWindowListSnapshot(_childrenReferenceList, out ArrayPool<WeakReference<CoreWindow>> pool, out int count);
@@ -825,6 +834,8 @@ namespace ConcreteUI.Window
                 window.ApplyTheme(provider);
             }
             pool.Return(windowListSnapshot);
+            TriggerResize();
+            controller?.Unlock();
         }
         #endregion
 

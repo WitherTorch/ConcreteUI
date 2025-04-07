@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Windows.Forms;
 
 using ConcreteUI.Controls;
@@ -6,6 +7,7 @@ using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
+using ConcreteUI.Internals;
 using ConcreteUI.Native;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
@@ -117,8 +119,9 @@ namespace ConcreteUI.Window
             }
         }
 
-        protected override void InitializeElements()
+        protected override void OnHandleCreated(EventArgs e)
         {
+            base.OnHandleCreated(e);
             GenerateMenu(menuTitles, baseX: 0, baseY: 27, menuExtraWidth: 15, menuHeight: 26, out menuBarButtonRects, out menuBarButtonLayouts);
         }
 
@@ -252,21 +255,25 @@ namespace ConcreteUI.Window
         #region Utility Methods
         protected D2D1Brush GetBrush(Brush brush) => _brushes[(int)brush];
 
-        protected static void GenerateMenu(string[] menuButtonTexts, float baseX, float baseY, float menuExtraWidth, float menuHeight,
+        protected void GenerateMenu(string[] menuButtonTexts, float baseX, float baseY, float menuExtraWidth, float menuHeight,
             out RectF[] menuButtonRects, out DWriteTextLayout[] menuButtonLayouts)
         {
             float menuX = baseX;
             int count = menuButtonTexts.Length;
+            DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(Theme.FontName, UIConstants.MenuFontSize);
+            format.ParagraphAlignment = DWriteParagraphAlignment.Center;
+            format.TextAlignment = DWriteTextAlignment.Center;
             menuButtonLayouts = new DWriteTextLayout[count];
             menuButtonRects = new RectF[count];
             for (int i = 0; i < count; i++)
             {
-                DWriteTextLayout layout = GraphicsUtils.CreateMenuTextLayout(menuButtonTexts[i], menuExtraWidth, menuHeight);
+                DWriteTextLayout layout = GraphicsUtils.CreateCustomTextLayout(menuButtonTexts[i], format, menuExtraWidth, menuHeight);
                 float width = layout.MaxWidth;
                 menuButtonLayouts[i] = layout;
                 menuButtonRects[i] = RectF.FromXYWH(menuX, baseY, width, menuHeight);
                 menuX += width;
             }
+            format.Dispose();
         }
         #endregion
 

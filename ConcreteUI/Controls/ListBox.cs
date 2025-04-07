@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
+using System.Threading;
 using System.Windows.Forms;
 
 using ConcreteUI.Graphics;
@@ -19,8 +20,6 @@ using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.Structures;
-
-using static ConcreteUI.Utils.StaticResources;
 
 namespace ConcreteUI.Controls
 {
@@ -52,7 +51,8 @@ namespace ConcreteUI.Controls
 		private D2D1StrokeStyle _strokeStyle;
 		private D2D1Resource _checkSign;
 		private DWriteTextFormat _format;
-		private Rectangle _checkBoxBounds;
+		private string _fontName;
+        private Rectangle _checkBoxBounds;
 		private ListBoxMode _chooseMode;
 		private ButtonTriState _buttonState;
 		private float _fontSize;
@@ -66,27 +66,29 @@ namespace ConcreteUI.Controls
 			ScrollBarType = ScrollBarType.AutoVertial;
 			_fontSize = 14;
 			_selectedIndex = -1;
-			BuildTextFormat(14);
 		}
 
         protected override void ApplyThemeCore(ThemeResourceProvider provider)
         {
             base.ApplyThemeCore(provider);
-			UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+			_fontName = provider.FontName;
+            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
 			UIElementHelper.ApplyTheme(provider, _checkBoxBrushes, _checkBoxBrushNames, (int)Brush._Last);
+            DisposeHelper.SwapDisposeInterlocked(ref _format);
+			Update();
         }
 
-		protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
+        protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
 		protected override D2D1Brush GetBackDisabledBrush() => _brushes[(int)Brush.BackDisabledBrush];
 		protected override D2D1Brush GetBorderBrush() => _brushes[(int)Brush.BorderBrush];
 
-        private void BuildTextFormat(float fontSize)
+        private DWriteTextFormat BuildTextFormat()
 		{
-			var textFormat = SharedResources.DWriteFactory.CreateTextFormat(CaptionFontFamilyName, fontSize);
+            DWriteTextFormat textFormat = SharedResources.DWriteFactory.CreateTextFormat(_fontName, _fontSize);
 			textFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
-			DisposeHelper.SwapDisposeInterlocked(ref _format, textFormat);
 			_itemHeight = MathI.Ceiling(GraphicsUtils.MeasureTextHeight("Ty", textFormat)) + 2;
 			RecalculateCheckBoxBounds();
+			return textFormat;
 		}
 
         private void Items_Updated(object sender, EventArgs e) => RecalculateHeight();
@@ -97,7 +99,7 @@ namespace ConcreteUI.Controls
 		{
 			D2D1DeviceContext context = Renderer.GetDeviceContext();
 			D2D1Brush[] brushes = _brushes;
-			DWriteTextFormat format = _format;
+			DWriteTextFormat format = Interlocked.Exchange(ref _format, null) ?? BuildTextFormat();
 
 			ListBoxMode mode = Mode;
 			Rect bounds = ContentBounds;
@@ -140,6 +142,8 @@ namespace ConcreteUI.Controls
 				pointY += itemHeight;
 			}
 			collector.MarkAsDirty(bounds);
+
+			DisposeHelper.NullSwapOrDispose(ref _format, format);
 			return true;
 		}
 

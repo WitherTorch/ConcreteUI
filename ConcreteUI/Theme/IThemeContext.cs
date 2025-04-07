@@ -4,6 +4,8 @@
     {
         bool IsDarkTheme { get; }
 
+        string FontName { get; set; }
+
         IThemeContext Clone();
 
         bool TryGetColorFactory(string node, out IThemedColorFactory colorFactory);

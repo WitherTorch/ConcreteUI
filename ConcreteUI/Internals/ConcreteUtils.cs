@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Drawing;
 
-using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Internals.NativeHelpers;
 using ConcreteUI.Native;
-using ConcreteUI.Theme;
 using ConcreteUI.Window;
-
-using static ConcreteUI.Utils.StaticResources;
 
 namespace ConcreteUI.Internals
 {

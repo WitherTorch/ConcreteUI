@@ -28,7 +28,7 @@ namespace ConcreteUI.Controls
 
 		private DWriteTextFormat _format;
 		private DWriteTextLayout _layout;
-		private string _text;
+		private string _fontName, _text;
 		private TextAlignment _alignment;
 		private long _rawUpdateFlags;
 		private float _fontSize;
@@ -43,7 +43,11 @@ namespace ConcreteUI.Controls
 		}
 
 		protected override void ApplyThemeCore(ThemeResourceProvider provider)
-			=> UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+		{
+			UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+			_fontName = provider.FontName;
+			Update(RenderObjectUpdateFlags.FormatAndLayout);
+		}
 
 		[Inline(InlineBehavior.Remove)]
 		private void Update(RenderObjectUpdateFlags flags)
@@ -67,7 +71,7 @@ namespace ConcreteUI.Controls
 			DWriteTextFormat format;
 			if ((flags & RenderObjectUpdateFlags.FormatAndLayout) == RenderObjectUpdateFlags.FormatAndLayout)
 			{
-				format = TextFormatUtils.CreateTextFormat(_alignment, _fontSize);
+				format = TextFormatUtils.CreateTextFormat(_alignment, _fontName, _fontSize);
 				DisposeHelper.SwapDispose(ref _format, format);
 			}
 			else

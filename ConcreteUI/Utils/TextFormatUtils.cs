@@ -5,40 +5,40 @@ namespace ConcreteUI.Utils
 {
     internal static class TextFormatUtils
     {
-        public static DWriteTextFormat CreateTextFormat(TextAlignment alignment, float fontSize)
+        public static DWriteTextFormat CreateTextFormat(TextAlignment alignment, string fontName, float fontSize)
         {
             DWriteFactory factory = SharedResources.DWriteFactory;
-            DWriteTextFormat result = factory.CreateTextFormat(StaticResources.CaptionFontFamilyName, fontSize);
+            DWriteTextFormat result = factory.CreateTextFormat(fontName, fontSize);
             SetAlignment(result, alignment);
             return result;
         }
 
-        public static DWriteTextFormat CreateTextFormat(TextAlignment alignment, float fontSize, DWriteFontStyle style)
+        public static DWriteTextFormat CreateTextFormat(TextAlignment alignment, string fontName, float fontSize, DWriteFontStyle style)
         {
             DWriteFactory factory = SharedResources.DWriteFactory;
-            DWriteTextFormat result = factory.CreateTextFormat(StaticResources.CaptionFontFamilyName, fontSize, fontStyle: style);
+            DWriteTextFormat result = factory.CreateTextFormat(fontName, fontSize, fontStyle: style);
             SetAlignment(result, alignment);
             return result;
         }
 
-        public static DWriteTextLayout CreateTextLayout(string text, TextAlignment alignment, float fontSize)
+        public static DWriteTextLayout CreateTextLayout(string text, string fontName, TextAlignment alignment, float fontSize)
         {
             if (string.IsNullOrEmpty(text))
                 return null;
             DWriteFactory factory = SharedResources.DWriteFactory;
-            DWriteTextFormat format = factory.CreateTextFormat(StaticResources.CaptionFontFamilyName, fontSize);
+            DWriteTextFormat format = factory.CreateTextFormat(fontName, fontSize);
             SetAlignment(format, alignment);
             DWriteTextLayout result = factory.CreateTextLayout(text, format);
             format.Dispose();
             return result;
         }
 
-        public static DWriteTextLayout CreateTextLayout(string text, TextAlignment alignment, float fontSize, DWriteFontStyle style)
+        public static DWriteTextLayout CreateTextLayout(string text, string fontName, TextAlignment alignment, float fontSize, DWriteFontStyle style)
         {
             if (string.IsNullOrEmpty(text))
                 return null;
             DWriteFactory factory = SharedResources.DWriteFactory;
-            DWriteTextFormat format = factory.CreateTextFormat(StaticResources.CaptionFontFamilyName, fontSize, fontStyle: style);
+            DWriteTextFormat format = factory.CreateTextFormat(fontName, fontSize, fontStyle: style);
             SetAlignment(format, alignment);
             DWriteTextLayout result = factory.CreateTextLayout(text, format);
             format.Dispose();

@@ -93,7 +93,7 @@ namespace ConcreteUI.Controls
                     string text = element._text;
                     if (string.IsNullOrEmpty(text))
                         return MathHelper.Max(_minWidth, 0);
-                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, TextAlignment.MiddleCenter, element._fontSize);
+                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, element._fontName, TextAlignment.MiddleCenter, element._fontSize);
                     if (layout is null)
                         return MathHelper.Max(_minWidth, 0);
                     layout.MaxHeight = dependedValue;

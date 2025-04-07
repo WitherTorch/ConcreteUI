@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 
 using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
@@ -104,7 +105,7 @@ namespace ConcreteUI.Controls
                 if (_fontSize == value)
                     return;
                 _fontSize = value;
-                BuildTextFormat(value);
+                DisposeHelper.SwapDisposeInterlocked(ref _format);
                 if (Items.Count > 0)
                     Update();
             }

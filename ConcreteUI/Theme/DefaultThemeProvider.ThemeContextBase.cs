@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 
 using WitherTorch.Common.Extensions;
 
@@ -11,11 +12,20 @@ namespace ConcreteUI.Theme
         {
             private readonly Dictionary<string, IThemedColorFactory> _colorDict;
             private readonly Dictionary<string, IThemedBrushFactory> _brushDict;
+            private string _fontName;
 
             public abstract bool IsDarkTheme { get; }
 
+            public string FontName
+            {
+                get => _fontName;
+                set => _fontName = value;
+            }
+
             protected ThemeContextBase()
             {
+                _fontName = SystemFonts.CaptionFont.Name;
+
                 Dictionary<string, IThemedColorFactory> colorDict = new Dictionary<string, IThemedColorFactory>();
                 Dictionary<string, IThemedBrushFactory> brushDict = new Dictionary<string, IThemedBrushFactory>();
 
@@ -30,6 +40,7 @@ namespace ConcreteUI.Theme
 
             protected ThemeContextBase(ThemeContextBase original)
             {
+                _fontName = original._fontName;
                 _colorDict = new Dictionary<string, IThemedColorFactory>(original._colorDict);
                 _brushDict = new Dictionary<string, IThemedBrushFactory>(original._brushDict);
             }

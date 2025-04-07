@@ -96,7 +96,7 @@ namespace ConcreteUI.Controls
                     string text = label._text;
                     if (string.IsNullOrEmpty(text))
                         return MathHelper.Max(_minWidth, 0);
-                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, label._alignment, label._fontSize);
+                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, label._fontName, label._alignment, label._fontSize);
                     if (layout is null)
                         return MathHelper.Max(_minWidth, 0);
                     layout.MaxHeight = dependedValue;

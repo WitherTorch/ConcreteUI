@@ -136,6 +136,7 @@ namespace ConcreteUI.Controls
             if (_themeContext is not null)
                 return;
             ApplyThemeCore(provider);
+            Update();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -144,6 +145,8 @@ namespace ConcreteUI.Controls
             IRenderer renderer = Renderer;
             using ThemeResourceProvider provider = new ThemeResourceProvider(renderer.GetDeviceContext(), themeContext,
                 (renderer as CoreWindow)?.WindowMaterial ?? WindowMaterial.None);
+            ApplyThemeCore(provider);
+            Update();
         }
 
         protected abstract void ApplyThemeCore(ThemeResourceProvider provider);

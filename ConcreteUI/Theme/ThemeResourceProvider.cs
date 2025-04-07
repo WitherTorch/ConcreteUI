@@ -18,6 +18,8 @@ namespace ConcreteUI.Theme
 
         public IThemeContext ThemeContext => _themeContext;
 
+        public string FontName => _themeContext.FontName;
+
         public ThemeResourceProvider(D2D1DeviceContext deviceContext, IThemeContext themeContext, WindowMaterial material)
         {
             _deviceContext = deviceContext;

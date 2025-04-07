@@ -186,22 +186,6 @@ namespace ConcreteUI.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static DWriteTextLayout CreateTitleTextLayout(string text, float itemHeight)
-        {
-            DWriteTextLayout layout = SharedResources.DWriteFactory.CreateTextLayout(text, StaticResources.titleFormat, float.PositiveInfinity, itemHeight);
-            layout.MaxWidth = MathF.Ceiling(layout.GetMetrics().Width);
-            return layout;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static DWriteTextLayout CreateMenuTextLayout(string text, float extraWidth, float itemHeight)
-        {
-            DWriteTextLayout layout = SharedResources.DWriteFactory.CreateTextLayout(text, StaticResources.menuTextFormat, float.PositiveInfinity, itemHeight);
-            layout.MaxWidth = MathF.Ceiling(layout.GetMetrics().Width + extraWidth);
-            return layout;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static DWriteTextLayout CreateCustomTextLayout(string text, DWriteTextFormat format, float extraWidth, float itemHeight)
         {
             DWriteTextLayout layout = SharedResources.DWriteFactory.CreateTextLayout(text, format, float.PositiveInfinity, itemHeight);

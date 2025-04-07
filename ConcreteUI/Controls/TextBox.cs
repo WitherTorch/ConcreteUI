@@ -50,7 +50,7 @@ namespace ConcreteUI.Controls
         private Cursor _cursor;
         private DWriteTextFormat _format, _watermarkFormat;
         private DWriteTextLayout _layout, _watermarkLayout;
-        private string _text, _watermark;
+        private string _fontName, _text, _watermark;
         private DWriteTextRange compositionRange;
         private SelectionRange selectionRange;
         private TextAlignment _alignment;
@@ -83,6 +83,8 @@ namespace ConcreteUI.Controls
         {
             base.ApplyThemeCore(provider);
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+            _fontName = provider.FontName;
+            Update(RenderObjectUpdateFlags.FormatAndLayouts);
         }
 
         protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
@@ -180,8 +182,9 @@ namespace ConcreteUI.Controls
             {
                 TextAlignment alignment = _alignment;
                 float fontSize = _fontSize;
-                format = TextFormatUtils.CreateTextFormat(alignment, fontSize);
-                watermarkFormat = TextFormatUtils.CreateTextFormat(alignment, fontSize, DWriteFontStyle.Oblique);
+                string fontName = _fontName;
+                format = TextFormatUtils.CreateTextFormat(alignment, fontName, fontSize);
+                watermarkFormat = TextFormatUtils.CreateTextFormat(alignment, fontName, fontSize, DWriteFontStyle.Oblique);
                 DisposeHelper.SwapDispose(ref _format, format);
                 DisposeHelper.SwapDispose(ref _watermarkFormat, watermarkFormat);
             }
@@ -239,7 +242,7 @@ namespace ConcreteUI.Controls
         [Inline(InlineBehavior.Remove)]
         private DWriteTextLayout CreateVirtualTextLayout()
         {
-            DWriteTextLayout result = TextFormatUtils.CreateTextLayout(_text, _alignment, _fontSize);
+            DWriteTextLayout result = TextFormatUtils.CreateTextLayout(_text, _fontName, _alignment, _fontSize);
             if (result is null)
                 return null;
             SetRenderingProperties(result);

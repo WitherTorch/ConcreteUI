@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -18,17 +19,24 @@ using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
-using static ConcreteUI.Utils.StaticResources;
-
 namespace ConcreteUI.Window
 {
     public abstract class WizardWindow : PagedWindow
     {
         #region Enums
+        [Flags]
+        private enum UpdateFlags : long
+        {
+            None = 0,
+            UpdateTitle = 0b01,
+            UpdateTitleDescription = 0b10,
+            All = UpdateTitle | UpdateTitleDescription,
+        }
+
         protected new enum Brush
         {
             WizardTitleBrush,
-            WizardSubtitleBrush,
+            WizardTitleDescriptionBrush,
             _Last
         }
         #endregion
@@ -43,13 +51,11 @@ namespace ConcreteUI.Window
 
         #region Fields
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly DWriteTextFormat titleFormat, secondTitleFormat;
-        private DWriteTextLayout _titleLayout;
-        private DWriteTextLayout _secondTitleLayout;
-        private string _title, _secondTitle;
+        private DWriteTextLayout _titleLayout, _titleDescriptionLayout;
+        private string _title, _titleDescription;
+        private long _updateFlags = -1L;
         private D2D1ColorF _wizardBaseColor;
-        private PointF titleLocation, secondTitleLocation;
-        private bool _titleChanged;
+        private PointF _titleLocation, _titleDescriptionLocation;
         #endregion
 
         #region Constructor
@@ -59,13 +65,6 @@ namespace ConcreteUI.Window
             MinimizeBox = false;
             MaximizeBox = false;
             ShowTitle = WindowMaterial == WindowMaterial.Integrated;
-            string capFontName = CaptionFontFamilyName;
-            DWriteFactory writeFactory = SharedResources.DWriteFactory;
-            DWriteTextFormat format;
-            titleFormat = format = writeFactory.CreateTextFormat(capFontName, 22);
-            format.WordWrapping = DWriteWordWrapping.Wrap;
-            secondTitleFormat = format = writeFactory.CreateTextFormat(capFontName, 14);
-            format.WordWrapping = DWriteWordWrapping.Wrap;
         }
         #endregion
 
@@ -73,28 +72,22 @@ namespace ConcreteUI.Window
         public string Title
         {
             get => _title;
-            protected set
+            set
             {
                 _title = value;
-                _titleChanged = true;
-                DisposeHelper.SwapDispose(ref _titleLayout,
-                    SharedResources.DWriteFactory.CreateTextLayout(value, titleFormat, MathHelper.Max(_pageRect.Width, 0), float.PositiveInfinity));
+                InterlockedHelper.Or(ref _updateFlags, (long)UpdateFlags.UpdateTitle);
                 TriggerResize();
-                Update();
             }
         }
 
         public string TitleDescription
         {
-            get => _secondTitle;
+            get => _titleDescription;
             protected set
             {
-                _secondTitle = value;
-                _titleChanged = true;
-                DisposeHelper.SwapDispose(ref _secondTitleLayout,
-                    SharedResources.DWriteFactory.CreateTextLayout(value, secondTitleFormat, MathHelper.Max(_pageRect.Width - UIConstants.WizardSubtitleLeftMargin, 0), float.PositiveInfinity));
+                _titleDescription = value;
+                InterlockedHelper.Or(ref _updateFlags, (long)UpdateFlags.UpdateTitleDescription);
                 TriggerResize();
-                Update();
             }
         }
         #endregion
@@ -106,6 +99,9 @@ namespace ConcreteUI.Window
             base.ApplyThemeCore(provider);
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
             _wizardBaseColor = provider.TryGetColor(ThemeConstants.WizardWindowBaseColor, out D2D1ColorF color) ? color : default;
+            DisposeHelper.SwapDisposeInterlocked(ref _titleLayout, null);
+            DisposeHelper.SwapDisposeInterlocked(ref _titleDescriptionLayout, null);
+            Interlocked.Exchange(ref _updateFlags, -1L);
         }
 
         public override void RenderElementBackground(UIElement element, D2D1DeviceContext context)
@@ -118,48 +114,68 @@ namespace ConcreteUI.Window
             ClearDC(deviceContext);
         }
 
+        private void GetLayouts(UpdateFlags flags, out DWriteTextLayout titleLayout, out DWriteTextLayout titleDescriptionLayout)
+        {
+            titleLayout = Interlocked.Exchange(ref _titleLayout, null);
+            titleDescriptionLayout = Interlocked.Exchange(ref _titleDescriptionLayout, null);
+            if ((flags & UpdateFlags.UpdateTitle) ==  UpdateFlags.UpdateTitle)
+            {
+                DWriteFactory factory = SharedResources.DWriteFactory;
+                DWriteTextFormat format = titleLayout;
+                if (format is null)
+                {
+                    string fontName = Theme.FontName;
+                    format = factory.CreateTextFormat(fontName, 22);
+                    format.WordWrapping = DWriteWordWrapping.Wrap;
+                }
+                titleLayout = factory.CreateTextLayout(_title ?? string.Empty, format);
+                format.Dispose();
+            }
+            if ((flags & UpdateFlags.UpdateTitleDescription) ==  UpdateFlags.UpdateTitleDescription)
+            {
+                DWriteFactory factory = SharedResources.DWriteFactory;
+                DWriteTextFormat format = titleDescriptionLayout;
+                if (format is null)
+                {
+                    string fontName = Theme.FontName;
+                    format = factory.CreateTextFormat(fontName, 14);
+                    format.WordWrapping = DWriteWordWrapping.Wrap;
+                }
+                titleDescriptionLayout = factory.CreateTextLayout(_titleDescription ?? string.Empty, format);
+                format.Dispose();
+            }
+        }
+
         protected override void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force)
         {
             base.RenderTitle(deviceContext, collector, force);
-            if (_titleChanged || force)
+            UpdateFlags flags = (UpdateFlags)Interlocked.Exchange(ref _updateFlags, 0L);
+            if (flags == 0L && !force)
+                return;
+            GetLayouts(flags, out DWriteTextLayout titleLayout, out DWriteTextLayout titleDescriptionLayout);
+            D2D1Brush[] brushes = _brushes;
+            RectF rect;
+            if (WindowMaterial == WindowMaterial.Integrated)
             {
-                _titleChanged = false;
-                D2D1Brush[] brushes = _brushes;
-                RectF rect;
-                if (WindowMaterial == WindowMaterial.Integrated)
-                {
-                    SizeF clientSize = ClientSize;
-                    RectF pageRect = _pageRect;
-                    rect = new RectF(0, 0, clientSize.Width, pageRect.Top);
-                }
-                else
-                {
-                    RectF titleBarRect = _titleBarRect;
-                    RectF pageRect = _pageRect;
-                    rect = new RectF(titleBarRect.Left, titleBarRect.Bottom, titleBarRect.Right, pageRect.Top);
-                }
-                rect = GraphicsUtils.AdjustRectangleF(rect);
-                deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
-                ClearDC(deviceContext);
-                DWriteTextLayout layout = Interlocked.Exchange(ref _titleLayout, null);
-                if (layout is not null && !layout.IsDisposed)
-                {
-                    deviceContext.DrawTextLayout(titleLocation, layout, brushes[(int)Brush.WizardTitleBrush], D2D1DrawTextOptions.None);
-                    DWriteTextLayout oldLayout = Interlocked.CompareExchange(ref _titleLayout, layout, null);
-                    if (oldLayout is not null && !ReferenceEquals(oldLayout, layout))
-                        layout.Dispose();
-                }
-                layout = Interlocked.Exchange(ref _secondTitleLayout, null);
-                if (layout is not null && !layout.IsDisposed)
-                {
-                    deviceContext.DrawTextLayout(secondTitleLocation, layout, brushes[(int)Brush.WizardSubtitleBrush], D2D1DrawTextOptions.None);
-                    DWriteTextLayout oldLayout = Interlocked.CompareExchange(ref _secondTitleLayout, layout, null);
-                    if (oldLayout is not null && !ReferenceEquals(oldLayout, layout))
-                        layout.Dispose();
-                }
-                deviceContext.PopAxisAlignedClip();
-                collector.MarkAsDirty(GraphicsUtils.ConvertRectangle(rect));
+                SizeF clientSize = ClientSize;
+                RectF pageRect = _pageRect;
+                rect = new RectF(0, 0, clientSize.Width, pageRect.Top);
             }
+            else
+            {
+                RectF titleBarRect = _titleBarRect;
+                RectF pageRect = _pageRect;
+                rect = new RectF(titleBarRect.Left, titleBarRect.Bottom, titleBarRect.Right, pageRect.Top);
+            }
+            rect = GraphicsUtils.AdjustRectangleF(rect);
+            deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
+            ClearDC(deviceContext);
+            deviceContext.DrawTextLayout(_titleLocation, titleLayout, brushes[(int)Brush.WizardTitleBrush], D2D1DrawTextOptions.None);
+            deviceContext.DrawTextLayout(_titleDescriptionLocation, titleDescriptionLayout, brushes[(int)Brush.WizardTitleDescriptionBrush], D2D1DrawTextOptions.None);
+            DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
+            DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
+            deviceContext.PopAxisAlignedClip();
+            collector.MarkAsDirty(GraphicsUtils.ConvertRectangle(rect));
         }
 
         protected override void RecalculateLayout(in SizeF windowSize, bool callRecalculatePageLayout)
@@ -170,24 +186,16 @@ namespace ConcreteUI.Window
             pageRect.Y += UIConstants.WizardPadding;
             pageRect.Right -= UIConstants.WizardPadding;
             pageRect.Bottom -= UIConstants.WizardPadding;
-            titleLocation = pageRect.Location;
-            DWriteTextLayout layout = _titleLayout;
-            if (layout is not null)
-            {
-                layout.MaxWidth = pageRect.Width;
-                secondTitleLocation = new PointF(pageRect.X + UIConstants.WizardSubtitleLeftMargin,
-                    MathF.Ceiling(pageRect.Y + layout.GetMetrics().Height + UIConstants.WizardSubtitleMargin));
-                layout = _secondTitleLayout;
-                if (layout is not null)
-                {
-                    _secondTitleLayout.MaxWidth = pageRect.Width - UIConstants.WizardSubtitleLeftMargin;
-                    pageRect.Top = secondTitleLocation.Y + _secondTitleLayout.GetMetrics().Height;
-                }
-                else
-                {
-                    pageRect.Top = secondTitleLocation.Y;
-                }
-            }
+            _titleLocation = pageRect.Location;
+            GetLayouts((UpdateFlags)Interlocked.Exchange(ref _updateFlags, 0L), out DWriteTextLayout titleLayout, out DWriteTextLayout titleDescriptionLayout);
+            titleLayout.MaxWidth = pageRect.Width;
+            _titleDescriptionLocation = new PointF(pageRect.X + UIConstants.WizardSubtitleLeftMargin,
+                MathF.Ceiling(pageRect.Y + titleLayout.GetMetrics().Height + UIConstants.WizardSubtitleMargin));
+            titleDescriptionLayout.MaxWidth = pageRect.Width - UIConstants.WizardSubtitleLeftMargin;
+            pageRect.Top = _titleDescriptionLocation.Y + titleDescriptionLayout.GetMetrics().Height;
+            DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
+            DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
+
             _pageRect = pageRect = GraphicsUtils.AdjustRectangleF(pageRect);
             if (callRecalculatePageLayout && pageRect.IsValid)
             {
@@ -225,8 +233,8 @@ namespace ConcreteUI.Window
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            titleFormat?.Dispose();
-            secondTitleFormat?.Dispose();
+            DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
+            DisposeHelper.SwapDisposeInterlocked(ref _titleDescriptionLayout);
         }
     }
 }

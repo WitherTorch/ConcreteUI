@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Threading;
 using System.Windows.Forms;
 
 using ConcreteUI.Graphics;
@@ -29,18 +30,25 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly DWriteTextLayout[] _layouts;
-        private readonly float _itemHeight;
-
+      
+        private DWriteTextLayout[] _layouts;
+        private float _itemHeight;
         private int _hoveredIndex;
         private bool _isPressed, _disposed;
 
         public ContextMenu(CoreWindow window, ContextMenuItem[] items) : base(window)
         {
+            MenuItems = items;
+        }
+
+        protected override void ApplyThemeCore(ThemeResourceProvider provider)
+        {
+            ContextMenuItem[] items = MenuItems;
+            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
             int count = items.Length;
             float itemHeight = 0f, itemWidth = 50f;
             DWriteFactory factory = SharedResources.DWriteFactory;
-            DWriteTextFormat format = factory.CreateTextFormat(StaticResources.CaptionFontFamilyName, 14);
+            DWriteTextFormat format = factory.CreateTextFormat(provider.FontName, 14);
             format.ParagraphAlignment = DWriteParagraphAlignment.Center;
             DWriteTextLayout[] layouts = new DWriteTextLayout[count];
             float lineWidth = Renderer.GetBaseLineWidth();
@@ -65,14 +73,10 @@ namespace ConcreteUI.Controls
             }
             format.Dispose();
             Size size = new Size(MathI.Ceiling(itemWidth + lineWidth * 2) + 12, (int)itemHeight * count);
-            _layouts = layouts;
             _itemHeight = itemHeight;
             Size = size;
-            MenuItems = items;
+            DisposeHelper.SwapDisposeInterlocked(ref _layouts, layouts);
         }
-
-        protected override void ApplyThemeCore(ThemeResourceProvider provider)
-            => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
 
         protected override bool RenderCore(DirtyAreaCollector collector)
         {
@@ -85,7 +89,9 @@ namespace ConcreteUI.Controls
             D2D1Brush[] brushes = _brushes;
             D2D1Brush backBrush = brushes[(int)Brush.BackBrush];
             RenderBackground(context, backBrush);
-            DWriteTextLayout[] layouts = _layouts;
+            DWriteTextLayout[] layouts = Interlocked.Exchange(ref _layouts, null);
+            if (layouts is null)
+                return true;
             ContextMenuItem[] items = MenuItems;
             D2D1Brush foreBrush = brushes[(int)Brush.TextBrush], foreDisabledBrush = brushes[(int)Brush.TextInactiveBrush];
             int hoveredIndex = _hoveredIndex;
@@ -119,6 +125,7 @@ namespace ConcreteUI.Controls
             }
             context.DrawRectangle(borderBounds, brushes[(int)Brush.BorderBrush], lineWidth);
             context.PopAxisAlignedClip();
+            DisposeHelper.NullSwapOrDispose(ref _layouts, layouts);
             return true;
         }
 

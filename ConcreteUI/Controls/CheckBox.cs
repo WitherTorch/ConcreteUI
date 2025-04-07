@@ -38,7 +38,7 @@ namespace ConcreteUI.Controls
 
 		private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
 
-		private string _text;
+		private string _text, _fontName;
 		private D2D1StrokeStyle _strokeStyle;
 		private DWriteTextLayout _textLayout;
 		private D2D1Resource _checkSign;
@@ -51,7 +51,12 @@ namespace ConcreteUI.Controls
 		public CheckBox(IRenderer renderer) : base(renderer) { }
 
 		protected override void ApplyThemeCore(ThemeResourceProvider provider)
-			=> UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+		{
+			UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+			_fontName = provider.FontName;
+			_generateLayout = true;
+			Update(CheckBoxDrawType.RedrawAllContent);
+		}
 
 		public override void OnSizeChanged()
 		{
@@ -110,7 +115,7 @@ namespace ConcreteUI.Controls
 				return null;
 			}
 			DWriteFactory writeFactory = SharedResources.DWriteFactory;
-			using DWriteTextFormat textFormat = writeFactory.CreateTextFormat(StaticResources.CaptionFontFamilyName, 14);
+			using DWriteTextFormat textFormat = writeFactory.CreateTextFormat(_fontName, 14);
 			textFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
 			DWriteTextLayout textLayout = writeFactory.CreateTextLayout(text, textFormat, bounds.Right - _checkBoxBounds.Right - 4 - Renderer.GetBaseLineWidth(), bounds.Height);
 			DisposeHelper.SwapDisposeInterlocked(ref _textLayout, textLayout);
