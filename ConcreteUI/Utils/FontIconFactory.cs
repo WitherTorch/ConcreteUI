@@ -10,13 +10,13 @@ namespace ConcreteUI.Utils
     public sealed class FontIconFactory
     {
         private static readonly FontIconFactory _instance = new FontIconFactory();
-        private static readonly string[] _fluentSymbolFontNames =
-            ["Segoe Fluent Icons", "Segoe MDL2 Assets"];
-        private static readonly string _segoeSymbolFontName = "Segoe UI Symbol";
-        private static readonly string _webDingsFontName = "Webdings";
 
         private readonly DWriteFont[] _fluentSymbolFonts;
         private readonly DWriteFont _segoeSymbolFont, _webDingsFont;
+        private readonly string[] _fluentSymbolFontNames =
+            ["Segoe Fluent Icons", "Segoe MDL2 Assets"];
+        private readonly string _segoeSymbolFontName = "Segoe UI Symbol";
+        private readonly string _webDingsFontName = "Webdings";
 
         public static FontIconFactory Instance => _instance;
 

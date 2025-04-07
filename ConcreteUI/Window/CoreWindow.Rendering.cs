@@ -537,7 +537,7 @@ namespace ConcreteUI.Window
                     ClearDCForTitle(deviceContext);
                 }
                 iconStorer.RenderCloseButton(deviceContext, closeRect.Location,
-                        TitleBarButtonStatus[2] ? brushes[(int)Brush.TitleForeBrush] : brushes[(int)Brush.TitleForeDeactiveBrush]);
+                        TitleBarButtonStatus[2] ? brushes[(int)Brush.TitleCloseButtonActiveBrush] : brushes[(int)Brush.TitleForeDeactiveBrush]);
                 deviceContext.PopAxisAlignedClip();
                 collector.MarkAsDirty(closeRect);
             }
@@ -824,16 +824,19 @@ namespace ConcreteUI.Window
             DisposeHelper.SwapDisposeInterlocked(ref _resourceProvider, provider);
             ApplyThemeCore(provider);
             WeakReference<CoreWindow>[] windowListSnapshot = GetWindowListSnapshot(_childrenReferenceList, out ArrayPool<WeakReference<CoreWindow>> pool, out int count);
-            for (int i = 0; i < count; i++)
+            if (windowListSnapshot is not null)
             {
-                if (!windowListSnapshot[i].TryGetTarget(out CoreWindow window) || window is null)
-                    continue;
-                D2D1DeviceContext deviceContext = window._deviceContext;
-                if (deviceContext is null)
-                    continue;
-                window.ApplyTheme(provider);
+                for (int i = 0; i < count; i++)
+                {
+                    if (!windowListSnapshot[i].TryGetTarget(out CoreWindow window) || window is null)
+                        continue;
+                    D2D1DeviceContext deviceContext = window._deviceContext;
+                    if (deviceContext is null)
+                        continue;
+                    window.ApplyTheme(provider);
+                }
+                pool.Return(windowListSnapshot);
             }
-            pool.Return(windowListSnapshot);
             TriggerResize();
             controller?.Unlock();
         }
@@ -843,6 +846,8 @@ namespace ConcreteUI.Window
         internal static void NotifyThemeChanged(IThemeContext themeContext)
         {
             WeakReference<CoreWindow>[] windowListSnapshot = GetWindowListSnapshot(_rootWindowList, out ArrayPool<WeakReference<CoreWindow>> pool, out int count);
+            if (windowListSnapshot is null)
+                return;
             for (int i = 0; i < count; i++)
             {
                 if (!windowListSnapshot[i].TryGetTarget(out CoreWindow window) || window is null)

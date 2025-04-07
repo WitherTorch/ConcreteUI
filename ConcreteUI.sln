@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WitherTorch.Common", "Withe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WitherTorch.Common.Windows", "WitherTorch.Common\WitherTorch.Common.Windows\WitherTorch.Common.Windows.csproj", "{AE9B1041-0089-8518-3EA0-D8ABFF65BD0E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConcreteUI.Test", "ConcreteUI.Test\ConcreteUI.Test.csproj", "{47799E49-1FDE-4C90-BF89-1AA31774BA01}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,18 @@ Global
 		{AE9B1041-0089-8518-3EA0-D8ABFF65BD0E}.Release|x64.Build.0 = Release|x64
 		{AE9B1041-0089-8518-3EA0-D8ABFF65BD0E}.Release|x86.ActiveCfg = Release|x86
 		{AE9B1041-0089-8518-3EA0-D8ABFF65BD0E}.Release|x86.Build.0 = Release|x86
+		{47799E49-1FDE-4C90-BF89-1AA31774BA01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47799E49-1FDE-4C90-BF89-1AA31774BA01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47799E49-1FDE-4C90-BF89-1AA31774BA01}.Debug|x64.ActiveCfg = Debug|x64
+		{47799E49-1FDE-4C90-BF89-1AA31774BA01}.Debug|x64.Build.0 = Debug|x64
+		{47799E49-1FDE-4C90-BF89-1AA31774BA01}.Debug|x86.ActiveCfg = Debug|x86
+		{47799E49-1FDE-4C90-BF89-1AA31774BA01}.Debug|x86.Build.0 = Debug|x86
+		{47799E49-1FDE-4C90-BF89-1AA31774BA01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47799E49-1FDE-4C90-BF89-1AA31774BA01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47799E49-1FDE-4C90-BF89-1AA31774BA01}.Release|x64.ActiveCfg = Release|x64
+		{47799E49-1FDE-4C90-BF89-1AA31774BA01}.Release|x64.Build.0 = Release|x64
+		{47799E49-1FDE-4C90-BF89-1AA31774BA01}.Release|x86.ActiveCfg = Release|x86
+		{47799E49-1FDE-4C90-BF89-1AA31774BA01}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

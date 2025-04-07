@@ -34,44 +34,44 @@ namespace ConcreteUI.Utils
 
         private static FontIcon GetMaxIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xE922, UIConstants.TitleBarButtonSize, out FontIcon result))
+            if (factory.TryCreateFluentUIFontIcon(0xE922, UIConstants.TitleBarIconSize, out FontIcon result))
                 return result;
-            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D6, UIConstants.TitleBarButtonSize, out result))
+            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D6, UIConstants.TitleBarIconSize, out result))
                 return result;
-            if (factory.TryCreateWebdingsFontIcon(0xF031, UIConstants.TitleBarButtonSize, out result))
+            if (factory.TryCreateWebdingsFontIcon(0xF031, UIConstants.TitleBarIconSize, out result))
                 return result;
             return null;
         }
 
         private static FontIcon GetRestoreIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xE923, UIConstants.TitleBarButtonSize, out FontIcon result))
+            if (factory.TryCreateFluentUIFontIcon(0xE923, UIConstants.TitleBarIconSize, out FontIcon result))
                 return result;
-            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D7, UIConstants.TitleBarButtonSize, out result))
+            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D7, UIConstants.TitleBarIconSize, out result))
                 return result;
-            if (factory.TryCreateWebdingsFontIcon(0xF032, UIConstants.TitleBarButtonSize, out result))
+            if (factory.TryCreateWebdingsFontIcon(0xF032, UIConstants.TitleBarIconSize, out result))
                 return result;
             return null;
         }
 
         private static FontIcon GetMinIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xE921, UIConstants.TitleBarButtonSize, out FontIcon result))
+            if (factory.TryCreateFluentUIFontIcon(0xE921, UIConstants.TitleBarIconSize, out FontIcon result))
                 return result;
-            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D5, UIConstants.TitleBarButtonSize, out result))
+            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D5, UIConstants.TitleBarIconSize, out result))
                 return result;
-            if (factory.TryCreateWebdingsFontIcon(0xF072, UIConstants.TitleBarButtonSize, out result))
+            if (factory.TryCreateWebdingsFontIcon(0xF072, UIConstants.TitleBarIconSize, out result))
                 return result;
             return null;
         }
 
         private static FontIcon GetCloseIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xE8BB, UIConstants.TitleBarButtonSize, out FontIcon result))
+            if (factory.TryCreateFluentUIFontIcon(0xE8BB, UIConstants.TitleBarIconSize, out FontIcon result))
                 return result;
-            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D9, UIConstants.TitleBarButtonSize, out result))
+            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D9, UIConstants.TitleBarIconSize, out result))
                 return result;
-            if (factory.TryCreateWebdingsFontIcon(0xF030, UIConstants.TitleBarButtonSize, out result))
+            if (factory.TryCreateWebdingsFontIcon(0xF030, UIConstants.TitleBarIconSize, out result))
                 return result;
             return null;
         }
@@ -111,16 +111,20 @@ namespace ConcreteUI.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderMaximizeButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) => _maxIcon?.Render(context, point, brush);
+        public void RenderMaximizeButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) 
+            => _maxIcon?.Render(context, AdjustPointForTitleBar(point), brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderRestoreButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) => _restoreIcon?.Render(context, point, brush);
+        public void RenderRestoreButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) 
+            => _restoreIcon?.Render(context, AdjustPointForTitleBar(point), brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderMinimizeButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) => _minIcon?.Render(context, point, brush);
+        public void RenderMinimizeButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) 
+            => _minIcon?.Render(context, AdjustPointForTitleBar(point), brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderCloseButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) => _closeIcon?.Render(context, point, brush);
+        public void RenderCloseButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) 
+            => _closeIcon?.Render(context, AdjustPointForTitleBar(point), brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void DrawDropDownButton(D2D1DeviceContext context, PointF point, float buttonHeight, D2D1Brush brush)
@@ -131,6 +135,13 @@ namespace ConcreteUI.Utils
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void DrawScrollBarDownButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) => _scrollDownIcon?.Render(context, point, brush);
+
+        private static PointF AdjustPointForTitleBar(PointF original)
+        {
+            original.X += (UIConstants.TitleBarButtonSizeWidth - UIConstants.TitleBarIconSizeWidth) * 0.5f;
+            original.Y += (UIConstants.TitleBarButtonSizeHeight - UIConstants.TitleBarIconSizeHeight) * 0.5f;
+            return original;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Dispose(bool disposing)

@@ -36,10 +36,10 @@ namespace ConcreteUI.Window
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
             "app.menu.back",
+            "app.menu.fore",
             "app.menu.itemSelected.back",
             "app.menu.itemHovered.back",
             "app.menu.fore.active",
-            "app.menu.fore"
         }.ToLowerAscii();
         #endregion
 
@@ -119,16 +119,11 @@ namespace ConcreteUI.Window
             }
         }
 
-        protected override void OnHandleCreated(EventArgs e)
-        {
-            base.OnHandleCreated(e);
-            GenerateMenu(menuTitles, baseX: 0, baseY: 27, menuExtraWidth: 15, menuHeight: 26, out menuBarButtonRects, out menuBarButtonLayouts);
-        }
-
         protected override void ApplyThemeCore(ThemeResourceProvider provider)
         {
             base.ApplyThemeCore(provider);
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+            GenerateMenu(menuTitles, baseX: 0, baseY: 27, menuExtraWidth: 15, menuHeight: 26, out menuBarButtonRects, out menuBarButtonLayouts);
         }
 
         protected override void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force)

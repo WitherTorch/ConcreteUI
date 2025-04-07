@@ -175,6 +175,10 @@ namespace ConcreteUI.Controls
         public static void OnCharacterInputForElements(UIElement[] elements, char character)
             => OnCharacterInputForElements(elements, elements.Length, character);
 
+        [Inline(InlineBehavior.Keep, export: true)]
+        public static void OnCharacterInputForElements(UnwrappableList<UIElement> elements, char character)
+            => OnCharacterInputForElements(elements.Unwrap(), elements.Count, character);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnCharacterInputForElements(UIElement[] elements, int length, char character)
         {

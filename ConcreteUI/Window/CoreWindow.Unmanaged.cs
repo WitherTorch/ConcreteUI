@@ -526,7 +526,7 @@ namespace ConcreteUI.Window
             WndProcDelegate wndProc = UIDependentWndProc;
             if (wndProc is null)
             {
-                if (StaticResources.currentBlur == StaticResources.Blur.Integrated)
+                if (WindowMaterial == WindowMaterial.Integrated)
                     wndProc = WndProcForIntergratedUI;
                 else
                     wndProc = WndProcForConcreteUI;

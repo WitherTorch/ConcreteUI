@@ -42,7 +42,11 @@ namespace ConcreteUI.Utils
                 format.Dispose();
                 float realWidth = layout.DetermineMinWidth();
                 if (realWidth <= targetWidth)
+                {
+                    layout.MaxWidth = size.Width;
+                    layout.MaxHeight = size.Height;
                     return layout;
+                }
                 layout.Dispose();
                 fontSize -= targetWidth - realWidth;
             }

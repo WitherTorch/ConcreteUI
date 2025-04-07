@@ -22,7 +22,7 @@ namespace ConcreteUI.Graphics
             private static readonly long NativeTicksForLargeSleepGap;
             private static readonly long NativeTicksForSmallSleepGap;
 
-            private static long flowNumber = -1;
+            private static long _serialNumber = -1;
 
             private readonly RenderingController _controller;
             private readonly Thread _thread;
@@ -51,7 +51,6 @@ namespace ConcreteUI.Graphics
                 _controller = controller;
                 _thread = new Thread(ThreadLoop)
                 {
-                    Name = "Concrete UI Rendering Thread #" + Interlocked.Increment(ref flowNumber).ToString("D"),
                     IsBackground = true
                 };
                 _trigger = new AutoResetEvent(true);
@@ -86,7 +85,7 @@ namespace ConcreteUI.Graphics
 
             private void ThreadLoop()
             {
-                ThreadHelper.SetCurrentThreadName(Thread.CurrentThread.Name);
+                ThreadHelper.SetCurrentThreadName("Concrete UI Rendering Thread #" + Interlocked.Increment(ref _serialNumber).ToString("D"));
                 RenderingController controller = _controller;
                 AutoResetEvent trigger = _trigger;
                 ManualResetEvent exitTrigger = _exitTrigger;
