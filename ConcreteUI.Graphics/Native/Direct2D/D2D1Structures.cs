@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using ConcreteUI.Graphics.Native.DXGI;
 
-using WitherTorch.CrossNative.Windows.Structures;
+using WitherTorch.Common.Windows.Structures;
 
-using GDIColor = System.Drawing.Color;
+using SystemColor = System.Drawing.Color;
 
 namespace ConcreteUI.Graphics.Native.Direct2D
 {
@@ -101,60 +102,64 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct D2D1ColorF
+    public readonly struct D2D1ColorF : IEquatable<D2D1ColorF>
     {
-        public float R;
-        public float G;
-        public float B;
-        public float A;
+        private readonly float _r, _g, _b, _a;
+
+        public float R
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _r;
+        }
+
+        public float G
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _g;
+        }
+
+        public float B
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _b;
+        }
+
+        public float A
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _a;
+        }
 
         public D2D1ColorF(float r, float g, float b, float a = 1.0f)
         {
-            R = r;
-            G = g;
-            B = b;
-            A = a;
+            _r = r;
+            _g = g;
+            _b = b;
+            _a = a;
         }
 
-        public D2D1ColorF(int r, int g, int b, int a = 255)
-        {
-            R = r / 255.0f;
-            G = g / 255.0f;
-            B = b / 255.0f;
-            A = a / 255.0f;
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public D2D1ColorF(byte r, byte g, byte b, byte a = byte.MaxValue) : this(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f) { }
 
-        public static implicit operator D2D1ColorF(GDIColor color)
-        {
-            return new D2D1ColorF(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public D2D1ColorF(int r, int g, int b, int a = byte.MaxValue) : this(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f) { }
 
-        public static explicit operator GDIColor(D2D1ColorF color)
-        {
-            return GDIColor.FromArgb((int)Math.Floor(color.A * 255.0f), (int)Math.Floor(color.R * 255.0f), (int)Math.Floor(color.G * 255.0f), (int)Math.Floor(color.B * 255.0f));
-        }
+        public static implicit operator D2D1ColorF(SystemColor color) => new D2D1ColorF(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
 
-        public static bool operator ==(D2D1ColorF a, D2D1ColorF b)
-        {
-            return a.R == b.R && a.G == b.G && a.B == b.B && a.A == b.A;
-        }
+        public static explicit operator SystemColor(D2D1ColorF color) => SystemColor.FromArgb((int)Math.Floor(color.A * 255.0f), (int)Math.Floor(color.R * 255.0f), (int)Math.Floor(color.G * 255.0f), (int)Math.Floor(color.B * 255.0f));
 
-        public static bool operator !=(D2D1ColorF a, D2D1ColorF b)
-        {
-            return a.R != b.R || a.G != b.G || a.B != b.B || a.A != b.A;
-        }
+        public static bool operator ==(D2D1ColorF a, D2D1ColorF b) => Equals(a, b);
 
-        public override bool Equals(object obj)
-        {
-            if (obj is D2D1ColorF color)
-                return this == color;
-            return base.Equals(obj);
-        }
+        public static bool operator !=(D2D1ColorF a, D2D1ColorF b) => !Equals(a, b);
+
+        public readonly override bool Equals(object obj) => obj is D2D1ColorF other && Equals(other);
+
+        public readonly bool Equals(D2D1ColorF other) => R == other.R && G == other.G && B == other.B && A == other.A;
 
         public override unsafe readonly int GetHashCode()
         {
-            float a = A, r = R, g = G, b = B;
-            return *(int*)&a ^ *(int*)&r ^ *(int*)&g ^ *(int*)&b;
+            float r = _r, g = _g, b = _b, a = _a;
+            return *(int*)&r ^ *(int*)&g ^ *(int*)&b ^ *(int*)&a;
         }
     }
 

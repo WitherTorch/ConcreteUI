@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-using WitherTorch.CrossNative.Windows.Structures;
+using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics.Native
 {

@@ -9,7 +9,7 @@
 		<SignAssembly>True</SignAssembly>
 		<LangVersion>latest</LangVersion>
 		<EnableNETAnalyzers>True</EnableNETAnalyzers>
-		<Platforms>AnyCPU;x64;ARM64</Platforms>
+		<Platforms>AnyCPU;x64;ARM64;x86</Platforms>
 		<Configurations>Debug;Release</Configurations>
 		<AssemblyOriginatorKeyFile>keypair.snk</AssemblyOriginatorKeyFile>
 		<FileAlignment>4096</FileAlignment>
@@ -66,9 +66,19 @@
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
 	</ItemGroup>
+	
+	<ItemGroup>
+	  <ProjectReference Include="..\ConcreteUI.Graphics\ConcreteUI.Graphics.csproj" />
+	  <ProjectReference Include="..\WitherTorch.Common\WitherTorch.Common.Windows\WitherTorch.Common.Windows.csproj" />
+	  <ProjectReference Include="..\WitherTorch.Common\WitherTorch.Common\WitherTorch.Common.csproj" />
+	</ItemGroup>
 
 	<PropertyGroup Condition="'$(Platform)'=='AnyCPU'">
 		<DefineConstants>$(DefineConstants);B32_ARCH;B64_ARCH;ANYCPU</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Platform)'=='x86'">
+	  <DefineConstants>$(DefineConstants);B32_ARCH;B64_ARCH;ANYCPU</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Platform)'=='x64'">

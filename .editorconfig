@@ -20,3 +20,6 @@ dotnet_diagnostic.IDE0305.severity = none
 
 # IDE0028: 簡化集合初始化
 dotnet_diagnostic.IDE0028.severity = none
+
+# IDE0300: 簡化集合初始化
+dotnet_diagnostic.IDE0300.severity = none

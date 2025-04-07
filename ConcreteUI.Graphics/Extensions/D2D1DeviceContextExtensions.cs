@@ -7,8 +7,9 @@ using ConcreteUI.Graphics.Native.DXGI;
 
 using InlineMethod;
 
-using WitherTorch.CrossNative;
-using WitherTorch.CrossNative.Windows.Structures;
+using WitherTorch.Common;
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics.Extensions
 {
@@ -18,7 +19,7 @@ namespace ConcreteUI.Graphics.Extensions
         {
             var sourceArea = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
             var bitmapProperties = new D2D1BitmapProperties(new D2D1PixelFormat(DXGIFormat.R8G8B8A8_UNorm, D2D1AlphaMode.Premultiplied));
-            var size = new SizeU(bitmap.Width.MakeUnsigned(), bitmap.Height.MakeUnsigned());
+            var size = new SizeU(MathHelper.MakeUnsigned(bitmap.Width), MathHelper.MakeUnsigned(bitmap.Height));
             int stride = bitmap.Width * sizeof(int);
             int dataCount = bitmap.Height * stride;
             if (dataCount < Limits.MaxStackallocBytes / sizeof(int))
@@ -47,7 +48,7 @@ namespace ConcreteUI.Graphics.Extensions
                 bitmap.UnlockBits(bitmapData);
                 if (deviceContext.IsDisposed)
                     return null;
-                return deviceContext.CreateBitmap(size, tempData, stride.MakeUnsigned(), bitmapProperties);
+                return deviceContext.CreateBitmap(size, tempData, MathHelper.MakeUnsigned(stride), bitmapProperties);
             }
             else
             {
@@ -76,7 +77,7 @@ namespace ConcreteUI.Graphics.Extensions
                     bitmap.UnlockBits(bitmapData);
                     if (deviceContext.IsDisposed)
                         return null;
-                    return deviceContext.CreateBitmap(size, tempData, stride.MakeUnsigned(), bitmapProperties);
+                    return deviceContext.CreateBitmap(size, tempData, MathHelper.MakeUnsigned(stride), bitmapProperties);
                 }
             }
         }

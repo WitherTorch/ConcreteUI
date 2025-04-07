@@ -6,9 +6,9 @@ using ConcreteUI.Graphics.Native.Direct2D.Geometry;
 
 using InlineMethod;
 
-using WitherTorch.CrossNative;
-using WitherTorch.CrossNative.Helpers;
-using WitherTorch.CrossNative.Windows;
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
+using WitherTorch.Common.Windows;
 
 namespace ConcreteUI.Graphics.Native.Direct2D
 {

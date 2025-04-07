@@ -6,8 +6,9 @@ using ConcreteUI.Graphics.Extensions;
 
 using InlineMethod;
 
-using WitherTorch.CrossNative;
-using WitherTorch.CrossNative.Threading;
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
+using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
 {
@@ -44,7 +45,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         /// </summary>
         public uint Count => GetGradientStopCount();
 
-        int IReadOnlyCollection<D2D1GradientStop>.Count => GetGradientStopCount().MakeSigned();
+        int IReadOnlyCollection<D2D1GradientStop>.Count => MathHelper.MakeSigned(GetGradientStopCount());
 
         public D2D1GradientStop this[int index] => index < 0 ?
             throw new ArgumentOutOfRangeException(nameof(index)) :

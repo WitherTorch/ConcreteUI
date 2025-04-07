@@ -6,7 +6,7 @@ using InlineMethod;
 
 using LocalsInit;
 
-using WitherTorch.CrossNative;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.DXGI
 {

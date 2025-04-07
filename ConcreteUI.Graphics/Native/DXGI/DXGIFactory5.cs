@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Security;
 
-using WitherTorch.CrossNative;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.DXGI
 {

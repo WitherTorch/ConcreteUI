@@ -2,17 +2,16 @@
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using ConcreteUI.Graphics;
-using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native;
 
 using InlineMethod;
 
 using LocalsInit;
 
-using WitherTorch.CrossNative.Windows.Helpers;
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Windows.Helpers;
 
-namespace WitherTorch.Windows.Graphics
+namespace ConcreteUI.Graphics
 {
     partial class RenderingController
     {
@@ -190,8 +189,8 @@ namespace WitherTorch.Windows.Graphics
                 _disposed = true;
                 Stop();
                 WaitForExit(200);
-                DisposeHelper.DisposeAndSet(ref _trigger);
-                DisposeHelper.DisposeAndSet(ref _exitTrigger);
+                DisposeHelper.SwapDispose(ref _trigger);
+                DisposeHelper.SwapDispose(ref _exitTrigger);
             }
 
             ~RenderingThread()

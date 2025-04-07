@@ -2,7 +2,7 @@
 
 using InlineMethod;
 
-using WitherTorch.CrossNative;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.Direct2D.Effects
 {

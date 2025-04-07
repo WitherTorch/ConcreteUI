@@ -12,20 +12,20 @@ namespace ConcreteUI.Graphics.Helpers
     public static class GraphicsHostHelper
     {
         [Inline(InlineBehavior.Keep, export: true)]
-        public static SwapChainGraphicsHost CreateSwapChainGraphicsHost(IntPtr handle, GraphicsDeviceProvider provider, bool useClearType, bool useFlipModel)
+        public static SwapChainGraphicsHost CreateSwapChainGraphicsHost(IntPtr handle, GraphicsDeviceProvider provider, bool useFlipModel)
         {
-            return CreateSwapChainGraphicsHost(handle, provider, preferSwapChain1: true, useClearType: useClearType, useFlipModel: useFlipModel);
+            return CreateSwapChainGraphicsHost(handle, provider, preferSwapChain1: true, useFlipModel: useFlipModel);
         }
 
         public static SwapChainGraphicsHost CreateSwapChainGraphicsHost(IntPtr handle, GraphicsDeviceProvider provider,
-            bool preferSwapChain1, bool useClearType, bool useFlipModel)
+            bool preferSwapChain1, bool useFlipModel)
         {
             if (preferSwapChain1 && provider.DXGIFactory is DXGIFactory2)  //支援 DXGI 1.1
             {
                 try
                 {
                     return new SwapChainGraphicsHost1(provider, handle,
-                        useClearType ? D2D1TextAntialiasMode.ClearType : D2D1TextAntialiasMode.Grayscale,
+                        D2D1TextAntialiasMode.Grayscale,
                         useFlipModel);
                 }
                 catch (Exception)
@@ -33,7 +33,7 @@ namespace ConcreteUI.Graphics.Helpers
                 }
             }
             return new SwapChainGraphicsHost(provider, handle,
-                useClearType ? D2D1TextAntialiasMode.ClearType : D2D1TextAntialiasMode.Grayscale,
+                D2D1TextAntialiasMode.Grayscale,
                 useFlipModel);
         }
 

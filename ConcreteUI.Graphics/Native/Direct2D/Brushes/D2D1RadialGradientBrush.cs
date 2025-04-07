@@ -4,7 +4,7 @@ using InlineMethod;
 
 using LocalsInit;
 
-using WitherTorch.CrossNative;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
 {
@@ -13,10 +13,14 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         private new enum MethodTable
         {
             _Start = D2D1Brush.MethodTable._End,
-            SetStartPoint = _Start,
-            SetEndPoint,
-            GetStartPoint,
-            GetEndPoint,
+            SetCenter = _Start,
+            SetGradientOriginOffset,
+            SetRadiusX,
+            SetRadiusY,
+            GetCenter,
+            GetGradientOriginOffset,
+            GetRadiusX,
+            GetRadiusY,
             GetGradientStopCollection,
             _End
         }
@@ -25,56 +29,107 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
 
         public D2D1RadialGradientBrush(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
 
-        public PointF StartPoint
+        /// <summary>
+        /// Gets or sets the center of the radial gradient. <br/>
+        /// This will be in local coordinates and will not depend on the geometry being filled.
+        /// </summary>
+        public PointF Center
         {
-            get => GetStartPoint();
-            set => SetStartPoint(value);
+            get => GetCenter();
+            set => SetCenter(value);
         }
 
-        public PointF EndPoint
+        /// <summary>
+        /// Gets or sets offset of the origin relative to the radial gradient center.
+        /// </summary>
+        public PointF GradientOriginOffset
         {
-            get => GetEndPoint();
-            set => SetEndPoint(value);
+            get => GetGradientOriginOffset();
+            set => SetGradientOriginOffset(value);
+        }
+
+        public float RadiusX
+        {
+            get => GetRadiusX();
+            set => SetRadiusX(value);
+        }
+
+        public float RadiusY
+        {
+            get => GetRadiusY();
+            set => SetRadiusY(value);
         }
 
         public D2D1GradientStopCollection GradientStopCollection => GetGradientStopCollection();
 
         [Inline(InlineBehavior.Remove)]
-        private void SetStartPoint(PointF startPoint)
+        private void SetCenter(PointF startPoint)
         {
             void* nativePointer = NativePointer;
-            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetStartPoint);
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetCenter);
             ((delegate*<void*, PointF, void>)functionPointer)(nativePointer, startPoint);
         }
 
         [Inline(InlineBehavior.Remove)]
-        private void SetEndPoint(PointF endPoint)
+        private void SetGradientOriginOffset(PointF endPoint)
         {
             void* nativePointer = NativePointer;
-            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetEndPoint);
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetGradientOriginOffset);
             ((delegate*<void*, PointF, void>)functionPointer)(nativePointer, endPoint);
         }
 
+        [Inline(InlineBehavior.Remove)]
+        private void SetRadiusX(float radiusX)
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetRadiusX);
+            ((delegate*<void*, float, void>)functionPointer)(nativePointer, radiusX);
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private void SetRadiusY(float radiusY)
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetRadiusY);
+            ((delegate*<void*, float, void>)functionPointer)(nativePointer, radiusY);
+        }
+
         [LocalsInit(false)]
         [Inline(InlineBehavior.Remove)]
-        private PointF GetStartPoint()
+        private PointF GetCenter()
         {
             PointF result;
             void* nativePointer = NativePointer;
-            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetStartPoint);
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetCenter);
             ((delegate*<void*, PointF*, void>)functionPointer)(nativePointer, &result);
             return result;
         }
 
         [LocalsInit(false)]
         [Inline(InlineBehavior.Remove)]
-        private PointF GetEndPoint()
+        private PointF GetGradientOriginOffset()
         {
             PointF result;
             void* nativePointer = NativePointer;
-            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetEndPoint);
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetGradientOriginOffset);
             ((delegate*<void*, PointF*, void>)functionPointer)(nativePointer, &result);
             return result;
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private float GetRadiusX()
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetRadiusX);
+            return ((delegate*<void*, float>)functionPointer)(nativePointer);
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private float GetRadiusY()
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetRadiusY);
+            return ((delegate*<void*, float>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]

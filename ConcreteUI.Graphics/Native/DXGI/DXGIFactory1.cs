@@ -7,9 +7,8 @@ using InlineMethod;
 
 using LocalsInit;
 
-
-using WitherTorch.CrossNative;
-using WitherTorch.CrossNative.Helpers;
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.DXGI
 {

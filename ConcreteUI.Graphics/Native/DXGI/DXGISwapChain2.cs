@@ -6,8 +6,8 @@ using InlineMethod;
 
 using LocalsInit;
 
-using WitherTorch.CrossNative.Windows.Structures;
-using WitherTorch.CrossNative;
+using WitherTorch.Common.Native;
+using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics.Native.DXGI
 {

@@ -5,11 +5,9 @@ using System.Security;
 using InlineMethod;
 
 using LocalsInit;
-
-
-using WitherTorch.CrossNative;
-using WitherTorch.CrossNative.Windows;
-using WitherTorch.CrossNative.Helpers;
+using WitherTorch.Common.Windows;
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.DirectWrite
 {

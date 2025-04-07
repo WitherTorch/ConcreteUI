@@ -3,11 +3,9 @@
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
-
-using WitherTorch.CrossNative;
-using WitherTorch.CrossNative.Windows;
-using WitherTorch.CrossNative.Helpers;
+using WitherTorch.Common.Windows;
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
 {

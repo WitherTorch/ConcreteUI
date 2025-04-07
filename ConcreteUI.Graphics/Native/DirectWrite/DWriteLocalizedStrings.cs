@@ -5,11 +5,9 @@ using System.Security;
 using InlineMethod;
 
 using LocalsInit;
-
-
-using WitherTorch.CrossNative;
-using WitherTorch.CrossNative.Windows;
-using WitherTorch.CrossNative.Helpers;
+using WitherTorch.Common.Windows;
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 
 /// <summary>
 /// Represents a collection of strings indexed by locale name.
@@ -114,7 +112,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
                 return string.Empty;
             if (length > int.MaxValue)
                 length = int.MaxValue;
-            string result = UnsafeStringHelper.AllocateRawString(unchecked((int)length));
+            string result = StringHelper.AllocateRawString(unchecked((int)length));
             fixed (char* ptr = result)
                 GetLocaleName(index, ptr, length + 1);
             return result;
@@ -166,7 +164,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
                 return string.Empty;
             if (length > int.MaxValue)
                 length = int.MaxValue;
-            string result = UnsafeStringHelper.AllocateRawString(unchecked((int)length));
+            string result = StringHelper.AllocateRawString(unchecked((int)length));
             fixed (char* ptr = result)
                 GetString(index, ptr, length);
             return result;

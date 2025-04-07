@@ -2,14 +2,13 @@
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native;
 
 using LocalsInit;
 
-using WitherTorch.CrossNative.Helpers;
+using WitherTorch.Common.Helpers;
 
-namespace WitherTorch.Windows.Graphics
+namespace ConcreteUI.Graphics
 {
     public sealed partial class RenderingController : IDisposable
     {

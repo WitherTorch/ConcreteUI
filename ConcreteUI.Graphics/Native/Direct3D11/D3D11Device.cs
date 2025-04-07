@@ -10,8 +10,8 @@ using InlineMethod;
 
 using LocalsInit;
 
-using WitherTorch.CrossNative;
-using WitherTorch.CrossNative.Windows;
+using WitherTorch.Common.Native;
+using WitherTorch.Common.Windows;
 
 namespace ConcreteUI.Graphics.Native.Direct3D11
 {

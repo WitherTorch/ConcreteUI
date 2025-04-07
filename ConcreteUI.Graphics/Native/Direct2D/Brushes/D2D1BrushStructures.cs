@@ -13,10 +13,12 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         public float Opacity;
         public Matrix3x2 Transform;
 
-        public D2D1BrushProperties(float opacity)
+        public D2D1BrushProperties(float opacity) : this(opacity, default) { }
+
+        public D2D1BrushProperties(float opacity, in Matrix3x2 transform)
         {
             Opacity = opacity;
-            Transform = default;
+            Transform = transform;
         }
     }
 

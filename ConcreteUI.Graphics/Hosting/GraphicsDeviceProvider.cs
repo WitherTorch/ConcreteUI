@@ -7,6 +7,8 @@ using ConcreteUI.Graphics.Native.Direct3D;
 using ConcreteUI.Graphics.Native.Direct3D11;
 using ConcreteUI.Graphics.Native.DXGI;
 
+using WitherTorch.Common.Helpers;
+
 namespace ConcreteUI.Graphics.Hosting
 {
     public unsafe sealed class GraphicsDeviceProvider : IDisposable
@@ -27,8 +29,7 @@ namespace ConcreteUI.Graphics.Hosting
 
         private GraphicsDeviceProvider(D3D11Device d3dDevice, DXGIAdapter adapter, DXGIFactory factory)
         {
-            if (d3dDevice is null) // 當硬體 3D 裝置建立失敗時，改建立 WARP 3D 裝置
-                d3dDevice = D3D11Device.Create(null, D3DDriverType.Warp, IntPtr.Zero, CreateDeviceFlag);
+            d3dDevice ??= D3D11Device.Create(null, D3DDriverType.Warp, IntPtr.Zero, CreateDeviceFlag); // 當硬體 3D 裝置建立失敗時，改建立 WARP 3D 裝置
 
             D3DDevice = d3dDevice;
             DXGIDevice = d3dDevice.QueryInterface<DXGIDevice>(DXGIDevice.IID_DXGIDevice);
@@ -40,20 +41,16 @@ namespace ConcreteUI.Graphics.Hosting
                 ThreadingMode = D2D1ThreadingMode.MultiThreaded
             });
 
-            if (adapter is null)
-                adapter = DXGIDevice.GetAdapter();
+            adapter ??= DXGIDevice.GetAdapter();
 
             DXGIAdapter = adapter;
 
             if (factory is null)
             {
                 factory = adapter.GetParent<DXGIFactory6>(DXGIFactory6.IID_DXGIFactory6, throwException: false);
-                if (factory is null)
-                    factory = adapter.GetParent<DXGIFactory2>(DXGIFactory2.IID_DXGIFactory2, throwException: false);
-                if (factory is null)
-                    factory = adapter.GetParent<DXGIFactory1>(DXGIFactory1.IID_DXGIFactory1, throwException: false);
-                if (factory is null)
-                    factory = adapter.GetParent<DXGIFactory>(DXGIFactory.IID_DXGIFactory, throwException: true);
+                factory ??= adapter.GetParent<DXGIFactory2>(DXGIFactory2.IID_DXGIFactory2, throwException: false);
+                factory ??= adapter.GetParent<DXGIFactory1>(DXGIFactory1.IID_DXGIFactory1, throwException: false);
+                factory ??= adapter.GetParent<DXGIFactory>(DXGIFactory.IID_DXGIFactory, throwException: true);
                 DXGIFactory = factory;
                 return;
             }
@@ -176,7 +173,7 @@ namespace ConcreteUI.Graphics.Hosting
                 factory6 = factory.QueryInterface<DXGIFactory6>(DXGIFactory6.IID_DXGIFactory6, throwWhenQueryFailed: false);
                 if (factory6 is null)
                     return factory.EnumAdapters(0, throwException: false);
-                DisposeHelper.DisposeAndSet(ref factory, factory6);
+                DisposeHelper.SwapDispose(ref factory, factory6);
             }
             result = factory6.EnumAdapterByGpuPreference(0, preference, DXGIAdapter.IID_DXGIAdapter, throwException: false);
             if (result is not null)

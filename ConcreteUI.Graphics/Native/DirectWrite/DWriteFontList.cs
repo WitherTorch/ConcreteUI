@@ -10,8 +10,9 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security;
 
-using WitherTorch.CrossNative;
-using WitherTorch.CrossNative.Windows;
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
+using WitherTorch.Common.Windows;
 
 namespace ConcreteUI.Graphics.Native.DirectWrite
 {
@@ -39,7 +40,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// </summary>
         public uint Count => GetFontCount();
 
-        int IReadOnlyCollection<DWriteFont>.Count => GetFontCount().MakeSigned();
+        int IReadOnlyCollection<DWriteFont>.Count => MathHelper.MakeSigned(GetFontCount());
 
         /// <inheritdoc cref="this[uint]"/>
         public DWriteFont this[int index]

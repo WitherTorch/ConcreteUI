@@ -11,9 +11,9 @@ using InlineMethod;
 
 using LocalsInit;
 
-using WitherTorch.CrossNative;
-using WitherTorch.CrossNative.Helpers;
-using WitherTorch.CrossNative.Windows;
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
+using WitherTorch.Common.Windows;
 
 namespace ConcreteUI.Graphics.Native.DirectWrite
 {
@@ -42,7 +42,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// </summary>
         public uint Count => GetFontFamilyCount();
 
-        int IReadOnlyCollection<DWriteFontFamily>.Count => GetFontFamilyCount().MakeSigned();
+        int IReadOnlyCollection<DWriteFontFamily>.Count => MathHelper.MakeSigned(GetFontFamilyCount());
 
         /// <inheritdoc cref="this[uint]"/>
         public DWriteFontFamily this[int index]

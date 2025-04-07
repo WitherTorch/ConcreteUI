@@ -9,11 +9,9 @@ using ConcreteUI.Graphics;
 using InlineMethod;
 
 using LocalsInit;
-
-
-using WitherTorch.CrossNative;
-using WitherTorch.CrossNative.Windows;
-using WitherTorch.CrossNative.Helpers;
+using WitherTorch.Common.Windows;
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.DirectWrite
 {
@@ -388,7 +386,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
                 return string.Empty;
             if (length > int.MaxValue)
                 length = int.MaxValue;
-            string result = UnsafeStringHelper.AllocateRawString(unchecked((int)length));
+            string result = StringHelper.AllocateRawString(unchecked((int)length));
             fixed (char* ptr = result)
                 GetFontFamilyName(currentPosition, ptr, length + 1);
             return result;
@@ -686,7 +684,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
                 return string.Empty;
             if (length > int.MaxValue)
                 length = int.MaxValue;
-            string result = UnsafeStringHelper.AllocateRawString(unchecked((int)length));
+            string result = StringHelper.AllocateRawString(unchecked((int)length));
             fixed (char* ptr = result)
                 GetLocaleName(currentPosition, ptr, length + 1);
             return result;

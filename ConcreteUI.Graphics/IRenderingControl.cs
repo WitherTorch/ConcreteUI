@@ -1,7 +1,5 @@
 ﻿using ConcreteUI.Graphics.Native.Direct2D;
 
-using WitherTorch.Windows.Graphics;
-
 namespace ConcreteUI.Graphics
 {
     public interface IRenderingControl

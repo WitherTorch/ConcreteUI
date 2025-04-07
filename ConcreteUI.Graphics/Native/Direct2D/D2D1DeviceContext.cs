@@ -12,9 +12,9 @@ using InlineMethod;
 
 using LocalsInit;
 
-using WitherTorch.CrossNative;
-using WitherTorch.CrossNative.Helpers;
-using WitherTorch.CrossNative.Windows.Structures;
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
+using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics.Native.Direct2D
 {

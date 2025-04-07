@@ -10,6 +10,8 @@ using ConcreteUI.Graphics.Native.DXGI;
 
 using InlineMethod;
 
+using WitherTorch.Common.Helpers;
+
 namespace ConcreteUI.Graphics.Hosting
 {
     public class SwapChainGraphicsHost : GraphicsHostBase
@@ -164,7 +166,7 @@ namespace ConcreteUI.Graphics.Hosting
             context.TryEndDraw();
 #endif
             context.Target = null;
-            DisposeHelper.DisposeAndSet(ref _target);
+            DisposeHelper.SwapDispose(ref _target);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -281,7 +283,7 @@ namespace ConcreteUI.Graphics.Hosting
         }
 
         protected virtual void ResizeSwapChain(DXGISwapChain swapChain, in Size size)
-            => swapChain.ResizeBuffers(0, size.Width.MakeUnsigned(), size.Height.MakeUnsigned());
+            => swapChain.ResizeBuffers(0, MathHelper.MakeUnsigned(size.Width), MathHelper.MakeUnsigned(size.Height));
 
         #region Disposing
         private void DisposeCore(bool disposing)
