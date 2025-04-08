@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
+using WitherTorch.Common.Windows.Structures;
+
 namespace ConcreteUI.Native
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct DWMBlurBehind
     {
         public DWMBlurBehindFlags dwFlags;
-        public bool fEnable;
+        public SysBool fEnable;
         public IntPtr hRgnBlur;
-        public bool fTransitionOnMaximized;
+        public SysBool fTransitionOnMaximized;
 
         public DWMBlurBehind(bool enabled)
         {

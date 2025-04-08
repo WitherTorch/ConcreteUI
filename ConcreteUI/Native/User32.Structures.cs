@@ -38,7 +38,6 @@ namespace ConcreteUI.Native
         public Rect NormalPosition;
     }
 
-
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct WindowCompositionAttributeData
     {
@@ -54,19 +53,5 @@ namespace ConcreteUI.Native
         public AccentFlags AccentFlags;
         public uint GradientColor;
         public uint AnimationId;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct PaintStruct
-    {
-        public IntPtr hdc;
-        public bool fErase;
-        public Rect rcPaint;
-        public bool fRestore;
-        public bool fIncUpdate;
-        public int rgbReserved0;
-        public int rgbReserved1;
-        public int rgbReserved2;
-        public int rgbReserved3;
     }
 }
