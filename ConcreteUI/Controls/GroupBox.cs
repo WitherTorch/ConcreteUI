@@ -78,6 +78,7 @@ namespace ConcreteUI.Controls
             Interlocked.Exchange(ref _titleHeight, GraphicsUtils.MeasureTextHeightAsInt("Ty", format));
             DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
             DisposeHelper.SwapDisposeInterlocked(ref _textLayout);
+            Update(RenderObjectUpdateFlags.Format);
         }
 
         public void RenderChildBackground(UIElement child, D2D1DeviceContext context)
@@ -288,8 +289,8 @@ namespace ConcreteUI.Controls
             _disposed = true;
             if (disposing)
             {
-                DisposeHelper.SwapDispose(ref _titleLayout);
-                DisposeHelper.SwapDispose(ref _textLayout);
+                DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
+                DisposeHelper.SwapDisposeInterlocked(ref _textLayout);
             }
             DisposeChildren(disposing);
         }

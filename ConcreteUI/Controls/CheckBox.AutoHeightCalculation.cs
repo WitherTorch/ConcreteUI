@@ -10,22 +10,22 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    partial class Button
+    partial class CheckBox
     {
         public sealed class AutoHeightCalculation : AbstractCalculation
         {
-            private readonly WeakReference<Button> _reference;
+            private readonly WeakReference<CheckBox> _reference;
             private readonly int _minHeight;
             private readonly int _maxHeight;
 
-            public AutoHeightCalculation(WeakReference<Button> reference, int minHeight = -1, int maxHeight = -1)
+            public AutoHeightCalculation(WeakReference<CheckBox> reference, int minHeight = -1, int maxHeight = -1)
             {
                 _reference = reference;
                 _minHeight = minHeight;
                 _maxHeight = maxHeight;
             }
 
-            public AutoHeightCalculation(Button element, int minHeight = -1, int maxHeight = -1) : this(new WeakReference<Button>(element), minHeight, maxHeight)
+            public AutoHeightCalculation(CheckBox element, int minHeight = -1, int maxHeight = -1) : this(new WeakReference<CheckBox>(element), minHeight, maxHeight)
             {
             }
 
@@ -37,7 +37,7 @@ namespace ConcreteUI.Controls
 
             private sealed class CalculationContext : ICalculationContext
             {
-                private readonly Button _element;
+                private readonly CheckBox _element;
                 private readonly int _minHeight;
                 private readonly int _maxHeight;
 
@@ -50,7 +50,7 @@ namespace ConcreteUI.Controls
 
                 public LayoutProperty DependedProperty => LayoutProperty.None;
 
-                private CalculationContext(Button element, int minHeight, int maxHeight)
+                private CalculationContext(CheckBox element, int minHeight, int maxHeight)
                 {
                     _element = element;
                     _minHeight = minHeight;
@@ -59,9 +59,9 @@ namespace ConcreteUI.Controls
                     _value = 0;
                 }
 
-                public static CalculationContext TryCreate(WeakReference<Button> reference, int minHeight, int maxHeight)
+                public static CalculationContext TryCreate(WeakReference<CheckBox> reference, int minHeight, int maxHeight)
                 {
-                    if (!reference.TryGetTarget(out Button element))
+                    if (!reference.TryGetTarget(out CheckBox element))
                         return null;
                     return new CalculationContext(element, minHeight, maxHeight);
                 }
@@ -87,12 +87,12 @@ namespace ConcreteUI.Controls
                     return value;
                 }
 
-                private int DoCalc(Button element)
+                private int DoCalc(CheckBox element)
                 {
                     string text = element._text;
                     if (string.IsNullOrEmpty(text))
                         return MathHelper.Max(_minHeight, 0);
-                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, element._fontName, TextAlignment.MiddleCenter, element._fontSize);
+                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, element._fontName, TextAlignment.MiddleLeft, element._fontSize);
                     if (layout is null)
                         return MathHelper.Max(_minHeight, 0);
                     int result = MathI.Ceiling(layout.GetMetrics().Height);

@@ -60,9 +60,7 @@ namespace ConcreteUI.Test
                 Text = "請點我!",
                 LeftCalculation = new PageDependedCalculation(LayoutProperty.Left),
                 TopCalculation = new PageDependedCalculation(LayoutProperty.Top)
-            };
-            button.WidthCalculation = new Button.AutoWidthCalculation(button);
-            button.HeightCalculation = new Button.AutoHeightCalculation(button);
+            }.WithAutoWidthCalculation().WithAutoHeightCalculation();
             button.Click += Button_Click;
             TextBox textBox = new TextBox(this, _ime)
             {
@@ -80,11 +78,28 @@ namespace ConcreteUI.Test
                 WidthCalculation = new FixedCalculation(250),
                 BottomCalculation = new PageDependedCalculation(LayoutProperty.Bottom),
             };
+            GroupBox groupBox = new GroupBox(this)
+            {
+                LeftCalculation = new ElementDependedCalculation(listBox, LayoutProperty.Right, MarginType.Outside),
+                TopCalculation = new ElementDependedCalculation(textBox, LayoutProperty.Bottom, MarginType.Outside),
+                RightCalculation = new PageDependedCalculation(LayoutProperty.Right),
+                BottomCalculation = new PageDependedCalculation(LayoutProperty.Bottom),
+                Title = "群組容器",
+            };
+            groupBox.AddChild(new CheckBox(this)
+            {
+                LeftCalculation = new GroupBox.ContentXCalculation(groupBox),
+                TopCalculation = new GroupBox.ContentYCalculation(groupBox),
+                RightCalculation = new PageDependedCalculation(LayoutProperty.Right),
+                BottomCalculation = new PageDependedCalculation(LayoutProperty.Bottom),
+                Text = "可以勾選的方塊"
+            }.WithAutoWidthCalculation().WithAutoHeightCalculation());
             for (int i = 1; i <= 200; i++)
                 listBox.Items.Add("物件 " + i.ToString());
             elementList.Add(button);
             elementList.Add(textBox);
             elementList.Add(listBox);
+            elementList.Add(groupBox);
             _elementLists[0] = elementList;
             _elementLists[1] = new();
             _elementLists[2] = new();

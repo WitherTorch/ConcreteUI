@@ -59,6 +59,20 @@ namespace ConcreteUI.Controls
             _checkState = false;
         }
 
+        [Inline(InlineBehavior.Keep, export: true)]
+        public CheckBox WithAutoWidthCalculation(int minHeight = -1, int maxHeight = -1)
+        {
+            WidthCalculation = new AutoWidthCalculation(this, minHeight, maxHeight);
+            return this;
+        }
+
+        [Inline(InlineBehavior.Keep, export: true)]
+        public CheckBox WithAutoHeightCalculation(int minHeight = -1, int maxHeight = -1)
+        {
+            HeightCalculation = new AutoHeightCalculation(this, minHeight, maxHeight);
+            return this;
+        }
+
         protected override void ApplyThemeCore(ThemeResourceProvider provider)
         {
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
@@ -105,7 +119,7 @@ namespace ConcreteUI.Controls
             => (RedrawType)Interlocked.Exchange(ref _redrawTypeRaw, (long)RedrawType.NoRedraw);
 
         [Inline(InlineBehavior.Remove)]
-        private RenderObjectUpdateFlags GetAndCleanRenderObjectUpdateFlags() 
+        private RenderObjectUpdateFlags GetAndCleanRenderObjectUpdateFlags()
             => (RenderObjectUpdateFlags)Interlocked.Exchange(ref _rawUpdateFlags, default);
 
         public override bool NeedRefresh()

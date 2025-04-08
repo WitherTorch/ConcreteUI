@@ -45,6 +45,20 @@ namespace ConcreteUI.Controls
             _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
         }
 
+        [Inline(InlineBehavior.Keep, export: true)]
+        public Button WithAutoWidthCalculation(int minHeight = -1, int maxHeight = -1)
+        {
+            WidthCalculation = new AutoWidthCalculation(this, minHeight, maxHeight);
+            return this;
+        }
+
+        [Inline(InlineBehavior.Keep, export: true)]
+        public Button WithAutoHeightCalculation(int minHeight = -1, int maxHeight = -1)
+        {
+            HeightCalculation = new AutoHeightCalculation(this, minHeight, maxHeight);
+            return this;
+        }
+
         protected override void ApplyThemeCore(ThemeResourceProvider provider)
         {
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
