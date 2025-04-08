@@ -32,7 +32,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.EnumAdapterByGpuPreference);
-            int hr = ((delegate*<void*, uint, DXGIGpuPreference, Guid*, void**, int>)functionPointer)(nativePointer, adapter, perference, riid, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, DXGIGpuPreference, Guid*, void**, int>)functionPointer)(nativePointer, adapter, perference, riid, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new DXGIAdapter(nativePointer, ReferenceType.Owned);
             if (throwException)

@@ -49,7 +49,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetPropertyCount);
-            return ((delegate*<void*, uint>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, uint>)functionPointer)(nativePointer);
         }
 
         /// <inheritdoc cref="GetPropertyName(uint, char*, uint)"/>
@@ -73,7 +73,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetPropertyName);
-            int hr = ((delegate*<void*, uint, char*, uint, int>)functionPointer)(nativePointer, index, buffer, bufferLength);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, char*, uint, int>)functionPointer)(nativePointer, index, buffer, bufferLength);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -86,7 +86,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetPropertyNameLength);
-            return ((delegate*<void*, uint>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, uint>)functionPointer)(nativePointer);
         }
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetType);
-            return ((delegate*<void*, uint, D2D1PropertyType>)functionPointer)(nativePointer, index);
+            return ((delegate* unmanaged[Stdcall]<void*, uint, D2D1PropertyType>)functionPointer)(nativePointer, index);
         }
 
         /// <inheritdoc cref="GetPropertyIndex(char*)"/>
@@ -114,7 +114,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetPropertyIndex);
-            return ((delegate*<void*, char*, uint>)functionPointer)(nativePointer, name);
+            return ((delegate* unmanaged[Stdcall]<void*, char*, uint>)functionPointer)(nativePointer, name);
         }
 
         /// <inheritdoc cref="SetValueByName(char*, D2D1PropertyType, byte*, uint)"/>
@@ -145,7 +145,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetValueByName);
-            int hr = ((delegate*<void*, char*, D2D1PropertyType, byte*, uint, int>)functionPointer)(nativePointer, name, type, data, dataSize);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, char*, D2D1PropertyType, byte*, uint, int>)functionPointer)(nativePointer, name, type, data, dataSize);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -163,7 +163,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetValue);
-            int hr = ((delegate*<void*, uint, D2D1PropertyType, byte*, uint, int>)functionPointer)(nativePointer, index, type, data, dataSize);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, D2D1PropertyType, byte*, uint, int>)functionPointer)(nativePointer, index, type, data, dataSize);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -203,7 +203,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetValueByName);
-            int hr = ((delegate*<void*, char*, D2D1PropertyType, byte*, uint, int>)functionPointer)(nativePointer, name, type, data, dataSize);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, char*, D2D1PropertyType, byte*, uint, int>)functionPointer)(nativePointer, name, type, data, dataSize);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -225,7 +225,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetValue);
-            int hr = ((delegate*<void*, uint, D2D1PropertyType, byte*, uint, int>)functionPointer)(nativePointer, index, type, data, dataSize);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, D2D1PropertyType, byte*, uint, int>)functionPointer)(nativePointer, index, type, data, dataSize);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -238,7 +238,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetValueSize);
-            return ((delegate*<void*, uint, uint>)functionPointer)(nativePointer, index);
+            return ((delegate* unmanaged[Stdcall]<void*, uint, uint>)functionPointer)(nativePointer, index);
         }
 
         /// <summary>
@@ -249,7 +249,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* pProperties;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetSubProperties);
-            int hr = ((delegate*<void*, uint, void**, int>)functionPointer)(nativePointer, index, &pProperties);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, void**, int>)functionPointer)(nativePointer, index, &pProperties);
             if (hr >= 0)
                 return pProperties == null ? null : new D2D1Properties(pProperties, ReferenceType.Owned);
             throw Marshal.GetExceptionForHR(hr);

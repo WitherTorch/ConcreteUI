@@ -31,7 +31,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.AddLine);
-            ((delegate*<void*, PointF, void>)functionPointer)(nativePointer, point);
+            ((delegate* unmanaged[Stdcall]<void*, PointF, void>)functionPointer)(nativePointer, point);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -42,7 +42,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.AddBezier);
-            ((delegate*<void*, D2D1BezierSegment*, void>)functionPointer)(nativePointer, bezier);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1BezierSegment*, void>)functionPointer)(nativePointer, bezier);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -53,7 +53,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.AddQuadraticBezier);
-            ((delegate*<void*, D2D1QuadraticBezierSegment*, void>)functionPointer)(nativePointer, bezier);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1QuadraticBezierSegment*, void>)functionPointer)(nativePointer, bezier);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -71,7 +71,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.AddQuadraticBeziers);
-            ((delegate*<void*, D2D1QuadraticBezierSegment*, uint, void>)functionPointer)(nativePointer, beziers, beziersCount);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1QuadraticBezierSegment*, uint, void>)functionPointer)(nativePointer, beziers, beziersCount);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -82,7 +82,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.AddArc);
-            ((delegate*<void*, D2D1ArcSegment*, void>)functionPointer)(nativePointer, arc);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1ArcSegment*, void>)functionPointer)(nativePointer, arc);
         }
     }
 }

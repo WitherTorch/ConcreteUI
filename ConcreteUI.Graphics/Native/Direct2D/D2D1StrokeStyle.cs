@@ -51,7 +51,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetStartCap);
-            return ((delegate*<void*, D2D1CapStyle>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, D2D1CapStyle>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -59,7 +59,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetEndCap);
-            return ((delegate*<void*, D2D1CapStyle>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, D2D1CapStyle>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -67,7 +67,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDashCap);
-            return ((delegate*<void*, D2D1CapStyle>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, D2D1CapStyle>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -75,7 +75,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetMiterLimit);
-            return ((delegate*<void*, float>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, float>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -83,7 +83,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetLineJoin);
-            return ((delegate*<void*, D2D1LineJoin>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, D2D1LineJoin>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -91,21 +91,21 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDashOffset);
-            return ((delegate*<void*, float>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, float>)functionPointer)(nativePointer);
         }
 
         private D2D1DashStyle GetDashStyle()
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDashStyle);
-            return ((delegate*<void*, D2D1DashStyle>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, D2D1DashStyle>)functionPointer)(nativePointer);
         }
 
         public uint GetDashesCount()
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDashesCount);
-            return ((delegate*<void*, uint>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, uint>)functionPointer)(nativePointer);
         }
 
         /// <summary>
@@ -129,7 +129,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDashes);
-            ((delegate*<void*, float*, uint, void>)functionPointer)(nativePointer, dashes, dashesCount);
+            ((delegate* unmanaged[Stdcall]<void*, float*, uint, void>)functionPointer)(nativePointer, dashes, dashesCount);
         }
     }
 }

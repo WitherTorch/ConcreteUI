@@ -76,7 +76,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             SizeF result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetSize);
-            ((delegate*<void*, SizeF*, void>)functionPointer)(nativePointer, &result);
+            ((delegate* unmanaged[Stdcall]<void*, SizeF*, void>)functionPointer)(nativePointer, &result);
             return result;
         }
 
@@ -87,7 +87,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             SizeU result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetPixelSize);
-            ((delegate*<void*, SizeU*, void>)functionPointer)(nativePointer, &result);
+            ((delegate* unmanaged[Stdcall]<void*, SizeU*, void>)functionPointer)(nativePointer, &result);
             return result;
         }
 
@@ -98,7 +98,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             D2D1PixelFormat result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetPixelFormat);
-            ((delegate*<void*, D2D1PixelFormat*, void>)functionPointer)(nativePointer, &result);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1PixelFormat*, void>)functionPointer)(nativePointer, &result);
             return result;
         }
 
@@ -116,7 +116,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDpi);
-            ((delegate*<void*, float*, float*, void>)functionPointer)(nativePointer, dpiX, dpiY);
+            ((delegate* unmanaged[Stdcall]<void*, float*, float*, void>)functionPointer)(nativePointer, dpiX, dpiY);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
@@ -131,7 +131,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CopyFromBitmap);
-            int hr = ((delegate*<void*, PointU*, void*, RectU*, int>)functionPointer)(nativePointer, destPoint, bitmap.NativePointer, srcRect);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, PointU*, void*, RectU*, int>)functionPointer)(nativePointer, destPoint, bitmap.NativePointer, srcRect);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -149,7 +149,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CopyFromRenderTarget);
-            int hr = ((delegate*<void*, PointU*, void*, RectU*, int>)functionPointer)(nativePointer, destPoint, renderTarget.NativePointer, srcRect);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, PointU*, void*, RectU*, int>)functionPointer)(nativePointer, destPoint, renderTarget.NativePointer, srcRect);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -167,7 +167,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CopyFromMemory);
-            int hr = ((delegate*<void*, RectU*, void*, uint, int>)functionPointer)(nativePointer, dstRect, srcData, pitch);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, RectU*, void*, uint, int>)functionPointer)(nativePointer, dstRect, srcData, pitch);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);

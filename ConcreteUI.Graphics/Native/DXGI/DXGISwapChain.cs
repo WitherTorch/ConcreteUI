@@ -53,7 +53,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Present);
-            return ((delegate*<void*, uint, DXGIPresentFlags, int>)functionPointer)(nativePointer, syncInterval, flags);
+            return ((delegate* unmanaged[Stdcall]<void*, uint, DXGIPresentFlags, int>)functionPointer)(nativePointer, syncInterval, flags);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -68,7 +68,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetBuffer);
-            int hr = ((delegate*<void*, uint, Guid*, void**, int>)functionPointer)(nativePointer, buffer, riid, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, Guid*, void**, int>)functionPointer)(nativePointer, buffer, riid, &nativePointer);
             if (hr >= 0)
                 return FromNativePointer<T>(nativePointer, ReferenceType.Owned);
             throw Marshal.GetExceptionForHR(hr);
@@ -78,7 +78,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetBuffer);
-            int hr = ((delegate*<void*, uint, Guid*, void**, int>)functionPointer)(nativePointer, buffer, riid, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, Guid*, void**, int>)functionPointer)(nativePointer, buffer, riid, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new ComObject(nativePointer, ReferenceType.Owned);
             throw Marshal.GetExceptionForHR(hr);
@@ -91,7 +91,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             DXGISwapChainDescription desc;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetBuffer);
-            int hr = ((delegate*<void*, DXGISwapChainDescription*, int>)functionPointer)(nativePointer, &desc);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DXGISwapChainDescription*, int>)functionPointer)(nativePointer, &desc);
             if (hr >= 0)
                 return desc;
             throw Marshal.GetExceptionForHR(hr);
@@ -109,7 +109,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.ResizeBuffers);
-            int hr = ((delegate*<void*, uint, uint, uint, DXGIFormat, DXGISwapChainFlags, int>)functionPointer)(nativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, uint, uint, DXGIFormat, DXGISwapChainFlags, int>)functionPointer)(nativePointer,
                 bufferCount, width, height, format, flags);
             if (hr >= 0)
                 return;

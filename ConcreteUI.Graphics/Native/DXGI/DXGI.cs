@@ -23,7 +23,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* pointer = _pointers[0];
             if (pointer == null)
                 return Constants.E_NOTIMPL;
-            return ((delegate*<Guid*, void**, int>)pointer)(riid, pFactory);
+            return ((delegate* unmanaged[Stdcall]<Guid*, void**, int>)pointer)(riid, pFactory);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -32,7 +32,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* pointer = _pointers[1];
             if (pointer == null)
                 return Constants.E_NOTIMPL;
-            return ((delegate*<Guid*, void**, int>)pointer)(riid, pFactory);
+            return ((delegate* unmanaged[Stdcall]<Guid*, void**, int>)pointer)(riid, pFactory);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -41,7 +41,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* pointer = _pointers[2];
             if (pointer == null)
                 return Constants.E_NOTIMPL;
-            return ((delegate*<DXGICreateFactoryFlags, Guid*, void**, int>)pointer)(flags, riid, pFactory);
+            return ((delegate* unmanaged[Stdcall]<DXGICreateFactoryFlags, Guid*, void**, int>)pointer)(flags, riid, pFactory);
         }
     }
 }

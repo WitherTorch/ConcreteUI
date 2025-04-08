@@ -41,7 +41,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             DXGISurfaceDescription desc;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDesc);
-            int hr = ((delegate*<void*, DXGISurfaceDescription*, int>)functionPointer)(nativePointer, &desc);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DXGISurfaceDescription*, int>)functionPointer)(nativePointer, &desc);
             if (hr >= 0)
                 return desc;
             throw Marshal.GetExceptionForHR(hr);
@@ -53,7 +53,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             DXGIMappedRect lockedRect;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Map);
-            int hr = ((delegate*<void*, DXGIMappedRect*, DXGIMapFlags, int>)functionPointer)(nativePointer, &lockedRect, flags);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DXGIMappedRect*, DXGIMapFlags, int>)functionPointer)(nativePointer, &lockedRect, flags);
             if (hr >= 0)
                 return lockedRect;
             throw Marshal.GetExceptionForHR(hr);
@@ -63,7 +63,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Unmap);
-            int hr = ((delegate*<void*, int>)functionPointer)(nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, int>)functionPointer)(nativePointer);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);

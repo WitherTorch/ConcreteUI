@@ -143,7 +143,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetTextAlignment);
-            int hr = ((delegate*<void*, DWriteTextAlignment, int>)functionPointer)(nativePointer, textAlignment);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteTextAlignment, int>)functionPointer)(nativePointer, textAlignment);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -154,7 +154,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetParagraphAlignment);
-            int hr = ((delegate*<void*, DWriteParagraphAlignment, int>)functionPointer)(nativePointer, paragraphAlignment);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteParagraphAlignment, int>)functionPointer)(nativePointer, paragraphAlignment);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -165,7 +165,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetWordWrapping);
-            int hr = ((delegate*<void*, DWriteWordWrapping, int>)functionPointer)(nativePointer, wordWrapping);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteWordWrapping, int>)functionPointer)(nativePointer, wordWrapping);
             if (hr >= 0)
                 return;
             if (wordWrapping < DWriteWordWrapping.EmergencyBreak)
@@ -178,7 +178,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetReadingDirection);
-            int hr = ((delegate*<void*, DWriteReadingDirection, int>)functionPointer)(nativePointer, readingDirection);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteReadingDirection, int>)functionPointer)(nativePointer, readingDirection);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -189,7 +189,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetFlowDirection);
-            int hr = ((delegate*<void*, DWriteFlowDirection, int>)functionPointer)(nativePointer, flowDirection);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteFlowDirection, int>)functionPointer)(nativePointer, flowDirection);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -200,7 +200,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetIncrementalTabStop);
-            int hr = ((delegate*<void*, float, int>)functionPointer)(nativePointer, incrementalTabStop);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, float, int>)functionPointer)(nativePointer, incrementalTabStop);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -220,7 +220,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetLineSpacing);
-            int hr = ((delegate*<void*, DWriteLineSpacingMethod, float, float, int>)functionPointer)(nativePointer, lineSpacingMethod, lineSpacing, baseline);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteLineSpacingMethod, float, float, int>)functionPointer)(nativePointer, lineSpacingMethod, lineSpacing, baseline);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -231,7 +231,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetTextAlignment);
-            return ((delegate*<void*, DWriteTextAlignment>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, DWriteTextAlignment>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -239,7 +239,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetParagraphAlignment);
-            return ((delegate*<void*, DWriteParagraphAlignment>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, DWriteParagraphAlignment>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -247,7 +247,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetWordWrapping);
-            return ((delegate*<void*, DWriteWordWrapping>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, DWriteWordWrapping>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -255,7 +255,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetReadingDirection);
-            return ((delegate*<void*, DWriteReadingDirection>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, DWriteReadingDirection>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -263,7 +263,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFlowDirection);
-            return ((delegate*<void*, DWriteFlowDirection>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, DWriteFlowDirection>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -271,7 +271,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetIncrementalTabStop);
-            return ((delegate*<void*, float>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, float>)functionPointer)(nativePointer);
         }
 
         /// <summary>
@@ -300,7 +300,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetLineSpacing);
-            int hr = ((delegate*<void*, DWriteLineSpacingMethod*, float*, float*, int>)functionPointer)(nativePointer, lineSpacingMethod, lineSpacing, baseline);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteLineSpacingMethod*, float*, float*, int>)functionPointer)(nativePointer, lineSpacingMethod, lineSpacing, baseline);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -316,7 +316,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontCollection);
-            int hr = ((delegate*<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new DWriteFontCollection(nativePointer, ReferenceType.Owned);
             throw Marshal.GetExceptionForHR(hr);
@@ -329,7 +329,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontFamilyNameLength);
-            return ((delegate*<void*, uint>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, uint>)functionPointer)(nativePointer);
         }
 
         /// <summary>
@@ -357,7 +357,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontFamilyName);
-            int hr = ((delegate*<void*, char*, uint, int>)functionPointer)(nativePointer, fontFamilyName, nameSize);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, char*, uint, int>)functionPointer)(nativePointer, fontFamilyName, nameSize);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -368,7 +368,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontWeight);
-            return ((delegate*<void*, DWriteFontWeight>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, DWriteFontWeight>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -376,7 +376,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontStyle);
-            return ((delegate*<void*, DWriteFontStyle>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, DWriteFontStyle>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -384,7 +384,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontStretch);
-            return ((delegate*<void*, DWriteFontStretch>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, DWriteFontStretch>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -392,7 +392,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontSize);
-            return ((delegate*<void*, float>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, float>)functionPointer)(nativePointer);
         }
 
         /// <summary>
@@ -402,7 +402,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetLocaleNameLength);
-            return ((delegate*<void*, uint>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, uint>)functionPointer)(nativePointer);
         }
 
         /// <summary>
@@ -430,7 +430,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetLocaleName);
-            int hr = ((delegate*<void*, char*, uint, int>)functionPointer)(nativePointer, localeName, nameSize);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, char*, uint, int>)functionPointer)(nativePointer, localeName, nameSize);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);

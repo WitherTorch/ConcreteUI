@@ -77,7 +77,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetSystemFontCollection);
-            int hr = ((delegate*<void*, void**, bool, int>)functionPointer)(nativePointer, &nativePointer, checkForUpdates);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void**, bool, int>)functionPointer)(nativePointer, &nativePointer, checkForUpdates);
             if (hr >= 0)
                 return nativePointer == null ? null : new DWriteFontCollection(nativePointer, ReferenceType.Owned);
             throw Marshal.GetExceptionForHR(hr);
@@ -125,7 +125,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateTextFormat);
-            int hr = ((delegate*<void*, char*, void*, DWriteFontWeight, DWriteFontStyle, DWriteFontStretch, float, char*, void**, int>)functionPointer)(
+            int hr = ((delegate* unmanaged[Stdcall]<void*, char*, void*, DWriteFontWeight, DWriteFontStyle, DWriteFontStretch, float, char*, void**, int>)functionPointer)(
                 nativePointer, fontFamilyName, fontCollection == null ? null : fontCollection.NativePointer,
                 fontWeight, fontStyle, fontStretch, fontSize, localeName, &nativePointer);
             if (hr >= 0)
@@ -178,7 +178,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateTextLayout);
-            int hr = ((delegate*<void*, char*, uint, void*, float, float, void**, int>)functionPointer)(nativePointer, text, textLength,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, char*, uint, void*, float, float, void**, int>)functionPointer)(nativePointer, text, textLength,
                 textFormat.NativePointer, maxWidth, maxHeight, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new DWriteTextLayout(nativePointer, ReferenceType.Owned);

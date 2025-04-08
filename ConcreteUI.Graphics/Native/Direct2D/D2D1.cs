@@ -28,7 +28,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* pointer = _pointers[0];
             if (pointer == null)
                 return Constants.E_NOTIMPL;
-            return ((delegate*<void*, D2D1CreationProperties*, void**, int>)pointer)(dxgiDevice, creationProperties, d2dDevice);
+            return ((delegate* unmanaged[Stdcall]<void*, D2D1CreationProperties*, void**, int>)pointer)(dxgiDevice, creationProperties, d2dDevice);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -41,7 +41,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* pointer = _pointers[1];
             if (pointer == null)
                 return 1.0f;
-            return ((delegate*<Matrix3x2*, float>)pointer)(matrix);
+            return ((delegate* unmanaged[Stdcall]<Matrix3x2*, float>)pointer)(matrix);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]

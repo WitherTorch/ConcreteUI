@@ -32,7 +32,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetColor);
-            ((delegate*<void*, D2D1ColorF*, void>)functionPointer)(nativePointer, UnsafeHelper.AsPointerIn(in color));
+            ((delegate* unmanaged[Stdcall]<void*, D2D1ColorF*, void>)functionPointer)(nativePointer, UnsafeHelper.AsPointerIn(in color));
         }
 
         [LocalsInit(false)]
@@ -42,7 +42,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
             D2D1ColorF result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetColor);
-            ((delegate*<void*, D2D1ColorF*, void>)functionPointer)(nativePointer, &result);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1ColorF*, void>)functionPointer)(nativePointer, &result);
             return result;
         }
     }

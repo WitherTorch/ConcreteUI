@@ -33,7 +33,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Effects
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetInput);
-            ((delegate*<void*, uint, void*, bool, void>)functionPointer)(nativePointer, index, input == null ? null : input.NativePointer, invalidate);
+            ((delegate* unmanaged[Stdcall]<void*, uint, void*, bool, void>)functionPointer)(nativePointer, index, input == null ? null : input.NativePointer, invalidate);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -41,7 +41,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Effects
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetInputCount);
-            int hr = ((delegate*<void*, uint, int>)functionPointer)(nativePointer, inputCount);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, int>)functionPointer)(nativePointer, inputCount);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -51,7 +51,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Effects
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetInput);
-            ((delegate*<void*, uint, void*, void>)functionPointer)(nativePointer, index, &nativePointer);
+            ((delegate* unmanaged[Stdcall]<void*, uint, void*, void>)functionPointer)(nativePointer, index, &nativePointer);
             return nativePointer == null ? null : new D2D1Image(nativePointer, ReferenceType.Owned);
         }
 
@@ -60,14 +60,14 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Effects
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetInputCount);
-            return ((delegate*<void*, uint>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, uint>)functionPointer)(nativePointer);
         }
 
         public D2D1Image GetOutput()
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetOutput);
-            ((delegate*<void*, void*, void>)functionPointer)(nativePointer, &nativePointer);
+            ((delegate* unmanaged[Stdcall]<void*, void*, void>)functionPointer)(nativePointer, &nativePointer);
             return nativePointer == null ? null : new D2D1Image(nativePointer, ReferenceType.Owned);
         }
     }

@@ -55,7 +55,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             DXGISwapChainDescription1 desc;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDesc1);
-            int hr = ((delegate*<void*, DXGISwapChainDescription1*, int>)functionPointer)(nativePointer, &desc);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DXGISwapChainDescription1*, int>)functionPointer)(nativePointer, &desc);
             if (hr >= 0)
                 return desc;
             throw Marshal.GetExceptionForHR(hr);
@@ -68,7 +68,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             DXGISwapChainFullscreenDescription fullscreenDesc;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFullscreenDesc);
-            int hr = ((delegate*<void*, DXGISwapChainFullscreenDescription*, int>)functionPointer)(nativePointer, &fullscreenDesc);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DXGISwapChainFullscreenDescription*, int>)functionPointer)(nativePointer, &fullscreenDesc);
             if (hr >= 0)
                 return fullscreenDesc;
             throw Marshal.GetExceptionForHR(hr);
@@ -78,7 +78,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetHwnd);
-            int hr = ((delegate*<void*, IntPtr*, int>)functionPointer)(nativePointer, (IntPtr*)&nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, IntPtr*, int>)functionPointer)(nativePointer, (IntPtr*)&nativePointer);
             if (hr >= 0)
                 return (IntPtr)nativePointer;
             throw Marshal.GetExceptionForHR(hr);
@@ -115,7 +115,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Present1);
-            return ((delegate*<void*, uint, DXGIPresentFlags, DXGIPresentParameters*, int>)functionPointer)(nativePointer,
+            return ((delegate* unmanaged[Stdcall]<void*, uint, DXGIPresentFlags, DXGIPresentParameters*, int>)functionPointer)(nativePointer,
                 syncInterval, flags, pPresentParameters);
         }
     }

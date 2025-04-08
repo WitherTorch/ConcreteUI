@@ -80,7 +80,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetGradientStopCount);
-            return ((delegate*<void*, uint>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, uint>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -97,7 +97,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetGradientStops);
-            ((delegate*<void*, D2D1GradientStop*, uint, void>)functionPointer)(nativePointer, gradientStops, gradientStopsCount);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1GradientStop*, uint, void>)functionPointer)(nativePointer, gradientStops, gradientStopsCount);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -105,14 +105,14 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetColorInterpolationGamma);
-            return ((delegate*<void*, D2D1Gamma>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, D2D1Gamma>)functionPointer)(nativePointer);
         }
 
         private D2D1ExtendMode GetExtendMode()
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetExtendMode);
-            return ((delegate*<void*, D2D1ExtendMode>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, D2D1ExtendMode>)functionPointer)(nativePointer);
         }
 
         private sealed class Enumerator : IEnumerator<D2D1GradientStop>

@@ -41,7 +41,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetAdapter);
-            int hr = ((delegate*<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new DXGIAdapter(nativePointer, ReferenceType.Owned);
             throw Marshal.GetExceptionForHR(hr);
@@ -52,7 +52,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetGPUThreadPriority);
-            int hr = ((delegate*<void*, int, int>)functionPointer)(nativePointer, priority);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, int, int>)functionPointer)(nativePointer, priority);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -65,7 +65,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             int priority;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetGPUThreadPriority);
-            int hr = ((delegate*<void*, int*, int>)functionPointer)(nativePointer, &priority);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, int*, int>)functionPointer)(nativePointer, &priority);
             if (hr >= 0)
                 return priority;
             throw Marshal.GetExceptionForHR(hr);

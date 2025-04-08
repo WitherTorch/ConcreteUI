@@ -58,7 +58,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             RectF result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetBounds);
-            int hr = ((delegate*<void*, Matrix3x2*, RectF*, int>)functionPointer)(nativePointer, worldTransform, &result);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, RectF*, int>)functionPointer)(nativePointer, worldTransform, &result);
             if (hr >= 0)
                 return result;
             throw Marshal.GetExceptionForHR(hr);
@@ -84,7 +84,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             RectF result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetWidenedBounds);
-            int hr = ((delegate*<void*, float, void*, Matrix3x2*, float, RectF*, int>)functionPointer)(nativePointer, strokeWidth,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, float, void*, Matrix3x2*, float, RectF*, int>)functionPointer)(nativePointer, strokeWidth,
                 strokeStyle == null ? null : strokeStyle.NativePointer, worldTransform, flatteningTolerance, &result);
             if (hr >= 0)
                 return result;
@@ -111,7 +111,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             bool result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.StrokeContainsPoint);
-            int hr = ((delegate*<void*, PointF, float, void*, Matrix3x2*, float, bool*, int>)functionPointer)(nativePointer, point, strokeWidth,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, PointF, float, void*, Matrix3x2*, float, bool*, int>)functionPointer)(nativePointer, point, strokeWidth,
                 strokeStyle == null ? null : strokeStyle.NativePointer, worldTransform, flatteningTolerance, &result);
             if (hr >= 0)
                 return result;
@@ -137,7 +137,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             bool result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.FillContainsPoint);
-            int hr = ((delegate*<void*, PointF, Matrix3x2*, float, bool*, int>)functionPointer)(nativePointer, point, worldTransform, flatteningTolerance, &result);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, PointF, Matrix3x2*, float, bool*, int>)functionPointer)(nativePointer, point, worldTransform, flatteningTolerance, &result);
             if (hr >= 0)
                 return result;
             throw Marshal.GetExceptionForHR(hr);
@@ -162,7 +162,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             D2D1GeometryRelation result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CompareWithGeometry);
-            int hr = ((delegate*<void*, void*, Matrix3x2*, float, D2D1GeometryRelation*, int>)functionPointer)(nativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void*, Matrix3x2*, float, D2D1GeometryRelation*, int>)functionPointer)(nativePointer,
                 geometry.NativePointer, inputGeometryTransform, flatteningTolerance, &result);
             if (hr >= 0)
                 return result;
@@ -189,7 +189,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Simplify);
-            int hr = ((delegate*<void*, D2D1GeometrySimplificationOption, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, D2D1GeometrySimplificationOption, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer,
                 simplificationOption, worldTransform, flatteningTolerance, geometrySink.NativePointer);
             if (hr >= 0)
                 return;
@@ -213,7 +213,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Tessellate);
-            int hr = ((delegate*<void*, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer,
                 worldTransform, flatteningTolerance, tessellationSink.NativePointer);
             if (hr >= 0)
                 return;
@@ -242,7 +242,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CombineWithGeometry);
-            int hr = ((delegate*<void*, void*, D2D1CombineMode, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer, inputGeometry.NativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void*, D2D1CombineMode, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer, inputGeometry.NativePointer,
                 combineMode, inputGeometryTransform, flatteningTolerance, geometrySink.NativePointer);
             if (hr >= 0)
                 return;
@@ -267,7 +267,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Outline);
-            int hr = ((delegate*<void*, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer, worldTransform,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer, worldTransform,
                 flatteningTolerance, geometrySink.NativePointer);
             if (hr >= 0)
                 return;
@@ -293,7 +293,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             float result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.ComputeArea);
-            int hr = ((delegate*<void*, Matrix3x2*, float, float*, int>)functionPointer)(nativePointer, worldTransform,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, float, float*, int>)functionPointer)(nativePointer, worldTransform,
                 flatteningTolerance, &result);
             if (hr >= 0)
                 return result;
@@ -319,7 +319,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             float result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.ComputeLength);
-            int hr = ((delegate*<void*, Matrix3x2*, float, float*, int>)functionPointer)(nativePointer, worldTransform,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, float, float*, int>)functionPointer)(nativePointer, worldTransform,
                 flatteningTolerance, &result);
             if (hr >= 0)
                 return result;
@@ -346,7 +346,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             float result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.ComputePointAtLength);
-            int hr = ((delegate*<void*, Matrix3x2*, float, float*, int>)functionPointer)(nativePointer, worldTransform,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, float, float*, int>)functionPointer)(nativePointer, worldTransform,
                 flatteningTolerance, &result);
             if (hr >= 0)
                 return;
@@ -370,7 +370,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Widen);
-            int hr = ((delegate*<void*, float, void*, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer, strokeWidth,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, float, void*, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer, strokeWidth,
                 strokeStyle == null ? null : strokeStyle.NativePointer, worldTransform, flatteningTolerance, geometrySink.NativePointer);
             if (hr >= 0)
                 return;

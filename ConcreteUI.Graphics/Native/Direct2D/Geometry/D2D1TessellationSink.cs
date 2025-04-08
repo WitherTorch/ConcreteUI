@@ -38,14 +38,14 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.AddTriangles);
-            ((delegate*<void*, D2D1Triangle*, uint, void>)functionPointer)(nativePointer, triangles, trianglesCount);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1Triangle*, uint, void>)functionPointer)(nativePointer, triangles, trianglesCount);
         }
 
         public void Close()
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Close);
-            int hr = ((delegate*<void*, int>)functionPointer)(nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, int>)functionPointer)(nativePointer);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);

@@ -39,7 +39,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             DXGIAdapterDescription1 desc;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDesc1);
-            int hr = ((delegate*<void*, DXGIAdapterDescription1*, int>)functionPointer)(nativePointer, &desc);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DXGIAdapterDescription1*, int>)functionPointer)(nativePointer, &desc);
             if (hr >= 0)
                 return desc;
             throw Marshal.GetExceptionForHR(hr);

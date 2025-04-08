@@ -26,7 +26,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CheckFeatureSupport);
-            int hr = ((delegate*<void*, DXGIFeature, void*, uint, int>)functionPointer)(nativePointer, feature, pFeatureSupportData, featureSupportDataSize);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DXGIFeature, void*, uint, int>)functionPointer)(nativePointer, feature, pFeatureSupportData, featureSupportDataSize);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);

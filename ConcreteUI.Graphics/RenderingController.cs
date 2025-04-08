@@ -17,7 +17,7 @@ namespace ConcreteUI.Graphics
 
         private readonly IRenderingControl _control;
         private readonly RenderingThread _thread;
-        private readonly ManualResetEvent _waitForRenderingTrigger;
+        private readonly ManualResetEventSlim _waitForRenderingTrigger;
 
         private bool _disposed;
         private long _state, _locked;
@@ -27,7 +27,7 @@ namespace ConcreteUI.Graphics
             _control = control;
             _state = (long)RenderingFlags._FlagAllTrue;
             _thread = new RenderingThread(this, GetMonitorFpsStatus());
-            _waitForRenderingTrigger = new ManualResetEvent(true);
+            _waitForRenderingTrigger = new ManualResetEventSlim(true);
         }
 
         public void RequestUpdate(bool force)
@@ -52,9 +52,10 @@ namespace ConcreteUI.Graphics
         {
             if (InterlockedHelper.Read(ref _locked) != 0L)
                 return;
-            _waitForRenderingTrigger.Reset();
+            ManualResetEventSlim trigger = _waitForRenderingTrigger;
+            trigger.Reset();
             _control.Render((RenderingFlags)Interlocked.Exchange(ref _state, 0L));
-            _waitForRenderingTrigger.Set();
+            trigger.Set();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,7 +73,7 @@ namespace ConcreteUI.Graphics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WaitForRendering()
         {
-            _waitForRenderingTrigger.WaitOne();
+            _waitForRenderingTrigger.Wait();
         }
 
         [LocalsInit(false)]
@@ -98,12 +99,8 @@ namespace ConcreteUI.Graphics
             if (_disposed)
                 return;
             _disposed = true;
+            _waitForRenderingTrigger.Dispose();
             _thread.Dispose();
-        }
-
-        ~RenderingController()
-        {
-            DisposeCore();
         }
 
         public void Dispose()

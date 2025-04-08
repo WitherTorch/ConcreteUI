@@ -35,7 +35,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFamilyNames);
-            int hr = ((delegate*<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new DWriteLocalizedStrings(nativePointer, ReferenceType.Owned);
             throw Marshal.GetExceptionForHR(hr);
@@ -54,7 +54,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFirstMatchingFont);
-            int hr = ((delegate*<void*, DWriteFontWeight, DWriteFontStretch, DWriteFontStyle, void**, int>)functionPointer)(nativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteFontWeight, DWriteFontStretch, DWriteFontStyle, void**, int>)functionPointer)(nativePointer,
                 weight, stretch, style, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new DWriteFont(nativePointer, ReferenceType.Owned);
@@ -74,7 +74,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetMatchingFonts);
-            int hr = ((delegate*<void*, DWriteFontWeight, DWriteFontStretch, DWriteFontStyle, void**, int>)functionPointer)(nativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteFontWeight, DWriteFontStretch, DWriteFontStyle, void**, int>)functionPointer)(nativePointer,
                 weight, stretch, style, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new DWriteFontList(nativePointer, ReferenceType.Owned);

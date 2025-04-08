@@ -192,11 +192,6 @@ namespace ConcreteUI.Graphics
                 DisposeHelper.SwapDispose(ref _exitTrigger);
             }
 
-            ~RenderingThread()
-            {
-                DisposeCore();
-            }
-
             public void Dispose()
             {
                 DisposeCore();

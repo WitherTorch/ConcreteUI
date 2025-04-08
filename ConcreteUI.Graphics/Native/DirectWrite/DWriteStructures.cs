@@ -1,5 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 
+using WitherTorch.Common.Windows.Structures;
+
 namespace ConcreteUI.Graphics.Native.DirectWrite
 {
     /// <summary>
@@ -128,7 +130,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// <summary>
         /// The line is trimmed.
         /// </summary>
-        public bool IsTrimmed;
+        public SysBool IsTrimmed;
     }
 
     /// <summary>
@@ -175,11 +177,11 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// <summary>
         /// Geometry encloses text?
         /// </summary>
-        public bool IsText;
+        public SysBool IsText;
 
         /// <summary>
         /// Range is trimmed.
         /// </summary>
-        public bool IsTrimmed;
+        public SysBool IsTrimmed;
     }
 }

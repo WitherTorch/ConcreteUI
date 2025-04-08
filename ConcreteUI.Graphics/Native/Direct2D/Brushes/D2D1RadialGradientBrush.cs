@@ -67,7 +67,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetCenter);
-            ((delegate*<void*, PointF, void>)functionPointer)(nativePointer, startPoint);
+            ((delegate* unmanaged[Stdcall]<void*, PointF, void>)functionPointer)(nativePointer, startPoint);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -75,7 +75,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetGradientOriginOffset);
-            ((delegate*<void*, PointF, void>)functionPointer)(nativePointer, endPoint);
+            ((delegate* unmanaged[Stdcall]<void*, PointF, void>)functionPointer)(nativePointer, endPoint);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -83,7 +83,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetRadiusX);
-            ((delegate*<void*, float, void>)functionPointer)(nativePointer, radiusX);
+            ((delegate* unmanaged[Stdcall]<void*, float, void>)functionPointer)(nativePointer, radiusX);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -91,7 +91,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetRadiusY);
-            ((delegate*<void*, float, void>)functionPointer)(nativePointer, radiusY);
+            ((delegate* unmanaged[Stdcall]<void*, float, void>)functionPointer)(nativePointer, radiusY);
         }
 
         [LocalsInit(false)]
@@ -101,7 +101,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
             PointF result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetCenter);
-            ((delegate*<void*, PointF*, void>)functionPointer)(nativePointer, &result);
+            ((delegate* unmanaged[Stdcall]<void*, PointF*, void>)functionPointer)(nativePointer, &result);
             return result;
         }
 
@@ -112,7 +112,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
             PointF result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetGradientOriginOffset);
-            ((delegate*<void*, PointF*, void>)functionPointer)(nativePointer, &result);
+            ((delegate* unmanaged[Stdcall]<void*, PointF*, void>)functionPointer)(nativePointer, &result);
             return result;
         }
 
@@ -121,7 +121,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetRadiusX);
-            return ((delegate*<void*, float>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, float>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -129,7 +129,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetRadiusY);
-            return ((delegate*<void*, float>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, float>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -137,7 +137,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetGradientStopCollection);
-            ((delegate*<void*, void**, void>)functionPointer)(nativePointer, &nativePointer);
+            ((delegate* unmanaged[Stdcall]<void*, void**, void>)functionPointer)(nativePointer, &nativePointer);
             return nativePointer == null ? null : new D2D1GradientStopCollection(nativePointer, ReferenceType.Owned);
         }
     }

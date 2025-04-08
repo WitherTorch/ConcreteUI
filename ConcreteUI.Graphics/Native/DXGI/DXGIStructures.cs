@@ -14,7 +14,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         public DXGIUsage BufferUsage;
         public uint BufferCount;
         public IntPtr OutputWindow;
-        public bool Windowed;
+        public SysBool Windowed;
         public DXGISwapEffect SwapEffect;
         public DXGISwapChainFlags Flags;
     }
@@ -25,7 +25,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         public uint Width;
         public uint Height;
         public DXGIFormat Format;
-        public bool Stereo;
+        public SysBool Stereo;
         public DXGISampleDescription SampleDesc;
         public DXGIUsage BufferUsage;
         public uint BufferCount;
@@ -41,7 +41,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         public DXGIRational RefreshRate;
         public DXGIModeScanlineOrder ScanlineOrdering;
         public DXGIModeScaling Scaling;
-        public bool Windowed;
+        public SysBool Windowed;
     }
 
     [StructLayout(LayoutKind.Sequential)]

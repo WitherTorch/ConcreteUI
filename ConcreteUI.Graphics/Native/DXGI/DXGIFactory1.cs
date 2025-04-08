@@ -51,7 +51,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.EnumAdapters1);
-            int hr = ((delegate*<void*, uint, void**, int>)functionPointer)(nativePointer, adapter, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, void**, int>)functionPointer)(nativePointer, adapter, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new DXGIAdapter1(nativePointer, ReferenceType.Owned);
             if (throwException)
@@ -64,7 +64,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.IsCurrent);
-            return ((delegate*<void*, bool>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, bool>)functionPointer)(nativePointer);
         }
     }
 }

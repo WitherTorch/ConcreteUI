@@ -69,7 +69,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetExtendModeX);
-            ((delegate*<void*, D2D1ExtendMode, void>)functionPointer)(nativePointer, extendMode);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1ExtendMode, void>)functionPointer)(nativePointer, extendMode);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -77,7 +77,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetExtendModeY);
-            ((delegate*<void*, D2D1ExtendMode, void>)functionPointer)(nativePointer, extendMode);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1ExtendMode, void>)functionPointer)(nativePointer, extendMode);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -85,7 +85,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetInterpolationMode);
-            ((delegate*<void*, D2D1BitmapInterpolationMode, void>)functionPointer)(nativePointer, interpolationMode);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1BitmapInterpolationMode, void>)functionPointer)(nativePointer, interpolationMode);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -93,7 +93,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetBitmap);
-            ((delegate*<void*, void*, void>)functionPointer)(nativePointer, bitmap == null ? null : bitmap.NativePointer);
+            ((delegate* unmanaged[Stdcall]<void*, void*, void>)functionPointer)(nativePointer, bitmap == null ? null : bitmap.NativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -101,7 +101,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetExtendModeX);
-            return ((delegate*<void*, D2D1ExtendMode>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, D2D1ExtendMode>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -109,7 +109,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetExtendModeY);
-            return ((delegate*<void*, D2D1ExtendMode>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, D2D1ExtendMode>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -117,7 +117,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetInterpolationMode);
-            return ((delegate*<void*, D2D1BitmapInterpolationMode>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, D2D1BitmapInterpolationMode>)functionPointer)(nativePointer);
         }
 
         private D2D1Bitmap GetBitmap()
@@ -125,7 +125,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
             void* pBitmap;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetBitmap);
-            ((delegate*<void*, void**, void>)functionPointer)(nativePointer, &pBitmap);
+            ((delegate* unmanaged[Stdcall]<void*, void**, void>)functionPointer)(nativePointer, &pBitmap);
             return pBitmap == null ? null : new D2D1Bitmap(pBitmap, ReferenceType.Owned);
         }
     }

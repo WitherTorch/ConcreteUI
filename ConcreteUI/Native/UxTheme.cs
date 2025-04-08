@@ -22,7 +22,7 @@ namespace ConcreteUI.Native
             void* pointer = SetPreferredAppModePtr;
             if (pointer == null)
                 return E_NOTIMPL;
-            return ((delegate*<PreferredAppMode, int>)pointer)(preferredAppMode);
+            return ((delegate* unmanaged[Stdcall]<PreferredAppMode, int>)pointer)(preferredAppMode);
         }
     }
 }

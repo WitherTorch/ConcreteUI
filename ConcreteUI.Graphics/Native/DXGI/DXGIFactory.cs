@@ -50,7 +50,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.EnumAdapters);
-            int hr = ((delegate*<void*, uint, void**, int>)functionPointer)(nativePointer, adapter, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, void**, int>)functionPointer)(nativePointer, adapter, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new DXGIAdapter(nativePointer, ReferenceType.Owned);
             if (throwException)
@@ -62,7 +62,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.MakeWindowAssociation);
-            int hr = ((delegate*<void*, IntPtr, DXGIMakeWindowAssociationFlags, int>)functionPointer)(nativePointer, windowHandle, flags);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, IntPtr, DXGIMakeWindowAssociationFlags, int>)functionPointer)(nativePointer, windowHandle, flags);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -72,7 +72,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetWindowAssociation);
-            int hr = ((delegate*<void*, IntPtr*, int>)functionPointer)(nativePointer, (IntPtr*)&nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, IntPtr*, int>)functionPointer)(nativePointer, (IntPtr*)&nativePointer);
             if (hr >= 0)
                 return (IntPtr)nativePointer;
             throw Marshal.GetExceptionForHR(hr);
@@ -86,7 +86,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.EnumAdapters);
-            int hr = ((delegate*<void*, void*, DXGISwapChainDescription*, void**, int>)functionPointer)(nativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void*, DXGISwapChainDescription*, void**, int>)functionPointer)(nativePointer,
                 device.NativePointer, pDesc, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new DXGISwapChain(nativePointer, ReferenceType.Owned);

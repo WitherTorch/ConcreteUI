@@ -75,7 +75,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateSwapChainForHwnd);
-            int hr = ((delegate*<void*, void*, IntPtr, DXGISwapChainDescription1*, DXGISwapChainFullscreenDescription*, void*, void**, int>)functionPointer)(nativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void*, IntPtr, DXGISwapChainDescription1*, DXGISwapChainFullscreenDescription*, void*, void**, int>)functionPointer)(nativePointer,
                 device.NativePointer, handle, pDesc, pFullscreenDesc, null, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new DXGISwapChain1(nativePointer, ReferenceType.Owned);

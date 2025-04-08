@@ -50,7 +50,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetOpacity);
-            ((delegate*<void*, float, void>)functionPointer)(nativePointer, opacity);
+            ((delegate* unmanaged[Stdcall]<void*, float, void>)functionPointer)(nativePointer, opacity);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -58,7 +58,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetTransform);
-            ((delegate*<void*, Matrix3x2*, void>)functionPointer)(nativePointer, transform);
+            ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, void>)functionPointer)(nativePointer, transform);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -66,7 +66,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetOpacity);
-            return ((delegate*<void*, float>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, float>)functionPointer)(nativePointer);
         }
 
         [LocalsInit(false)]
@@ -76,7 +76,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
             Matrix3x2 result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetTransform);
-            ((delegate*<void*, Matrix3x2*, void>)functionPointer)(nativePointer, &result);
+            ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, void>)functionPointer)(nativePointer, &result);
             return result;
         }
     }

@@ -45,7 +45,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Open);
-            int hr = ((delegate*<void*, void*, int>)functionPointer)(nativePointer, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void*, int>)functionPointer)(nativePointer, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new D2D1GeometrySink(nativePointer, ReferenceType.Owned);
             throw Marshal.GetExceptionForHR(hr);
@@ -58,7 +58,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Stream);
-            int hr = ((delegate*<void*, void*, int>)functionPointer)(nativePointer, sink.NativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void*, int>)functionPointer)(nativePointer, sink.NativePointer);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -71,7 +71,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             uint result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetSegmentCount);
-            int hr = ((delegate*<void*, uint*, int>)functionPointer)(nativePointer, &result);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint*, int>)functionPointer)(nativePointer, &result);
             if (hr >= 0)
                 return result;
             throw Marshal.GetExceptionForHR(hr);
@@ -84,7 +84,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             uint result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFigureCount);
-            int hr = ((delegate*<void*, uint*, int>)functionPointer)(nativePointer, &result);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint*, int>)functionPointer)(nativePointer, &result);
             if (hr >= 0)
                 return result;
             throw Marshal.GetExceptionForHR(hr);

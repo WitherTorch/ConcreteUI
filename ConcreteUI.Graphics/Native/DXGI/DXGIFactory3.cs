@@ -30,7 +30,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetCreationFlags);
-            return ((delegate*<void*, DXGICreateFactoryFlags>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, DXGICreateFactoryFlags>)functionPointer)(nativePointer);
         }
     }
 }

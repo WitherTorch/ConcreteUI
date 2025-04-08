@@ -33,7 +33,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDevice);
-            int hr = ((delegate*<void*, Guid*, void**, int>)functionPointer)(nativePointer, riid, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, void**, int>)functionPointer)(nativePointer, riid, &nativePointer);
             if (hr >= 0)
                 return FromNativePointer<T>(nativePointer, ReferenceType.Owned);
             if (throwException)
@@ -45,7 +45,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDevice);
-            int hr = ((delegate*<void*, Guid*, void**, int>)functionPointer)(nativePointer, riid, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, void**, int>)functionPointer)(nativePointer, riid, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new ComObject(nativePointer, ReferenceType.Owned);
             if (throwException)

@@ -36,21 +36,21 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetFillMode);
-            ((delegate*<void*, D2D1FillMode, void>)functionPointer)(nativePointer, fillMode);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1FillMode, void>)functionPointer)(nativePointer, fillMode);
         }
 
         public void SetSegmentFlags(D2D1PathSegment vertexFlags)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetSegmentFlags);
-            ((delegate*<void*, D2D1PathSegment, void>)functionPointer)(nativePointer, vertexFlags);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1PathSegment, void>)functionPointer)(nativePointer, vertexFlags);
         }
 
         public void BeginFigure(PointF startPoint, D2D1FigureBegin figureBegin)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.BeginFigure);
-            ((delegate*<void*, PointF, D2D1FigureBegin, void>)functionPointer)(nativePointer, startPoint, figureBegin);
+            ((delegate* unmanaged[Stdcall]<void*, PointF, D2D1FigureBegin, void>)functionPointer)(nativePointer, startPoint, figureBegin);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
@@ -68,7 +68,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.AddLines);
-            ((delegate*<void*, PointF*, uint, void>)functionPointer)(nativePointer, points, pointsCount);
+            ((delegate* unmanaged[Stdcall]<void*, PointF*, uint, void>)functionPointer)(nativePointer, points, pointsCount);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -86,21 +86,21 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.AddBeziers);
-            ((delegate*<void*, D2D1BezierSegment*, uint, void>)functionPointer)(nativePointer, beziers, beziersCount);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1BezierSegment*, uint, void>)functionPointer)(nativePointer, beziers, beziersCount);
         }
 
         public void EndFigure(D2D1FigureEnd figureEnd)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.EndFigure);
-            ((delegate*<void*, D2D1FigureEnd, void>)functionPointer)(nativePointer, figureEnd);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1FigureEnd, void>)functionPointer)(nativePointer, figureEnd);
         }
 
         public void Close()
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Close);
-            int hr = ((delegate*<void*, int>)functionPointer)(nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, int>)functionPointer)(nativePointer);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);

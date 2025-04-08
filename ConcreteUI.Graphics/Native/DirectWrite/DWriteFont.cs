@@ -73,7 +73,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontFamily);
-            int hr = ((delegate*<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new DWriteFontFamily(nativePointer, ReferenceType.Owned);
             throw Marshal.GetExceptionForHR(hr);
@@ -84,7 +84,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetWeight);
-            return ((delegate*<void*, DWriteFontWeight>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, DWriteFontWeight>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -92,7 +92,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetStretch);
-            return ((delegate*<void*, DWriteFontStretch>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, DWriteFontStretch>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -100,7 +100,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetStyle);
-            return ((delegate*<void*, DWriteFontStyle>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, DWriteFontStyle>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -108,7 +108,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.IsSymbolFont);
-            return ((delegate*<void*, bool>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, bool>)functionPointer)(nativePointer);
         }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* names;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFaceNames);
-            int hr = ((delegate*<void*, void**, int>)functionPointer)(nativePointer, &names);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &names);
             if (hr >= 0)
                 return names == null ? null : new DWriteLocalizedStrings(names, ReferenceType.Owned);
             throw Marshal.GetExceptionForHR(hr);
@@ -145,7 +145,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetInformationalStrings);
-            int hr = ((delegate*<void*, DWriteInformationalStringId, void**, bool*, int>)functionPointer)(nativePointer, informationalStringId,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteInformationalStringId, void**, bool*, int>)functionPointer)(nativePointer, informationalStringId,
                 &nativePointer, exists);
             if (hr >= 0)
                 return nativePointer == null ? null : new DWriteLocalizedStrings(nativePointer, ReferenceType.Owned);
@@ -157,7 +157,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetSimulations);
-            return ((delegate*<void*, DWriteFontSimulations>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, DWriteFontSimulations>)functionPointer)(nativePointer);
         }
 
         /// <inheritdoc cref="HasCharacter(uint)"/>
@@ -178,7 +178,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             bool exists;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.HasCharacter);
-            int hr = ((delegate*<void*, uint, bool*, int>)functionPointer)(nativePointer, unicodeValue, &exists);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, bool*, int>)functionPointer)(nativePointer, unicodeValue, &exists);
             if (hr >= 0)
                 return exists;
             throw Marshal.GetExceptionForHR(hr);

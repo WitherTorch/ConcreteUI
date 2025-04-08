@@ -100,7 +100,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateBitmap);
-            int hr = ((delegate*<void*, SizeU, void*, uint, D2D1BitmapProperties1*, void**, int>)functionPointer)(nativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, SizeU, void*, uint, D2D1BitmapProperties1*, void**, int>)functionPointer)(nativePointer,
                 size, sourceData, pitch, bitmapProperties, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new D2D1Bitmap1(nativePointer, ReferenceType.Owned);
@@ -125,7 +125,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateBitmapFromDxgiSurface);
-            int hr = ((delegate*<void*, void*, D2D1BitmapProperties1*, void**, int>)functionPointer)(nativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void*, D2D1BitmapProperties1*, void**, int>)functionPointer)(nativePointer,
                 surface.NativePointer, bitmapProperties, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new D2D1Bitmap1(nativePointer, ReferenceType.Owned);
@@ -145,7 +145,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateEffect);
-            int hr = ((delegate*<void*, Guid*, void**, int>)functionPointer)(nativePointer, effectId, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, void**, int>)functionPointer)(nativePointer, effectId, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new D2D1Effect(nativePointer, ReferenceType.Owned);
             throw Marshal.GetExceptionForHR(hr);
@@ -158,7 +158,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.IsDxgiFormatSupported);
-            return ((delegate*<void*, DXGIFormat, bool>)functionPointer)(nativePointer, format);
+            return ((delegate* unmanaged[Stdcall]<void*, DXGIFormat, bool>)functionPointer)(nativePointer, format);
         }
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDevice);
-            ((delegate*<void*, void**, void>)functionPointer)(nativePointer, &nativePointer);
+            ((delegate* unmanaged[Stdcall]<void*, void**, void>)functionPointer)(nativePointer, &nativePointer);
             return nativePointer == null ? null : new D2D1Device(nativePointer, ReferenceType.Owned);
         }
 
@@ -177,7 +177,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetTarget);
-            ((delegate*<void*, void*, void>)functionPointer)(nativePointer, image == null ? null : image.NativePointer);
+            ((delegate* unmanaged[Stdcall]<void*, void*, void>)functionPointer)(nativePointer, image == null ? null : image.NativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -186,7 +186,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* image;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetTarget);
-            ((delegate*<void*, void**, void>)functionPointer)(nativePointer, &image);
+            ((delegate* unmanaged[Stdcall]<void*, void**, void>)functionPointer)(nativePointer, &image);
             return image == null ? null : new D2D1Image(image, ReferenceType.Owned);
         }
 
@@ -217,7 +217,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawImage);
-            ((delegate*<void*, void*, PointF*, RectF*, D2D1InterpolationMode, D2D1CompositeMode, void>)functionPointer)(nativePointer,
+            ((delegate* unmanaged[Stdcall]<void*, void*, PointF*, RectF*, D2D1InterpolationMode, D2D1CompositeMode, void>)functionPointer)(nativePointer,
                 image.NativePointer, targetOffset, imageRectangle, interpolationMode, compositeMode);
         }
 
@@ -243,7 +243,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawBitmap);
-            ((delegate*<void*, void*, RectF*, float, D2D1InterpolationMode, RectF*, Matrix4x4*, void>)functionPointer)(nativePointer,
+            ((delegate* unmanaged[Stdcall]<void*, void*, RectF*, float, D2D1InterpolationMode, RectF*, Matrix4x4*, void>)functionPointer)(nativePointer,
                 bitmap.NativePointer, destinationRectangle, opacity, interpolationMode, sourceRectangle, perspectiveTransform);
         }
     }

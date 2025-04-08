@@ -33,7 +33,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetColorSpace);
-            return ((delegate*<void*, D2D1ColorSpace>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, D2D1ColorSpace>)functionPointer)(nativePointer);
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetProfileSize);
-            return ((delegate*<void*, uint>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, uint>)functionPointer)(nativePointer);
         }
 
         /// <inheritdoc cref="GetProfile(byte*, uint)"/>
@@ -63,7 +63,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetProfile);
-            int hr = ((delegate*<void*, byte*, uint, int>)functionPointer)(nativePointer, profile, profileSize);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, byte*, uint, int>)functionPointer)(nativePointer, profile, profileSize);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);

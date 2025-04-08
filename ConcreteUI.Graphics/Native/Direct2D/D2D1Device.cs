@@ -64,7 +64,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateDeviceContext);
-            int hr = ((delegate*<void*, D2D1DeviceContextOptions, void**, int>)functionPointer)(nativePointer, options, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, D2D1DeviceContextOptions, void**, int>)functionPointer)(nativePointer, options, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new D2D1DeviceContext(nativePointer, ReferenceType.Owned);
             throw Marshal.GetExceptionForHR(hr);
@@ -75,7 +75,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetMaximumTextureMemory);
-            ((delegate*<void*, ulong, void>)functionPointer)(nativePointer, maximumInBytes);
+            ((delegate* unmanaged[Stdcall]<void*, ulong, void>)functionPointer)(nativePointer, maximumInBytes);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -83,7 +83,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetMaximumTextureMemory);
-            return ((delegate*<void*, ulong>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, ulong>)functionPointer)(nativePointer);
         }
 
         /// <summary>
@@ -94,7 +94,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.ClearResources);
-            ((delegate*<void*, uint, void>)functionPointer)(nativePointer, millisecondsSinceUse);
+            ((delegate* unmanaged[Stdcall]<void*, uint, void>)functionPointer)(nativePointer, millisecondsSinceUse);
         }
     }
 }

@@ -29,7 +29,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFactory);
-            ((delegate*<void*, void**, void>)functionPointer)(nativePointer, &nativePointer);
+            ((delegate* unmanaged[Stdcall]<void*, void**, void>)functionPointer)(nativePointer, &nativePointer);
             return nativePointer == null ? null : new D2D1Factory(nativePointer, ReferenceType.Owned);
         }
     }

@@ -34,7 +34,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.EnumAdapterByLuid);
-            int hr = ((delegate*<void*, Luid, Guid*, void**, int>)functionPointer)(nativePointer, adapterLuid, riid, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Luid, Guid*, void**, int>)functionPointer)(nativePointer, adapterLuid, riid, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new DXGIAdapter(nativePointer, ReferenceType.Owned);
             if (throwException)
@@ -50,7 +50,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.EnumWarpAdapter);
-            int hr = ((delegate*<void*, Guid*, void**, int>)functionPointer)(nativePointer, riid, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, void**, int>)functionPointer)(nativePointer, riid, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new DXGIAdapter(nativePointer, ReferenceType.Owned);
             if (throwException)

@@ -36,7 +36,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateFilledGeometryRealization);
-            int hr = ((delegate*<void*, void*, float, void**, int>)functionPointer)(nativePointer, geometry.NativePointer, flatteningTolerance, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void*, float, void**, int>)functionPointer)(nativePointer, geometry.NativePointer, flatteningTolerance, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new D2D1GeometryRealization(nativePointer, ReferenceType.Owned);
             throw Marshal.GetExceptionForHR(hr);
@@ -51,7 +51,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateStrokedGeometryRealization);
-            int hr = ((delegate*<void*, void*, float, float, void*, void**, int>)functionPointer)(nativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void*, float, float, void*, void**, int>)functionPointer)(nativePointer,
                 geometry.NativePointer, flatteningTolerance, strokeWidth, strokeStyle == null ? null : strokeStyle.NativePointer, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new D2D1GeometryRealization(nativePointer, ReferenceType.Owned);
@@ -62,7 +62,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawGeometryRealization);
-            ((delegate*<void*, void*, void*, void>)functionPointer)(nativePointer, geometryRealization.NativePointer, brush.NativePointer);
+            ((delegate* unmanaged[Stdcall]<void*, void*, void*, void>)functionPointer)(nativePointer, geometryRealization.NativePointer, brush.NativePointer);
         }
     }
 }

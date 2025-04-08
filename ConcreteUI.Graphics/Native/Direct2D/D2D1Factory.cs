@@ -47,7 +47,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreatePathGeometry);
-            int hr = ((delegate*<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new D2D1PathGeometry(nativePointer, ReferenceType.Owned);
             throw Marshal.GetExceptionForHR(hr);
@@ -77,7 +77,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateStrokeStyle);
-            int hr = ((delegate*<void*, D2D1StrokeStyleProperties*, float*, uint, void**, int>)functionPointer)(nativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, D2D1StrokeStyleProperties*, float*, uint, void**, int>)functionPointer)(nativePointer,
                 strokeStyleProperties, dashes, dashesCount, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new D2D1StrokeStyle(nativePointer, ReferenceType.Owned);

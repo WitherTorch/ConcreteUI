@@ -36,7 +36,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetPrivateData);
-            int hr = ((delegate*<void*, Guid*, uint, void*, int>)functionPointer)(nativePointer, name, dataSize, pData);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, uint, void*, int>)functionPointer)(nativePointer, name, dataSize, pData);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -50,7 +50,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetPrivateDataInterface);
-            int hr = ((delegate*<void*, Guid*, void*, int>)functionPointer)(nativePointer, name, value == null ? null : value.NativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, void*, int>)functionPointer)(nativePointer, name, value == null ? null : value.NativePointer);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -64,7 +64,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetPrivateData);
-            int hr = ((delegate*<void*, Guid*, uint*, void*, int>)functionPointer)(nativePointer, name, pDataSize, pData);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, uint*, void*, int>)functionPointer)(nativePointer, name, pDataSize, pData);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -82,7 +82,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetParent);
-            int hr = ((delegate*<void*, Guid*, void**, int>)functionPointer)(nativePointer, riid, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, void**, int>)functionPointer)(nativePointer, riid, &nativePointer);
             if (hr >= 0)
                 return FromNativePointer<T>(nativePointer, ReferenceType.Owned);
             if (throwException)
@@ -94,7 +94,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetParent);
-            int hr = ((delegate*<void*, Guid*, void**, int>)functionPointer)(nativePointer, riid, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, void**, int>)functionPointer)(nativePointer, riid, &nativePointer);
             if (hr >= 0)
                 return nativePointer == null ? null : new ComObject(nativePointer, ReferenceType.Owned);
             if (throwException)

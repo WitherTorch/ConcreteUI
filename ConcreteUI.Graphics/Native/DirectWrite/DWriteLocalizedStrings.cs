@@ -43,7 +43,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetCount);
-            return ((delegate*<void*, uint>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged[Stdcall]<void*, uint>)functionPointer)(nativePointer);
         }
 
         /// <inheritdoc cref="FindLocaleName(char*, uint*)"/>
@@ -73,7 +73,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             bool exists;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.FindLocaleName);
-            int hr = ((delegate*<void*, char*, uint*, bool*, int>)functionPointer)(nativePointer, localeName, index, &exists);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, char*, uint*, bool*, int>)functionPointer)(nativePointer, localeName, index, &exists);
             if (hr >= 0)
                 return exists;
             throw Marshal.GetExceptionForHR(hr);
@@ -92,7 +92,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             uint length;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetLocaleNameLength);
-            int hr = ((delegate*<void*, uint, uint*, int>)functionPointer)(nativePointer, index, &length);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, uint*, int>)functionPointer)(nativePointer, index, &length);
             if (hr >= 0)
                 return length;
             throw Marshal.GetExceptionForHR(hr);
@@ -129,7 +129,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetLocaleName);
-            int hr = ((delegate*<void*, uint, char*, uint, int>)functionPointer)(nativePointer, index, localeName, size);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, char*, uint, int>)functionPointer)(nativePointer, index, localeName, size);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
@@ -148,7 +148,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             uint length;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetStringLength);
-            int hr = ((delegate*<void*, uint, uint*, int>)functionPointer)(nativePointer, index, &length);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, uint*, int>)functionPointer)(nativePointer, index, &length);
             if (hr >= 0)
                 return length;
             throw Marshal.GetExceptionForHR(hr);
@@ -181,7 +181,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetString);
-            int hr = ((delegate*<void*, uint, char*, uint, int>)functionPointer)(nativePointer, index, stringBuffer, size);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, uint, char*, uint, int>)functionPointer)(nativePointer, index, stringBuffer, size);
             if (hr >= 0)
                 return;
             throw Marshal.GetExceptionForHR(hr);
