@@ -12,34 +12,34 @@ namespace ConcreteUI.Controls
 {
     partial class Button
     {
-        public sealed class AutoWidthCalculation : AbstractCalculation
+        public sealed class AutoHeightCalculation : AbstractCalculation
         {
             private readonly WeakReference<Button> _reference;
-            private readonly int _minWidth;
-            private readonly int _maxWidth;
+            private readonly int _minHeight;
+            private readonly int _maxHeight;
 
-            public AutoWidthCalculation(WeakReference<Button> reference, int minWidth = -1, int maxWidth = -1)
+            public AutoHeightCalculation(WeakReference<Button> reference, int minHeight = -1, int maxHeight = -1)
             {
                 _reference = reference;
-                _minWidth = minWidth;
-                _maxWidth = maxWidth;
+                _minHeight = minHeight;
+                _maxHeight = maxHeight;
             }
 
-            public AutoWidthCalculation(Button element, int minWidth = -1, int maxWidth = -1) : this(new WeakReference<Button>(element), minWidth, maxWidth)
+            public AutoHeightCalculation(Button element, int minHeight = -1, int maxHeight = -1) : this(new WeakReference<Button>(element), minHeight, maxHeight)
             {
             }
 
             public override AbstractCalculation Clone()
-                => new AutoWidthCalculation(_reference, _minWidth, _maxWidth);
+                => new AutoWidthCalculation(_reference, _minHeight, _maxHeight);
 
             public override ICalculationContext CreateContext()
-                => CalculationContext.TryCreate(_reference, _minWidth, _maxWidth);
+                => CalculationContext.TryCreate(_reference, _minHeight, _maxHeight);
 
             private sealed class CalculationContext : ICalculationContext
             {
                 private readonly Button _element;
-                private readonly int _minWidth;
-                private readonly int _maxWidth;
+                private readonly int _minHeight;
+                private readonly int _maxHeight;
 
                 private bool _calculated;
                 private int _value;
@@ -50,20 +50,20 @@ namespace ConcreteUI.Controls
 
                 public LayoutProperty DependedProperty => LayoutProperty.None;
 
-                private CalculationContext(Button element, int minWidth, int maxWidth)
+                private CalculationContext(Button element, int minHeight, int maxHeight)
                 {
                     _element = element;
-                    _minWidth = minWidth;
-                    _maxWidth = maxWidth;
+                    _minHeight = minHeight;
+                    _maxHeight = maxHeight;
                     _calculated = false;
                     _value = 0;
                 }
 
-                public static CalculationContext TryCreate(WeakReference<Button> reference, int minWidth, int maxWidth)
+                public static CalculationContext TryCreate(WeakReference<Button> reference, int minHeight, int maxHeight)
                 {
                     if (!reference.TryGetTarget(out Button element))
                         return null;
-                    return new CalculationContext(element, minWidth, maxWidth);
+                    return new CalculationContext(element, minHeight, maxHeight);
                 }
 
                 public bool TryGetResultIfCalculated(out int value)
@@ -81,8 +81,8 @@ namespace ConcreteUI.Controls
                 {
                     if (_calculated)
                         return _value;
-                    int value = DoCalc(_element) + UIConstants.ElementMarginDouble * 2;
-                    _value = value;
+                    int value = DoCalc(_element) + UIConstants.ElementMargin;
+                    _value = value; 
                     _calculated = true;
                     return value;
                 }
@@ -91,16 +91,16 @@ namespace ConcreteUI.Controls
                 {
                     string text = element._text;
                     if (string.IsNullOrEmpty(text))
-                        return MathHelper.Max(_minWidth, 0);
+                        return MathHelper.Max(_minHeight, 0);
                     DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, element._fontName, TextAlignment.MiddleCenter, element._fontSize);
                     if (layout is null)
-                        return MathHelper.Max(_minWidth, 0);
-                    int result = MathI.Ceiling(layout.GetMetrics().Width);
+                        return MathHelper.Max(_minHeight, 0);
+                    int result = MathI.Ceiling(layout.GetMetrics().Height);
                     layout.Dispose();
-                    int maxWidth = _maxWidth;
-                    if (maxWidth < 0)
+                    int maxHeight = _maxHeight;
+                    if (maxHeight < 0)
                         return result;
-                    return MathHelper.Min(result, maxWidth);
+                    return MathHelper.Min(result, maxHeight);
                 }
             }
         }

@@ -59,17 +59,18 @@ namespace ConcreteUI.Test
             {
                 Text = "請點我!",
                 LeftCalculation = new PageDependedCalculation(LayoutProperty.Left),
-                TopCalculation = new PageDependedCalculation(LayoutProperty.Top),
-                HeightCalculation = new FixedCalculation(26)
+                TopCalculation = new PageDependedCalculation(LayoutProperty.Top)
             };
+            button.WidthCalculation = new Button.AutoWidthCalculation(button);
+            button.HeightCalculation = new Button.AutoHeightCalculation(button);
             button.Click += Button_Click;
             TextBox textBox = new TextBox(this, _ime)
             {
                 LeftCalculation = new ElementDependedCalculation(button, LayoutProperty.Right, MarginType.Outside),
                 TopCalculation = new PageDependedCalculation(LayoutProperty.Top),
                 RightCalculation = new PageDependedCalculation(LayoutProperty.Right),
-                HeightCalculation = new FixedCalculation(26),
-                FontSize = 14,
+                HeightCalculation = new ElementDependedCalculation(button, LayoutProperty.Height, MarginType.None),
+                Watermark = "這裡可以輸入文字喔!"
             };
             ListBox listBox = new ListBox(this)
             {
@@ -79,9 +80,8 @@ namespace ConcreteUI.Test
                 WidthCalculation = new FixedCalculation(250),
                 BottomCalculation = new PageDependedCalculation(LayoutProperty.Bottom),
             };
-            for (int i = 0; i < 200; i++)
+            for (int i = 1; i <= 200; i++)
                 listBox.Items.Add("物件 " + i.ToString());
-            button.WidthCalculation = new Button.AutoWidthCalculation(button);
             elementList.Add(button);
             elementList.Add(textBox);
             elementList.Add(listBox);

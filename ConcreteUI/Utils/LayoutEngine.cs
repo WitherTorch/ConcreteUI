@@ -266,7 +266,7 @@ namespace ConcreteUI.Utils
             if (dependPageRect)
                 return context.DoCalc(pPageRect, 0);
 
-            return 0;
+            return context.DoCalc(null, 0);
         }
 
         [Inline(InlineBehavior.Remove)]

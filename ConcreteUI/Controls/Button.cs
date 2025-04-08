@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 
-using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;

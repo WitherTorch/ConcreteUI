@@ -1,6 +1,4 @@
-﻿using ConcreteUI.Controls;
-
-using WitherTorch.Common.Windows.Structures;
+﻿using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls.Calculation
 {

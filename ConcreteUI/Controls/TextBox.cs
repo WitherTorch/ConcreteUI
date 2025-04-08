@@ -72,6 +72,7 @@ namespace ConcreteUI.Controls
             _rawUpdateFlags = -1L;
             _text = string.Empty;
             _watermark = string.Empty;
+            _fontSize = 14;
             _passwordChar = '\0';
             ScrollBarType = ScrollBarType.AutoVertial;
             SurfaceSize = new Point(int.MaxValue, 0);
