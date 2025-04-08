@@ -35,7 +35,7 @@ namespace ConcreteUI.Controls
                 if (_alignment == value)
                     return;
                 _alignment = value;
-                Update(RenderObjectUpdateFlags.FormatAndLayouts);
+                Update(RenderObjectUpdateFlags.All);
             }
         }
 
@@ -49,7 +49,7 @@ namespace ConcreteUI.Controls
                 if (_fontSize == value)
                     return;
                 _fontSize = value;
-                Update(RenderObjectUpdateFlags.FormatAndLayouts);
+                Update(RenderObjectUpdateFlags.All);
             }
         }
 
@@ -115,10 +115,9 @@ namespace ConcreteUI.Controls
 
                 if (_multiLine)
                 {
-                    DWriteTextLayout layout = CreateVirtualTextLayout();
+                    using DWriteTextLayout layout = CreateVirtualTextLayout();
                     layout.MaxWidth = ContentBounds.Width;
                     SurfaceSize = new Point(0, MathI.Ceiling(layout.GetMetrics().Height) + UIConstants.ElementMargin);
-                    layout.Dispose();
                 }
                 CalculateCurrentViewportPoint();
                 Update(RenderObjectUpdateFlags.Layout);
@@ -158,10 +157,9 @@ namespace ConcreteUI.Controls
                         SurfaceSize = Point.Empty;
                     else
                     {
-                        DWriteTextLayout layout = CreateVirtualTextLayout();
+                        using DWriteTextLayout layout = CreateVirtualTextLayout();
                         layout.MaxWidth = bounds.Width;
                         SurfaceSize = new Point(0, MathI.Ceiling(layout.GetMetrics().Height) + UIConstants.ElementMargin);
-                        layout.Dispose();
                     }
                 }
                 else

@@ -11,7 +11,6 @@ namespace ConcreteUI.Controls
 {
     partial class UIElementHelper
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnKeyDownForElements(IEnumerable<UIElement> elements, KeyEventArgs args)
         {
             switch (elements)
@@ -74,7 +73,6 @@ namespace ConcreteUI.Controls
                 keyEvents.OnKeyDown(args);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnKeyUpForElements(IEnumerable<UIElement> elements, KeyEventArgs args)
         {
             switch (elements)
@@ -137,7 +135,6 @@ namespace ConcreteUI.Controls
                 keyEvents.OnKeyUp(args);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnCharacterInputForElements(IEnumerable<UIElement> elements, char character)
         {
             switch (elements)

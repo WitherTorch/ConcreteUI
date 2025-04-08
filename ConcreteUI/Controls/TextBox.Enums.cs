@@ -9,8 +9,8 @@ namespace ConcreteUI.Controls
         {
             None = 0,
             Layout = 0b001,
-            WatermarkLayout = 0b011,
-            FormatAndLayouts = 0b111
+            WatermarkLayout = 0b010,
+            All = Layout | WatermarkLayout
         }
 
         private enum Brush

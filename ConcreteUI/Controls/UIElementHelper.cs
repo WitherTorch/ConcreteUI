@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -37,17 +38,45 @@ namespace ConcreteUI.Controls
                 DisposeHelper.SwapDispose(ref brushes[i], provider.TryGetBrush(nodes[i], out D2D1Brush brush) ? brush.Clone() : null);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ApplyTheme(ThemeResourceProvider provider, IEnumerable<UIElement> elements)
         {
-
+            switch (elements)
+            {
+                case UIElement[] _array:
+                    ApplyTheme(provider, _array);
+                    break;
+                case UnwrappableList<UIElement> _list:
+                    ApplyTheme(provider, _list);
+                    break;
+                case ObservableList<UIElement> _list:
+                    ApplyTheme(provider, _list.GetUnderlyingList());
+                    break;
+                default:
+                    ApplyThemeCore(provider, elements);
+                    break;
+            }
         }
+
+        [Inline(InlineBehavior.Keep, export: true)]
+        public static void ApplyTheme(ThemeResourceProvider provider, UIElement[] elements)
+            => ApplyTheme(provider, elements, elements.Length);
+
+        [Inline(InlineBehavior.Keep, export: true)]
+        public static void ApplyTheme(ThemeResourceProvider provider, UnwrappableList<UIElement> elements)
+            => ApplyTheme(provider, elements.Unwrap(), elements.Count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ApplyTheme(ThemeResourceProvider provider, UIElement[] elements, int length)
         {
             for (int i = 0; i < length; i++)
                 elements[i]?.ApplyTheme(provider);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ApplyThemeCore(ThemeResourceProvider provider, IEnumerable<UIElement> elements)
+        {
+            foreach (UIElement element in elements)
+                element?.ApplyTheme(provider);
         }
 
         public static D2D1Resource GetOrCreateCheckSign(ref D2D1Resource checkSign, D2D1DeviceContext context, D2D1StrokeStyle strokeStyle, in Rect drawingBounds)
@@ -76,7 +105,6 @@ namespace ConcreteUI.Controls
             return checkSign;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RenderElements(DirtyAreaCollector collector, IEnumerable<UIElement> elements, bool ignoreNeedRefresh)
         {
             switch (elements)

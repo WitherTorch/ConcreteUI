@@ -9,7 +9,6 @@ namespace ConcreteUI.Graphics
         RedrawAll = 0b001,
         Resize = 0b010,
         ResizeAndRedrawAll = Resize | RedrawAll,
-        Locked = 0b100,
         _FlagAllTrue = unchecked((long)ulong.MaxValue)
     }
 }

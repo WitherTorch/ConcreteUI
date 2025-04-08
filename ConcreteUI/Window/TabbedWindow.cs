@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Threading;
 using System.Windows.Forms;
 
 using ConcreteUI.Controls;
@@ -13,6 +14,7 @@ using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
 using WitherTorch.Common.Extensions;
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.Structures;
 
@@ -57,7 +59,7 @@ namespace ConcreteUI.Window
 
         #region Properties
 
-        public RectF[] MenuBarButtonBounds => menuBarButtonRects;
+        public RectF[] MenuBarButtonBounds => InterlockedHelper.Read(ref menuBarButtonRects);
         #endregion
 
         #region Constructor
@@ -77,6 +79,9 @@ namespace ConcreteUI.Window
             if (MousePositionChangedForMenuBar(in clientPoint, false))
                 return HitTestValue.Client;
             float clientY = clientPoint.Y;
+            RectF[] menuBarButtonRects = InterlockedHelper.Read(ref this.menuBarButtonRects);
+            if (menuBarButtonRects is null)
+                return HitTestValue.NoWhere;
             RectF templateMenuBarButtonRect = menuBarButtonRects.LastOrDefault();
             if (clientY <= templateMenuBarButtonRect.Bottom && clientY > _titleBarRect.Bottom)
                 return HitTestValue.Caption;
@@ -86,6 +91,9 @@ namespace ConcreteUI.Window
         protected override void RecalculateLayout(in SizeF windowSize, bool callRecalculatePageLayout)
         {
             base.RecalculateLayout(windowSize, false);
+            RectF[] menuBarButtonRects = InterlockedHelper.Read(ref this.menuBarButtonRects);
+            if (menuBarButtonRects is null)
+                return;
             RectF pageRect = _pageRect;
             float x, y;
             if (WindowMaterial == WindowMaterial.Integrated)
@@ -98,7 +106,6 @@ namespace ConcreteUI.Window
                 x = pageRect.Left;
                 y = _titleBarRect.Height + _drawingOffsetY;
             }
-            RectF[] menuBarButtonRects = this.menuBarButtonRects;
             for (int i = 0, count = menuBarButtonRects.Length; i < count; i++)
             {
                 RectF rect = menuBarButtonRects[i];
@@ -123,7 +130,9 @@ namespace ConcreteUI.Window
         {
             base.ApplyThemeCore(provider);
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
-            GenerateMenu(menuTitles, baseX: 0, baseY: 27, menuExtraWidth: 15, menuHeight: 26, out menuBarButtonRects, out menuBarButtonLayouts);
+            GenerateMenu(menuTitles, baseX: 0, baseY: 27, menuExtraWidth: 15, menuHeight: 26, out RectF[] menuBarButtonRects, out DWriteTextLayout[] menuBarButtonLayouts);
+            Interlocked.Exchange(ref this.menuBarButtonRects, menuBarButtonRects);
+            DisposeHelper.SwapDisposeInterlocked(ref this.menuBarButtonLayouts, menuBarButtonLayouts);
         }
 
         protected override void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force)
@@ -132,7 +141,8 @@ namespace ConcreteUI.Window
             BitVector64 MenuBarButtonChangedStatus = this.MenuBarButtonChangedStatus;
             base.RenderTitle(deviceContext, collector, force);
             #region 繪製主選單
-            RectF[] menuBarButtonRects = this.menuBarButtonRects;
+            RectF[] menuBarButtonRects = InterlockedHelper.Read(ref this.menuBarButtonRects);
+            DWriteTextLayout[] menuBarButtonLayouts = Interlocked.Exchange(ref this.menuBarButtonLayouts, null);
             D2D1ColorF clearDCColor = _clearDCColor;
             D2D1Brush[] brushes = _brushes;
             D2D1Brush titleBackBrush = GetBrush(CoreWindow.Brush.TitleBackBrush);
@@ -158,7 +168,6 @@ namespace ConcreteUI.Window
                 deviceContext.PopAxisAlignedClip();
             }
             bool menuRedraw = isPageChanged || force;
-            DWriteTextLayout[] menuBarButtonLayouts = this.menuBarButtonLayouts;
             for (int i = 0, currentPageIndex = CurrentPage, count = menuBarButtonRects.Length; i < count; i++)
             {
                 RectF rect = menuBarButtonRects[i];
@@ -170,7 +179,7 @@ namespace ConcreteUI.Window
                     if (!force)
                         GraphicsUtils.ClearAndFill(deviceContext, menuBackBrush, clearDCColor);
                     deviceContext.FillRectangle(rect, menuSelectBrush);
-                        deviceContext.DrawTextLayout(rect.Location, layout, menuHoverForeBrush, D2D1DrawTextOptions.Clip);
+                    deviceContext.DrawTextLayout(rect.Location, layout, menuHoverForeBrush, D2D1DrawTextOptions.Clip);
                     deviceContext.PopAxisAlignedClip();
                     collector.MarkAsDirty(GraphicsUtils.AdjustRectangle(rect));
                 }
@@ -184,7 +193,7 @@ namespace ConcreteUI.Window
                     if (MenuBarButtonStatus[i])
                     {
                         deviceContext.FillRectangle(rect, menuHoverBrush);
-                            deviceContext.DrawTextLayout(rect.Location, layout, menuHoverForeBrush, D2D1DrawTextOptions.Clip);
+                        deviceContext.DrawTextLayout(rect.Location, layout, menuHoverForeBrush, D2D1DrawTextOptions.Clip);
                     }
                     else
                     {
@@ -194,12 +203,15 @@ namespace ConcreteUI.Window
                     collector.MarkAsDirty(GraphicsUtils.AdjustRectangle(rect));
                 }
             }
+            DisposeHelper.NullSwapOrDispose(ref this.menuBarButtonLayouts, menuBarButtonLayouts);
             #endregion
         }
 
         protected override void OnMouseDownForElements(in MouseInteractEventArgs args)
         {
-            RectF[] menuBarButtonRects = this.menuBarButtonRects;
+            RectF[] menuBarButtonRects = InterlockedHelper.Read(ref this.menuBarButtonRects);
+            if (menuBarButtonRects is null)
+                return;
             for (int i = 0, count = menuBarButtonRects.Length; i < count; i++)
             {
                 if (menuBarButtonRects[i].Contains(args.Location))
@@ -213,8 +225,10 @@ namespace ConcreteUI.Window
 
         protected virtual bool MousePositionChangedForMenuBar(in PointF point, bool requireUpdate)
         {
+            RectF[] menuBarButtonRects = InterlockedHelper.Read(ref this.menuBarButtonRects);
+            if (menuBarButtonRects is null)
+                return false;
             bool result = false;
-            RectF[] menuBarButtonRects = this.menuBarButtonRects;
             int length = menuBarButtonRects.Length;
             RectF firstRect = menuBarButtonRects.FirstOrDefault();
             RectF lastRect = menuBarButtonRects.LastOrDefault();
@@ -294,9 +308,7 @@ namespace ConcreteUI.Window
 
         protected override void Dispose(bool disposing)
         {
-            var menuBarButtonLayouts = this.menuBarButtonLayouts;
-            for (int i = 0, count = menuBarButtonLayouts.Length; i < count; i++)
-                menuBarButtonLayouts[i]?.Dispose();
+            DisposeHelper.SwapDisposeInterlocked(ref menuBarButtonLayouts);
             base.Dispose(disposing);
         }
     }

@@ -48,7 +48,6 @@ namespace ConcreteUI.Controls
         private readonly Timer _caretTimer;
 
         private Cursor _cursor;
-        private DWriteTextFormat _format, _watermarkFormat;
         private DWriteTextLayout _layout, _watermarkLayout;
         private string _fontName, _text, _watermark;
         private DWriteTextRange compositionRange;
@@ -70,7 +69,7 @@ namespace ConcreteUI.Controls
             _caretState = true;
             _caretIndex = 0;
             _compositionCaretIndex = 0;
-            _rawUpdateFlags = Booleans.TrueLong;
+            _rawUpdateFlags = -1L;
             _text = string.Empty;
             _watermark = string.Empty;
             _passwordChar = '\0';
@@ -84,7 +83,9 @@ namespace ConcreteUI.Controls
             base.ApplyThemeCore(provider);
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
             _fontName = provider.FontName;
-            Update(RenderObjectUpdateFlags.FormatAndLayouts);
+            DisposeHelper.SwapDispose(ref _layout);
+            DisposeHelper.SwapDispose(ref _watermarkLayout);
+            Update(RenderObjectUpdateFlags.All);
         }
 
         protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
@@ -177,30 +178,16 @@ namespace ConcreteUI.Controls
         private void GetTextLayouts(out DWriteTextLayout layout, out DWriteTextLayout watermarkLayout)
         {
             RenderObjectUpdateFlags flags = GetAndCleanRenderObjectUpdateFlags();
-            DWriteTextFormat format, watermarkFormat;
-            if ((flags & RenderObjectUpdateFlags.FormatAndLayouts) == RenderObjectUpdateFlags.FormatAndLayouts)
-            {
-                TextAlignment alignment = _alignment;
-                float fontSize = _fontSize;
-                string fontName = _fontName;
-                format = TextFormatUtils.CreateTextFormat(alignment, fontName, fontSize);
-                watermarkFormat = TextFormatUtils.CreateTextFormat(alignment, fontName, fontSize, DWriteFontStyle.Oblique);
-                DisposeHelper.SwapDispose(ref _format, format);
-                DisposeHelper.SwapDispose(ref _watermarkFormat, watermarkFormat);
-            }
-            else
-            {
-                format = _format;
-                watermarkFormat = _watermarkFormat;
-            }
+            layout = Interlocked.Exchange(ref _layout, null);
+            watermarkLayout = Interlocked.Exchange(ref _watermarkLayout, null);
             if ((flags & RenderObjectUpdateFlags.Layout) == RenderObjectUpdateFlags.Layout)
             {
+                DWriteTextFormat format = layout;
+                if (format is null || format.IsDisposed)
+                    format = TextFormatUtils.CreateTextFormat(_alignment, _fontName, _fontSize);
+
                 string text = _text;
-                if (string.IsNullOrEmpty(text))
-                {
-                    layout = null;
-                }
-                else
+                if (!string.IsNullOrEmpty(text))
                 {
                     char passwordChar = PasswordChar;
                     if (passwordChar != '\0') //has password char
@@ -220,32 +207,24 @@ namespace ConcreteUI.Controls
                             text = new string(passwordChar, text.Length);
                         }
                     }
-                    layout = SharedResources.DWriteFactory.CreateTextLayout(text, format);
                 }
-                DisposeHelper.SwapDispose(ref _layout, layout);
-            }
-            else
-            {
-                layout = _layout;
+                layout = SharedResources.DWriteFactory.CreateTextLayout(text ?? string.Empty, format);
+                format.Dispose();
             }
             if ((flags & RenderObjectUpdateFlags.WatermarkLayout) == RenderObjectUpdateFlags.WatermarkLayout)
             {
-                watermarkLayout = SharedResources.DWriteFactory.CreateTextLayout(_watermark ?? string.Empty, watermarkFormat);
-                DisposeHelper.SwapDispose(ref _watermarkLayout, watermarkLayout);
-            }
-            else
-            {
-                watermarkLayout = _watermarkLayout;
+                DWriteTextFormat format = watermarkLayout;
+                if (format is null || format.IsDisposed)
+                    format = TextFormatUtils.CreateTextFormat(_alignment, _fontName, _fontSize, DWriteFontStyle.Oblique);
+                watermarkLayout = SharedResources.DWriteFactory.CreateTextLayout(_watermark ?? string.Empty, format);
+                format.Dispose();
             }
         }
 
         [Inline(InlineBehavior.Remove)]
         private DWriteTextLayout CreateVirtualTextLayout()
         {
-            Thread.MemoryBarrier();
-            DWriteTextLayout result = TextFormatUtils.CreateTextLayout(_text, _fontName, _alignment, _fontSize);
-            if (result is null)
-                return null;
+            DWriteTextLayout result = TextFormatUtils.CreateTextLayout(_text ?? string.Empty, _fontName, _alignment, _fontSize);
             SetRenderingProperties(result);
             return result;
         }
@@ -272,10 +251,7 @@ namespace ConcreteUI.Controls
 
         private void CalculateCurrentViewportPoint()
         {
-            DWriteTextLayout layout = CreateVirtualTextLayout();
-            if (layout is null)
-                return;
-
+            using DWriteTextLayout layout = CreateVirtualTextLayout();
             Rect bounds = ContentBounds;
             DWriteTextRange compositionRange = this.compositionRange;
             bool inComposition = compositionRange.Length > 0;
@@ -334,7 +310,7 @@ namespace ConcreteUI.Controls
 
             GetTextLayouts(out DWriteTextLayout layout, out DWriteTextLayout watermarkLayout);
             collector.MarkAsDirty(bounds);
-            if (layout is null)
+            if (layout.DetermineMinWidth() <= 0.0f)
             {
                 SetRenderingProperties(watermarkLayout, bounds, _multiLine);
                 //文字為空，繪製浮水印
@@ -344,7 +320,8 @@ namespace ConcreteUI.Controls
                 context.PopAxisAlignedClip();
                 if (focused)
                     DrawCaret(context, watermarkLayout, layoutPoint, 0);
-
+                DisposeHelper.NullSwapOrDispose(ref _layout, layout);
+                DisposeHelper.NullSwapOrDispose(ref _watermarkLayout, watermarkLayout);
                 return true;
             }
 
@@ -353,11 +330,13 @@ namespace ConcreteUI.Controls
             context.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
             RenderLayout(context, focused, layout, bounds);
             context.PopAxisAlignedClip();
+            DisposeHelper.NullSwapOrDispose(ref _layout, layout);
+            DisposeHelper.NullSwapOrDispose(ref _watermarkLayout, watermarkLayout);
 
             return true;
         }
 
-        private void RenderLayout(D2D1DeviceContext context,  bool focused, DWriteTextLayout layout, in Rect layoutRect)
+        private void RenderLayout(D2D1DeviceContext context, bool focused, DWriteTextLayout layout, in Rect layoutRect)
         {
             D2D1Brush[] brushes = _brushes;
             PointF viewportPoint = ViewportPoint;
@@ -885,20 +864,14 @@ namespace ConcreteUI.Controls
             if (caretIndex <= 0)
                 return;
 
-            DWriteTextLayout layout = CreateVirtualTextLayout();
-            if (layout is null)
-                return;
+            using DWriteTextLayout layout = CreateVirtualTextLayout();
             layout.HitTestTextPosition(MathHelper.MakeUnsigned(caretIndex), false, out float pointX, out float pointY);
 
             pointY -= 5;
             if (pointY < 0)
-            {
-                layout.Dispose();
                 return;
-            }
 
-            int pos = MathHelper.MakeSigned(layout.HitTestPoint(pointX, pointY, out SysBool isTrailingHit, out SysBool isInside).TextPosition);
-            layout.Dispose();
+            int pos = MathHelper.MakeSigned(layout.HitTestPoint(pointX, pointY, out bool isTrailingHit, out bool isInside).TextPosition);
             if (isTrailingHit)
             {
                 int textLength = Text.Length;
@@ -922,18 +895,12 @@ namespace ConcreteUI.Controls
             int textLength = Text.Length;
             if (caretIndex >= textLength)
                 return;
-            DWriteTextLayout layout = CreateVirtualTextLayout();
-            if (layout is null)
-                return;
+            using DWriteTextLayout layout = CreateVirtualTextLayout();
             DWriteHitTestMetrics metrics = layout.HitTestTextPosition(MathHelper.MakeUnsigned(caretIndex), false, out float pointX, out float pointY);
             pointY += metrics.Height + 5;
             if (pointY < 0)
-            {
-                layout.Dispose();
                 return;
-            }
-            int pos = MathHelper.MakeSigned(layout.HitTestPoint(pointX, pointY, out SysBool isTrailingHit, out SysBool isInside).TextPosition);
-            layout.Dispose();
+            int pos = MathHelper.MakeSigned(layout.HitTestPoint(pointX, pointY, out bool isTrailingHit, out bool isInside).TextPosition);
             if (isTrailingHit)
             {
                 if (pos < textLength - 1)
@@ -965,20 +932,14 @@ namespace ConcreteUI.Controls
             _this.Update();
         }
 
-        private int GetCaretIndexFromPoint(PointF point, out SysBool isInside)
+        private int GetCaretIndexFromPoint(PointF point, out bool isInside)
         {
             PointF viewportPoint = ViewportPoint;
             float viewportLeft = MathF.Floor(Location.X + UIConstants.ElementMarginHalf) - viewportPoint.X;
             float viewportTop = MathF.Floor(Location.Y + UIConstants.ElementMarginHalf) - viewportPoint.Y;
             string text = _text;
-            DWriteTextLayout layout = CreateVirtualTextLayout();
-            if (layout is null)
-            {
-                isInside = false;
-                return 0;
-            }
-            int result = MathHelper.MakeSigned(layout.HitTestPoint(point.X - viewportLeft, point.Y - viewportTop, out SysBool isTrailingHit, out isInside).TextPosition);
-            layout.Dispose();
+            using DWriteTextLayout layout = CreateVirtualTextLayout();
+            int result = MathHelper.MakeSigned(layout.HitTestPoint(point.X - viewportLeft, point.Y - viewportTop, out bool isTrailingHit, out isInside).TextPosition);
             if (isTrailingHit)
             {
                 int textLength = text.Length;
@@ -1021,7 +982,7 @@ namespace ConcreteUI.Controls
                 {
                     this.clicks = clicks = 1;
                 }
-                int caretIndex = GetCaretIndexFromPoint(args.Location, out SysBool isInside);
+                int caretIndex = GetCaretIndexFromPoint(args.Location, out bool isInside);
                 switch (clicks)
                 {
                     case 1:
@@ -1143,9 +1104,8 @@ namespace ConcreteUI.Controls
                 PointF location = args.Location;
                 if (!_multiLine)
                 {
-                    DWriteTextLayout layout = CreateVirtualTextLayout();
+                    using DWriteTextLayout layout = CreateVirtualTextLayout();
                     location.Y = Location.Y + 3 + layout.GetMetrics().Top;
-                    layout.Dispose();
                 }
                 int newCaretIndex = GetCaretIndexFromPoint(location, out _);
                 if (CaretIndex != newCaretIndex)
@@ -1184,8 +1144,6 @@ namespace ConcreteUI.Controls
                 }
             }
             _caretTimer.Dispose();
-            DisposeHelper.SwapDispose(ref _format);
-            DisposeHelper.SwapDispose(ref _watermarkFormat);
             DisposeHelper.SwapDispose(ref _layout);
             DisposeHelper.SwapDispose(ref _watermarkLayout);
             base.DisposeCore(disposing);

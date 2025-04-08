@@ -6,6 +6,7 @@ using ConcreteUI.Graphics.Native;
 
 using LocalsInit;
 
+using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Graphics
@@ -16,48 +17,62 @@ namespace ConcreteUI.Graphics
 
         private readonly IRenderingControl _control;
         private readonly RenderingThread _thread;
+        private readonly ManualResetEvent _waitForRenderingTrigger;
 
         private bool _disposed;
-        private long _state;
+        private long _state, _locked;
 
         public RenderingController(IRenderingControl control)
         {
             _control = control;
             _state = (long)RenderingFlags._FlagAllTrue;
             _thread = new RenderingThread(this, GetMonitorFpsStatus());
+            _waitForRenderingTrigger = new ManualResetEvent(true);
         }
 
         public void RequestUpdate(bool force)
         {
-            long oldState = InterlockedHelper.Or(ref _state, force ? (long)RenderingFlags.RedrawAll : (long)RenderingFlags.None);
-            if ((oldState & (long)RenderingFlags.Locked) == (long)RenderingFlags.Locked)
+            if (InterlockedHelper.Read(ref _locked) != 0L)
                 return;
+            if (force)
+                InterlockedHelper.Or(ref _state, (long)RenderingFlags.RedrawAll);
             _thread.DoRender();
         }
 
         public void RequestResize()
         {
-            long oldState = InterlockedHelper.Or(ref _state, (long)RenderingFlags.ResizeAndRedrawAll);
-            if ((oldState & (long)RenderingFlags.Locked) == (long)RenderingFlags.Locked)
+            if (InterlockedHelper.Read(ref _locked) != 0L)
                 return;
+            InterlockedHelper.Or(ref _state, (long)RenderingFlags.ResizeAndRedrawAll);
             _thread.DoRender();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RenderCore()
         {
+            if (InterlockedHelper.Read(ref _locked) != 0L)
+                return;
+            _waitForRenderingTrigger.Reset();
             _control.Render((RenderingFlags)Interlocked.Exchange(ref _state, 0L));
+            _waitForRenderingTrigger.Set();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Lock() => InterlockedHelper.Or(ref _state, (long)RenderingFlags.Locked);
+        public void Lock() => Interlocked.Exchange(ref _locked, Booleans.TrueLong);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Unlock()
         {
-            long oldState = InterlockedHelper.And(ref _state, ~(long)RenderingFlags.Locked);
-            if ((oldState & (long)RenderingFlags.Locked) == (long)RenderingFlags.Locked)
-                _thread.DoRender();
+            if (Interlocked.CompareExchange(ref _locked, Booleans.FalseLong, Booleans.TrueLong) != Booleans.TrueLong)
+                return;
+            InterlockedHelper.Or(ref _state, (long)RenderingFlags.ResizeAndRedrawAll);
+            _thread.DoRender();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WaitForRendering()
+        {
+            _waitForRenderingTrigger.WaitOne();
         }
 
         [LocalsInit(false)]

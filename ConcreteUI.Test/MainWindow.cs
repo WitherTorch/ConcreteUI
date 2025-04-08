@@ -10,8 +10,6 @@ using ConcreteUI.Window;
 
 using WitherTorch.Common.Collections;
 
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
-
 using FormStartPosition = System.Windows.Forms.FormStartPosition;
 
 namespace ConcreteUI.Test
@@ -21,7 +19,7 @@ namespace ConcreteUI.Test
         private readonly UnwrappableList<UIElement>[] _elementLists = new UnwrappableList<UIElement>[3];
         private InputMethod _ime;
 
-        public MainWindow(CoreWindow parent) : base(parent, ["頁面A"])
+        public MainWindow(CoreWindow parent) : base(parent, ["頁面A", "頁面B", "頁面C"])
         {
             InitializeBaseInformation();
         }

@@ -820,7 +820,11 @@ namespace ConcreteUI.Window
         protected void ApplyTheme(ThemeResourceProvider provider)
         {
             RenderingController controller = _controller;
-            controller?.Lock();
+            if (controller is not null)
+            {
+                controller.Lock();
+                controller.WaitForRendering();
+            }
             DisposeHelper.SwapDisposeInterlocked(ref _resourceProvider, provider);
             ApplyThemeCore(provider);
             ConcreteUtils.ResetBlur(this);

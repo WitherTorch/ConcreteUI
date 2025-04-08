@@ -13,7 +13,6 @@ namespace ConcreteUI.Controls
 {
     partial class UIElementHelper
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnMouseDownForElements(IEnumerable<UIElement> elements, in MouseInteractEventArgs args, ref bool allowRegionalMouseEvent)
         {
             switch (elements)
@@ -87,7 +86,6 @@ namespace ConcreteUI.Controls
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnMouseUpForElements(IEnumerable<UIElement> elements, in MouseInteractEventArgs args)
         {
             switch (elements)
@@ -150,7 +148,6 @@ namespace ConcreteUI.Controls
                 mouseEvents.OnMouseUp(args);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnMouseMoveForElements(IEnumerable<UIElement> elements, in MouseInteractEventArgs args, ref Cursor predicatedCursor)
         {
             switch (elements)
@@ -215,7 +212,6 @@ namespace ConcreteUI.Controls
                 predicatedCursor = predicator.PredicatedCursor;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnMouseScrollForElements(IEnumerable<UIElement> elements, in MouseInteractEventArgs args)
         {
             switch (elements)

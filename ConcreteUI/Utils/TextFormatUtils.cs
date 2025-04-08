@@ -23,8 +23,6 @@ namespace ConcreteUI.Utils
 
         public static DWriteTextLayout CreateTextLayout(string text, string fontName, TextAlignment alignment, float fontSize)
         {
-            if (string.IsNullOrEmpty(text))
-                return null;
             DWriteFactory factory = SharedResources.DWriteFactory;
             DWriteTextFormat format = factory.CreateTextFormat(fontName, fontSize);
             SetAlignment(format, alignment);
@@ -35,8 +33,6 @@ namespace ConcreteUI.Utils
 
         public static DWriteTextLayout CreateTextLayout(string text, string fontName, TextAlignment alignment, float fontSize, DWriteFontStyle style)
         {
-            if (string.IsNullOrEmpty(text))
-                return null;
             DWriteFactory factory = SharedResources.DWriteFactory;
             DWriteTextFormat format = factory.CreateTextFormat(fontName, fontSize, fontStyle: style);
             SetAlignment(format, alignment);
