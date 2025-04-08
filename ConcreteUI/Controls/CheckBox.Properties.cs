@@ -1,5 +1,8 @@
 ﻿using System.Runtime.CompilerServices;
 using System;
+using System.Threading;
+using WitherTorch.Common;
+using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
@@ -16,7 +19,22 @@ namespace ConcreteUI.Controls
                     return;
                 _checkState = value;
                 CheckedChanged?.Invoke(this, EventArgs.Empty);
-                Update(CheckBoxDrawType.RedrawCheckBox);
+                Update(RedrawType.RedrawCheckBox);
+            }
+        }
+
+        public float FontSize
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _fontSize;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                if (_fontSize == value) 
+                    return;
+                _fontSize = value;
+                DisposeHelper.SwapDisposeInterlocked(ref _layout);
+                Update(RenderObjectUpdateFlags.Format);
             }
         }
 
@@ -27,9 +45,10 @@ namespace ConcreteUI.Controls
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
+                if (ReferenceEquals(_text, value))
+                    return;
                 _text = value;
-                _generateLayout = true;
-                Update();
+                Update(RenderObjectUpdateFlags.Layout);
             }
         }
     }

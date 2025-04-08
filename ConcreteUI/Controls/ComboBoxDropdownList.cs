@@ -46,7 +46,7 @@ namespace ConcreteUI.Controls
 
         protected override void ApplyThemeCore(ThemeResourceProvider provider)
         {
-            base.ApplyTheme(provider);
+            base.ApplyThemeCore(provider);
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
         }
 

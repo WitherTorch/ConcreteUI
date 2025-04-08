@@ -69,10 +69,10 @@ namespace ConcreteUI.Controls
             _caretState = true;
             _caretIndex = 0;
             _compositionCaretIndex = 0;
-            _rawUpdateFlags = -1L;
+            _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
             _text = string.Empty;
             _watermark = string.Empty;
-            _fontSize = 14;
+            _fontSize = UIConstants.DefaultFontSize;
             _passwordChar = '\0';
             ScrollBarType = ScrollBarType.AutoVertial;
             SurfaceSize = new Point(int.MaxValue, 0);
@@ -86,7 +86,7 @@ namespace ConcreteUI.Controls
             _fontName = provider.FontName;
             DisposeHelper.SwapDispose(ref _layout);
             DisposeHelper.SwapDispose(ref _watermarkLayout);
-            Update(RenderObjectUpdateFlags.All);
+            Update(RenderObjectUpdateFlags.Format);
         }
 
         protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
@@ -164,8 +164,6 @@ namespace ConcreteUI.Controls
         [Inline(InlineBehavior.Remove)]
         private void Update(RenderObjectUpdateFlags flags)
         {
-            if (Renderer.IsInitializingElements())
-                return;
             InterlockedHelper.Or(ref _rawUpdateFlags, (long)flags);
             Update();
         }
@@ -184,7 +182,7 @@ namespace ConcreteUI.Controls
             if ((flags & RenderObjectUpdateFlags.Layout) == RenderObjectUpdateFlags.Layout)
             {
                 DWriteTextFormat format = layout;
-                if (format is null || format.IsDisposed)
+                if (CheckFormatIsNotAvailable(format, flags))
                     format = TextFormatUtils.CreateTextFormat(_alignment, _fontName, _fontSize);
 
                 string text = _text;
@@ -215,11 +213,24 @@ namespace ConcreteUI.Controls
             if ((flags & RenderObjectUpdateFlags.WatermarkLayout) == RenderObjectUpdateFlags.WatermarkLayout)
             {
                 DWriteTextFormat format = watermarkLayout;
-                if (format is null || format.IsDisposed)
+                if (CheckFormatIsNotAvailable(format, flags))
                     format = TextFormatUtils.CreateTextFormat(_alignment, _fontName, _fontSize, DWriteFontStyle.Oblique);
                 watermarkLayout = SharedResources.DWriteFactory.CreateTextLayout(_watermark ?? string.Empty, format);
                 format.Dispose();
             }
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static bool CheckFormatIsNotAvailable(DWriteTextFormat format, RenderObjectUpdateFlags flags)
+        {
+            if (format is null || format.IsDisposed)
+                return true;
+            if ((flags & RenderObjectUpdateFlags.Format) ==  RenderObjectUpdateFlags.Format)
+            {
+                format.Dispose();
+                return true;
+            }
+            return false;
         }
 
         [Inline(InlineBehavior.Remove)]

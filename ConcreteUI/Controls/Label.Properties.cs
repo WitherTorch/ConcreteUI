@@ -2,6 +2,8 @@
 
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 
+using WitherTorch.Common.Helpers;
+
 namespace ConcreteUI.Controls
 {
     partial class Label
@@ -16,7 +18,8 @@ namespace ConcreteUI.Controls
                 if (_alignment == value)
                     return;
                 _alignment = value;
-                Update(RenderObjectUpdateFlags.FormatAndLayout);
+                DisposeHelper.SwapDisposeInterlocked(ref _layout);
+                Update(RenderObjectUpdateFlags.Format);
             }
         }
 
@@ -30,7 +33,8 @@ namespace ConcreteUI.Controls
                 if (_fontSize == value)
                     return;
                 _fontSize = value;
-                Update(RenderObjectUpdateFlags.FormatAndLayout);
+                DisposeHelper.SwapDisposeInterlocked(ref _layout);
+                Update(RenderObjectUpdateFlags.Format);
             }
         }
 

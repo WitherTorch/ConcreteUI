@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Threading;
-
-using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
 
@@ -24,7 +20,7 @@ namespace ConcreteUI.Controls
                 if (_enabled == value)
                     return;
                 _enabled = value;
-                    _dropdownList.Close();
+                _dropdownList.Close();
                 if (_state != ButtonTriState.None)
                     _state = ButtonTriState.None;
                 Update();
@@ -70,7 +66,7 @@ namespace ConcreteUI.Controls
                 if (_fontSize == value)
                     return;
                 _fontSize = value;
-                Update(RenderObjectUpdateFlags.FormatAndLayout);
+                Update(RenderObjectUpdateFlags.Format);
             }
         }
 

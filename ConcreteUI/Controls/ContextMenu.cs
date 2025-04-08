@@ -7,6 +7,7 @@ using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
+using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
@@ -48,7 +49,7 @@ namespace ConcreteUI.Controls
             int count = items.Length;
             float itemHeight = 0f, itemWidth = 50f;
             DWriteFactory factory = SharedResources.DWriteFactory;
-            DWriteTextFormat format = factory.CreateTextFormat(provider.FontName, 14);
+            DWriteTextFormat format = factory.CreateTextFormat(provider.FontName, UIConstants.DefaultFontSize);
             format.ParagraphAlignment = DWriteParagraphAlignment.Center;
             DWriteTextLayout[] layouts = new DWriteTextLayout[count];
             float lineWidth = Renderer.GetBaseLineWidth();

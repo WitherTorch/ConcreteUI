@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 
+using WitherTorch.Common.Helpers;
+
 namespace ConcreteUI.Controls
 {
     partial class Button
@@ -14,7 +16,8 @@ namespace ConcreteUI.Controls
                 if (_fontSize == value)
                     return;
                 _fontSize = value;
-                Update(RenderObjectUpdateFlags.FormatAndLayout);
+                DisposeHelper.SwapDisposeInterlocked(ref _layout);
+                Update(RenderObjectUpdateFlags.Format);
             }
         }
 

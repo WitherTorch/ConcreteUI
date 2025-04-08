@@ -5,6 +5,7 @@ using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
+using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
@@ -31,7 +32,6 @@ namespace ConcreteUI.Controls
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
 
-        private DWriteTextFormat _format;
         private DWriteTextLayout _layout;
         private string _text, _fontName;
 
@@ -41,24 +41,23 @@ namespace ConcreteUI.Controls
 
         public Button(IRenderer renderer) : base(renderer)
         {
-            _fontSize = 14;
-            _rawUpdateFlags = -1L;
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private void Update(RenderObjectUpdateFlags flags)
-        {
-            if (Renderer.IsInitializingElements())
-                return;
-            InterlockedHelper.Or(ref _rawUpdateFlags, (long)flags);
-            Update();
+            _fontSize = UIConstants.DefaultFontSize;
+            _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
         }
 
         protected override void ApplyThemeCore(ThemeResourceProvider provider)
         {
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
             _fontName = provider.FontName;
-			Update(RenderObjectUpdateFlags.FormatAndLayout);
+            DisposeHelper.SwapDisposeInterlocked(ref _layout);
+            Update(RenderObjectUpdateFlags.Format);
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private void Update(RenderObjectUpdateFlags flags)
+        {
+            InterlockedHelper.Or(ref _rawUpdateFlags, (long)flags);
+            Update();
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -66,33 +65,41 @@ namespace ConcreteUI.Controls
             => (RenderObjectUpdateFlags)Interlocked.Exchange(ref _rawUpdateFlags, default);
 
         [Inline(InlineBehavior.Remove)]
-        private DWriteTextLayout GetTextLayout()
+        private DWriteTextLayout GetTextLayout(RenderObjectUpdateFlags flags)
         {
-            RenderObjectUpdateFlags flags = GetAndCleanRenderObjectUpdateFlags();
-            if ((flags & RenderObjectUpdateFlags.Layout) != RenderObjectUpdateFlags.Layout)
-                return _layout;
-            DWriteTextFormat format;
-            if ((flags & RenderObjectUpdateFlags.FormatAndLayout) == RenderObjectUpdateFlags.FormatAndLayout)
+            DWriteTextLayout layout = Interlocked.Exchange(ref _layout, null);
+
+            if ((flags & RenderObjectUpdateFlags.Layout) == RenderObjectUpdateFlags.Layout)
             {
-                format = TextFormatUtils.CreateTextFormat(TextAlignment.MiddleCenter, _fontName, _fontSize);
-                DisposeHelper.SwapDispose(ref _format, format);
+                DWriteTextFormat format = layout;
+                if (CheckFormatIsNotAvailable(format, flags))
+                    format = TextFormatUtils.CreateTextFormat(TextAlignment.MiddleCenter, _fontName, _fontSize);
+                string text = _text;
+                if (string.IsNullOrEmpty(text))
+                    layout = null;
+                else
+                    layout = SharedResources.DWriteFactory.CreateTextLayout(text, format);
+                format.Dispose();
             }
-            else
-            {
-                format = _format;
-            }
-            string text = _text;
-            DWriteTextLayout layout;
-            if (string.IsNullOrEmpty(text))
-                layout = null;
-            else
-                layout = SharedResources.DWriteFactory.CreateTextLayout(_text, format);
-            DisposeHelper.SwapDispose(ref _layout, layout);
             return layout;
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static bool CheckFormatIsNotAvailable(DWriteTextFormat format, RenderObjectUpdateFlags flags)
+        {
+            if (format is null || format.IsDisposed)
+                return true;
+            if ((flags & RenderObjectUpdateFlags.Format) == RenderObjectUpdateFlags.Format)
+            {
+                format.Dispose();
+                return true;
+            }
+            return false;
         }
 
         protected override bool RenderCore(DirtyAreaCollector collector)
         {
+            RenderObjectUpdateFlags flags = GetAndCleanRenderObjectUpdateFlags();
             IRenderer renderer = Renderer;
             D2D1DeviceContext deviceContext = renderer.GetDeviceContext();
             float lineWidth = renderer.GetBaseLineWidth();
@@ -118,7 +125,7 @@ namespace ConcreteUI.Controls
                 default:
                     break;
             }
-            DWriteTextLayout layout = GetTextLayout();
+            DWriteTextLayout layout = GetTextLayout(flags);
             if (layout is null)
             {
                 deviceContext.PopAxisAlignedClip();
@@ -130,6 +137,7 @@ namespace ConcreteUI.Controls
             layout.MaxHeight = bounds.Height;
             deviceContext.DrawTextLayout(bounds.TopLeft, layout, brush, D2D1DrawTextOptions.Clip);
             deviceContext.PopAxisAlignedClip();
+            DisposeHelper.NullSwapOrDispose(ref _layout, layout);
             return true;
         }
 
@@ -138,7 +146,6 @@ namespace ConcreteUI.Controls
             if (_disposed)
                 return;
             _disposed = true;
-            DisposeHelper.SwapDispose(ref _format);
             DisposeHelper.SwapDispose(ref _layout);
         }
 

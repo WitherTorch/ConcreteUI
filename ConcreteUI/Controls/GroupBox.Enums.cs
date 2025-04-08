@@ -4,13 +4,21 @@ namespace ConcreteUI.Controls
 {
     partial class GroupBox
     {
+        private enum RedrawType : long
+        {
+            NoRedraw,
+            RedrawText,
+            RedrawAllContent
+        }
+
         [Flags]
-        private enum RenderObjectUpdateFlags
+        private enum RenderObjectUpdateFlags : long
         {
             None = 0,
-            Title = 0b01,
-            Text = 0b10,
-            All = Title | Text,
+            Title = 0b001,
+            Text = 0b010,
+            Format = 0b111,
+            FlagsAllTrue = -1L
         }
 
         private enum Brush

@@ -17,6 +17,8 @@ namespace ConcreteUI.Internals
         public const float DefaultFontSizeInPoints = DefaultFontSize * FontSizeDipToPointsMultiplier;
         public const float FontSizeDipToPointsMultiplier = 72f / 96f;
         public const float DescriptionFontSize = 12f;
+        public const float WizardWindowTitleFontSize = 22f;
+        public const float WizardWindowTitleDescriptionFontSize = 14f;
 
         //Layout Constants
         public const int ElementMargin = 6;

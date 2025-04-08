@@ -125,7 +125,7 @@ namespace ConcreteUI.Window
                 if (format is null)
                 {
                     string fontName = Theme.FontName;
-                    format = factory.CreateTextFormat(fontName, 22);
+                    format = factory.CreateTextFormat(fontName, UIConstants.WizardWindowTitleFontSize);
                     format.WordWrapping = DWriteWordWrapping.Wrap;
                 }
                 titleLayout = factory.CreateTextLayout(_title ?? string.Empty, format);
@@ -138,7 +138,7 @@ namespace ConcreteUI.Window
                 if (format is null)
                 {
                     string fontName = Theme.FontName;
-                    format = factory.CreateTextFormat(fontName, 14);
+                    format = factory.CreateTextFormat(fontName, UIConstants.WizardWindowTitleDescriptionFontSize);
                     format.WordWrapping = DWriteWordWrapping.Wrap;
                 }
                 titleDescriptionLayout = factory.CreateTextLayout(_titleDescription ?? string.Empty, format);

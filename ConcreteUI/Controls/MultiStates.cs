@@ -6,10 +6,4 @@
         Hovered,
         Pressed
     }
-    public enum CheckBoxFourState
-    {
-        None,
-        Hovered,
-        Pressed
-    }
 }

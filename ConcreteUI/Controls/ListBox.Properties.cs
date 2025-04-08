@@ -2,7 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
+using WitherTorch.Common;
 using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
@@ -90,6 +92,7 @@ namespace ConcreteUI.Controls
                 Update();
             }
         }
+
         public IList<string> Items
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -106,6 +109,7 @@ namespace ConcreteUI.Controls
                     return;
                 _fontSize = value;
                 DisposeHelper.SwapDisposeInterlocked(ref _format);
+                Interlocked.Exchange(ref _recalcFormat, Booleans.TrueLong);
                 if (Items.Count > 0)
                     Update();
             }

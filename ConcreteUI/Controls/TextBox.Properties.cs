@@ -35,7 +35,9 @@ namespace ConcreteUI.Controls
                 if (_alignment == value)
                     return;
                 _alignment = value;
-                Update(RenderObjectUpdateFlags.All);
+                DisposeHelper.SwapDisposeInterlocked(ref _layout);
+                DisposeHelper.SwapDisposeInterlocked(ref _watermarkLayout);
+                Update(RenderObjectUpdateFlags.Format);
             }
         }
 
@@ -49,7 +51,9 @@ namespace ConcreteUI.Controls
                 if (_fontSize == value)
                     return;
                 _fontSize = value;
-                Update(RenderObjectUpdateFlags.All);
+                DisposeHelper.SwapDisposeInterlocked(ref _layout);
+                DisposeHelper.SwapDisposeInterlocked(ref _watermarkLayout);
+                Update(RenderObjectUpdateFlags.Format);
             }
         }
 

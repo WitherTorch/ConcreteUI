@@ -10,11 +10,13 @@ using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.Direct2D.Geometry;
 using ConcreteUI.Graphics.Native.DirectWrite;
+using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
 using InlineMethod;
 
+using WitherTorch.Common;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
@@ -55,6 +57,7 @@ namespace ConcreteUI.Controls
         private Rectangle _checkBoxBounds;
         private ListBoxMode _chooseMode;
         private ButtonTriState _buttonState;
+        private long _recalcFormat;
         private float _fontSize;
         private int _itemHeight, _selectedIndex;
 
@@ -64,8 +67,9 @@ namespace ConcreteUI.Controls
             _items = new ObservableList<string>();
             _items.Updated += Items_Updated;
             ScrollBarType = ScrollBarType.AutoVertial;
-            _fontSize = 14;
+            _fontSize = UIConstants.DefaultFontSize;
             _selectedIndex = -1;
+            _recalcFormat = Booleans.TrueLong;
         }
 
         protected override void ApplyThemeCore(ThemeResourceProvider provider)
@@ -75,6 +79,7 @@ namespace ConcreteUI.Controls
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
             UIElementHelper.ApplyTheme(provider, _checkBoxBrushes, _checkBoxBrushNames, (int)CheckBoxBrush._Last);
             DisposeHelper.SwapDisposeInterlocked(ref _format);
+            Interlocked.Exchange(ref _recalcFormat, Booleans.TrueLong);
             using DWriteTextFormat textFormat = SharedResources.DWriteFactory.CreateTextFormat(_fontName, _fontSize);
             textFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
             Interlocked.Exchange(ref _itemHeight, MathI.Ceiling(GraphicsUtils.MeasureTextHeight("Ty", textFormat)) + 2);
@@ -98,12 +103,24 @@ namespace ConcreteUI.Controls
 
         protected override void Scrolling(int rollStep, bool update = true) => base.Scrolling(rollStep / 4, update);
 
+        [Inline(InlineBehavior.Remove)]
+        private bool CheckFormatIsNotAvailable(DWriteTextFormat format)
+        {
+            if (Interlocked.Exchange(ref _recalcFormat, Booleans.FalseLong) != Booleans.FalseLong)
+            {
+                format?.Dispose();
+                return true;
+            }
+            return format is null || format.IsDisposed;
+        }
+
         protected override bool RenderContent(DirtyAreaCollector collector)
         {
             D2D1DeviceContext context = Renderer.GetDeviceContext();
             D2D1Brush[] brushes = _brushes;
-            DWriteTextFormat format = Interlocked.Exchange(ref _format, null) ?? BuildTextFormat();
-
+            DWriteTextFormat format = Interlocked.Exchange(ref _format, null);
+            if (CheckFormatIsNotAvailable(format))
+                format = BuildTextFormat();
             ListBoxMode mode = Mode;
             Rect bounds = ContentBounds;
             RectangleF checkBoxBounds = _checkBoxBounds;

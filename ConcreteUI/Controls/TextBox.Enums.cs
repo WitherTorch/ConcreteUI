@@ -5,12 +5,13 @@ namespace ConcreteUI.Controls
     partial class TextBox
     {
         [Flags]
-        private enum RenderObjectUpdateFlags
+        private enum RenderObjectUpdateFlags : long
         {
             None = 0,
             Layout = 0b001,
             WatermarkLayout = 0b010,
-            All = Layout | WatermarkLayout
+            Format = 0b111,
+            FlagsAllTrue = -1L
         }
 
         private enum Brush
