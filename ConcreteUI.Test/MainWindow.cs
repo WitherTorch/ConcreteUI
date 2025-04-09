@@ -8,7 +8,6 @@ using ConcreteUI.Controls;
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Input;
 using ConcreteUI.Theme;
-using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
 using WitherTorch.Common.Collections;
@@ -20,8 +19,8 @@ namespace ConcreteUI.Test
     internal sealed class MainWindow : TabbedWindow
     {
         private readonly UnwrappableList<UIElement>[] _elementLists = new UnwrappableList<UIElement>[3];
-        private InputMethod _ime;
-        private ProgressBar _progressBar;
+        private InputMethod? _ime;
+        private ProgressBar? _progressBar;
 
         public MainWindow(CoreWindow? parent) : base(parent, ["頁面A", "頁面B", "頁面C"])
         {
@@ -34,7 +33,7 @@ namespace ConcreteUI.Test
             MinimumSize = new Size(640, 560);
             Text = nameof(MainWindow);
             StartPosition = FormStartPosition.CenterScreen;
-            Stream? stream = Assembly.GetEntryAssembly().GetManifestResourceStream("ConcreteUI.Test.app-icon.ico");
+            Stream? stream = Assembly.GetEntryAssembly()?.GetManifestResourceStream("ConcreteUI.Test.app-icon.ico");
             if (stream is not null)
             {
                 Icon = new Icon(stream);
@@ -118,7 +117,7 @@ namespace ConcreteUI.Test
             ComboBox comboBox = new ComboBox(this)
             {
                 LeftCalculation = new GroupBox.ContentXCalculation(groupBox),
-                TopCalculation = new ElementDependedCalculation(groupBox.FirstChild, LayoutProperty.Bottom, MarginType.Outside),
+                TopCalculation = new ElementDependedCalculation(groupBox.FirstChild!, LayoutProperty.Bottom, MarginType.Outside),
                 WidthCalculation = new FixedCalculation(200)
             }.WithAutoHeightCalculation();
             comboBox.RequestDropdownListOpening += ComboBox_RequestDropdownListOpening;
@@ -165,22 +164,22 @@ namespace ConcreteUI.Test
             _elementLists[2] = new();
         }
 
-        private void ComboBox_RequestDropdownListOpening(object sender, DropdownListEventArgs e)
+        private void ComboBox_RequestDropdownListOpening(object? sender, DropdownListEventArgs e)
         {
             ChangeOverlayElement(e.DropdownList);
         }
 
         private void Button_Click(UIElement sender, in MouseInteractEventArgs args)
         {
-            if (Theme.IsDarkTheme)
+            if (CurrentTheme?.IsDarkTheme ?? false)
             {
-                if (!ThemeManager.TryGetThemeContext("#light", out IThemeContext themeContext))
+                if (!ThemeManager.TryGetThemeContext("#light", out IThemeContext? themeContext))
                     return;
                 ThemeManager.CurrentTheme = themeContext;
             }
             else
             {
-                if (!ThemeManager.TryGetThemeContext("#dark", out IThemeContext themeContext))
+                if (!ThemeManager.TryGetThemeContext("#dark", out IThemeContext? themeContext))
                     return;
                 ThemeManager.CurrentTheme = themeContext;
             }
@@ -188,12 +187,12 @@ namespace ConcreteUI.Test
 
         private void LeftButton_Click(UIElement sender, in MouseInteractEventArgs args)
         {
-            _progressBar.Value -= 1.0f;
+            _progressBar!.Value -= 1.0f;
         }
 
         private void RightButton_Click(UIElement sender, in MouseInteractEventArgs args)
         {
-            _progressBar.Value += 1.0f;
+            _progressBar!.Value += 1.0f;
         }
 
         protected override void Dispose(bool disposing)
@@ -211,7 +210,7 @@ namespace ConcreteUI.Test
                     }
                 }
             }
-            _ime.Dispose();
+            _ime?.Dispose();
         }
     }
 }

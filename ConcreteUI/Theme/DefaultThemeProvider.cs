@@ -1,4 +1,6 @@
-﻿using WitherTorch.Common.Extensions;
+﻿using System.Diagnostics.CodeAnalysis;
+
+using WitherTorch.Common.Extensions;
 
 namespace ConcreteUI.Theme
 {
@@ -12,7 +14,7 @@ namespace ConcreteUI.Theme
 
         private DefaultThemeProvider() { }
 
-        public bool TryGetTheme(string themeId, out IThemeContext theme)
+        public bool TryGetTheme(string themeId, [NotNullWhen(true)] out IThemeContext? theme)
         {
             theme = themeId.ToLowerAscii() switch
             {

@@ -96,9 +96,9 @@ namespace ConcreteUI.Controls
             {
                 DWriteTextFormat? format = layout;
                 if (CheckFormatIsNotAvailable(format, flags))
-                    format = TextFormatUtils.CreateTextFormat(TextAlignment.MiddleLeft, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
+                    format = TextFormatHelper.CreateTextFormat(TextAlignment.MiddleLeft, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
                 string text = _text;
-                if (string.IsNullOrEmpty(text))
+                if (StringHelper.IsNullOrEmpty(text))
                     layout = null;
                 else
                     layout = SharedResources.DWriteFactory.CreateTextLayout(text, format);

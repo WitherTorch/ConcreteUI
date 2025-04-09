@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
@@ -31,7 +32,7 @@ namespace ConcreteUI.Theme
 
         public bool TryGetColor(string node, out D2D1ColorF color)
         {
-            if (!_themeContext.TryGetColorFactory(node, out IThemedColorFactory factory))
+            if (!_themeContext.TryGetColorFactory(node, out IThemedColorFactory? factory))
             {
                 color = default;
                 return false;
@@ -40,12 +41,12 @@ namespace ConcreteUI.Theme
             return true;
         }
 
-        public bool TryGetBrush(string node, out D2D1Brush brush)
+        public bool TryGetBrush(string node, [NotNullWhen(true)] out D2D1Brush? brush)
         {
             Dictionary<string, D2D1Brush> brushDict = _brushDict;
             if (brushDict.TryGetValue(node, out brush)) 
                 return true;
-            if (_themeContext.TryGetBrushFactory(node, out IThemedBrushFactory factory))
+            if (_themeContext.TryGetBrushFactory(node, out IThemedBrushFactory? factory))
             {
                 brush = factory.CreateBrushByMaterial(_deviceContext, _material);
                 brushDict.Add(node, brush);

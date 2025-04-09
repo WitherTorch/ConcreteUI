@@ -8,7 +8,7 @@ namespace ConcreteUI.Native
     [StructLayout(LayoutKind.Sequential)]
     public struct DWMBlurBehind
     {
-        public DWMBlurBehindFlags dwFlags;
+        public DwmBlurBehindFlags dwFlags;
         public SysBool fEnable;
         public IntPtr hRgnBlur;
         public SysBool fTransitionOnMaximized;
@@ -18,7 +18,7 @@ namespace ConcreteUI.Native
             fEnable = enabled;
             hRgnBlur = IntPtr.Zero;
             fTransitionOnMaximized = false;
-            dwFlags = DWMBlurBehindFlags.Enable;
+            dwFlags = DwmBlurBehindFlags.Enable;
         }
 
         public System.Drawing.Region Region
@@ -32,14 +32,14 @@ namespace ConcreteUI.Native
             set
             {
                 fTransitionOnMaximized = value;
-                dwFlags |= DWMBlurBehindFlags.TransitionMaximized;
+                dwFlags |= DwmBlurBehindFlags.TransitionMaximized;
             }
         }
 
         public void SetRegion(System.Drawing.Graphics graphics, System.Drawing.Region region)
         {
             hRgnBlur = region.GetHrgn(graphics);
-            dwFlags |= DWMBlurBehindFlags.BlurRegion;
+            dwFlags |= DwmBlurBehindFlags.BlurRegion;
         }
     }
 }

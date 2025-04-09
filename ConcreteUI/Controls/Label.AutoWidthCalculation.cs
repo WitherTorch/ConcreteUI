@@ -2,7 +2,7 @@
 
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Utils;
+using ConcreteUI.Internals;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -28,7 +28,7 @@ namespace ConcreteUI.Controls
             {
             }
 
-            public UIElement DependedElement => _dependRef.TryGetTarget(out Label result) ? result : null;
+            public UIElement? DependedElement => _dependRef.TryGetTarget(out Label? result) ? result : null;
 
             public LayoutProperty DependedProperty => LayoutProperty.Height;
 
@@ -62,9 +62,9 @@ namespace ConcreteUI.Controls
                     _value = 0;
                 }
 
-                public static CalculationContext TryCreate(WeakReference<Label> dependRef, int minWidth, int maxWidth)
+                public static CalculationContext? TryCreate(WeakReference<Label> dependRef, int minWidth, int maxWidth)
                 {
-                    if (!dependRef.TryGetTarget(out Label depend))
+                    if (!dependRef.TryGetTarget(out Label? depend))
                         return null;
                     return new CalculationContext(depend, minWidth, maxWidth);
                 }
@@ -92,10 +92,10 @@ namespace ConcreteUI.Controls
 
                 private int DoCalc(Label label, int dependedValue)
                 {
-                    string text = label._text;
-                    if (string.IsNullOrEmpty(text))
+                    string? text = label._text;
+                    if (StringHelper.IsNullOrEmpty(text))
                         return MathHelper.Max(_minWidth, 0);
-                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, label._fontName, label._alignment, label._fontSize);
+                    DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(text, NullSafetyHelper.ThrowIfNull(label._fontName), label._alignment, label._fontSize);
                     if (layout is null)
                         return MathHelper.Max(_minWidth, 0);
                     layout.MaxHeight = dependedValue;

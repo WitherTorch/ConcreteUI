@@ -49,9 +49,9 @@ namespace ConcreteUI.Controls
                     _value = 0;
                 }
 
-                public static CalculationContext TryCreate(WeakReference<GroupBox> reference, int offset)
+                public static CalculationContext? TryCreate(WeakReference<GroupBox> reference, int offset)
                 {
-                    if (!reference.TryGetTarget(out GroupBox element))
+                    if (!reference.TryGetTarget(out GroupBox? element))
                         return null;
                     return new CalculationContext(element, offset);
                 }

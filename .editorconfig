@@ -23,3 +23,9 @@ dotnet_diagnostic.IDE0028.severity = none
 
 # IDE0300: 簡化集合初始化
 dotnet_diagnostic.IDE0300.severity = none
+
+# SYSLIB1054: 使用 'LibraryImportAttribute' 而非 'DllImportAttribute' 在編譯時間產生 P/Invoke 封送處理程式碼
+dotnet_diagnostic.SYSLIB1054.severity = none
+
+# CA1806: 請勿略過方法結果
+dotnet_diagnostic.CA1806.severity = none

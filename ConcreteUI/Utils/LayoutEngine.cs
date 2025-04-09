@@ -84,7 +84,7 @@ namespace ConcreteUI.Utils
             ICalculationContext[] contexts = pool.Rent((int)LayoutProperty._Last);
             for (LayoutProperty prop = LayoutProperty.Left; prop < LayoutProperty._Last; prop++)
             {
-                ICalculationContext context = element.GetLayoutCalculation(prop)?.CreateContext();
+                ICalculationContext? context = element.GetLayoutCalculation(prop)?.CreateContext();
                 if (context is null)
                     continue;
                 contexts[(int)prop] = context;
@@ -167,9 +167,9 @@ namespace ConcreteUI.Utils
             var enumerator = contextDict.GetEnumerator();
             while (enumerator.MoveNext())
             {
-                enumerator.Current.Destruct(out UIElement element, out ICalculationContext[] contexts);
+                enumerator.Current.Destruct(out UIElement? element, out ICalculationContext[]? contexts);
                 UnsafeHelper.InitBlock(values, 0, sizeof(int) * (int)LayoutProperty._Last);
-                ICalculationContext context;
+                ICalculationContext? context;
                 for (LayoutProperty prop = LayoutProperty.Left; prop < LayoutProperty._Last; prop++)
                 {
                     context = contexts[(int)prop];
@@ -224,12 +224,12 @@ namespace ConcreteUI.Utils
                 return result;
 
             bool dependPageRect = context.DependPageRect;
-            UIElement dependElement = context.DependedElement;
+            UIElement? dependElement = context.DependedElement;
             LayoutProperty dependProperty = context.DependedProperty;
 
             if (dependElement is not null)
             {
-                ICalculationContext dependContext = ResolveDependencyContext(dependElement, dependProperty, out ICalculationContext extraDependContext);
+                ICalculationContext? dependContext = ResolveDependencyContext(dependElement, dependProperty, out ICalculationContext? extraDependContext);
                 int value;
                 if (dependContext is null)
                     value = dependElement.GetProperty(dependProperty);
@@ -271,7 +271,7 @@ namespace ConcreteUI.Utils
 
         [Inline(InlineBehavior.Remove)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ICalculationContext ResolveDependencyContext(UIElement element, LayoutProperty property, out ICalculationContext extraContext)
+        private ICalculationContext? ResolveDependencyContext(UIElement element, LayoutProperty property, out ICalculationContext? extraContext)
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
             {
@@ -279,7 +279,7 @@ namespace ConcreteUI.Utils
                 return null;
             }
             //ICalculationContext[] contexts = _contextDict.TryGetValue(element, out ICalculationContext[] value) ? value : null;
-            ICalculationContext[] contexts = _contextDict[element];
+            ICalculationContext[]? contexts = _contextDict[element];
             if (contexts is null)
             {
                 extraContext = null;

@@ -3,7 +3,6 @@
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
-using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -90,7 +89,7 @@ namespace ConcreteUI.Controls
                 private int DoCalc(CheckBox element)
                 {
                     string text = element._text ?? string.Empty;
-                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, NullSafetyHelper.ThrowIfNull(element._fontName), TextAlignment.MiddleLeft, element._fontSize);
+                    DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(text, NullSafetyHelper.ThrowIfNull(element._fontName), TextAlignment.MiddleLeft, element._fontSize);
                     if (layout is null)
                         return MathHelper.Max(_minHeight, 0);
                     int result = MathI.Ceiling(layout.GetMetrics().Height);

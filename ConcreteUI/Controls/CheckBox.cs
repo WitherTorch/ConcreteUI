@@ -40,7 +40,8 @@ namespace ConcreteUI.Controls
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
 
-        private string? _text, _fontName;
+        private string? _fontName;
+        private string _text;
         private D2D1StrokeStyle? _strokeStyle;
         private DWriteTextLayout? _layout;
         private D2D1Resource? _checkSign;
@@ -57,6 +58,7 @@ namespace ConcreteUI.Controls
             _redrawTypeRaw = (long)RedrawType.RedrawAllContent;
             _fontSize = UIConstants.DefaultFontSize;
             _checkState = false;
+            _text = string.Empty;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -137,12 +139,12 @@ namespace ConcreteUI.Controls
             {
                 DWriteTextFormat? format = layout;
                 if (CheckFormatIsNotAvailable(format, flags))
-                    format = TextFormatUtils.CreateTextFormat(TextAlignment.MiddleCenter, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
-                string? text = _text;
-                if (string.IsNullOrEmpty(text))
+                    format = TextFormatHelper.CreateTextFormat(TextAlignment.MiddleCenter, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
+                string text = _text;
+                if (StringHelper.IsNullOrEmpty(text))
                     layout = null;
                 else
-                    layout = SharedResources.DWriteFactory.CreateTextLayout(text!, format);
+                    layout = SharedResources.DWriteFactory.CreateTextLayout(text, format);
                 format.Dispose();
             }
             return layout;

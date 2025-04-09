@@ -1,9 +1,10 @@
 ﻿using ConcreteUI.Controls;
 using ConcreteUI.Graphics.Native.DirectWrite;
+using ConcreteUI.Utils;
 
-namespace ConcreteUI.Utils
+namespace ConcreteUI.Internals
 {
-    internal static class TextFormatUtils
+    internal static class TextFormatHelper
     {
         public static DWriteTextFormat CreateTextFormat(TextAlignment alignment, string fontName, float fontSize)
         {

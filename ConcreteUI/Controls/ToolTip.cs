@@ -14,19 +14,19 @@ namespace ConcreteUI.Controls
     public sealed class ToolTip : UIElement, IMouseEvents
     {
         private readonly CoreWindow window;
-        private readonly Func<UIElement, bool> checkingFunc;
+        private readonly Func<UIElement, bool>? checkingFunc;
         private readonly ConcurrentDictionary<UIElement, string> toolTipTextDict;
         private readonly System.Windows.Forms.ToolTip toolTip;
 
-        private UIElement currentElement;
+        private UIElement? _currentElement;
         private bool isPopup = false;
 
-        public ToolTip(CoreWindow window, Func<UIElement, bool> checkingFunc = null) : base(window)
+        public ToolTip(CoreWindow window, Func<UIElement, bool>? checkingFunc = null) : base(window)
         {
             this.window = window;
             this.checkingFunc = checkingFunc;
             toolTipTextDict = new ConcurrentDictionary<UIElement, string>();
-            currentElement = this;
+            _currentElement = this;
             toolTip = new System.Windows.Forms.ToolTip()
             {
                 ShowAlways = false,
@@ -36,7 +36,7 @@ namespace ConcreteUI.Controls
 
         protected override void ApplyThemeCore(ThemeResourceProvider provider) { }
 
-        private void ToolTip_Popup(object sender, System.Windows.Forms.PopupEventArgs e)
+        private void ToolTip_Popup(object? sender, System.Windows.Forms.PopupEventArgs e)
         {
             isPopup = true;
         }
@@ -48,7 +48,7 @@ namespace ConcreteUI.Controls
 
         public void SetToolTip(UIElement element, string text)
         {
-            if (toolTipTextDict.TryGetValue(element, out string oldText))
+            if (toolTipTextDict.TryGetValue(element, out string? oldText))
             {
                 if (string.Equals(oldText, text, StringComparison.Ordinal))
                 {
@@ -68,7 +68,7 @@ namespace ConcreteUI.Controls
                     return;
                 toolTipTextDict.TryAdd(element, text);
             }
-            if (currentElement == element)
+            if (_currentElement == element)
             {
                 toolTip.SetToolTip(window, text);
             }
@@ -76,8 +76,8 @@ namespace ConcreteUI.Controls
 
         private void CheckToolTip(in PointF point)
         {
-            string fallbackText = null;
-            Func<UIElement, bool> checkingFunc = this.checkingFunc;
+            string? fallbackText = null;
+            Func<UIElement, bool>? checkingFunc = this.checkingFunc;
             foreach (KeyValuePair<UIElement, string> entry in toolTipTextDict)
             {
                 UIElement element = entry.Key;
@@ -91,14 +91,14 @@ namespace ConcreteUI.Controls
                 }
                 if (element.Bounds.Contains(point))
                 {
-                    if (Interlocked.Exchange(ref currentElement, element) != element)
+                    if (Interlocked.Exchange(ref _currentElement, element) != element)
                     {
                         toolTip.SetToolTip(window, text);
                     }
                     return;
                 }
             }
-            if (Interlocked.Exchange(ref currentElement, this) != this)
+            if (Interlocked.Exchange(ref _currentElement, this) != this)
             {
                 toolTip.SetToolTip(window, fallbackText);
             }
@@ -123,7 +123,7 @@ namespace ConcreteUI.Controls
                 {
                     isPopup = false;
                     toolTip.SetToolTip(window, null);
-                    Interlocked.Exchange(ref currentElement, null);
+                    Interlocked.Exchange(ref _currentElement, null);
                 }
                 CheckToolTip(args.Location);
             }

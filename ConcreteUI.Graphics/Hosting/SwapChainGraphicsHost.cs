@@ -243,7 +243,7 @@ namespace ConcreteUI.Graphics.Hosting
                 return;
             }
 #if DEBUG
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
 #endif
         }
 

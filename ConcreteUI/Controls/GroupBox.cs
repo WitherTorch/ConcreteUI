@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -34,8 +35,9 @@ namespace ConcreteUI.Controls
 
         private readonly ObservableList<UIElement> _children;
 
-        private DWriteTextLayout _titleLayout, _textLayout;
-        private string _title, _text, _fontName;
+        private DWriteTextLayout? _titleLayout, _textLayout;
+        private string? _fontName;
+        private string _title, _text;
         private long _redrawTypeRaw, _rawUpdateFlags;
         private int _titleHeight;
         private bool _disposed;
@@ -83,7 +85,7 @@ namespace ConcreteUI.Controls
         public void RenderChildBackground(UIElement child, D2D1DeviceContext context)
             => RenderBackground(context, _brushes[(int)Brush.BackBrush]);
 
-        private void Children_BeforeAdded(object sender, BeforeListAddOrRemoveEventArgs<UIElement> e)
+        private void Children_BeforeAdded(object? sender, BeforeListAddOrRemoveEventArgs<UIElement> e)
         {
             UIElement child = e.Item;
             if (child.Parent is null)
@@ -130,7 +132,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void GetLayouts(RenderObjectUpdateFlags flags, out DWriteTextLayout titleLayout, out DWriteTextLayout textLayout)
+        private void GetLayouts(RenderObjectUpdateFlags flags, out DWriteTextLayout? titleLayout, out DWriteTextLayout? textLayout)
         {
             titleLayout = Interlocked.Exchange(ref _titleLayout, null);
             textLayout = Interlocked.Exchange(ref _textLayout, null);
@@ -138,9 +140,9 @@ namespace ConcreteUI.Controls
             DWriteFactory factory = SharedResources.DWriteFactory;
             if ((flags & RenderObjectUpdateFlags.Title) == RenderObjectUpdateFlags.Title)
             {
-                DWriteTextFormat format = titleLayout;
+                DWriteTextFormat? format = titleLayout;
                 if (CheckFormatIsNotAvailable(format, flags))
-                    format = TextFormatUtils.CreateTextFormat(TextAlignment.MiddleCenter, _fontName, UIConstants.DefaultFontSize);
+                    format = TextFormatHelper.CreateTextFormat(TextAlignment.MiddleCenter, NullSafetyHelper.ThrowIfNull(_fontName), UIConstants.DefaultFontSize);
                 titleLayout = factory.CreateTextLayout(_title ?? string.Empty, format);
                 format.Dispose();
                 titleLayout.MaxWidth = titleLayout.GetMetrics().Width + UIConstants.ElementMarginDouble;
@@ -148,10 +150,10 @@ namespace ConcreteUI.Controls
             }
             if ((flags & RenderObjectUpdateFlags.Text) == RenderObjectUpdateFlags.Text)
             {
-                DWriteTextFormat format = textLayout;
+                DWriteTextFormat? format = textLayout;
                 if (CheckFormatIsNotAvailable(format, flags))
                 {
-                    format = TextFormatUtils.CreateTextFormat(TextAlignment.TopLeft, _fontName, UIConstants.DefaultFontSize);
+                    format = TextFormatHelper.CreateTextFormat(TextAlignment.TopLeft, NullSafetyHelper.ThrowIfNull(_fontName), UIConstants.DefaultFontSize);
                     format.SetLineSpacing(DWriteLineSpacingMethod.Uniform, 20, 16);
                     format.WordWrapping = DWriteWordWrapping.EmergencyBreak;
                 }
@@ -161,7 +163,7 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static bool CheckFormatIsNotAvailable(DWriteTextFormat format, RenderObjectUpdateFlags flags)
+        private static bool CheckFormatIsNotAvailable([NotNullWhen(false)] DWriteTextFormat? format, RenderObjectUpdateFlags flags)
         {
             if (format is null || format.IsDisposed)
                 return true;
@@ -183,7 +185,7 @@ namespace ConcreteUI.Controls
                 redrawType = RedrawType.RedrawAllContent;
             else if (redrawType == RedrawType.NoRedraw)
                 return true;
-            GetLayouts(GetAndCleanRenderObjectUpdateFlags(), out DWriteTextLayout titleLayout, out DWriteTextLayout textLayout);
+            GetLayouts(GetAndCleanRenderObjectUpdateFlags(), out DWriteTextLayout? titleLayout, out DWriteTextLayout? textLayout);
             D2D1DeviceContext context = renderer.GetDeviceContext();
             D2D1Brush[] brushes = _brushes;
             D2D1Brush backBrush = brushes[(int)Brush.BackBrush];
@@ -196,7 +198,7 @@ namespace ConcreteUI.Controls
                 case RedrawType.RedrawAllContent:
                     Rect bounds = Bounds;
                     float lineWidth = renderer.GetBaseLineWidth();
-                    context.DrawRectangle(GraphicsUtils.AdjustRectangleAsBorderBounds(new Rect(bounds.X, bounds.Y + MathI.Floor(titleLayout.MaxHeight * 0.5f),
+                    context.DrawRectangle(GraphicsUtils.AdjustRectangleAsBorderBounds(new Rect(bounds.X, bounds.Y + MathI.Floor(_titleHeight * 0.5f),
                         bounds.Right, bounds.Bottom), lineWidth), brushes[(int)Brush.BorderBrush], lineWidth);
                     RenderTitle(context, backBrush, textBrush, titleLayout, bounds);
                     RenderText(context, collector, backBrush, textBrush, textLayout, justText: false);
@@ -208,7 +210,7 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Remove)]
-        private void RenderTitle(D2D1DeviceContext context, D2D1Brush backBrush, D2D1Brush textBrush, DWriteTextLayout layout, in Rect bounds)
+        private void RenderTitle(D2D1DeviceContext context, D2D1Brush backBrush, D2D1Brush textBrush, DWriteTextLayout? layout, in Rect bounds)
         {
             if (layout is null)
                 return;
@@ -221,7 +223,7 @@ namespace ConcreteUI.Controls
 
         [Inline(InlineBehavior.Remove)]
         private void RenderText(D2D1DeviceContext context, DirtyAreaCollector collector, D2D1Brush backBrush, D2D1Brush textBrush,
-            DWriteTextLayout layout, [InlineParameter] bool justText)
+            DWriteTextLayout? layout, [InlineParameter] bool justText)
         {
             if (layout is null)
                 return;

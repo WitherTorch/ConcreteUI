@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using ConcreteUI.Graphics.Native.Direct3D;
@@ -10,6 +9,7 @@ using InlineMethod;
 
 using LocalsInit;
 
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 using WitherTorch.Common.Windows;
 
@@ -43,9 +43,8 @@ namespace ConcreteUI.Graphics.Native.Direct3D11
             void* device;
             int hr = D3D11.D3D11CreateDevice(adapter == null ? null : adapter.NativePointer, driverType, software,
                 createDeviceFlags, featureLevels, featureLevelCount, D3D11.D3D11_SDK_VERSION, &device, null, null);
-            if (hr >= 0)
-                return device is null ? null : new D3D11Device(device, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr)!;
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return device is null ? null : new D3D11Device(device, ReferenceType.Owned);
         }
     }
 }

@@ -33,7 +33,7 @@ namespace ConcreteUI.Controls
         public static void ApplyTheme(ThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes, [InlineParameter] int length)
         {
             for (int i = 0; i < length; i++)
-                DisposeHelper.SwapDispose(ref brushes[i], provider.TryGetBrush(nodes[i], out D2D1Brush brush) ? brush.Clone() : null);
+                DisposeHelper.SwapDispose(ref brushes[i], provider.TryGetBrush(nodes[i], out D2D1Brush? brush) ? brush.Clone() : null);
         }
 
         public static void ApplyTheme(ThemeResourceProvider provider, IEnumerable<UIElement> elements)

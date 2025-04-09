@@ -155,8 +155,8 @@ namespace ConcreteUI.Controls
                 {
                     ContextMenuItem item = items[hoveredIndex];
                     ItemClicked?.Invoke(this, EventArgs.Empty);
-                    Close();
                     item.OnClick();
+                    Close();
                 }
                 return;
             }

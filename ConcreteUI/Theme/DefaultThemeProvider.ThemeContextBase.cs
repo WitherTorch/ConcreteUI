@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 
 using WitherTorch.Common.Extensions;
+using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Theme
 {
@@ -24,7 +26,7 @@ namespace ConcreteUI.Theme
 
             protected ThemeContextBase()
             {
-                _fontName = SystemFonts.CaptionFont.Name;
+                _fontName = NullSafetyHelper.ThrowIfNull(SystemFonts.CaptionFont).Name;
 
                 Dictionary<string, IThemedColorFactory> colorDict = new Dictionary<string, IThemedColorFactory>();
                 Dictionary<string, IThemedBrushFactory> brushDict = new Dictionary<string, IThemedBrushFactory>();
@@ -47,10 +49,10 @@ namespace ConcreteUI.Theme
 
             public abstract IThemeContext Clone();
 
-            public bool TryGetBrushFactory(string node, out IThemedBrushFactory brushFactory)
+            public bool TryGetBrushFactory(string node, [NotNullWhen(true)] out IThemedBrushFactory? brushFactory)
                 => _brushDict.TryGetValue(node.ToLowerAscii(), out brushFactory);
 
-            public bool TryGetColorFactory(string node, out IThemedColorFactory colorFactory)
+            public bool TryGetColorFactory(string node, [NotNullWhen(true)] out IThemedColorFactory? colorFactory)
                 => _colorDict.TryGetValue(node.ToLowerAscii(), out colorFactory);
 
             public bool TrySetBrushFactory(string node, IThemedBrushFactory brushFactory, bool overrides)
@@ -112,7 +114,7 @@ namespace ConcreteUI.Theme
                 public IThemedColorFactory GetColorFactory(string node)
                 {
                     node = node.ToLowerAscii();
-                    if (_otherContext._colorDict.TryGetValue(node, out IThemedColorFactory result))
+                    if (_otherContext._colorDict.TryGetValue(node, out IThemedColorFactory? result))
                         return result;
                     return _this._colorDict[node];
                 }
@@ -120,7 +122,7 @@ namespace ConcreteUI.Theme
                 public IThemedBrushFactory GetBrushFactory(string node)
                 {
                     node = node.ToLowerAscii();
-                    if (_otherContext._brushDict.TryGetValue(node, out IThemedBrushFactory result))
+                    if (_otherContext._brushDict.TryGetValue(node, out IThemedBrushFactory? result))
                         return result;
                     return _this._brushDict[node];
                 }
@@ -140,7 +142,7 @@ namespace ConcreteUI.Theme
                 public IThemedColorFactory GetColorFactory(string node)
                 {
                     node = node.ToLowerAscii();
-                    if (_otherContext.TryGetColorFactory(node, out IThemedColorFactory result))
+                    if (_otherContext.TryGetColorFactory(node, out IThemedColorFactory? result))
                         return result;
                     return _this._colorDict[node];
                 }
@@ -148,7 +150,7 @@ namespace ConcreteUI.Theme
                 public IThemedBrushFactory GetBrushFactory(string node)
                 {
                     node = node.ToLowerAscii();
-                    if (_otherContext.TryGetBrushFactory(node, out IThemedBrushFactory result))
+                    if (_otherContext.TryGetBrushFactory(node, out IThemedBrushFactory? result))
                         return result;
                     return _this._brushDict[node];
                 }

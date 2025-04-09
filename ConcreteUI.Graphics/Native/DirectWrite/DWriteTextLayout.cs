@@ -232,7 +232,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// This drawing effect is associated with the specified range and will be passed back
         /// to the application via the callback when the range is drawn at drawing time.
         /// </remarks>
-        public void SetDrawingEffect(ComObject drawingEffect, DWriteTextRange textRange)
+        public void SetDrawingEffect(ComObject? drawingEffect, DWriteTextRange textRange)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetDrawingEffect);

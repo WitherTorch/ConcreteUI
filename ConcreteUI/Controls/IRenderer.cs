@@ -2,6 +2,7 @@
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
+using ConcreteUI.Theme;
 
 namespace ConcreteUI.Controls
 {
@@ -13,8 +14,10 @@ namespace ConcreteUI.Controls
 
         void RenderElementBackground(UIElement element, D2D1DeviceContext context);
 
-        ToolTip GetToolTip();
+        ToolTip? GetToolTip();
 
         PointF GetMousePosition();
+
+        ThemeResourceProvider GetThemeResourceProvider();
     }
 }

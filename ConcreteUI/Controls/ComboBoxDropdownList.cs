@@ -7,6 +7,7 @@ using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
+using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
@@ -54,7 +55,7 @@ namespace ConcreteUI.Controls
             base.ApplyThemeCore(provider);
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
             ComboBox parent = _parent;
-            using DWriteTextFormat format = TextFormatUtils.CreateTextFormat(TextAlignment.MiddleLeft, provider.FontName, parent.FontSize);
+            using DWriteTextFormat format = TextFormatHelper.CreateTextFormat(TextAlignment.MiddleLeft, provider.FontName, parent.FontSize);
             Prepare(format);
         }
 

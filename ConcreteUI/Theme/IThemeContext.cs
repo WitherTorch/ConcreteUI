@@ -1,4 +1,6 @@
-﻿namespace ConcreteUI.Theme
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace ConcreteUI.Theme
 {
     public interface IThemeContext
     {
@@ -8,9 +10,9 @@
 
         IThemeContext Clone();
 
-        bool TryGetColorFactory(string node, out IThemedColorFactory colorFactory);
+        bool TryGetColorFactory(string node, [NotNullWhen(true)] out IThemedColorFactory? colorFactory);
 
-        bool TryGetBrushFactory(string node, out IThemedBrushFactory brushFactory);
+        bool TryGetBrushFactory(string node, [NotNullWhen(true)] out IThemedBrushFactory? brushFactory);
 
         bool TrySetColorFactory(string node, IThemedColorFactory colorFactory, bool overrides);
 

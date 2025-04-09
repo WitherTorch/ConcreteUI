@@ -20,7 +20,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public string FontName
+        public string? FontName
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _fontName;

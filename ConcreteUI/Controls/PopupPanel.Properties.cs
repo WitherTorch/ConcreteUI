@@ -11,13 +11,13 @@ namespace ConcreteUI.Controls
             get => _collection;
         }
 
-        public UIElement FirstChild
+        public UIElement? FirstChild
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _collection.Value;
         }
 
-        public UIElement LastChild
+        public UIElement? LastChild
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _collection.Value;

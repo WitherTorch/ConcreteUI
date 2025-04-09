@@ -2,7 +2,7 @@
 
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Utils;
+using ConcreteUI.Internals;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -58,9 +58,9 @@ namespace ConcreteUI.Controls
                     _value = 0;
                 }
 
-                public static CalculationContext TryCreate(WeakReference<CheckBox> reference, int minWidth, int maxWidth)
+                public static CalculationContext? TryCreate(WeakReference<CheckBox> reference, int minWidth, int maxWidth)
                 {
-                    if (!reference.TryGetTarget(out CheckBox element))
+                    if (!reference.TryGetTarget(out CheckBox? element))
                         return null;
                     return new CalculationContext(element, minWidth, maxWidth);
                 }
@@ -88,10 +88,10 @@ namespace ConcreteUI.Controls
 
                 private int DoCalc(CheckBox element)
                 {
-                    string text = element._text;
-                    if (string.IsNullOrEmpty(text))
+                    string? text = element._text;
+                    if (StringHelper.IsNullOrEmpty(text))
                         return MathHelper.Max(_minWidth, 0);
-                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, element._fontName, TextAlignment.MiddleLeft, element._fontSize);
+                    DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(text, NullSafetyHelper.ThrowIfNull(element._fontName), TextAlignment.MiddleLeft, element._fontSize);
                     if (layout is null)
                         return MathHelper.Max(_minWidth, 0);
                     int result = MathI.Ceiling(layout.GetMetrics().Width);

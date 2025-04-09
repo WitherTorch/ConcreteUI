@@ -33,28 +33,38 @@ namespace ConcreteUI.Utils
         {
             string text = StringHelper.GetStringFromUtf32Character(unicodeValue);
             DWriteFactory factory = SharedResources.DWriteFactory;
-            float fontSize = size.Height;
+            float targetHeight = size.Height;
             float targetWidth = size.Width;
+            float fontSize = targetHeight;
             do
             {
                 DWriteTextFormat format = factory.CreateTextFormat(fontName, fontSize);
                 DWriteTextLayout layout = factory.CreateTextLayout(text, format);
                 format.Dispose();
-                float realWidth = layout.DetermineMinWidth();
-                if (realWidth <= targetWidth)
+                DWriteTextMetrics metrics = layout.GetMetrics();
+                float realHeight = metrics.Height;
+                if (realHeight > targetHeight)
                 {
-                    layout.MaxWidth = size.Width;
-                    layout.MaxHeight = size.Height;
-                    return layout;
+                    layout.Dispose();
+                    fontSize -= targetHeight - realHeight;
+                    continue;
                 }
-                layout.Dispose();
-                fontSize -= targetWidth - realWidth;
+                float realWidth = metrics.Width;
+                if (realWidth > targetWidth)
+                {
+                    layout.Dispose();
+                    fontSize -= targetWidth - realWidth;
+                    continue;
+                }
+                layout.MaxWidth = size.Width;
+                layout.MaxHeight = size.Height;
+                return layout;
             }
             while (fontSize > 0f);
             throw new InvalidOperationException();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]  
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Render(D2D1DeviceContext context, PointF location, D2D1Brush brush)
             => context.DrawTextLayout(location, _layout, brush, D2D1DrawTextOptions.Clip);
 

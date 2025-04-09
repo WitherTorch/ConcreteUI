@@ -15,8 +15,8 @@ namespace ConcreteUI.Internals
     {
         private static readonly FontIconResources _instance = new FontIconResources();
 
-        private readonly FontIcon _maxIcon, _restoreIcon, _minIcon, _closeIcon, _scrollUpIcon, _scrollDownIcon;
-        private readonly ConcurrentDictionary<float, FontIcon> _comboBoxDropdownIconDict;
+        private readonly FontIcon? _maxIcon, _restoreIcon, _minIcon, _closeIcon, _scrollUpIcon, _scrollDownIcon;
+        private readonly ConcurrentDictionary<float, FontIcon?> _comboBoxDropdownIconDict;
 
         private bool _disposed;
 
@@ -31,12 +31,12 @@ namespace ConcreteUI.Internals
             _closeIcon = GetCloseIcon(factory);
             _scrollUpIcon = GetScrollUpIcon(factory);
             _scrollDownIcon = GetScrollDownIcon(factory);
-            _comboBoxDropdownIconDict = new ConcurrentDictionary<float, FontIcon>();
+            _comboBoxDropdownIconDict = new ConcurrentDictionary<float, FontIcon?>();
         }
 
-        private static FontIcon GetMaxIcon(FontIconFactory factory)
+        private static FontIcon? GetMaxIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xE922, UIConstants.TitleBarIconSize, out FontIcon result))
+            if (factory.TryCreateFluentUIFontIcon(0xE922, UIConstants.TitleBarIconSize, out FontIcon? result))
                 return result;
             if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D6, UIConstants.TitleBarIconSize, out result))
                 return result;
@@ -45,9 +45,9 @@ namespace ConcreteUI.Internals
             return null;
         }
 
-        private static FontIcon GetRestoreIcon(FontIconFactory factory)
+        private static FontIcon? GetRestoreIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xE923, UIConstants.TitleBarIconSize, out FontIcon result))
+            if (factory.TryCreateFluentUIFontIcon(0xE923, UIConstants.TitleBarIconSize, out FontIcon? result))
                 return result;
             if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D7, UIConstants.TitleBarIconSize, out result))
                 return result;
@@ -56,9 +56,9 @@ namespace ConcreteUI.Internals
             return null;
         }
 
-        private static FontIcon GetMinIcon(FontIconFactory factory)
+        private static FontIcon? GetMinIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xE921, UIConstants.TitleBarIconSize, out FontIcon result))
+            if (factory.TryCreateFluentUIFontIcon(0xE921, UIConstants.TitleBarIconSize, out FontIcon? result))
                 return result;
             if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D5, UIConstants.TitleBarIconSize, out result))
                 return result;
@@ -67,9 +67,9 @@ namespace ConcreteUI.Internals
             return null;
         }
 
-        private static FontIcon GetCloseIcon(FontIconFactory factory)
+        private static FontIcon? GetCloseIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xE8BB, UIConstants.TitleBarIconSize, out FontIcon result))
+            if (factory.TryCreateFluentUIFontIcon(0xE8BB, UIConstants.TitleBarIconSize, out FontIcon? result))
                 return result;
             if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D9, UIConstants.TitleBarIconSize, out result))
                 return result;
@@ -78,9 +78,9 @@ namespace ConcreteUI.Internals
             return null;
         }
 
-        private static FontIcon GetScrollUpIcon(FontIconFactory factory)
+        private static FontIcon? GetScrollUpIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xEDDB, UIConstants.ScrollBarScrollButtonSize, out FontIcon result))
+            if (factory.TryCreateFluentUIFontIcon(0xEDDB, UIConstants.ScrollBarScrollButtonSize, out FontIcon? result))
                 return result;
             if (factory.TryCreateSegoeSymbolFontIcon(0x1F53A, UIConstants.ScrollBarScrollButtonSize, out result))
                 return result;
@@ -89,9 +89,9 @@ namespace ConcreteUI.Internals
             return null;
         }
 
-        private static FontIcon GetScrollDownIcon(FontIconFactory factory)
+        private static FontIcon? GetScrollDownIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xEDDC, UIConstants.ScrollBarScrollButtonSize, out FontIcon result))
+            if (factory.TryCreateFluentUIFontIcon(0xEDDC, UIConstants.ScrollBarScrollButtonSize, out FontIcon? result))
                 return result;
             if (factory.TryCreateSegoeSymbolFontIcon(0x1F53B, UIConstants.ScrollBarScrollButtonSize, out result))
                 return result;
@@ -100,12 +100,12 @@ namespace ConcreteUI.Internals
             return null;
         }
 
-        private static FontIcon GetComboBoxDropDownIcon(float layoutHeight)
+        private static FontIcon? GetComboBoxDropDownIcon(float layoutHeight)
         {
             FontIconFactory factory = FontIconFactory.Instance;
             const uint ComboBoxDropdownCharater = 0xE011;
             SizeF size = new SizeF(layoutHeight, layoutHeight);
-            if (factory.TryCreateFluentUIFontIcon(ComboBoxDropdownCharater, size, out FontIcon result))
+            if (factory.TryCreateFluentUIFontIcon(ComboBoxDropdownCharater, size, out FontIcon? result))
                 return result;
             if (factory.TryCreateSegoeSymbolFontIcon(ComboBoxDropdownCharater, size, out result))
                 return result;

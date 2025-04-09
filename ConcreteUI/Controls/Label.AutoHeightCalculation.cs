@@ -2,7 +2,7 @@
 
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Utils;
+using ConcreteUI.Internals;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -58,9 +58,9 @@ namespace ConcreteUI.Controls
                     _value = 0;
                 }
 
-                public static CalculationContext TryCreate(WeakReference<Label> reference, int minHeight, int maxHeight)
+                public static CalculationContext? TryCreate(WeakReference<Label> reference, int minHeight, int maxHeight)
                 {
-                    if (!reference.TryGetTarget(out Label element))
+                    if (!reference.TryGetTarget(out Label? element))
                         return null;
                     return new CalculationContext(element, minHeight, maxHeight);
                 }
@@ -89,7 +89,7 @@ namespace ConcreteUI.Controls
                 private int DoCalc(Label element, int dependedValue)
                 {
                     string text = element._text ?? string.Empty;
-                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, element._fontName, element._alignment, element._fontSize);
+                    DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(text, NullSafetyHelper.ThrowIfNull(element._fontName), element._alignment, element._fontSize);
                     if (layout is null)
                         return MathHelper.Max(_minHeight, 0);
                     layout.MaxWidth = dependedValue;

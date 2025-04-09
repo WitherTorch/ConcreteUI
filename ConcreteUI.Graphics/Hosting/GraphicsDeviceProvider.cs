@@ -118,7 +118,7 @@ namespace ConcreteUI.Graphics.Hosting
                 return null;
             }
 
-            if (string.IsNullOrEmpty(targetGpuName))
+            if (StringHelper.IsNullOrEmpty(targetGpuName))
             {
                 adapter = SearchBestAdapter(ref factory, preference);
             }

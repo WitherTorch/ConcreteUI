@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -99,17 +100,17 @@ namespace ConcreteUI.Window
 
         #region Properties
 #pragma warning disable CS0109
-        public new ContextMenu ContextMenu => GetOverlayElement<ContextMenu>();
+        public new ContextMenu? ContextMenu => GetOverlayElement<ContextMenu>();
 #pragma warning restore CS0109
-        public ToolTip ToolTip => GetBackgroundElement<ToolTip>();
+        public ToolTip? ToolTip => GetBackgroundElement<ToolTip>();
         public UIElement? FocusedElement => _focusElement;
         public WindowMaterial WindowMaterial => _windowMaterial;
         #endregion
 
         #region Events
-        public event EventHandler<ContextMenu> ContextMenuChanging;
+        public event EventHandler<ContextMenu>? ContextMenuChanging;
 
-        public event EventHandler<UIElement> FocusElementChanged;
+        public event EventHandler<UIElement?>? FocusElementChanged;
         #endregion
 
         #region Event Handlers
@@ -120,7 +121,7 @@ namespace ConcreteUI.Window
         private static GraphicsDeviceProvider CreateGraphicsDeviceProvider()
         {
             string targetGpuName = ConcreteSettings.TargetGpuName;
-            if (string.IsNullOrEmpty(targetGpuName))
+            if (StringHelper.IsNullOrEmpty(targetGpuName))
                 return new GraphicsDeviceProvider(DXGIGpuPreference.Invalid);
             if (targetGpuName.StartsWith('#'))
             {
@@ -230,9 +231,11 @@ namespace ConcreteUI.Window
                 _controller?.RequestUpdate(true);
         }
 
-        ToolTip IRenderer.GetToolTip() => GetBackgroundElement<ToolTip>();
+        ToolTip? IRenderer.GetToolTip() => GetBackgroundElement<ToolTip>();
 
         bool IRenderer.IsInitializingElements() => isInitializingElements;
+
+        ThemeResourceProvider IRenderer.GetThemeResourceProvider() => NullSafetyHelper.ThrowIfNull(_resourceProvider);
 
         public float GetBaseLineWidth() => baseLineWidth;
         #endregion
@@ -392,7 +395,7 @@ namespace ConcreteUI.Window
         private bool RenderCore(bool force, bool resized)
         {
             bool isSizeChanged = false;
-            SwapChainGraphicsHost host = _host;
+            SwapChainGraphicsHost? host = _host;
             if (resized)
             {
                 if (host is null || host.IsDisposed)
@@ -402,17 +405,17 @@ namespace ConcreteUI.Window
                 host.Resize(size);
                 RecalculateLayout(ScalingSizeF(size, windowScaleFactor), true);
             }
-            D2D1DeviceContext deviceContext = host.GetDeviceContext();
+            D2D1DeviceContext? deviceContext = host?.GetDeviceContext();
             if (deviceContext is null || deviceContext.IsDisposed)
                 return true;
-            DirtyAreaCollector rawCollector = force ? null : _collector;
+            DirtyAreaCollector? rawCollector = force ? null : _collector;
             DirtyAreaCollector collector = rawCollector ?? DirtyAreaCollector.Empty;
             RenderTitle(deviceContext, collector, force);
             RectF pageRect = _pageRect;
             if (!pageRect.IsValid)
                 return true;
             RenderPage(deviceContext, collector, pageRect, force);
-            host.Flush();
+            host!.Flush();
             if (rawCollector is null)
             {
                 if (ConcreteSettings.UseDebugMode)
@@ -474,31 +477,27 @@ namespace ConcreteUI.Window
             #region 繪製標題
             if (force)
             {
-                DWriteTextLayout titleLayout;
+                DWriteTextLayout? titleLayout = Interlocked.Exchange(ref _titleLayout, null);
                 if ((Interlocked.Exchange(ref _updateFlags, Booleans.FalseLong) & (long)UpdateFlags.ChangeTitle) == (long)UpdateFlags.ChangeTitle)
                 {
                     DWriteFactory factory = SharedResources.DWriteFactory;
-                    DWriteTextFormat titleFormat = Interlocked.Exchange(ref _titleLayout, null);
+                    DWriteTextFormat? titleFormat = titleLayout;
                     if (titleFormat is null || titleFormat.IsDisposed)
                     {
-                        titleFormat = factory.CreateTextFormat(_resourceProvider.FontName, UIConstants.TitleFontSize);
+                        titleFormat = factory.CreateTextFormat(_resourceProvider!.FontName, UIConstants.TitleFontSize);
                         titleFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
                     }
                     titleLayout = GraphicsUtils.CreateCustomTextLayout(_text, titleFormat, 26);
                     titleFormat.Dispose();
-                    DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
-                }
-                else
-                {
-                    titleLayout = _titleLayout;
                 }
                 ClearDCForTitle(deviceContext);
                 if (titleBarStates[0])
                 {
                     deviceContext.PushAxisAlignedClip(_titleBarRect, D2D1AntialiasMode.Aliased);
-                    deviceContext.DrawTextLayout(new PointF(_drawingOffsetX + 7.5f, _drawingOffsetY + 1.5f), titleLayout, brushes[(int)Brush.TitleForeBrush]);
+                    deviceContext.DrawTextLayout(new PointF(_drawingOffsetX + 7.5f, _drawingOffsetY + 1.5f), titleLayout!, brushes[(int)Brush.TitleForeBrush]);
                     deviceContext.PopAxisAlignedClip();
                 }
+                DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
             }
             BitVector64 TitleBarButtonStatus = _titleBarButtonStatus;
             FontIconResources iconStorer = FontIconResources.Instance;
@@ -559,10 +558,10 @@ namespace ConcreteUI.Window
             switch (e.Reason)
             {
                 case SessionSwitchReason.SessionLock:
-                    _controller.Lock();
+                    _controller?.Lock();
                     break;
                 case SessionSwitchReason.SessionUnlock:
-                    _controller.Unlock();
+                    _controller?.Unlock();
                     break;
             }
         }
@@ -572,10 +571,10 @@ namespace ConcreteUI.Window
             switch (e.Mode)
             {
                 case PowerModes.Suspend:
-                    _controller.Lock();
+                    _controller?.Lock();
                     break;
                 case PowerModes.Resume:
-                    _controller.Unlock();
+                    _controller?.Unlock();
                     break;
             }
         }
@@ -594,29 +593,38 @@ namespace ConcreteUI.Window
         private void UpdateFirstTime()
         {
             isShown = true;
-            _controller = new RenderingController(this);
-            UpdateInternal();
+            RenderingController controller = new RenderingController(this);
+            _controller = controller;
+            UpdateCoreUnchecked(controller);
         }
 
         [Inline(InlineBehavior.Remove)]
-        private void UpdateInternal() => _controller.RequestUpdate(true);
+        private static void UpdateCoreUnchecked(RenderingController controller) => controller.RequestUpdate(true);
+
+        [Inline(InlineBehavior.Remove)]
+        private static void UpdateCore(RenderingController? controller)
+        {
+            if (controller is null)
+                return;
+            UpdateCoreUnchecked(controller);
+        }
 
         [Inline(InlineBehavior.Remove)]
         private void OnDpiChangedRenderingPart()
         {
-            SwapChainGraphicsHost host = _host;
+            SwapChainGraphicsHost? host = _host;
             if (host is null || host.IsDisposed)
                 return;
             D2D1DeviceContext context = host.GetDeviceContext();
             int dpi = Dpi;
             context.Dpi = new PointF(dpi, dpi);
-            _controller.RequestUpdate(true);
+            UpdateCore(_controller);
         }
 
         [Inline(InlineBehavior.Remove)]
         private void OnWindowStateChangingRenderingPart(FormWindowState windowState)
         {
-            RenderingController controller = _controller;
+            RenderingController? controller = _controller;
             if (controller is null)
                 return;
             switch (windowState)
@@ -643,7 +651,7 @@ namespace ConcreteUI.Window
             }
         }
 
-        private void CloseContextMenu(object sender, EventArgs e) => ChangeOverlayElement(typeof(ContextMenu), null);
+        private void CloseContextMenu(object? sender, EventArgs e) => ChangeOverlayElement(typeof(ContextMenu), null);
         #endregion
 
         #region Normal Methods
@@ -651,9 +659,9 @@ namespace ConcreteUI.Window
 
         protected new void Update()
         {
-            if (!isShown || _controller is null)
+            if (!isShown)
                 return;
-            UpdateInternal();
+            UpdateCore(_controller);
         }
 
         protected new void Refresh()
@@ -690,13 +698,13 @@ namespace ConcreteUI.Window
             ClearFocusElement();
         }
 
-        protected T GetOverlayElement<T>() where T : UIElement => GetOverlayElement(typeof(T)) as T;
+        protected T? GetOverlayElement<T>() where T : UIElement => GetOverlayElement(typeof(T)) as T;
 
-        protected UIElement GetOverlayElement(Type type) => _overlayElementDict.GetOrDefault(type, null);
+        protected UIElement? GetOverlayElement(Type type) => _overlayElementDict.GetOrDefault(type, null);
 
-        protected T ChangeOverlayElement<T>(T element, Predicate<T> predicate = null) where T : UIElement
+        protected T? ChangeOverlayElement<T>(T element, Predicate<T>? predicate = null) where T : UIElement
         {
-            Predicate<UIElement> translatedPredicate;
+            Predicate<UIElement>? translatedPredicate;
             if (predicate is null)
                 translatedPredicate = null;
             else
@@ -704,11 +712,11 @@ namespace ConcreteUI.Window
             return ChangeOverlayElement(typeof(T), element, translatedPredicate) as T;
         }
 
-        protected UIElement ChangeOverlayElement(Type type, UIElement element, Predicate<UIElement> predicate = null)
+        protected UIElement? ChangeOverlayElement(Type type, UIElement? element, Predicate<UIElement>? predicate = null)
         {
             ConcurrentDictionary<Type, UIElement> overlayElementDict = _overlayElementDict;
             UnwrappableList<UIElement> overlayElementList = _overlayElementList;
-            UIElement result;
+            UIElement? result;
             if (element is null)
             {
                 if (overlayElementDict.TryRemove(type, out result))
@@ -722,35 +730,36 @@ namespace ConcreteUI.Window
             {
                 overlayElementDict.TryAdd(type, element);
                 overlayElementList.Add(element);
-                element.ApplyTheme(_resourceProvider);
+                ThemeResourceProvider? resourceProvider = _resourceProvider;
+                if (resourceProvider is not null)
+                    element.ApplyTheme(resourceProvider);
                 Update();
                 return null;
             }
             if (result is null || predicate is null || predicate.Invoke(result))
             {
-                int index = overlayElementList.IndexOf(result);
+                int index = result is null ? -1 : overlayElementList.IndexOf(result);
                 overlayElementDict[type] = element;
                 if (index > -1)
-                {
                     overlayElementList[index] = element;
-                }
                 else
-                {
                     overlayElementList.Add(element);
-                }
+                ThemeResourceProvider? resourceProvider = _resourceProvider;
+                if (resourceProvider is not null)
+                    element.ApplyTheme(resourceProvider);
                 Update();
                 return result;
             }
             return null;
         }
 
-        protected T GetBackgroundElement<T>() where T : UIElement => GetBackgroundElement(typeof(T)) as T;
+        protected T? GetBackgroundElement<T>() where T : UIElement => GetBackgroundElement(typeof(T)) as T;
 
-        protected UIElement GetBackgroundElement(Type type) => _backgroundElementDict.GetOrDefault(type, null);
+        protected UIElement? GetBackgroundElement(Type type) => _backgroundElementDict.GetOrDefault(type, null);
 
-        protected T ChangeBackgroundElement<T>(T element, Predicate<T> predicate = null) where T : UIElement
+        protected T? ChangeBackgroundElement<T>(T element, Predicate<T>? predicate = null) where T : UIElement
         {
-            Predicate<UIElement> translatedPredicate;
+            Predicate<UIElement>? translatedPredicate;
             if (predicate is null)
                 translatedPredicate = null;
             else
@@ -758,11 +767,11 @@ namespace ConcreteUI.Window
             return ChangeBackgroundElement(typeof(T), element, translatedPredicate) as T;
         }
 
-        protected UIElement ChangeBackgroundElement(Type type, UIElement element, Predicate<UIElement> predicate = null)
+        protected UIElement? ChangeBackgroundElement(Type type, UIElement? element, Predicate<UIElement>? predicate = null)
         {
             ConcurrentDictionary<Type, UIElement> backgroundElementDict = _backgroundElementDict;
             UnwrappableList<UIElement> backgroundElementList = _backgroundElementList;
-            UIElement result;
+            UIElement? result;
             if (element is null)
             {
                 if (backgroundElementDict.TryRemove(type, out result))
@@ -776,19 +785,23 @@ namespace ConcreteUI.Window
             {
                 backgroundElementDict.TryAdd(type, element);
                 backgroundElementList.Add(element);
-                element.ApplyTheme(_resourceProvider);
+                ThemeResourceProvider? resourceProvider = InterlockedHelper.Read(ref _resourceProvider);
+                if (resourceProvider is not null)
+                    element.ApplyTheme(resourceProvider);
                 Update();
                 return null;
             }
             if (result is null || predicate is null || predicate.Invoke(result))
             {
-                int index = backgroundElementList.IndexOf(result);
+                int index = result is null ? -1 : backgroundElementList.IndexOf(result);
                 backgroundElementDict[type] = element;
                 if (index > -1)
                     backgroundElementList[index] = element;
                 else
                     backgroundElementList.Add(element);
-                element.ApplyTheme(_resourceProvider);
+                ThemeResourceProvider? resourceProvider = InterlockedHelper.Read(ref _resourceProvider);
+                if (resourceProvider is not null)
+                    element.ApplyTheme(resourceProvider);
                 Update();
                 return result;
             }
@@ -799,9 +812,10 @@ namespace ConcreteUI.Window
         {
             if (items.HasAnyItem())
             {
-                ContextMenu contextMenu = new ContextMenu(this, items);
-                contextMenu.ItemClicked += CloseContextMenu;
-                contextMenu.Location = location;
+                ContextMenu contextMenu = new ContextMenu(this, items)
+                {
+                    Location = location
+                };
                 if (location.X + contextMenu.Width >= Width + _drawingOffsetX * 2)
                 {
                     contextMenu.X = location.X - contextMenu.Width + 1;
@@ -819,11 +833,12 @@ namespace ConcreteUI.Window
             => CloseOverlayElement(elementForValidate.GetType(), elementForValidate);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CloseOverlayElement(Type elementType, UIElement elementForValidate) => (ChangeOverlayElement(elementType, null, _element => Equals(_element, elementForValidate)) as IDisposable)?.Dispose();
+        public void CloseOverlayElement(Type elementType, UIElement elementForValidate)
+            => (ChangeOverlayElement(elementType, null, _element => Equals(_element, elementForValidate)) as IDisposable)?.Dispose();
 
         protected void ApplyTheme(ThemeResourceProvider provider)
         {
-            RenderingController controller = _controller;
+            RenderingController? controller = _controller;
             if (controller is not null)
             {
                 controller.Lock();
@@ -832,19 +847,19 @@ namespace ConcreteUI.Window
             DisposeHelper.SwapDisposeInterlocked(ref _resourceProvider, provider);
             ApplyThemeCore(provider);
             ConcreteUtils.ResetBlur(this);
-            WeakReference<CoreWindow>[] windowListSnapshot = GetWindowListSnapshot(_childrenReferenceList, out ArrayPool<WeakReference<CoreWindow>> pool, out int count);
-            if (windowListSnapshot is not null)
+            if (TryGetWindowListSnapshot(_childrenReferenceList, out ArrayPool<WeakReference<CoreWindow>>? pool,
+                    out WeakReference<CoreWindow>[]? array, out int count))
             {
                 for (int i = 0; i < count; i++)
                 {
-                    if (!windowListSnapshot[i].TryGetTarget(out CoreWindow window) || window is null)
+                    if (!array[i].TryGetTarget(out CoreWindow? window) || window is null)
                         continue;
-                    D2D1DeviceContext deviceContext = window._deviceContext;
+                    D2D1DeviceContext? deviceContext = window._deviceContext;
                     if (deviceContext is null)
                         continue;
                     window.ApplyTheme(provider);
                 }
-                pool.Return(windowListSnapshot);
+                pool.Return(array);
             }
             TriggerResize();
             controller?.Unlock();
@@ -854,23 +869,23 @@ namespace ConcreteUI.Window
         #region Static Methods
         internal static void NotifyThemeChanged(IThemeContext themeContext)
         {
-            WeakReference<CoreWindow>[] windowListSnapshot = GetWindowListSnapshot(_rootWindowList, out ArrayPool<WeakReference<CoreWindow>> pool, out int count);
-            if (windowListSnapshot is null)
+            if (!TryGetWindowListSnapshot(_rootWindowList, out ArrayPool<WeakReference<CoreWindow>>? pool,
+                    out WeakReference<CoreWindow>[]? array, out int count))
                 return;
             for (int i = 0; i < count; i++)
             {
-                if (!windowListSnapshot[i].TryGetTarget(out CoreWindow window) || window is null)
+                if (!array[i].TryGetTarget(out CoreWindow? window) || window is null)
                     continue;
-                D2D1DeviceContext deviceContext = window._deviceContext;
+                D2D1DeviceContext? deviceContext = window._deviceContext;
                 if (deviceContext is null)
                     continue;
                 window.ApplyTheme(new ThemeResourceProvider(deviceContext, themeContext, window._windowMaterial));
             }
-            pool.Return(windowListSnapshot);
+            pool.Return(array);
         }
 
-        private static WeakReference<CoreWindow>[] GetWindowListSnapshot(List<WeakReference<CoreWindow>> windowList, out ArrayPool<WeakReference<CoreWindow>> pool,
-            out int count)
+        private static bool TryGetWindowListSnapshot(List<WeakReference<CoreWindow>> windowList,
+            [NotNullWhen(true)] out ArrayPool<WeakReference<CoreWindow>>? pool, [NotNullWhen(true)] out WeakReference<CoreWindow>[]? array, out int count)
         {
             lock (windowList)
             {
@@ -878,18 +893,20 @@ namespace ConcreteUI.Window
                 if (count <= 0)
                 {
                     pool = null;
-                    return null;
+                    array = null;
+                    return false;
                 }
-                count -= windowList.RemoveAll(reference => !reference.TryGetTarget(out CoreWindow window) || window is null);
+                count -= windowList.RemoveAll(reference => !reference.TryGetTarget(out CoreWindow? window) || window is null);
                 if (count <= 0)
                 {
                     pool = null;
-                    return null;
+                    array = null;
+                    return false;
                 }
                 pool = ArrayPool<WeakReference<CoreWindow>>.Shared;
-                WeakReference<CoreWindow>[] windowListSnapshot = pool.Rent(count);
-                windowList.CopyTo(0, windowListSnapshot, 0, count);
-                return windowListSnapshot;
+                array = pool.Rent(count);
+                windowList.CopyTo(0, array, 0, count);
+                return true;
             }
         }
         #endregion
@@ -903,7 +920,7 @@ namespace ConcreteUI.Window
             _controller?.Dispose();
             _titleLayout?.Dispose();
 
-            SwapChainGraphicsHost host = _host;
+            SwapChainGraphicsHost? host = _host;
             if (host is null)
             {
                 base.Dispose(disposing);

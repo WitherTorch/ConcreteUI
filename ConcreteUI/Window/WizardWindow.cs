@@ -127,7 +127,7 @@ namespace ConcreteUI.Window
                 DWriteTextFormat? format = titleLayout;
                 if (format is null)
                 {
-                    string fontName = Theme.FontName;
+                    string fontName = NullSafetyHelper.ThrowIfNull(CurrentTheme).FontName;
                     format = factory.CreateTextFormat(fontName, UIConstants.WizardWindowTitleFontSize);
                     format.WordWrapping = DWriteWordWrapping.Wrap;
                 }
@@ -140,7 +140,7 @@ namespace ConcreteUI.Window
                 DWriteTextFormat? format = titleDescriptionLayout;
                 if (format is null)
                 {
-                    string fontName = Theme.FontName;
+                    string fontName = NullSafetyHelper.ThrowIfNull(CurrentTheme).FontName;
                     format = factory.CreateTextFormat(fontName, UIConstants.WizardWindowTitleDescriptionFontSize);
                     format.WordWrapping = DWriteWordWrapping.Wrap;
                 }
@@ -192,14 +192,22 @@ namespace ConcreteUI.Window
             pageRect.Right -= UIConstants.WizardPadding;
             pageRect.Bottom -= UIConstants.WizardPadding;
             _titleLocation = pageRect.Location;
-            GetLayouts((UpdateFlags)Interlocked.Exchange(ref _updateFlags, 0L), out DWriteTextLayout titleLayout, out DWriteTextLayout titleDescriptionLayout);
-            titleLayout.MaxWidth = pageRect.Width;
-            _titleDescriptionLocation = new PointF(pageRect.X + UIConstants.WizardSubtitleLeftMargin,
-                MathF.Ceiling(pageRect.Y + titleLayout.GetMetrics().Height + UIConstants.WizardSubtitleMargin));
-            titleDescriptionLayout.MaxWidth = pageRect.Width - UIConstants.WizardSubtitleLeftMargin;
-            pageRect.Top = _titleDescriptionLocation.Y + titleDescriptionLayout.GetMetrics().Height;
-            DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
-            DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
+            GetLayouts((UpdateFlags)Interlocked.Exchange(ref _updateFlags, 0L), out DWriteTextLayout? titleLayout, out DWriteTextLayout? titleDescriptionLayout);
+            if (titleLayout is not null)
+            {
+                titleLayout.MaxWidth = pageRect.Width;
+                float descriptionLocY = MathF.Ceiling(pageRect.Y + titleLayout.GetMetrics().Height + UIConstants.WizardSubtitleMargin);
+                if (titleDescriptionLayout is null)
+                    pageRect.Top = descriptionLocY;
+                else
+                {
+                    _titleDescriptionLocation = new PointF(pageRect.X + UIConstants.WizardSubtitleLeftMargin, descriptionLocY);
+                    titleDescriptionLayout.MaxWidth = pageRect.Width - UIConstants.WizardSubtitleLeftMargin;
+                    pageRect.Top = descriptionLocY + titleDescriptionLayout.GetMetrics().Height;
+                    DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
+                }
+                DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
+            }
 
             _pageRect = pageRect = GraphicsUtils.AdjustRectangleF(pageRect);
             if (callRecalculatePageLayout && pageRect.IsValid)

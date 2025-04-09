@@ -5,7 +5,6 @@ using System.Windows.Forms;
 
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
-using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;

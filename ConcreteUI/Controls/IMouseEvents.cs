@@ -1,6 +1,4 @@
-﻿using ConcreteUI.Utils;
-
-namespace ConcreteUI.Controls
+﻿namespace ConcreteUI.Controls
 {
     public interface IMouseEvents
     {

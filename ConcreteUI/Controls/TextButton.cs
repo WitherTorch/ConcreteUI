@@ -25,8 +25,9 @@ namespace ConcreteUI.Controls
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
 
-        private DWriteTextLayout _layout;
-        private string _fontName, _text;
+        private DWriteTextLayout? _layout;
+        private string? _fontName;
+        private string _text;
         private float _fontSize, _autoFontSizeScale;
         private bool _autoFontSize;
         private bool _disposed;
@@ -35,79 +36,74 @@ namespace ConcreteUI.Controls
         {
             _autoFontSize = true;
             _autoFontSizeScale = UIConstants.SquareRoot1Over2_Single;
+            _layout = null;
+            _text = string.Empty;
         }
 
-        protected override void ApplyThemeCore(ThemeResourceProvider provider) 
+        protected override void ApplyThemeCore(ThemeResourceProvider provider)
             => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
 
-        private DWriteTextLayout UpdateTextLayout()
+        private DWriteTextLayout? UpdateTextLayout()
         {
             string text = _text;
-            if (text != null)
+            DWriteFactory writeFactory = SharedResources.DWriteFactory;
+            DWriteTextLayout textLayout;
+            Rectangle bounds = Bounds;
+            float fontSize = _fontSize;
+            string? fontName = _fontName;
+            if (StringHelper.IsNullOrEmpty(fontName))
+                return null;
+            if (_autoFontSize)
             {
-                DWriteFactory writeFactory = SharedResources.DWriteFactory;
-                DWriteTextLayout textLayout;
-                Rectangle bounds = Bounds;
-                float fontSize = _fontSize;
-                string fontName = _fontName;
-                if (_autoFontSize)
+                float targetTextWidth;
+                if (fontSize > 0)
                 {
-                    float targetTextWidth;
-                    if (fontSize > 0)
-                    {
-                        targetTextWidth = 0;
-                    }
-                    else
-                    {
-                        targetTextWidth = MathHelper.Min(bounds.Width, bounds.Height) * _autoFontSizeScale;
-                    }
-                    DWriteTextFormat textFormat;
-                    float actualTextWidth = 0;
-                    do
-                    {
-                        if (actualTextWidth > 0)
-                        {
-                            fontSize -= actualTextWidth - targetTextWidth;
-                        }
-                        else
-                        {
-                            fontSize = targetTextWidth;
-                        }
-                        textFormat = writeFactory.CreateTextFormat(fontName, fontSize);
-                        textFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
-                        textFormat.TextAlignment = DWriteTextAlignment.Center;
-                        textLayout = writeFactory.CreateTextLayout(_text, textFormat);
-                        actualTextWidth = textLayout.GetMetrics().Width;
-                        textFormat.Dispose();
-                    }
-                    while (targetTextWidth > 0 && actualTextWidth > targetTextWidth);
-                    textLayout.MaxHeight = bounds.Height;
-                    textLayout.MaxWidth = bounds.Width;
-                    _fontSize = fontSize;
+                    targetTextWidth = 0;
                 }
                 else
                 {
-                    using DWriteTextFormat textFormat = writeFactory.CreateTextFormat(fontName, fontSize);
+                    targetTextWidth = MathHelper.Min(bounds.Width, bounds.Height) * _autoFontSizeScale;
+                }
+                DWriteTextFormat textFormat;
+                float actualTextWidth = 0;
+                do
+                {
+                    if (actualTextWidth > 0)
+                    {
+                        fontSize -= actualTextWidth - targetTextWidth;
+                    }
+                    else
+                    {
+                        fontSize = targetTextWidth;
+                    }
+                    textFormat = writeFactory.CreateTextFormat(fontName, fontSize);
                     textFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
                     textFormat.TextAlignment = DWriteTextAlignment.Center;
-                    textLayout = writeFactory.CreateTextLayout(_text, textFormat, bounds.Width, bounds.Height);
+                    textLayout = writeFactory.CreateTextLayout(_text, textFormat);
+                    actualTextWidth = textLayout.GetMetrics().Width;
+                    textFormat.Dispose();
                 }
-                DisposeHelper.SwapDisposeInterlocked(ref _layout, textLayout);
-                return textLayout;
+                while (targetTextWidth > 0 && actualTextWidth > targetTextWidth);
+                textLayout.MaxHeight = bounds.Height;
+                textLayout.MaxWidth = bounds.Width;
+                _fontSize = fontSize;
             }
             else
             {
-                DisposeHelper.SwapDisposeInterlocked(ref _layout);
-                return null;
+                using DWriteTextFormat textFormat = writeFactory.CreateTextFormat(fontName, fontSize);
+                textFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
+                textFormat.TextAlignment = DWriteTextAlignment.Center;
+                textLayout = writeFactory.CreateTextLayout(_text, textFormat, bounds.Width, bounds.Height);
             }
+            DisposeHelper.SwapDisposeInterlocked(ref _layout, textLayout);
+            return textLayout;
         }
 
         protected override bool RenderCore(DirtyAreaCollector collector)
         {
             D2D1DeviceContext context = Renderer.GetDeviceContext();
-            DWriteTextLayout layout = _layout;
-            if (layout is null) 
-                layout = UpdateTextLayout();
+            DWriteTextLayout? layout = _layout;
+            layout ??= UpdateTextLayout();
             RenderBackground(context);
             if (layout is not null)
             {

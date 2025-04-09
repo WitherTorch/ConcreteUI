@@ -3,7 +3,6 @@
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
-using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -90,9 +89,9 @@ namespace ConcreteUI.Controls
                 private int DoCalc(Button element)
                 {
                     string? text = element._text;
-                    if (string.IsNullOrEmpty(text))
+                    if (StringHelper.IsNullOrEmpty(text))
                         return MathHelper.Max(_minWidth, 0);
-                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text!, NullSafetyHelper.ThrowIfNull(element._fontName), TextAlignment.MiddleCenter, element._fontSize);
+                    DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(text, NullSafetyHelper.ThrowIfNull(element._fontName), TextAlignment.MiddleCenter, element._fontSize);
                     if (layout is null)
                         return MathHelper.Max(_minWidth, 0);
                     int result = MathI.Ceiling(layout.GetMetrics().Width);

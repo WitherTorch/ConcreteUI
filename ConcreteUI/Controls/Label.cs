@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -18,29 +19,31 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-	public sealed partial class Label : UIElement, IDisposable
-	{
-		private static readonly string[] _brushNames = new string[(int)Brush._Last]
-		{
-			"fore"
-		}.WithPrefix("app.label.").ToLowerAscii();
+    public sealed partial class Label : UIElement, IDisposable
+    {
+        private static readonly string[] _brushNames = new string[(int)Brush._Last]
+        {
+            "fore"
+        }.WithPrefix("app.label.").ToLowerAscii();
 
-		private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
 
-		private DWriteTextLayout _layout;
-		private string _fontName, _text;
-		private TextAlignment _alignment;
-		private long _rawUpdateFlags;
-		private float _fontSize;
-		private bool _wordWrap;
+        private DWriteTextLayout? _layout;
+        private string? _fontName;
+        private string _text;
+        private TextAlignment _alignment;
+        private long _rawUpdateFlags;
+        private float _fontSize;
+        private bool _wordWrap;
 
-		public Label(IRenderer renderer) : base(renderer)
-		{
-			_fontSize = UIConstants.DefaultFontSize;
-			_alignment = TextAlignment.MiddleLeft;
-			_rawUpdateFlags = -1L;
-			_layout = null;
-		}
+        public Label(IRenderer renderer) : base(renderer)
+        {
+            _fontSize = UIConstants.DefaultFontSize;
+            _alignment = TextAlignment.MiddleLeft;
+            _rawUpdateFlags = -1L;
+            _layout = null;
+            _text = string.Empty;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Label WithAutoWidthCalculation(int minHeight = -1, int maxHeight = -1)
@@ -57,36 +60,36 @@ namespace ConcreteUI.Controls
         }
 
         protected override void ApplyThemeCore(ThemeResourceProvider provider)
-		{
-			UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
-			_fontName = provider.FontName;
-			DisposeHelper.SwapDisposeInterlocked(ref _layout);
-			Update(RenderObjectUpdateFlags.Format);
-		}
-
-		[Inline(InlineBehavior.Remove)]
-		private void Update(RenderObjectUpdateFlags flags)
-		{
-			InterlockedHelper.Or(ref _rawUpdateFlags, (long)flags);
-			Update();
-		}
-
-		[Inline(InlineBehavior.Remove)]
-		private RenderObjectUpdateFlags GetAndCleanRenderObjectUpdateFlags()
-			=> (RenderObjectUpdateFlags)Interlocked.Exchange(ref _rawUpdateFlags, default);
+        {
+            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+            _fontName = provider.FontName;
+            DisposeHelper.SwapDisposeInterlocked(ref _layout);
+            Update(RenderObjectUpdateFlags.Format);
+        }
 
         [Inline(InlineBehavior.Remove)]
-        private DWriteTextLayout GetTextLayout(RenderObjectUpdateFlags flags)
+        private void Update(RenderObjectUpdateFlags flags)
         {
-            DWriteTextLayout layout = Interlocked.Exchange(ref _layout, null);
+            InterlockedHelper.Or(ref _rawUpdateFlags, (long)flags);
+            Update();
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private RenderObjectUpdateFlags GetAndCleanRenderObjectUpdateFlags()
+            => (RenderObjectUpdateFlags)Interlocked.Exchange(ref _rawUpdateFlags, default);
+
+        [Inline(InlineBehavior.Remove)]
+        private DWriteTextLayout? GetTextLayout(RenderObjectUpdateFlags flags)
+        {
+            DWriteTextLayout? layout = Interlocked.Exchange(ref _layout, null);
 
             if ((flags & RenderObjectUpdateFlags.Layout) == RenderObjectUpdateFlags.Layout)
             {
-                DWriteTextFormat format = layout;
+                DWriteTextFormat? format = layout;
                 if (CheckFormatIsNotAvailable(format, flags))
-                    format = TextFormatUtils.CreateTextFormat(_alignment, _fontName, _fontSize);
+                    format = TextFormatHelper.CreateTextFormat(_alignment, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
                 string text = _text;
-                if (string.IsNullOrEmpty(text))
+                if (StringHelper.IsNullOrEmpty(text))
                     layout = null;
                 else
                     layout = SharedResources.DWriteFactory.CreateTextLayout(text, format);
@@ -96,7 +99,7 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static bool CheckFormatIsNotAvailable(DWriteTextFormat format, RenderObjectUpdateFlags flags)
+        private static bool CheckFormatIsNotAvailable([NotNullWhen(false)] DWriteTextFormat? format, RenderObjectUpdateFlags flags)
         {
             if (format is null || format.IsDisposed)
                 return true;
@@ -109,25 +112,25 @@ namespace ConcreteUI.Controls
         }
 
         protected override bool RenderCore(DirtyAreaCollector collector)
-		{
-			IRenderer renderer = Renderer;
-            DWriteTextLayout layout = GetTextLayout(GetAndCleanRenderObjectUpdateFlags());
+        {
+            IRenderer renderer = Renderer;
+            DWriteTextLayout? layout = GetTextLayout(GetAndCleanRenderObjectUpdateFlags());
             D2D1DeviceContext deviceContext = renderer.GetDeviceContext();
-			D2D1Brush foreBrush = _brushes[(int)Brush.ForeBrush];
-			RenderBackground(deviceContext);
-			Rect bounds = Bounds;
-			if (layout is null)
-				return true;
-			layout.MaxWidth = bounds.Width;
-			layout.MaxHeight = bounds.Height;
-			layout.WordWrapping = _wordWrap ? DWriteWordWrapping.EmergencyBreak : DWriteWordWrapping.NoWrap;
-			deviceContext.DrawTextLayout(bounds.Location, layout, foreBrush);
-			DisposeHelper.NullSwapOrDispose(ref _layout, layout);
+            D2D1Brush foreBrush = _brushes[(int)Brush.ForeBrush];
+            RenderBackground(deviceContext);
+            Rect bounds = Bounds;
+            if (layout is null)
+                return true;
+            layout.MaxWidth = bounds.Width;
+            layout.MaxHeight = bounds.Height;
+            layout.WordWrapping = _wordWrap ? DWriteWordWrapping.EmergencyBreak : DWriteWordWrapping.NoWrap;
+            deviceContext.DrawTextLayout(bounds.Location, layout, foreBrush);
+            DisposeHelper.NullSwapOrDispose(ref _layout, layout);
             return true;
-		}
+        }
 
-		public void Dispose()
-		{
+        public void Dispose()
+        {
             DisposeHelper.SwapDisposeInterlocked(ref _layout);
         }
     }

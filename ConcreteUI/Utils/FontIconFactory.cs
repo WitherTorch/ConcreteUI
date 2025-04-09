@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.DirectWrite;
@@ -9,8 +10,8 @@ namespace ConcreteUI.Utils
     {
         private static readonly FontIconFactory _instance = new FontIconFactory();
 
-        private readonly DWriteFont[] _fluentSymbolFonts;
-        private readonly DWriteFont _segoeSymbolFont, _webDingsFont;
+        private readonly DWriteFont?[] _fluentSymbolFonts;
+        private readonly DWriteFont? _segoeSymbolFont, _webDingsFont;
         private readonly string[] _fluentSymbolFontNames =
             ["Segoe Fluent Icons", "Segoe MDL2 Assets"];
         private readonly string _segoeSymbolFontName = "Segoe UI Symbol";
@@ -49,9 +50,9 @@ namespace ConcreteUI.Utils
             }
         }
 
-        public bool TryCreateFluentUIFontIcon(uint unicodeValue, SizeF size, out FontIcon icon)
+        public bool TryCreateFluentUIFontIcon(uint unicodeValue, SizeF size, [NotNullWhen(true)] out FontIcon? icon)
         {
-            DWriteFont[] fonts = _fluentSymbolFonts;
+            DWriteFont?[] fonts = _fluentSymbolFonts;
             string[] fontNames = _fluentSymbolFontNames;
             for (int i = 0, length = fonts.Length; i < length; i++)
             {
@@ -63,14 +64,14 @@ namespace ConcreteUI.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryCreateSegoeSymbolFontIcon(uint unicodeValue, SizeF size, out FontIcon icon)
+        public bool TryCreateSegoeSymbolFontIcon(uint unicodeValue, SizeF size, [NotNullWhen(true)] out FontIcon? icon)
             => TryCreateFontIconCore(_segoeSymbolFont, _segoeSymbolFontName, unicodeValue, size, out icon);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryCreateWebdingsFontIcon(uint unicodeValue, SizeF size, out FontIcon icon)
+        public bool TryCreateWebdingsFontIcon(uint unicodeValue, SizeF size, [NotNullWhen(true)] out FontIcon? icon)
             => TryCreateFontIconCore(_webDingsFont, _webDingsFontName, unicodeValue, size, out icon);
 
-        private static bool TryCreateFontIconCore(DWriteFont font, string fontName, uint unicodeValue, SizeF size, out FontIcon icon)
+        private static bool TryCreateFontIconCore(DWriteFont? font, string fontName, uint unicodeValue, SizeF size, [NotNullWhen(true)] out FontIcon? icon)
         {
             if (font is null || !font.HasCharacter(unicodeValue))
             {

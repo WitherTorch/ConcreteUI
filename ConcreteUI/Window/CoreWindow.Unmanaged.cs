@@ -32,8 +32,8 @@ namespace ConcreteUI.Window
         #region Static Fields
         private static readonly ThreadLocal<int> _threadId = new ThreadLocal<int>(Kernel32.GetCurrentThreadId, false);
 #if DEBUG
-        private WndProcDelegate UIDependentWndProc;
-        private HitTestDelegate UIDependentCustomHitTest;
+        private WndProcDelegate? UIDependentWndProc;
+        private HitTestDelegate? UIDependentCustomHitTest;
 #else
         private void* UIDependentWndProc;
         private void* UIDependentCustomHitTest;
@@ -51,7 +51,7 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Special Fields
-        private object _fixLagObject;
+        private object? _fixLagObject;
         #endregion
 
         #region Properties
@@ -132,7 +132,7 @@ namespace ConcreteUI.Window
         protected int FormBorderWidth => _borderWidth;
 
         #region Thread-Safe Property Overwrite
-        private Func<bool> focus_Func;
+        private Func<bool>? _focusedFunc;
 
         /// <inheritdoc/>
         public new bool Focused
@@ -141,11 +141,11 @@ namespace ConcreteUI.Window
             {
                 if (InvokeRequired)
                 {
-                    if (focus_Func == null)
+                    if (_focusedFunc == null)
                     {
-                        focus_Func = () => base.Focused;
+                        _focusedFunc = () => base.Focused;
                     }
-                    return (bool)Invoke(focus_Func);
+                    return (bool)Invoke(_focusedFunc);
                 }
                 else
                 {
@@ -521,7 +521,7 @@ namespace ConcreteUI.Window
 #if DEBUG
         private void InvokeUIDependentWndProc(ref Message msg)
         {
-            WndProcDelegate wndProc = UIDependentWndProc;
+            WndProcDelegate? wndProc = UIDependentWndProc;
             if (wndProc is null)
             {
                 if (WindowMaterial == WindowMaterial.Integrated)
@@ -612,7 +612,7 @@ namespace ConcreteUI.Window
 #if DEBUG
         private HitTestValue InvokeUIDependentCustomHitTest(in PointF point)
         {
-            HitTestDelegate hitTest = UIDependentCustomHitTest;
+            HitTestDelegate? hitTest = UIDependentCustomHitTest;
             if (hitTest is null)
             {
                 if (_windowMaterial == WindowMaterial.Integrated)
@@ -822,8 +822,8 @@ namespace ConcreteUI.Window
         }
 
         #region Thread-Safe Function Overwrite
-        private Func<Point, Point> PointToClient_func;
-        private Func<bool> Clipboard_ContainsText_func;
+        private Func<Point, Point>? _pointToClientFunc;
+        private Func<bool>? _clipboard_ContainsTextFunc;
 
         public new bool InvokeRequired => _handle != default && User32.GetWindowThreadProcessId(_handle, null) != _threadId.Value;
 
@@ -831,10 +831,10 @@ namespace ConcreteUI.Window
         {
             if (InvokeRequired)
             {
-                if (PointToClient_func == null)
-                    PointToClient_func = base.PointToClient;
+                if (_pointToClientFunc == null)
+                    _pointToClientFunc = base.PointToClient;
                 if (IsDisposed) return new PointF(0, 0);
-                else return ScalingPointF((Point)Invoke(PointToClient_func, point), windowScaleFactor);
+                else return ScalingPointF((Point)Invoke(_pointToClientFunc, point), windowScaleFactor);
             }
             else
             {
@@ -846,10 +846,10 @@ namespace ConcreteUI.Window
         {
             if (InvokeRequired)
             {
-                if (PointToClient_func == null)
-                    PointToClient_func = base.PointToClient;
+                if (_pointToClientFunc == null)
+                    _pointToClientFunc = base.PointToClient;
                 if (IsDisposed) return new Point(0, 0);
-                else return (Point)Invoke(PointToClient_func, point);
+                else return (Point)Invoke(_pointToClientFunc, point);
             }
             else
             {
@@ -861,9 +861,9 @@ namespace ConcreteUI.Window
         {
             if (InvokeRequired)
             {
-                if (Clipboard_ContainsText_func == null)
-                    Clipboard_ContainsText_func = Clipboard.ContainsText;
-                return (bool)Invoke(Clipboard_ContainsText_func);
+                if (_clipboard_ContainsTextFunc == null)
+                    _clipboard_ContainsTextFunc = Clipboard.ContainsText;
+                return (bool)Invoke(_clipboard_ContainsTextFunc);
             }
             else
             {

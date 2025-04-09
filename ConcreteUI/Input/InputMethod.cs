@@ -16,8 +16,8 @@ namespace ConcreteUI.Input
         private bool _imeStatus;
         private ushort _langId;
         private IntPtr _windowHandle;
-        private InputMethodContext _context;
-        private IIMEControl _attachedControl;
+        private InputMethodContext? _context;
+        private IIMEControl? _attachedControl;
 
         private bool _disposed;
 
@@ -32,42 +32,45 @@ namespace ConcreteUI.Input
 
         public void Attach(IIMEControl control)
         {
-            if (control is null) Detach();
-            else if (_attachedControl != control)
+            IIMEControl? oldControl = _attachedControl;
+            if (oldControl == control)
+                return; 
+            if (control is null)
             {
-                if (_attachedControl == null)
-                {
-                    User32.CreateCaret(_windowHandle, IntPtr.Zero, 2, 10);
-                    if (_context == null)
-                    {
-                        _context = InputMethodContext.Create();
-                        InputMethodContext.Associate(_windowHandle, _context);
-                        _context.Status = _imeStatus;
-                    }
-                }
-                _attachedControl = control;
-                SetCandidateWindow(control.GetInputArea());
+                DetachCore();
+                return;
             }
+            InputMethodContext? context = _context;
+            if (oldControl is null)
+                User32.CreateCaret(_windowHandle, IntPtr.Zero, 2, 10);
+            if (context is null)
+            {
+                context = InputMethodContext.Create();
+                InputMethodContext.Associate(_windowHandle, context);
+                context.Status = _imeStatus;
+                _context = context;
+            }
+            _attachedControl = control;
+            SetCandidateWindow(context, control.GetInputArea());
         }
 
         public void Detach(IIMEControl control)
         {
-            if (control is null) return;
-            else if (_attachedControl == control)
+            if (control is null || _attachedControl != control)
+                return;
+            InputMethodContext? context = _context;
+            if (context != null)
             {
-                if (_context != null)
-                {
-                    _imeStatus = _context.Status;
-                    _context.Dispose();
-                    _context = null;
-                }
-                User32.DestroyCaret();
-                Detach();
+                _context = null;
+                _imeStatus = context.Status;
+                context.Dispose();
             }
+            DetachCore();
         }
 
-        private void Detach()
+        private void DetachCore()
         {
+            User32.DestroyCaret();
             _attachedControl = null;
         }
 
@@ -82,7 +85,7 @@ namespace ConcreteUI.Input
             IntPtr handle = _windowHandle;
             if (m.HWnd != handle)
                 return false;
-            IIMEControl attachedControl = _attachedControl;
+            IIMEControl? attachedControl = _attachedControl;
             WindowMessage msg = (WindowMessage)m.Msg;
             switch (msg)
             {
@@ -117,11 +120,13 @@ namespace ConcreteUI.Input
                     {
                         if (m.WParam.ToInt64() != 1L)
                             break;
-                        InputMethodContext newContext = _context;
+                        InputMethodContext? newContext = _context;
+                        if (newContext is null)
+                            break;
                         InputMethodContext.Associate(handle, out InputMethodContext oldContext, newContext);
                         if (oldContext != newContext)
                             oldContext?.Dispose();
-                        _context.Status = _imeStatus;
+                        newContext.Status = _imeStatus;
                         long lParam = m.LParam.ToInt64();
                         lParam &= ~ISC_SHOWUICOMPOSITIONWINDOW;
                         m.LParam = (IntPtr)lParam;
@@ -135,20 +140,24 @@ namespace ConcreteUI.Input
                     return false;
                 case WindowMessage.ImeComposition:
                     {
+                        InputMethodContext? context = _context;
+                        if (context is null)
+                            break;
+
                         IMECompositionFlags flags = (IMECompositionFlags)m.LParam.ToInt64();
                         if ((flags & IMECompositionFlags.CompositionString) > 0)
                         {
                             int cursorPos;
                             if ((flags & IMECompositionFlags.CursorPosition) > 0)
-                                cursorPos = _context.GetCursorPosition();
+                                cursorPos = context.GetCursorPosition();
                             else
                                 cursorPos = -1;
-                            attachedControl.OnIMEComposition(_context.GetCompositionString(), flags, cursorPos);
+                            attachedControl.OnIMEComposition(context.GetCompositionString(), flags, cursorPos);
                             return true;
                         }
                         if ((flags & IMECompositionFlags.ResultString) > 0)
                         {
-                            attachedControl.OnIMECompositionResult(_context.GetResultString(), flags);
+                            attachedControl.OnIMECompositionResult(context.GetResultString(), flags);
                             return true;
                         }
                     }
@@ -173,7 +182,7 @@ namespace ConcreteUI.Input
         private const int kCaretMargin = 1;
 
         // Copy from IMESharp
-        public unsafe void SetCandidateWindow(Rect caretRect)
+        internal unsafe void SetCandidateWindow(InputMethodContext context, in Rect caretRect)
         {
             int x = caretRect.Left;
             int y = caretRect.Top;
@@ -195,7 +204,7 @@ namespace ConcreteUI.Input
                     dwStyle = CFS_CANDIDATEPOS,
                     ptCurrentPos = new System.Drawing.Point(x, y)
                 };
-                _context.SetCandidateWindow(&candidateForm);
+                context.SetCandidateWindow(&candidateForm);
             }
 
             if (primaryLangID == LANG_JAPANESE)
@@ -209,7 +218,7 @@ namespace ConcreteUI.Input
                 dwStyle = CFS_POINT,
                 ptCurrentPos = new System.Drawing.Point(x, y)
             };
-            _context.SetCompositionWindow(&compositionForm);
+            context.SetCompositionWindow(&compositionForm);
 
             if (primaryLangID == LANG_KOREAN)
             {
@@ -236,7 +245,7 @@ namespace ConcreteUI.Input
             compositionForm.rcArea.Top = y;
             compositionForm.rcArea.Right = caretRect.Right;
             compositionForm.rcArea.Bottom = caretRect.Bottom;
-            _context.SetCandidateWindow(&excludeRectangle);
+            context.SetCandidateWindow(&excludeRectangle);
         }
 
         private void Dispose(bool disposing)

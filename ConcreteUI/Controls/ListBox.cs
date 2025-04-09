@@ -148,7 +148,7 @@ namespace ConcreteUI.Controls
                 switch (mode)
                 {
                     case ListBoxMode.None:
-                        if (string.IsNullOrWhiteSpace(item))
+                        if (StringHelper.IsNullOrWhiteSpace(item))
                             break;
                         context.DrawText(item, format, new RectF(xOffset, pointY, bounds.Right - lineWidth, pointY + itemHeight),
                             textBrush, D2D1DrawTextOptions.Clip, DWriteMeasuringMode.Natural);

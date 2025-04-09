@@ -218,7 +218,10 @@ namespace ConcreteUI.Utils
         [Inline(InlineBehavior.Keep, export: true)]
         public static bool CheckBrushIsSolid(D2D1LinearGradientBrush brush)
         {
-            foreach (D2D1GradientStop stop in brush.GradientStopCollection)
+            D2D1GradientStopCollection? collection = brush.GradientStopCollection;
+            if (collection is null)
+                return false;
+            foreach (D2D1GradientStop stop in collection)
             {
                 if (stop.Color.A < 1.0f)
                     return false;
@@ -229,7 +232,10 @@ namespace ConcreteUI.Utils
         [Inline(InlineBehavior.Keep, export: true)]
         public static bool CheckBrushIsSolid(D2D1RadialGradientBrush brush)
         {
-            foreach (D2D1GradientStop stop in brush.GradientStopCollection)
+            D2D1GradientStopCollection? collection = brush.GradientStopCollection;
+            if (collection is null)
+                return false;
+            foreach (D2D1GradientStop stop in collection)
             {
                 if (stop.Color.A < 1.0f)
                     return false;

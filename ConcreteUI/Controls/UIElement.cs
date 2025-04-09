@@ -25,8 +25,8 @@ namespace ConcreteUI.Controls
         private readonly IRenderer _renderer;
         private readonly int _identifier;
 
-        private IContainerElement _parent;
-        private IThemeContext _themeContext;
+        private IContainerElement? _parent;
+        private IThemeContext? _themeContext;
         private Rectangle _bounds;
         private long _requestRedraw;
 
@@ -78,7 +78,7 @@ namespace ConcreteUI.Controls
 
         protected void RenderBackground(D2D1DeviceContext context)
         {
-            IContainerElement parent = _parent;
+            IContainerElement? parent = _parent;
             if (parent is null)
             {
                 _renderer.RenderElementBackground(this, context);
@@ -151,6 +151,6 @@ namespace ConcreteUI.Controls
 
         public override int GetHashCode() => _identifier;
 
-        public override bool Equals(object obj) => ReferenceEquals(obj, this);
+        public override bool Equals(object? obj) => ReferenceEquals(obj, this);
     }
 }

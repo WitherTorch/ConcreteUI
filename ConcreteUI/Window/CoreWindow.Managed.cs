@@ -96,7 +96,7 @@ namespace ConcreteUI.Window
 
         #region Properties
         public new CoreWindow? Parent => _parent;
-        public IThemeContext Theme => _resourceProvider.ThemeContext;
+        public IThemeContext? CurrentTheme => _resourceProvider?.ThemeContext;
         public int Dpi => dpi;
         public float DpiScaleFactor => dpiScaleFactor;
         public float WindowScaleFactor => windowScaleFactor;

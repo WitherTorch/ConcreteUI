@@ -1,6 +1,6 @@
 ﻿namespace ConcreteUI.Native
 {
-    public enum DWMWindowAttribute
+    public enum DwmWindowAttribute : uint
     {
         NCRenderingEnabled,
         NCRenderingPolicy,
@@ -28,7 +28,7 @@
         SystemBackdropType
     }
 
-    public enum DWMSystemBackdropType
+    public enum DwmSystemBackdropType : uint
     {
         Auto,
         None,
@@ -37,7 +37,7 @@
         TabbedWindow
     }
 
-    public enum DWMWindowCornerPreference
+    public enum DwmWindowCornerPreference : uint
     {
         Default = 0,
         DoNotRound = 1,
@@ -45,7 +45,7 @@
         RoundSmall = 3
     }
 
-    public enum DWMBlurBehindFlags : uint
+    public enum DwmBlurBehindFlags : uint
     {
         None = 0,
         Enable = 1,

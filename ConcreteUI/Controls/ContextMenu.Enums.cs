@@ -1,6 +1,6 @@
 ﻿namespace ConcreteUI.Controls
 {
-    public sealed partial class ContextMenu
+    partial class ContextMenu
     {
         private enum Brush
         {

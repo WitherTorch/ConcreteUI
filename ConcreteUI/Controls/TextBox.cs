@@ -122,9 +122,9 @@ namespace ConcreteUI.Controls
                 bounds.Right - UIConstants.ElementMarginHalf, bounds.Bottom - UIConstants.ElementMarginHalf);
         }
 
-        private void Window_FocusElementChanged(object? sender, UIElement e)
+        private void Window_FocusElementChanged(object? sender, UIElement? element)
         {
-            bool newFocus = this == e;
+            bool newFocus = this == element;
             if (_focused == newFocus)
                 return;
             _focused = newFocus;
@@ -185,10 +185,10 @@ namespace ConcreteUI.Controls
             {
                 DWriteTextFormat? format = layout;
                 if (CheckFormatIsNotAvailable(format, flags))
-                    format = TextFormatUtils.CreateTextFormat(_alignment, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
+                    format = TextFormatHelper.CreateTextFormat(_alignment, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
 
                 string text = _text;
-                if (!string.IsNullOrEmpty(text))
+                if (!StringHelper.IsNullOrEmpty(text))
                 {
                     char passwordChar = PasswordChar;
                     if (passwordChar != '\0') //has password char
@@ -216,7 +216,7 @@ namespace ConcreteUI.Controls
             {
                 DWriteTextFormat? format = watermarkLayout;
                 if (CheckFormatIsNotAvailable(format, flags))
-                    format = TextFormatUtils.CreateTextFormat(_alignment, _fontName, _fontSize, DWriteFontStyle.Oblique);
+                    format = TextFormatHelper.CreateTextFormat(_alignment, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize, DWriteFontStyle.Oblique);
                 watermarkLayout = SharedResources.DWriteFactory.CreateTextLayout(_watermark ?? string.Empty, format);
                 format.Dispose();
             }
@@ -238,7 +238,7 @@ namespace ConcreteUI.Controls
         [Inline(InlineBehavior.Remove)]
         private DWriteTextLayout CreateVirtualTextLayout()
         {
-            DWriteTextLayout result = TextFormatUtils.CreateTextLayout(_text ?? string.Empty, _fontName, _alignment, _fontSize);
+            DWriteTextLayout result = TextFormatHelper.CreateTextLayout(_text ?? string.Empty, NullSafetyHelper.ThrowIfNull(_fontName), _alignment, _fontSize);
             SetRenderingProperties(result);
             return result;
         }
@@ -322,10 +322,12 @@ namespace ConcreteUI.Controls
             bool focused = _focused;
             RenderBackground(context, Enabled ? brushes[(int)Brush.BackBrush] : brushes[(int)Brush.BackDisabledBrush]);
 
-            GetTextLayouts(out DWriteTextLayout layout, out DWriteTextLayout watermarkLayout);
+            GetTextLayouts(out DWriteTextLayout? layout, out DWriteTextLayout? watermarkLayout);
             collector.MarkAsDirty(bounds);
-            if (layout.DetermineMinWidth() <= 0.0f)
+            if (layout is null || layout.DetermineMinWidth() <= 0.0f)
             {
+                if (watermarkLayout is null)
+                    return true;
                 SetRenderingProperties(watermarkLayout, bounds, _multiLine);
                 //文字為空，繪製浮水印
                 PointF layoutPoint = bounds.Location;
@@ -377,7 +379,7 @@ namespace ConcreteUI.Controls
                 {
                     for (int i = 0; i < length; i++)
                     {
-                        DWriteHitTestMetrics rangeMetrics = metricsArray[i];
+                        DWriteHitTestMetrics rangeMetrics = metricsArray![i];
                         RectF selectionBounds = GraphicsUtils.AdjustRectangleF(new RectangleF(layoutPoint.X + rangeMetrics.Left, layoutPoint.Y + rangeMetrics.Top, rangeMetrics.Width, rangeMetrics.Height));
                         context.FillRectangle(selectionBounds, selectionBackBrush);
                     }
@@ -659,20 +661,16 @@ namespace ConcreteUI.Controls
 
         public void Paste()
         {
-            string text = null;
+            string? text = null;
             if (_window.InvokeRequired)
-            {
                 _window.Invoke(new Action(() => text = System.Windows.Forms.Clipboard.GetText()));
-            }
             else
-            {
                 text = System.Windows.Forms.Clipboard.GetText();
-            }
-            int length = text?.Length ?? 0;
-            bool needPaste = length > 0;
             RemoveSelection();
+            if (StringHelper.IsNullOrEmpty(text))
+                return;
             Text = _text.Insert(CaretIndex, text);
-            CaretIndex += length;
+            CaretIndex += text.Length;
         }
 
         public void SelectAll()
@@ -704,7 +702,7 @@ namespace ConcreteUI.Controls
         private void DeleteOne()
         {
             string text = Text;
-            if (string.IsNullOrEmpty(text))
+            if (StringHelper.IsNullOrEmpty(text))
                 return;
             if (selectionRange.Length > 0)
             {
@@ -941,7 +939,8 @@ namespace ConcreteUI.Controls
 
         private static void CaretTimer_Tick(object? state)
         {
-            TextBox _this = (TextBox)state;
+            if (state is not TextBox _this)
+                return;
             _this._caretState = !_this._caretState;
             _this.Update();
         }
@@ -1113,7 +1112,7 @@ namespace ConcreteUI.Controls
             if (drag)
             {
                 string text = _text;
-                if (string.IsNullOrEmpty(text))
+                if (StringHelper.IsNullOrEmpty(text))
                     return;
                 PointF location = args.Location;
                 if (!_multiLine)

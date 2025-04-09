@@ -22,8 +22,9 @@ namespace ConcreteUI.Controls
             get => _renderer;
         }
 
-        public IContainerElement Parent
+        public IContainerElement? Parent
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _parent;
             set
             {
@@ -223,7 +224,7 @@ namespace ConcreteUI.Controls
             set => SetLayoutCalculation(LayoutProperty.Width, value);
         }
 
-        public IThemeContext ThemeContext
+        public IThemeContext? CurrentTheme
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _themeContext;
@@ -233,7 +234,13 @@ namespace ConcreteUI.Controls
                 if (ReferenceEquals(_themeContext, value))
                     return;
                 _themeContext = value;
-                ApplyThemeContext(value);
+                if (value is not null)
+                {
+                    ApplyThemeContext(value);
+                    return;
+                }
+                ApplyThemeCore(Renderer.GetThemeResourceProvider());
+                Update();
             }
         }
 
