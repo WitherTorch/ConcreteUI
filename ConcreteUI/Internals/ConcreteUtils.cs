@@ -9,10 +9,11 @@ namespace ConcreteUI.Internals
 {
     internal static class ConcreteUtils
     {
-        public static unsafe void ApplyWindowStyle(CoreWindow window, ref object fixLagObject)
+        public static unsafe void ApplyWindowStyle(CoreWindow window, out object? fixLagObject)
         {
             IntPtr handle = window.Handle;
             WindowMaterial material = window.WindowMaterial;
+            fixLagObject = null;
             switch (SystemConstants.VersionLevel)
             {
                 case SystemVersionLevel.Windows_11_After: // Acrylic-theme-v2

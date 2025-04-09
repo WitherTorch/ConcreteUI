@@ -172,7 +172,7 @@ namespace ConcreteUI.Window
         #region Override Methods
         protected override void OnShown(EventArgs e)
         {
-            ConcreteUtils.ApplyWindowStyle(this, ref _fixLagObject);
+            ConcreteUtils.ApplyWindowStyle(this, out _fixLagObject);
             UpdateFirstTime();
             base.OnShown(e);
             BeginInvoke(OnShown2);

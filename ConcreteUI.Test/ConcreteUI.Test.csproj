@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFrameworks>net472;net8-windows</TargetFrameworks>
+		<TargetFrameworks>net8-windows;net472</TargetFrameworks>
 		<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
 		<Nullable>enable</Nullable>
 		<UseWindowsForms>true</UseWindowsForms>
