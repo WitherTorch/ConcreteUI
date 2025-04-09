@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 using ConcreteUI.Graphics;
@@ -45,14 +46,14 @@ namespace ConcreteUI.Controls
             _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
         }
 
-        [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Button WithAutoWidthCalculation(int minHeight = -1, int maxHeight = -1)
         {
             WidthCalculation = new AutoWidthCalculation(this, minHeight, maxHeight);
             return this;
         }
 
-        [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Button WithAutoHeightCalculation(int minHeight = -1, int maxHeight = -1)
         {
             HeightCalculation = new AutoHeightCalculation(this, minHeight, maxHeight);

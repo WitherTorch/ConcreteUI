@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 using ConcreteUI.Graphics;
@@ -60,7 +61,7 @@ namespace ConcreteUI.Controls
             _rawUpdateFlags = -1L;
         }
 
-        [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ComboBox WithAutoHeightCalculation()
         {
             HeightCalculation = new AutoHeightCalculation(this);

@@ -59,14 +59,14 @@ namespace ConcreteUI.Controls
             _checkState = false;
         }
 
-        [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CheckBox WithAutoWidthCalculation(int minHeight = -1, int maxHeight = -1)
         {
             WidthCalculation = new AutoWidthCalculation(this, minHeight, maxHeight);
             return this;
         }
 
-        [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CheckBox WithAutoHeightCalculation(int minHeight = -1, int maxHeight = -1)
         {
             HeightCalculation = new AutoHeightCalculation(this, minHeight, maxHeight);
