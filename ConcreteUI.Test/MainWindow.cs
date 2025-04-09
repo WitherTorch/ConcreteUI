@@ -19,6 +19,7 @@ namespace ConcreteUI.Test
     {
         private readonly UnwrappableList<UIElement>[] _elementLists = new UnwrappableList<UIElement>[3];
         private InputMethod _ime;
+        private ProgressBar _progressBar;
 
         public MainWindow(CoreWindow parent) : base(parent, ["頁面A", "頁面B", "頁面C"])
         {
@@ -56,6 +57,7 @@ namespace ConcreteUI.Test
         {
             _ime = new InputMethod(this);
             UnwrappableList<UIElement> elementList = new UnwrappableList<UIElement>();
+
             Button button = new Button(this)
             {
                 Text = "請點我!",
@@ -63,6 +65,8 @@ namespace ConcreteUI.Test
                 TopCalculation = new PageDependedCalculation(LayoutProperty.Top)
             }.WithAutoWidthCalculation().WithAutoHeightCalculation();
             button.Click += Button_Click;
+            elementList.Add(button);
+
             TextBox textBox = new TextBox(this, _ime)
             {
                 LeftCalculation = new ElementDependedCalculation(button, LayoutProperty.Right, MarginType.Outside),
@@ -71,6 +75,8 @@ namespace ConcreteUI.Test
                 HeightCalculation = new ElementDependedCalculation(button, LayoutProperty.Height, MarginType.None),
                 Watermark = "這裡可以輸入文字喔!"
             };
+            elementList.Add(textBox);
+
             ListBox listBox = new ListBox(this)
             {
                 Mode = ListBoxMode.Some,
@@ -82,6 +88,8 @@ namespace ConcreteUI.Test
             IList<string> items = listBox.Items;
             for (int i = 1; i <= 200; i++)
                 items.Add("物件 " + i.ToString());
+            elementList.Add(listBox);
+
             GroupBox groupBox = new GroupBox(this)
             {
                 LeftCalculation = new ElementDependedCalculation(listBox, LayoutProperty.Right, MarginType.Outside),
@@ -90,27 +98,60 @@ namespace ConcreteUI.Test
                 BottomCalculation = new PageDependedCalculation(LayoutProperty.Bottom),
                 Title = "群組容器",
             };
-            UIElement lastElement;
-            groupBox.AddChild(lastElement = new CheckBox(this)
+            elementList.Add(groupBox);
+
+            groupBox.AddChild(new CheckBox(this)
             {
                 LeftCalculation = new GroupBox.ContentXCalculation(groupBox),
                 TopCalculation = new GroupBox.ContentYCalculation(groupBox),
                 Text = "可以勾選的方塊"
             }.WithAutoWidthCalculation().WithAutoHeightCalculation());
-            groupBox.AddChild(lastElement = new ComboBox(this)
+
+            ComboBox comboBox = new ComboBox(this)
             {
                 LeftCalculation = new GroupBox.ContentXCalculation(groupBox),
-                TopCalculation = new ElementDependedCalculation(lastElement, LayoutProperty.Bottom, MarginType.Outside),
+                TopCalculation = new ElementDependedCalculation(groupBox.FirstChild, LayoutProperty.Bottom, MarginType.Outside),
                 WidthCalculation = new FixedCalculation(200)
-            }.WithAutoHeightCalculation());
-            items = ((ComboBox)lastElement).Items;
-            ((ComboBox)lastElement).RequestDropdownListOpening += ComboBox_RequestDropdownListOpening;
+            }.WithAutoHeightCalculation();
+            comboBox.RequestDropdownListOpening += ComboBox_RequestDropdownListOpening;
+            items = comboBox.Items;
             for (int i = 1; i <= 200; i++)
                 items.Add("選項 " + i.ToString());
-            elementList.Add(button);
-            elementList.Add(textBox);
-            elementList.Add(listBox);
-            elementList.Add(groupBox);
+            groupBox.AddChild(comboBox);
+            Label label = new Label(this)
+            {
+                LeftCalculation = new GroupBox.ContentXCalculation(groupBox),
+                TopCalculation = new ElementDependedCalculation(comboBox, LayoutProperty.Bottom, MarginType.Outside),
+                RightCalculation = new ElementDependedCalculation(groupBox, LayoutProperty.Right),
+                Text = "底下是進度條測試",
+                Alignment = TextAlignment.MiddleCenter
+            }.WithAutoHeightCalculation();
+            Button leftButton = new Button(this)
+            {
+                LeftCalculation = new ElementDependedCalculation(label, LayoutProperty.Left, MarginType.None),
+                TopCalculation = new ElementDependedCalculation(label, LayoutProperty.Bottom, MarginType.Outside),
+                Text = "-"
+            }.WithAutoWidthCalculation().WithAutoHeightCalculation();
+            Button rightButton = new Button(this)
+            {
+                TopCalculation = new ElementDependedCalculation(label, LayoutProperty.Bottom, MarginType.Outside),
+                RightCalculation = new ElementDependedCalculation(label, LayoutProperty.Right, MarginType.None),
+                Text = "+"
+            }.WithAutoWidthCalculation().WithAutoHeightCalculation();
+            ProgressBar progressBar = new ProgressBar(this)
+            {
+                LeftCalculation = new ElementDependedCalculation(leftButton, LayoutProperty.Right, MarginType.Outside),
+                TopCalculation = new ElementDependedCalculation(label, LayoutProperty.Bottom, MarginType.Outside),
+                RightCalculation = new ElementDependedCalculation(rightButton, LayoutProperty.Left, MarginType.Outside),
+                HeightCalculation = new ElementDependedCalculation(leftButton, LayoutProperty.Height, MarginType.None),
+                Maximium = 100.0f,
+                Value = 50.0f
+            };
+            leftButton.Click += LeftButton_Click;
+            rightButton.Click += RightButton_Click;
+            groupBox.AddChildren(label, leftButton, rightButton, progressBar);
+            _progressBar = progressBar;
+
             _elementLists[0] = elementList;
             _elementLists[1] = new();
             _elementLists[2] = new();
@@ -137,9 +178,31 @@ namespace ConcreteUI.Test
             }
         }
 
+        private void LeftButton_Click(UIElement sender, in MouseInteractEventArgs args)
+        {
+            _progressBar.Value -= 1.0f;
+        }
+
+        private void RightButton_Click(UIElement sender, in MouseInteractEventArgs args)
+        {
+            _progressBar.Value += 1.0f;
+        }
+
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
+            if (disposing)
+            {
+                foreach (UnwrappableList<UIElement> elementList in _elementLists)
+                {
+                    if (elementList is null)
+                        continue;
+                    foreach (UIElement element in elementList)
+                    {
+                        (element as IDisposable)?.Dispose();
+                    }
+                }
+            }
             _ime.Dispose();
         }
     }

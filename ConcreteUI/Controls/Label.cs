@@ -122,7 +122,8 @@ namespace ConcreteUI.Controls
 			layout.MaxHeight = bounds.Height;
 			layout.WordWrapping = _wordWrap ? DWriteWordWrapping.EmergencyBreak : DWriteWordWrapping.NoWrap;
 			deviceContext.DrawTextLayout(bounds.Location, layout, foreBrush);
-			return true;
+			DisposeHelper.NullSwapOrDispose(ref _layout, layout);
+            return true;
 		}
 
 		public void Dispose()
