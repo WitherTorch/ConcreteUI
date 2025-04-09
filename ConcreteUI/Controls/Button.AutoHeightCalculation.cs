@@ -89,9 +89,7 @@ namespace ConcreteUI.Controls
 
                 private int DoCalc(Button element)
                 {
-                    string text = element._text;
-                    if (string.IsNullOrEmpty(text))
-                        return MathHelper.Max(_minHeight, 0);
+                    string text = element._text ?? string.Empty;
                     DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, element._fontName, TextAlignment.MiddleCenter, element._fontSize);
                     if (layout is null)
                         return MathHelper.Max(_minHeight, 0);

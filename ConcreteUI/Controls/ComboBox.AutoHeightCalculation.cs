@@ -1,8 +1,8 @@
 ﻿using System;
 
-using ConcreteUI.Controls;
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
+using ConcreteUI.Internals;
 using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
@@ -10,22 +10,22 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    partial class Label
+    partial class ComboBox
     {
         public sealed class AutoHeightCalculation : AbstractCalculation
         {
-            private readonly WeakReference<Label> _reference;
+            private readonly WeakReference<ComboBox> _reference;
             private readonly int _minHeight;
             private readonly int _maxHeight;
 
-            public AutoHeightCalculation(WeakReference<Label> reference, int minHeight = -1, int maxHeight = -1)
+            public AutoHeightCalculation(WeakReference<ComboBox> reference, int minHeight = -1, int maxHeight = -1)
             {
                 _reference = reference;
                 _minHeight = minHeight;
                 _maxHeight = maxHeight;
             }
 
-            public AutoHeightCalculation(Label element, int minHeight = -1, int maxHeight = -1) : this(new WeakReference<Label>(element), minHeight, maxHeight)
+            public AutoHeightCalculation(ComboBox element, int minHeight = -1, int maxHeight = -1) : this(new WeakReference<ComboBox>(element), minHeight, maxHeight)
             {
             }
 
@@ -37,7 +37,7 @@ namespace ConcreteUI.Controls
 
             private sealed class CalculationContext : ICalculationContext
             {
-                private readonly Label _element;
+                private readonly ComboBox _element;
                 private readonly int _minHeight;
                 private readonly int _maxHeight;
 
@@ -46,11 +46,11 @@ namespace ConcreteUI.Controls
 
                 public bool DependPageRect => false;
 
-                public UIElement DependedElement => _element;
+                public UIElement DependedElement => null;
 
-                public LayoutProperty DependedProperty => LayoutProperty.Width;
+                public LayoutProperty DependedProperty => LayoutProperty.None;
 
-                private CalculationContext(Label element, int minHeight, int maxHeight)
+                private CalculationContext(ComboBox element, int minHeight, int maxHeight)
                 {
                     _element = element;
                     _minHeight = minHeight;
@@ -59,9 +59,9 @@ namespace ConcreteUI.Controls
                     _value = 0;
                 }
 
-                public static CalculationContext TryCreate(WeakReference<Label> reference, int minHeight, int maxHeight)
+                public static CalculationContext TryCreate(WeakReference<ComboBox> reference, int minHeight, int maxHeight)
                 {
-                    if (!reference.TryGetTarget(out Label element))
+                    if (!reference.TryGetTarget(out ComboBox element))
                         return null;
                     return new CalculationContext(element, minHeight, maxHeight);
                 }
@@ -81,19 +81,18 @@ namespace ConcreteUI.Controls
                 {
                     if (_calculated)
                         return _value;
-                    int value = DoCalc(_element, dependedValue);
-                    _value = value;
+                    int value = DoCalc(_element) + UIConstants.ElementMargin;
+                    _value = value; 
                     _calculated = true;
                     return value;
                 }
 
-                private int DoCalc(Label element, int dependedValue)
+                private int DoCalc(ComboBox element)
                 {
                     string text = element._text ?? string.Empty;
-                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, element._fontName, element._alignment, element._fontSize);
+                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, element._fontName, TextAlignment.MiddleLeft, element._fontSize);
                     if (layout is null)
                         return MathHelper.Max(_minHeight, 0);
-                    layout.MaxWidth = dependedValue;
                     int result = MathI.Ceiling(layout.GetMetrics().Height);
                     layout.Dispose();
                     int maxHeight = _maxHeight;

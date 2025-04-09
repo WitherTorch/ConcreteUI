@@ -5,11 +5,11 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
-using ConcreteUI.Internals;
+using ConcreteUI.Utils;
 
 using InlineMethod;
 
-namespace ConcreteUI.Utils
+namespace ConcreteUI.Internals
 {
     internal sealed class FontIconResources : IDisposable
     {
@@ -130,7 +130,8 @@ namespace ConcreteUI.Utils
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void DrawDropDownButton(D2D1DeviceContext context, PointF point, float buttonHeight, D2D1Brush brush)
-            => _comboBoxDropdownIconDict.GetOrAdd(buttonHeight, GetComboBoxDropDownIcon)?.Render(context, point, brush);
+            => _comboBoxDropdownIconDict.GetOrAdd(buttonHeight - UIConstants.ElementMargin, GetComboBoxDropDownIcon)?.Render(context, 
+                AdjustPointForDropDownButton(point), brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void DrawScrollBarUpButton(D2D1DeviceContext context, in RectangleF targetRect, D2D1Brush brush) 
@@ -145,6 +146,14 @@ namespace ConcreteUI.Utils
         {
             original.X += (UIConstants.TitleBarButtonSizeWidth - UIConstants.TitleBarIconSizeWidth) * 0.5f;
             original.Y += (UIConstants.TitleBarButtonSizeHeight - UIConstants.TitleBarIconSizeHeight) * 0.5f;
+            return original;
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static PointF AdjustPointForDropDownButton(PointF original)
+        {
+            original.X += UIConstants.ElementMarginHalf;
+            original.Y += UIConstants.ElementMarginHalf;
             return original;
         }
 

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 
 using ConcreteUI.Controls;
@@ -78,6 +79,9 @@ namespace ConcreteUI.Test
                 WidthCalculation = new FixedCalculation(250),
                 BottomCalculation = new PageDependedCalculation(LayoutProperty.Bottom),
             };
+            IList<string> items = listBox.Items;
+            for (int i = 1; i <= 200; i++)
+                items.Add("物件 " + i.ToString());
             GroupBox groupBox = new GroupBox(this)
             {
                 LeftCalculation = new ElementDependedCalculation(listBox, LayoutProperty.Right, MarginType.Outside),
@@ -86,16 +90,23 @@ namespace ConcreteUI.Test
                 BottomCalculation = new PageDependedCalculation(LayoutProperty.Bottom),
                 Title = "群組容器",
             };
-            groupBox.AddChild(new CheckBox(this)
+            UIElement lastElement;
+            groupBox.AddChild(lastElement = new CheckBox(this)
             {
                 LeftCalculation = new GroupBox.ContentXCalculation(groupBox),
                 TopCalculation = new GroupBox.ContentYCalculation(groupBox),
-                RightCalculation = new PageDependedCalculation(LayoutProperty.Right),
-                BottomCalculation = new PageDependedCalculation(LayoutProperty.Bottom),
                 Text = "可以勾選的方塊"
             }.WithAutoWidthCalculation().WithAutoHeightCalculation());
+            groupBox.AddChild(lastElement = new ComboBox(this)
+            {
+                LeftCalculation = new GroupBox.ContentXCalculation(groupBox),
+                TopCalculation = new ElementDependedCalculation(lastElement, LayoutProperty.Bottom, MarginType.Outside),
+                WidthCalculation = new FixedCalculation(200)
+            }.WithAutoHeightCalculation());
+            items = ((ComboBox)lastElement).Items;
+            ((ComboBox)lastElement).RequestDropdownListOpening += ComboBox_RequestDropdownListOpening;
             for (int i = 1; i <= 200; i++)
-                listBox.Items.Add("物件 " + i.ToString());
+                items.Add("選項 " + i.ToString());
             elementList.Add(button);
             elementList.Add(textBox);
             elementList.Add(listBox);
@@ -103,6 +114,11 @@ namespace ConcreteUI.Test
             _elementLists[0] = elementList;
             _elementLists[1] = new();
             _elementLists[2] = new();
+        }
+
+        private void ComboBox_RequestDropdownListOpening(object sender, DropdownListEventArgs e)
+        {
+            ChangeOverlayElement(e.DropdownList);
         }
 
         private void Button_Click(UIElement sender, in MouseInteractEventArgs args)

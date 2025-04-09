@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
+
+using ConcreteUI.Graphics.Native.DirectWrite;
+using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
 
@@ -9,7 +13,7 @@ namespace ConcreteUI.Controls
     partial class ComboBox
     {
         public event EventHandler ItemClicked;
-        public event EventHandler<DropdownListEventArgs> DropdownListOpened;
+        public event EventHandler<DropdownListEventArgs> RequestDropdownListOpening;
 
         public bool Enabled
         {
@@ -20,17 +24,10 @@ namespace ConcreteUI.Controls
                 if (_enabled == value)
                     return;
                 _enabled = value;
-                _dropdownList.Close();
                 if (_state != ButtonTriState.None)
                     _state = ButtonTriState.None;
                 Update();
             }
-        }
-
-        public ComboBoxDropdownList DropdownList
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _dropdownList;
         }
 
         public int SelectedIndex
