@@ -48,7 +48,7 @@ namespace ConcreteUI.Controls
             _isFirstTimeClick = true;
             _selectedIndex = -1;
             Rectangle parentBounds = parent.Bounds;
-            Bounds = new Rectangle(parentBounds.Left, parentBounds.Bottom - 1, parentBounds.Width, 0);
+            Bounds = new Rectangle(parentBounds.Left, parentBounds.Bottom - MathI.Ceiling(Renderer.GetBaseLineWidth()), parentBounds.Width, 0);
         }
 
         protected override void ApplyThemeCore(ThemeResourceProvider provider)
