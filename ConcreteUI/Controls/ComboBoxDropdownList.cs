@@ -15,6 +15,8 @@ using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Header;
+
 namespace ConcreteUI.Controls
 {
     public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGlobalMouseEvents
@@ -45,6 +47,8 @@ namespace ConcreteUI.Controls
             _window = window;
             _isFirstTimeClick = true;
             _selectedIndex = -1;
+            Rectangle parentBounds = parent.Bounds;
+            Bounds = new Rectangle(parentBounds.Left, parentBounds.Bottom - 1, parentBounds.Width, 0);
         }
 
         protected override void ApplyThemeCore(ThemeResourceProvider provider)
@@ -77,9 +81,8 @@ namespace ConcreteUI.Controls
             int count = items.Count;
             if (count <= 0)
                 return;
-            Rectangle parentBounds = parent.Bounds;
             float lineWidth = Renderer.GetBaseLineWidth();
-            float itemWidth = parentBounds.Width - lineWidth * 2f - 18;
+            float itemWidth = Width - lineWidth * 2f - 18;
             DWriteTextLayout[] layouts = new DWriteTextLayout[count];
             for (int i = 0; i < count; i++)
             {
@@ -95,7 +98,7 @@ namespace ConcreteUI.Controls
             _itemHeight = itemHeight;
 
             int maxViewCount = parent.DropdownListVisibleCount;
-            Bounds = new Rectangle(parentBounds.Left, parentBounds.Bottom, parentBounds.Width, maxViewCount * itemHeight);
+            Height = maxViewCount * itemHeight;
             int selectedIndex = MathHelper.Clamp(_selectedIndex, -1, count - 1);
             _selectedIndex = selectedIndex;
             _maxViewCount = maxViewCount;
