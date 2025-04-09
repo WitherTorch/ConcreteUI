@@ -14,6 +14,7 @@
 		<Configurations>Debug;Release</Configurations>
 		<AssemblyOriginatorKeyFile>keypair.snk</AssemblyOriginatorKeyFile>
 		<FileAlignment>4096</FileAlignment>
+		<ApplicationIcon>app-icon.ico</ApplicationIcon>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
@@ -48,6 +49,14 @@
 
 	<ItemGroup>
 		<Compile Include="..\GlobalAssemblyInfo.cs" Link="GlobalAssemblyInfo.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Include="app-icon.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Include="app-icon.ico" />
 	</ItemGroup>
 	
 	<ItemGroup>

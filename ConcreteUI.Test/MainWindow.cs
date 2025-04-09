@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
+using System.Reflection;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Controls.Calculation;
@@ -32,6 +34,12 @@ namespace ConcreteUI.Test
             MinimumSize = new Size(640, 560);
             Text = nameof(MainWindow);
             StartPosition = FormStartPosition.CenterScreen;
+            Stream stream = Assembly.GetEntryAssembly().GetManifestResourceStream("ConcreteUI.Test.app-icon.ico");
+            if (stream is not null)
+            {
+                Icon = new Icon(stream);
+                stream.Dispose();
+            }
         }
 
         protected override void ApplyThemeCore(ThemeResourceProvider provider)
