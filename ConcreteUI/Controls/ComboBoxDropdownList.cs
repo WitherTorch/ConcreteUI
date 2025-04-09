@@ -15,8 +15,6 @@ using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Header;
-
 namespace ConcreteUI.Controls
 {
     public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGlobalMouseEvents
@@ -36,7 +34,7 @@ namespace ConcreteUI.Controls
         private readonly ComboBox _parent;
         private readonly CoreWindow _window;
 
-        private DWriteTextLayout[] _layouts;
+        private DWriteTextLayout[]? _layouts;
         private int _itemHeight, _selectedIndex, _maxViewCount;
         private bool _isClicking, _isClickingClient, _isFirstTimeClick;
 
@@ -108,7 +106,7 @@ namespace ConcreteUI.Controls
         protected override bool RenderContent(DirtyAreaCollector collector)
         {
             D2D1DeviceContext context = Renderer.GetDeviceContext();
-            DWriteTextLayout[] layouts = Interlocked.Exchange(ref _layouts, null);
+            DWriteTextLayout[]? layouts = Interlocked.Exchange(ref _layouts, null);
             if (layouts is null)
                 return true;
             float lineWidth = Renderer.GetBaseLineWidth();
@@ -235,7 +233,7 @@ namespace ConcreteUI.Controls
         {
             if (!disposing)
                 return;
-            DWriteTextLayout[] layouts = Interlocked.Exchange(ref _layouts, null);
+            DWriteTextLayout[]? layouts = Interlocked.Exchange(ref _layouts, null);
             if (layouts is null)
                 return;
             for (int i = 0, count = layouts.Length; i < count; i++)

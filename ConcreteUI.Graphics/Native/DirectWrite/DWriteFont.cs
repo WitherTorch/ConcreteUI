@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using InlineMethod;
@@ -74,9 +73,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontFamily);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DWriteFontFamily(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new DWriteFontFamily(nativePointer, ReferenceType.Owned);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -119,13 +117,11 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// </returns>
         public DWriteLocalizedStrings GetFaceNames()
         {
-            void* names;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFaceNames);
-            int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &names);
-            if (hr >= 0)
-                return names == null ? null : new DWriteLocalizedStrings(names, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new DWriteLocalizedStrings(nativePointer, ReferenceType.Owned);
         }
 
         /// <inheritdoc cref="GetInformationalStrings(DWriteInformationalStringId, bool*)" />
@@ -147,9 +143,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetInformationalStrings);
             int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteInformationalStringId, void**, bool*, int>)functionPointer)(nativePointer, informationalStringId,
                 &nativePointer, exists);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DWriteLocalizedStrings(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new DWriteLocalizedStrings(nativePointer, ReferenceType.Owned);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -179,9 +174,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.HasCharacter);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, bool*, int>)functionPointer)(nativePointer, unicodeValue, &exists);
-            if (hr >= 0)
-                return exists;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return exists;
         }
     }
 }

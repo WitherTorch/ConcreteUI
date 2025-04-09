@@ -9,8 +9,6 @@ using System.Windows.Forms;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
-
-using ConcreteUI.Utils;
 using ConcreteUI.Native;
 
 using WitherTorch.Common.Extensions;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -15,7 +16,6 @@ using ConcreteUI.Utils;
 
 using InlineMethod;
 
-using WitherTorch.Common;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -24,7 +24,7 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class CheckBox : UIElement, IDisposable, IMouseEvents
     {
-        public event EventHandler CheckedChanged;
+        public event EventHandler? CheckedChanged;
 
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -40,10 +40,10 @@ namespace ConcreteUI.Controls
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
 
-        private string _text, _fontName;
-        private D2D1StrokeStyle _strokeStyle;
-        private DWriteTextLayout _layout;
-        private D2D1Resource _checkSign;
+        private string? _text, _fontName;
+        private D2D1StrokeStyle? _strokeStyle;
+        private DWriteTextLayout? _layout;
+        private D2D1Resource? _checkSign;
 
         private Rect _checkBoxBounds;
         private ButtonTriState _buttonState;
@@ -129,27 +129,27 @@ namespace ConcreteUI.Controls
             return Interlocked.Read(ref _redrawTypeRaw) > (long)RedrawType.NoRedraw;
         }
 
-        private DWriteTextLayout GetTextLayout(RenderObjectUpdateFlags flags)
+        private DWriteTextLayout? GetTextLayout(RenderObjectUpdateFlags flags)
         {
-            DWriteTextLayout layout = Interlocked.Exchange(ref _layout, null);
+            DWriteTextLayout? layout = Interlocked.Exchange(ref _layout, null);
 
             if ((flags & RenderObjectUpdateFlags.Layout) == RenderObjectUpdateFlags.Layout)
             {
-                DWriteTextFormat format = layout;
+                DWriteTextFormat? format = layout;
                 if (CheckFormatIsNotAvailable(format, flags))
-                    format = TextFormatUtils.CreateTextFormat(TextAlignment.MiddleCenter, _fontName, _fontSize);
-                string text = _text;
+                    format = TextFormatUtils.CreateTextFormat(TextAlignment.MiddleCenter, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
+                string? text = _text;
                 if (string.IsNullOrEmpty(text))
                     layout = null;
                 else
-                    layout = SharedResources.DWriteFactory.CreateTextLayout(text, format);
+                    layout = SharedResources.DWriteFactory.CreateTextLayout(text!, format);
                 format.Dispose();
             }
             return layout;
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static bool CheckFormatIsNotAvailable(DWriteTextFormat format, RenderObjectUpdateFlags flags)
+        private static bool CheckFormatIsNotAvailable([NotNullWhen(false)] DWriteTextFormat? format, RenderObjectUpdateFlags flags)
         {
             if (format is null || format.IsDisposed)
                 return true;
@@ -181,7 +181,7 @@ namespace ConcreteUI.Controls
                     context.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
                     RenderBackground(context);
                     DrawCheckBox(context, lineWidth);
-                    DWriteTextLayout layout = GetTextLayout(flags);
+                    DWriteTextLayout? layout = GetTextLayout(flags);
                     if (layout is not null)
                     {
                         float xOffset = lineWidth + 3;
@@ -207,12 +207,12 @@ namespace ConcreteUI.Controls
             if (_strokeStyle is null)
             {
                 context.AntialiasMode = D2D1AntialiasMode.PerPrimitive;
-                _strokeStyle = context.GetFactory().CreateStrokeStyle(new D2D1StrokeStyleProperties() { DashCap = D2D1CapStyle.Round, StartCap = D2D1CapStyle.Round, EndCap = D2D1CapStyle.Round });
+                _strokeStyle = context.GetFactory()!.CreateStrokeStyle(new D2D1StrokeStyleProperties() { DashCap = D2D1CapStyle.Round, StartCap = D2D1CapStyle.Round, EndCap = D2D1CapStyle.Round });
                 context.AntialiasMode = D2D1AntialiasMode.Aliased;
             }
             bool checkState = _checkState;
             D2D1Brush[] brushes = _brushes;
-            D2D1Brush backBrush = null;
+            D2D1Brush? backBrush = null;
             if (checkState)
             {
                 switch (_buttonState)

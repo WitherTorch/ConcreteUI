@@ -2,7 +2,6 @@
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using ConcreteUI.Graphics.Native.Direct2D.Effects;
@@ -74,7 +73,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         /// Gets or sets the target that this device context is currently pointing to. <br/>
         /// The image can be a command list or a bitmap created with the <see cref="D2D1BitmapOptions.Target"/> flag.
         /// </summary>
-        public D2D1Image Target
+        public D2D1Image? Target
         {
             [LocalsInit(false)]
             get => GetTarget();
@@ -102,9 +101,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateBitmap);
             int hr = ((delegate* unmanaged[Stdcall]<void*, SizeU, void*, uint, D2D1BitmapProperties1*, void**, int>)functionPointer)(nativePointer,
                 size, sourceData, pitch, bitmapProperties, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1Bitmap1(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1Bitmap1(nativePointer, ReferenceType.Owned);
         }
 
         /// <summary>
@@ -127,9 +125,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateBitmapFromDxgiSurface);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void*, D2D1BitmapProperties1*, void**, int>)functionPointer)(nativePointer,
                 surface.NativePointer, bitmapProperties, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1Bitmap1(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1Bitmap1(nativePointer, ReferenceType.Owned);
         }
 
         /// <inheritdoc cref="CreateEffect(Guid*)" />
@@ -146,9 +143,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateEffect);
             int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, void**, int>)functionPointer)(nativePointer, effectId, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1Effect(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1Effect(nativePointer, ReferenceType.Owned);
         }
 
         /// <summary>
@@ -164,7 +160,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         /// <summary>
         /// Retrieves the device associated with this device context.
         /// </summary>
-        public D2D1Device GetDevice()
+        public D2D1Device? GetDevice()
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDevice);
@@ -173,7 +169,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         }
 
         [Inline(InlineBehavior.Remove)]
-        private void SetTarget(D2D1Image image)
+        private void SetTarget(D2D1Image? image)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetTarget);
@@ -181,7 +177,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         }
 
         [Inline(InlineBehavior.Remove)]
-        private D2D1Image GetTarget()
+        private D2D1Image? GetTarget()
         {
             void* image;
             void* nativePointer = NativePointer;

@@ -32,7 +32,7 @@ namespace ConcreteUI.Controls
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
       
-        private DWriteTextLayout[] _layouts;
+        private DWriteTextLayout[]? _layouts;
         private float _itemHeight;
         private int _hoveredIndex;
         private bool _isPressed, _disposed;
@@ -90,7 +90,7 @@ namespace ConcreteUI.Controls
             D2D1Brush[] brushes = _brushes;
             D2D1Brush backBrush = brushes[(int)Brush.BackBrush];
             RenderBackground(context, backBrush);
-            DWriteTextLayout[] layouts = Interlocked.Exchange(ref _layouts, null);
+            DWriteTextLayout[]? layouts = Interlocked.Exchange(ref _layouts, null);
             if (layouts is null)
                 return true;
             ContextMenuItem[] items = MenuItems;
@@ -206,7 +206,9 @@ namespace ConcreteUI.Controls
             if (_disposed)
                 return;
             _disposed = true;
-            DWriteTextLayout[] layouts = _layouts;
+            DWriteTextLayout[]? layouts = InterlockedHelper.Read(ref _layouts);
+            if (layouts is null)
+                return;
             if (disposing)
             {
                 foreach (DWriteTextLayout layout in layouts)

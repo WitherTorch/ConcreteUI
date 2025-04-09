@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 using WitherTorch.Common.Windows;
 using WitherTorch.Common.Helpers;
@@ -37,9 +36,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetPrivateData);
             int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, uint, void*, int>)functionPointer)(nativePointer, name, dataSize, pData);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -51,9 +48,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetPrivateDataInterface);
             int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, void*, int>)functionPointer)(nativePointer, name, value == null ? null : value.NativePointer);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -65,41 +60,39 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetPrivateData);
             int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, uint*, void*, int>)functionPointer)(nativePointer, name, pDataSize, pData);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T GetParent<T>(in Guid riid, bool throwException = true) where T : ComObject, new()
+        public T? GetParent<T>(in Guid riid, bool throwException = true) where T : ComObject, new()
             => GetParent<T>(UnsafeHelper.AsPointerIn(in riid), throwException);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ComObject GetParent(in Guid riid, bool throwException = true)
+        public ComObject? GetParent(in Guid riid, bool throwException = true)
             => GetParent(UnsafeHelper.AsPointerIn(in riid), throwException);
 
-        public T GetParent<T>(Guid* riid, bool throwException = true) where T : ComObject, new()
+        public T? GetParent<T>(Guid* riid, bool throwException = true) where T : ComObject, new()
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetParent);
             int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, void**, int>)functionPointer)(nativePointer, riid, &nativePointer);
-            if (hr >= 0)
-                return FromNativePointer<T>(nativePointer, ReferenceType.Owned);
             if (throwException)
-                throw Marshal.GetExceptionForHR(hr);
-            return null;
+                ThrowHelper.ThrowExceptionForHR(hr);
+            else
+                ThrowHelper.ResetPointerForHR(hr, ref nativePointer);
+            return FromNativePointer<T>(nativePointer, ReferenceType.Owned);
         }
 
-        public ComObject GetParent(Guid* riid, bool throwException = true)
+        public ComObject? GetParent(Guid* riid, bool throwException = true)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetParent);
             int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, void**, int>)functionPointer)(nativePointer, riid, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new ComObject(nativePointer, ReferenceType.Owned);
             if (throwException)
-                throw Marshal.GetExceptionForHR(hr);
-            return null;
+                ThrowHelper.ThrowExceptionForHR(hr);
+            else
+                ThrowHelper.ResetPointerForHR(hr, ref nativePointer);
+            return nativePointer == null ? null : new ComObject(nativePointer, ReferenceType.Owned);
         }
     }
 }

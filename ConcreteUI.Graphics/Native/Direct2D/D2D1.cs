@@ -1,16 +1,11 @@
-﻿using System;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Security;
-using System.Text;
-
-using ConcreteUI.Graphics.Helpers;
 
 using InlineMethod;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Helpers;
-using WitherTorch.Common;
 
 namespace ConcreteUI.Graphics.Native.Direct2D
 {

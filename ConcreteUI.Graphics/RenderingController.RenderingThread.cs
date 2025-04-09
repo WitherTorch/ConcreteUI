@@ -30,8 +30,8 @@ namespace ConcreteUI.Graphics
             private bool _disposed;
             private uint _framesPerSecond;
             private long _nativeTicksPerFrameCycle;
-            private AutoResetEvent _trigger;
-            private ManualResetEvent _exitTrigger;
+            private AutoResetEvent? _trigger;
+            private ManualResetEvent? _exitTrigger;
 
             [LocalsInit(false)]
             unsafe static RenderingThread()
@@ -87,12 +87,12 @@ namespace ConcreteUI.Graphics
             {
                 ThreadHelper.SetCurrentThreadName("Concrete UI Rendering Thread #" + Interlocked.Increment(ref _serialNumber).ToString("D"));
                 RenderingController controller = _controller;
-                AutoResetEvent trigger = _trigger;
-                ManualResetEvent exitTrigger = _exitTrigger;
+                AutoResetEvent? trigger = _trigger;
+                ManualResetEvent? exitTrigger = _exitTrigger;
                 long lastRenderTime = GetCurrentNativeTicks();
                 do
                 {
-                    trigger.WaitOne(Timeout.Infinite, exitContext: true);
+                    trigger?.WaitOne(Timeout.Infinite, exitContext: true);
                     long frameCycle = Interlocked.Read(ref _nativeTicksPerFrameCycle);
                     if (frameCycle < 0L)
                         break;
@@ -102,7 +102,7 @@ namespace ConcreteUI.Graphics
                     lastRenderTime = GetCurrentNativeTicks();
                     controller.RenderCore();
                 } while (true);
-                exitTrigger.Set();
+                exitTrigger?.Set();
             }
 
             [LocalsInit(false)]

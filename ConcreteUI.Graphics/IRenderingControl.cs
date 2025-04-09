@@ -6,7 +6,7 @@ namespace ConcreteUI.Graphics
     {
         D2D1DeviceContext GetDeviceContext();
 
-        RenderingController GetRenderingController();
+        RenderingController? GetRenderingController();
 
         void Render(RenderingFlags flags);
     }

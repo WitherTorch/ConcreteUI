@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using System.Security;
 
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.DXGI
@@ -27,9 +27,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CheckFeatureSupport);
             int hr = ((delegate* unmanaged[Stdcall]<void*, DXGIFeature, void*, uint, int>)functionPointer)(nativePointer, feature, pFeatureSupportData, featureSupportDataSize);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
     }
 }

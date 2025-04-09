@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -18,8 +19,6 @@ using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
-
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ConcreteUI.Controls
 {
@@ -41,8 +40,9 @@ namespace ConcreteUI.Controls
         private readonly ObservableList<string> _items;
         private readonly CoreWindow _window;
 
-        private DWriteTextLayout _layout;
-        private string _fontName, _text;
+        private DWriteTextLayout? _layout;
+        private string? _fontName;
+        private string _text;
         private ButtonTriState _state = ButtonTriState.None;
         private long _rawUpdateFlags;
         private float _fontSize;
@@ -88,15 +88,15 @@ namespace ConcreteUI.Controls
             => (RenderObjectUpdateFlags)Interlocked.Exchange(ref _rawUpdateFlags, default);
 
         [Inline(InlineBehavior.Remove)]
-        private DWriteTextLayout GetTextLayout(RenderObjectUpdateFlags flags)
+        private DWriteTextLayout? GetTextLayout(RenderObjectUpdateFlags flags)
         {
-            DWriteTextLayout layout = Interlocked.Exchange(ref _layout, null);
+            DWriteTextLayout? layout = Interlocked.Exchange(ref _layout, null);
 
             if ((flags & RenderObjectUpdateFlags.Layout) == RenderObjectUpdateFlags.Layout)
             {
-                DWriteTextFormat format = layout;
+                DWriteTextFormat? format = layout;
                 if (CheckFormatIsNotAvailable(format, flags))
-                    format = TextFormatUtils.CreateTextFormat(TextAlignment.MiddleLeft, _fontName, _fontSize);
+                    format = TextFormatUtils.CreateTextFormat(TextAlignment.MiddleLeft, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
                 string text = _text;
                 if (string.IsNullOrEmpty(text))
                     layout = null;
@@ -108,7 +108,7 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static bool CheckFormatIsNotAvailable(DWriteTextFormat format, RenderObjectUpdateFlags flags)
+        private static bool CheckFormatIsNotAvailable([NotNullWhen(false)] DWriteTextFormat? format, RenderObjectUpdateFlags flags)
         {
             if (format is null || format.IsDisposed)
                 return true;
@@ -122,7 +122,7 @@ namespace ConcreteUI.Controls
 
         protected override bool RenderCore(DirtyAreaCollector collector)
         {
-            DWriteTextLayout layout = GetTextLayout(GetAndCleanRenderObjectUpdateFlags());
+            DWriteTextLayout? layout = GetTextLayout(GetAndCleanRenderObjectUpdateFlags());
             D2D1DeviceContext context = Renderer.GetDeviceContext();
             float lineWidth = Renderer.GetBaseLineWidth();
             Rect bounds = Bounds;
@@ -176,8 +176,6 @@ namespace ConcreteUI.Controls
                     {
                         ComboBoxDropdownList dropdownList = new ComboBoxDropdownList(this, _window);
                         dropdownList.ItemClicked += ListControl_ItemClicked;
-                        using DWriteTextFormat format = TextFormatUtils.CreateTextFormat(TextAlignment.MiddleLeft, _fontName, _fontSize);
-                        dropdownList.Prepare(format);
                         RequestDropdownListOpening?.Invoke(this, new DropdownListEventArgs(dropdownList));
                     }
                 }
@@ -265,7 +263,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        private void ListControl_ItemClicked(object sender, EventArgs e)
+        private void ListControl_ItemClicked(object? sender, EventArgs e)
         {
             if (sender is not ComboBoxDropdownList dropdownList)
                 return;

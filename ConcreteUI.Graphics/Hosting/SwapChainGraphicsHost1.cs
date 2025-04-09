@@ -68,20 +68,20 @@ namespace ConcreteUI.Graphics.Hosting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Present(in DXGIPresentParameters parameters)
         {
-            Exception exception = PresentCore(parameters);
+            Exception? exception = PresentCore(parameters);
             if (exception is null)
                 return;
             throw exception;
         }
 
-        private Exception PresentCore(in DXGIPresentParameters parameters)
+        private Exception? PresentCore(in DXGIPresentParameters parameters)
         {
             DXGISwapChain swapChain = _swapChain;
             if (swapChain is null || swapChain.IsDisposed)
                 return null;
             if (BeforeNormalPresent(swapChain))
                 return null;
-            Exception exception = GetExceptionHRForPresent(swapChain, PresentCore(swapChain, parameters));
+            Exception? exception = GetExceptionHRForPresent(swapChain, PresentCore(swapChain, parameters));
             return exception;
         }
 
@@ -98,7 +98,7 @@ namespace ConcreteUI.Graphics.Hosting
             return swapChain1.TryPresent1(0, parameters);
         }
 
-        protected override Exception GetExceptionHRForPresent(DXGISwapChain swapChain, int hr)
+        protected override Exception? GetExceptionHRForPresent(DXGISwapChain swapChain, int hr)
         {
             if (hr == E_NOTIMPL)
             {

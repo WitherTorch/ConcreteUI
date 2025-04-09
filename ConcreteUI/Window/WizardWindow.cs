@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -51,8 +52,8 @@ namespace ConcreteUI.Window
 
         #region Fields
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private DWriteTextLayout _titleLayout, _titleDescriptionLayout;
-        private string _title, _titleDescription;
+        private DWriteTextLayout? _titleLayout, _titleDescriptionLayout;
+        private string? _title, _titleDescription;
         private long _updateFlags = -1L;
         private D2D1ColorF _wizardBaseColor;
         private PointF _titleLocation, _titleDescriptionLocation;
@@ -69,8 +70,9 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Properties
-        public string Title
+        public string? Title
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _title;
             set
             {
@@ -80,8 +82,9 @@ namespace ConcreteUI.Window
             }
         }
 
-        public string TitleDescription
+        public string? TitleDescription
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _titleDescription;
             protected set
             {
@@ -114,14 +117,14 @@ namespace ConcreteUI.Window
             ClearDC(deviceContext);
         }
 
-        private void GetLayouts(UpdateFlags flags, out DWriteTextLayout titleLayout, out DWriteTextLayout titleDescriptionLayout)
+        private void GetLayouts(UpdateFlags flags, out DWriteTextLayout? titleLayout, out DWriteTextLayout? titleDescriptionLayout)
         {
             titleLayout = Interlocked.Exchange(ref _titleLayout, null);
             titleDescriptionLayout = Interlocked.Exchange(ref _titleDescriptionLayout, null);
-            if ((flags & UpdateFlags.UpdateTitle) ==  UpdateFlags.UpdateTitle)
+            if ((flags & UpdateFlags.UpdateTitle) == UpdateFlags.UpdateTitle)
             {
                 DWriteFactory factory = SharedResources.DWriteFactory;
-                DWriteTextFormat format = titleLayout;
+                DWriteTextFormat? format = titleLayout;
                 if (format is null)
                 {
                     string fontName = Theme.FontName;
@@ -131,10 +134,10 @@ namespace ConcreteUI.Window
                 titleLayout = factory.CreateTextLayout(_title ?? string.Empty, format);
                 format.Dispose();
             }
-            if ((flags & UpdateFlags.UpdateTitleDescription) ==  UpdateFlags.UpdateTitleDescription)
+            if ((flags & UpdateFlags.UpdateTitleDescription) == UpdateFlags.UpdateTitleDescription)
             {
                 DWriteFactory factory = SharedResources.DWriteFactory;
-                DWriteTextFormat format = titleDescriptionLayout;
+                DWriteTextFormat? format = titleDescriptionLayout;
                 if (format is null)
                 {
                     string fontName = Theme.FontName;
@@ -152,7 +155,7 @@ namespace ConcreteUI.Window
             UpdateFlags flags = (UpdateFlags)Interlocked.Exchange(ref _updateFlags, 0L);
             if (flags == 0L && !force)
                 return;
-            GetLayouts(flags, out DWriteTextLayout titleLayout, out DWriteTextLayout titleDescriptionLayout);
+            GetLayouts(flags, out DWriteTextLayout? titleLayout, out DWriteTextLayout? titleDescriptionLayout);
             D2D1Brush[] brushes = _brushes;
             RectF rect;
             if (WindowMaterial == WindowMaterial.Integrated)
@@ -170,8 +173,10 @@ namespace ConcreteUI.Window
             rect = GraphicsUtils.AdjustRectangleF(rect);
             deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
             ClearDC(deviceContext);
-            deviceContext.DrawTextLayout(_titleLocation, titleLayout, brushes[(int)Brush.WizardTitleBrush], D2D1DrawTextOptions.None);
-            deviceContext.DrawTextLayout(_titleDescriptionLocation, titleDescriptionLayout, brushes[(int)Brush.WizardTitleDescriptionBrush], D2D1DrawTextOptions.None);
+            if (titleLayout is not null)
+                deviceContext.DrawTextLayout(_titleLocation, titleLayout, brushes[(int)Brush.WizardTitleBrush], D2D1DrawTextOptions.None);
+            if (titleDescriptionLayout is not null)
+                deviceContext.DrawTextLayout(_titleDescriptionLocation, titleDescriptionLayout, brushes[(int)Brush.WizardTitleDescriptionBrush], D2D1DrawTextOptions.None);
             DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
             DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
             deviceContext.PopAxisAlignedClip();

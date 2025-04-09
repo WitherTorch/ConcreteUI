@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
+﻿using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
@@ -28,9 +27,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Open);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1TessellationSink(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1TessellationSink(nativePointer, ReferenceType.Owned);
         }
     }
 }

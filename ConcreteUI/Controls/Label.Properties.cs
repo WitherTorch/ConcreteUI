@@ -1,7 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
 
-using ConcreteUI.Graphics.Native.Direct2D.Brushes;
-
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls

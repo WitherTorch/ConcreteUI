@@ -25,7 +25,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         /// <summary>
         /// Retrieve the factory associated with this resource.
         /// </summary>
-        public D2D1Factory GetFactory()
+        public D2D1Factory? GetFactory()
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFactory);

@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using InlineMethod;
 
 using LocalsInit;
 
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.DXGI
@@ -40,9 +40,8 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDesc1);
             int hr = ((delegate* unmanaged[Stdcall]<void*, DXGIAdapterDescription1*, int>)functionPointer)(nativePointer, &desc);
-            if (hr >= 0)
-                return desc;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return desc;
         }
     }
 }

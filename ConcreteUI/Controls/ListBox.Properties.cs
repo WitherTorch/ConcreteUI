@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -14,7 +13,7 @@ namespace ConcreteUI.Controls
 {
     partial class ListBox
     {
-        public event EventHandler SelectedIndicesChanged;
+        public event EventHandler? SelectedIndicesChanged;
 
         public string[] SelectedItems
         {

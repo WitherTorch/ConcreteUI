@@ -1,7 +1,6 @@
 ﻿using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 using InlineMethod;
 
@@ -59,9 +58,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetBounds);
             int hr = ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, RectF*, int>)functionPointer)(nativePointer, worldTransform, &result);
-            if (hr >= 0)
-                return result;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return result;
         }
 
         /// <inheritdoc cref="GetWidenedBounds(float, D2D1StrokeStyle, Matrix3x2*, float)"/>
@@ -86,9 +84,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetWidenedBounds);
             int hr = ((delegate* unmanaged[Stdcall]<void*, float, void*, Matrix3x2*, float, RectF*, int>)functionPointer)(nativePointer, strokeWidth,
                 strokeStyle == null ? null : strokeStyle.NativePointer, worldTransform, flatteningTolerance, &result);
-            if (hr >= 0)
-                return result;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return result;
         }
 
         /// <inheritdoc cref="StrokeContainsPoint(PointF, float, D2D1StrokeStyle, Matrix3x2*, float)"/>
@@ -113,9 +110,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.StrokeContainsPoint);
             int hr = ((delegate* unmanaged[Stdcall]<void*, PointF, float, void*, Matrix3x2*, float, bool*, int>)functionPointer)(nativePointer, point, strokeWidth,
                 strokeStyle == null ? null : strokeStyle.NativePointer, worldTransform, flatteningTolerance, &result);
-            if (hr >= 0)
-                return result;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return result;
         }
 
         /// <inheritdoc cref="FillContainsPoint(PointF, Matrix3x2*, float)"/>
@@ -138,9 +134,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.FillContainsPoint);
             int hr = ((delegate* unmanaged[Stdcall]<void*, PointF, Matrix3x2*, float, bool*, int>)functionPointer)(nativePointer, point, worldTransform, flatteningTolerance, &result);
-            if (hr >= 0)
-                return result;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return result;
         }
 
         /// <inheritdoc cref="CompareWithGeometry(D2D1Geometry, Matrix3x2*, float)"/>
@@ -164,9 +159,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CompareWithGeometry);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void*, Matrix3x2*, float, D2D1GeometryRelation*, int>)functionPointer)(nativePointer,
                 geometry.NativePointer, inputGeometryTransform, flatteningTolerance, &result);
-            if (hr >= 0)
-                return result;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return result;
         }
 
         /// <inheritdoc cref="Simplify(D2D1GeometrySimplificationOption, Matrix3x2*, float, D2D1SimplifiedGeometrySink)"/>
@@ -191,9 +185,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Simplify);
             int hr = ((delegate* unmanaged[Stdcall]<void*, D2D1GeometrySimplificationOption, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer,
                 simplificationOption, worldTransform, flatteningTolerance, geometrySink.NativePointer);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <inheritdoc cref="Tessellate(Matrix3x2*, float, D2D1TessellationSink)"/>
@@ -215,9 +207,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Tessellate);
             int hr = ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer,
                 worldTransform, flatteningTolerance, tessellationSink.NativePointer);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <inheritdoc cref="CombineWithGeometry(D2D1Geometry, D2D1CombineMode, Matrix3x2*, float, D2D1SimplifiedGeometrySink)"/>
@@ -244,9 +234,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CombineWithGeometry);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void*, D2D1CombineMode, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer, inputGeometry.NativePointer,
                 combineMode, inputGeometryTransform, flatteningTolerance, geometrySink.NativePointer);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <inheritdoc cref="Outline(Matrix3x2*, float, D2D1SimplifiedGeometrySink)"/>
@@ -269,9 +257,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Outline);
             int hr = ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer, worldTransform,
                 flatteningTolerance, geometrySink.NativePointer);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <inheritdoc cref="ComputeArea(Matrix3x2*, float)"/>
@@ -295,9 +281,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.ComputeArea);
             int hr = ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, float, float*, int>)functionPointer)(nativePointer, worldTransform,
                 flatteningTolerance, &result);
-            if (hr >= 0)
-                return result;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return result;
         }
 
         /// <inheritdoc cref="ComputeLength(Matrix3x2*, float)"/>
@@ -321,9 +306,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.ComputeLength);
             int hr = ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, float, float*, int>)functionPointer)(nativePointer, worldTransform,
                 flatteningTolerance, &result);
-            if (hr >= 0)
-                return result;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return result;
         }
 
         /// <inheritdoc cref="ComputePointAtLength(float, Matrix3x2*, float, PointF*, PointF*)"/>
@@ -348,9 +332,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.ComputePointAtLength);
             int hr = ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, float, float*, int>)functionPointer)(nativePointer, worldTransform,
                 flatteningTolerance, &result);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return;
         }
 
         /// <inheritdoc cref="Widen(float, D2D1StrokeStyle, Matrix3x2*, float, D2D1GeometrySink)"/>
@@ -372,9 +355,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Widen);
             int hr = ((delegate* unmanaged[Stdcall]<void*, float, void*, Matrix3x2*, float, void*, int>)functionPointer)(nativePointer, strokeWidth,
                 strokeStyle == null ? null : strokeStyle.NativePointer, worldTransform, flatteningTolerance, geometrySink.NativePointer);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
     }
 }

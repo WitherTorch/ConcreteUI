@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using LocalsInit;
@@ -31,31 +30,31 @@ namespace ConcreteUI.Graphics.Native.DXGI
         public DXGIFactory(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static DXGIFactory Create(in Guid riid, bool throwException = true)
+        public static DXGIFactory? Create(in Guid riid, bool throwException = true)
             => Create(UnsafeHelper.AsPointerIn(in riid), throwException);
 
         [LocalsInit(false)]
-        public static DXGIFactory Create(Guid* riid, bool throwException = true)
+        public static DXGIFactory? Create(Guid* riid, bool throwException = true)
         {
             void* factory;
             int hr = DXGI.CreateDXGIFactory(riid, &factory);
-            if (hr >= 0)
-                return factory == null ? null : new DXGIFactory(factory, ReferenceType.Owned);
             if (throwException)
-                throw Marshal.GetExceptionForHR(hr);
-            return null;
+                ThrowHelper.ThrowExceptionForHR(hr);
+            else
+                ThrowHelper.ResetPointerForHR(hr, ref factory);
+            return factory == null ? null : new DXGIFactory(factory, ReferenceType.Owned);
         }
 
-        public DXGIAdapter EnumAdapters(uint adapter, bool throwException = true)
+        public DXGIAdapter? EnumAdapters(uint adapter, bool throwException = true)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.EnumAdapters);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, void**, int>)functionPointer)(nativePointer, adapter, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DXGIAdapter(nativePointer, ReferenceType.Owned);
             if (throwException)
-                throw Marshal.GetExceptionForHR(hr);
-            return null;
+                ThrowHelper.ThrowExceptionForHR(hr);
+            else
+                ThrowHelper.ResetPointerForHR(hr, ref nativePointer);
+            return nativePointer == null ? null : new DXGIAdapter(nativePointer, ReferenceType.Owned);
         }
 
         public void MakeWindowAssociation(IntPtr windowHandle, DXGIMakeWindowAssociationFlags flags)
@@ -63,9 +62,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.MakeWindowAssociation);
             int hr = ((delegate* unmanaged[Stdcall]<void*, IntPtr, DXGIMakeWindowAssociationFlags, int>)functionPointer)(nativePointer, windowHandle, flags);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         public IntPtr GetWindowAssociation()
@@ -73,9 +70,8 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetWindowAssociation);
             int hr = ((delegate* unmanaged[Stdcall]<void*, IntPtr*, int>)functionPointer)(nativePointer, (IntPtr*)&nativePointer);
-            if (hr >= 0)
-                return (IntPtr)nativePointer;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return (IntPtr)nativePointer;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -88,9 +84,8 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.EnumAdapters);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void*, DXGISwapChainDescription*, void**, int>)functionPointer)(nativePointer,
                 device.NativePointer, pDesc, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DXGISwapChain(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new DXGISwapChain(nativePointer, ReferenceType.Owned);
         }
     }
 }

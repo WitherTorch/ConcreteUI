@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Numerics;
 using System.Threading;
@@ -50,10 +51,10 @@ namespace ConcreteUI.Controls
         private readonly List<BitVector64> _stateVectorList;
         private readonly ObservableList<string> _items;
 
-        private D2D1StrokeStyle _strokeStyle;
-        private D2D1Resource _checkSign;
-        private DWriteTextFormat _format;
-        private string _fontName;
+        private D2D1StrokeStyle? _strokeStyle;
+        private D2D1Resource? _checkSign;
+        private DWriteTextFormat? _format;
+        private string? _fontName;
         private Rectangle _checkBoxBounds;
         private ListBoxMode _chooseMode;
         private ButtonTriState _buttonState;
@@ -94,17 +95,17 @@ namespace ConcreteUI.Controls
 
         private DWriteTextFormat BuildTextFormat()
         {
-            DWriteTextFormat textFormat = SharedResources.DWriteFactory.CreateTextFormat(_fontName, _fontSize);
+            DWriteTextFormat textFormat = SharedResources.DWriteFactory.CreateTextFormat(NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
             textFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
             return textFormat;
         }
 
-        private void Items_Updated(object sender, EventArgs e) => RecalculateHeight();
+        private void Items_Updated(object? sender, EventArgs e) => RecalculateHeight();
 
         protected override void Scrolling(int rollStep, bool update = true) => base.Scrolling(rollStep / 4, update);
 
         [Inline(InlineBehavior.Remove)]
-        private bool CheckFormatIsNotAvailable(DWriteTextFormat format)
+        private bool CheckFormatIsNotAvailable([NotNullWhen(false)] DWriteTextFormat? format)
         {
             if (Interlocked.Exchange(ref _recalcFormat, Booleans.FalseLong) != Booleans.FalseLong)
             {
@@ -118,7 +119,7 @@ namespace ConcreteUI.Controls
         {
             D2D1DeviceContext context = Renderer.GetDeviceContext();
             D2D1Brush[] brushes = _brushes;
-            DWriteTextFormat format = Interlocked.Exchange(ref _format, null);
+            DWriteTextFormat? format = Interlocked.Exchange(ref _format, null);
             if (CheckFormatIsNotAvailable(format))
                 format = BuildTextFormat();
             ListBoxMode mode = Mode;
@@ -172,11 +173,11 @@ namespace ConcreteUI.Controls
             if (_strokeStyle == null)
             {
                 context.AntialiasMode = D2D1AntialiasMode.PerPrimitive;
-                _strokeStyle = context.GetFactory().CreateStrokeStyle(new D2D1StrokeStyleProperties() { DashCap = D2D1CapStyle.Round, StartCap = D2D1CapStyle.Round, EndCap = D2D1CapStyle.Round });
+                _strokeStyle = context.GetFactory()!.CreateStrokeStyle(new D2D1StrokeStyleProperties() { DashCap = D2D1CapStyle.Round, StartCap = D2D1CapStyle.Round, EndCap = D2D1CapStyle.Round });
                 context.AntialiasMode = D2D1AntialiasMode.Aliased;
             }
             D2D1Brush[] brushes = _checkBoxBrushes;
-            D2D1Brush backBrush = null;
+            D2D1Brush? backBrush = null;
             if (isChecked)
             {
                 if (isCurrentlyItem)
@@ -248,7 +249,7 @@ namespace ConcreteUI.Controls
         private void DrawRadioBox(in D2D1DeviceContext context, int offsetY, bool isChecked, bool isCurrentlyItem, float lineWidth)
         {
             D2D1Brush[] brushes = _checkBoxBrushes;
-            D2D1Brush backBrush = null;
+            D2D1Brush? backBrush = null;
             if (isCurrentlyItem)
             {
                 switch (_buttonState)

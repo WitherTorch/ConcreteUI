@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -33,8 +34,8 @@ namespace ConcreteUI.Controls
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
 
-        private DWriteTextLayout _layout;
-        private string _text, _fontName;
+        private DWriteTextLayout? _layout;
+        private string? _text, _fontName;
 
         private bool _disposed;
         private float _fontSize;
@@ -80,27 +81,27 @@ namespace ConcreteUI.Controls
             => (RenderObjectUpdateFlags)Interlocked.Exchange(ref _rawUpdateFlags, default);
 
         [Inline(InlineBehavior.Remove)]
-        private DWriteTextLayout GetTextLayout(RenderObjectUpdateFlags flags)
+        private DWriteTextLayout? GetTextLayout(RenderObjectUpdateFlags flags)
         {
-            DWriteTextLayout layout = Interlocked.Exchange(ref _layout, null);
+            DWriteTextLayout? layout = Interlocked.Exchange(ref _layout, null);
 
             if ((flags & RenderObjectUpdateFlags.Layout) == RenderObjectUpdateFlags.Layout)
             {
-                DWriteTextFormat format = layout;
+                DWriteTextFormat? format = layout;
                 if (CheckFormatIsNotAvailable(format, flags))
-                    format = TextFormatUtils.CreateTextFormat(TextAlignment.MiddleCenter, _fontName, _fontSize);
-                string text = _text;
+                    format = TextFormatUtils.CreateTextFormat(TextAlignment.MiddleCenter, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
+                string? text = _text;
                 if (string.IsNullOrEmpty(text))
                     layout = null;
                 else
-                    layout = SharedResources.DWriteFactory.CreateTextLayout(text, format);
+                    layout = SharedResources.DWriteFactory.CreateTextLayout(text!, format);
                 format.Dispose();
             }
             return layout;
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static bool CheckFormatIsNotAvailable(DWriteTextFormat format, RenderObjectUpdateFlags flags)
+        private static bool CheckFormatIsNotAvailable([NotNullWhen(false)] DWriteTextFormat? format, RenderObjectUpdateFlags flags)
         {
             if (format is null || format.IsDisposed)
                 return true;
@@ -140,7 +141,7 @@ namespace ConcreteUI.Controls
                 default:
                     break;
             }
-            DWriteTextLayout layout = GetTextLayout(flags);
+            DWriteTextLayout? layout = GetTextLayout(flags);
             if (layout is null)
             {
                 deviceContext.PopAxisAlignedClip();

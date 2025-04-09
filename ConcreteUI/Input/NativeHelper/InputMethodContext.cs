@@ -37,7 +37,7 @@ namespace ConcreteUI.Input.NativeHelper
             return new HandledInputMethodContext(Handle);
         }
 
-        public static void Associate(IntPtr Handle, InputMethodContext context = null)
+        public static void Associate(IntPtr Handle, InputMethodContext? context = null)
         {
             IntPtr oldHimc = Imm32.ImmAssociateContext(Handle, context ?? IntPtr.Zero);
             if (oldHimc != IntPtr.Zero && oldHimc != (context ?? IntPtr.Zero))
@@ -60,7 +60,7 @@ namespace ConcreteUI.Input.NativeHelper
             }
         }
 
-        public static void Associate(IntPtr Handle, out InputMethodContext oldContext, InputMethodContext newContext = null)
+        public static void Associate(IntPtr Handle, out InputMethodContext oldContext, InputMethodContext? newContext = null)
         {
             IntPtr oldHimc = Imm32.ImmAssociateContext(Handle, newContext ?? IntPtr.Zero);
             if (oldHimc == IntPtr.Zero) oldContext = Empty;
@@ -71,44 +71,23 @@ namespace ConcreteUI.Input.NativeHelper
 
         public static implicit operator InputMethodContext(IntPtr source) => new InputMethodContext(source);
 
-        public static bool operator ==(InputMethodContext a, InputMethodContext b)
+        public static bool operator ==(InputMethodContext? a, InputMethodContext? b)
         {
-            bool aIsNull = a is null;
-            bool bIsNull = b is null;
-            if (aIsNull)
-            {
-                if (bIsNull) return true;
-                else return false;
-            }
-            else
-            {
-                if (bIsNull) return false;
-                else return a.himc == b.himc;
-            }
+            if (a is null)
+                return b is null;
+            if (b is null)
+                return false;
+            return a.himc == b.himc;
         }
 
-        public static bool operator !=(InputMethodContext a, InputMethodContext b)
-        {
-            bool aIsNull = a is null;
-            bool bIsNull = b is null;
-            if (aIsNull)
-            {
-                if (bIsNull) return false;
-                else return true;
-            }
-            else
-            {
-                if (bIsNull) return true;
-                else return a.himc != b.himc;
-            }
-        }
+        public static bool operator !=(InputMethodContext? a, InputMethodContext? b) => !(a == b);
 
-        public static bool operator ==(InputMethodContext a, IntPtr b) => a != null && a.himc == b;
-        public static bool operator !=(InputMethodContext a, IntPtr b) => a == null || a.himc != b;
-        public static bool operator ==(IntPtr a, InputMethodContext b) => b != null && a == b.himc;
-        public static bool operator !=(IntPtr a, InputMethodContext b) => b == null || a != b.himc;
+        public static bool operator ==(InputMethodContext? a, IntPtr b) => a is not null && a.himc == b;
+        public static bool operator !=(InputMethodContext? a, IntPtr b) => a is null || a.himc != b;
+        public static bool operator ==(IntPtr a, InputMethodContext? b) => b is not null && a == b.himc;
+        public static bool operator !=(IntPtr a, InputMethodContext? b) => b is null || a != b.himc;
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is InputMethodContext context)
             {

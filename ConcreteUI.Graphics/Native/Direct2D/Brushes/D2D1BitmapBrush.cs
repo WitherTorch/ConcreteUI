@@ -58,7 +58,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         /// <summary>
         /// Gets or sets the bitmap associated as the source of this brush.
         /// </summary>
-        public D2D1Bitmap Bitmap
+        public D2D1Bitmap? Bitmap
         {
             get => GetBitmap();
             set => SetBitmap(value);
@@ -89,7 +89,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         }
 
         [Inline(InlineBehavior.Remove)]
-        private void SetBitmap(D2D1Bitmap bitmap)
+        private void SetBitmap(D2D1Bitmap? bitmap)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetBitmap);
@@ -120,7 +120,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
             return ((delegate* unmanaged[Stdcall]<void*, D2D1BitmapInterpolationMode>)functionPointer)(nativePointer);
         }
 
-        private D2D1Bitmap GetBitmap()
+        private D2D1Bitmap? GetBitmap()
         {
             void* pBitmap;
             void* nativePointer = NativePointer;

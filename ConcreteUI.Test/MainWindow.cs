@@ -23,7 +23,7 @@ namespace ConcreteUI.Test
         private InputMethod _ime;
         private ProgressBar _progressBar;
 
-        public MainWindow(CoreWindow parent) : base(parent, ["頁面A", "頁面B", "頁面C"])
+        public MainWindow(CoreWindow? parent) : base(parent, ["頁面A", "頁面B", "頁面C"])
         {
             InitializeBaseInformation();
         }
@@ -34,7 +34,7 @@ namespace ConcreteUI.Test
             MinimumSize = new Size(640, 560);
             Text = nameof(MainWindow);
             StartPosition = FormStartPosition.CenterScreen;
-            Stream stream = Assembly.GetEntryAssembly().GetManifestResourceStream("ConcreteUI.Test.app-icon.ico");
+            Stream? stream = Assembly.GetEntryAssembly().GetManifestResourceStream("ConcreteUI.Test.app-icon.ico");
             if (stream is not null)
             {
                 Icon = new Icon(stream);

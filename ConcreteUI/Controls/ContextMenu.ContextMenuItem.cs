@@ -6,13 +6,13 @@ namespace ConcreteUI.Controls
     {
         public sealed class ContextMenuItem
         {
-            public event EventHandler Click;
+            public event EventHandler? Click;
 
             public bool Enabled { get; set; }
 
             public string Text { get; set; }
 
-            public object Tag { get; set; }
+            public object? Tag { get; set; }
 
             public ContextMenuItem(string text)
             {

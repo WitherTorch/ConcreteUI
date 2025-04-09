@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Hosting;
@@ -17,23 +17,22 @@ namespace ConcreteUI.Graphics
     public sealed class DirtyAreaCollector
     {
         private static readonly DirtyAreaCollector _empty = new DirtyAreaCollector(null, null, null);
-
         public static DirtyAreaCollector Empty => _empty;
 
-        private readonly SwapChainGraphicsHost1 _host;
-        private readonly UnwrappableList<Rect> _list;
-        private readonly UnwrappableList<bool> _typeList;
+        private readonly SwapChainGraphicsHost1? _host;
+        private readonly UnwrappableList<Rect>? _list;
+        private readonly UnwrappableList<bool>? _typeList;
 
         private bool _presentAllMode;
 
-        private DirtyAreaCollector(UnwrappableList<Rect> list, UnwrappableList<bool> typeList, SwapChainGraphicsHost1 host)
+        private DirtyAreaCollector(UnwrappableList<Rect>? list, UnwrappableList<bool>? typeList, SwapChainGraphicsHost1? host)
         {
             _list = list;
             _typeList = typeList;
             _host = host;
         }
 
-        public static DirtyAreaCollector TryCreate(SwapChainGraphicsHost1 host)
+        public static DirtyAreaCollector? TryCreate(SwapChainGraphicsHost1? host)
         {
             if (host is null || host.IsDisposed)
                 return null;
@@ -47,7 +46,7 @@ namespace ConcreteUI.Graphics
         {
             if (_presentAllMode)
                 return true;
-            UnwrappableList<Rect> list = _list;
+            UnwrappableList<Rect>? list = _list;
             if (list is null)
                 return false;
             return list.Count > 0;
@@ -56,21 +55,21 @@ namespace ConcreteUI.Graphics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MarkAsDirty(in Rect rect)
         {
-            UnwrappableList<Rect> list = _list;
-            if (list is null) 
+            UnwrappableList<Rect>? list = _list;
+            if (list is null)
                 return;
             list.Add(rect);
-            _typeList.Add(false);
+            _typeList!.Add(false);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void MarkAsDirty(in RectF rect)
         {
-            UnwrappableList<Rect> list = _list;
+            UnwrappableList<Rect>? list = _list;
             if (list is null)
                 return;
             list.Add(*(Rect*)UnsafeHelper.AsPointerIn(in rect));
-            _typeList.Add(true);
+            _typeList!.Add(true);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -78,10 +77,10 @@ namespace ConcreteUI.Graphics
 
         public unsafe void Present(double dpiScaleFactor)
         {
-            SwapChainGraphicsHost1 host = _host;
+            SwapChainGraphicsHost1? host = _host;
             if (host is null)
                 return;
-            UnwrappableList<Rect> list = _list;
+            UnwrappableList<Rect>? list = _list;
             if (list is null)
             {
                 host.Present();
@@ -94,12 +93,12 @@ namespace ConcreteUI.Graphics
                 host.Present();
                 return;
             }
-            if (!TryGetPresentingRects(dpiScaleFactor, out ArrayPool<Rect> pool, out Rect[] rects, out int count))
+            if (!TryGetPresentingRects(dpiScaleFactor, out ArrayPool<Rect>? pool, out Rect[]? rects, out int count))
                 return;
             try
             {
                 fixed (Rect* ptr = rects)
-                    _host.Present(new DXGIPresentParameters(unchecked((uint)count), ptr));
+                    host.Present(new DXGIPresentParameters(unchecked((uint)count), ptr));
             }
             catch (Exception)
             {
@@ -113,10 +112,10 @@ namespace ConcreteUI.Graphics
 
         public unsafe bool TryPresent(double dpiScaleFactor)
         {
-            SwapChainGraphicsHost1 host = _host;
+            SwapChainGraphicsHost1? host = _host;
             if (host is null)
                 return false;
-            UnwrappableList<Rect> list = _list;
+            UnwrappableList<Rect>? list = _list;
             if (list is null)
                 return host.TryPresent();
             if (_presentAllMode)
@@ -125,18 +124,18 @@ namespace ConcreteUI.Graphics
                 list.Clear();
                 return host.TryPresent();
             }
-            if (!TryGetPresentingRects(dpiScaleFactor, out ArrayPool<Rect> pool, out Rect[] rects, out int count))
+            if (!TryGetPresentingRects(dpiScaleFactor, out ArrayPool<Rect>? pool, out Rect[]? rects, out int count))
                 return false;
             bool result;
             fixed (Rect* ptr = rects)
-                result = _host.TryPresent(new DXGIPresentParameters(unchecked((uint)count), ptr));
+                result = host.TryPresent(new DXGIPresentParameters(unchecked((uint)count), ptr));
             pool?.Return(rects);
             return result;
         }
 
-        private bool TryGetPresentingRects(double dpiScaleFactor, out ArrayPool<Rect> pool, out Rect[] rects, out int count)
+        private bool TryGetPresentingRects(double dpiScaleFactor, out ArrayPool<Rect>? pool, [NotNullWhen(true)] out Rect[]? rects, out int count)
         {
-            UnwrappableList<Rect> list = _list;
+            UnwrappableList<Rect> list = _list!;
             count = list.Count;
             if (count <= 0)
             {
@@ -144,7 +143,7 @@ namespace ConcreteUI.Graphics
                 rects = null;
                 return false;
             }
-            UnwrappableList<bool> typeList = _typeList;
+            UnwrappableList<bool> typeList = _typeList!;
             list.Clear();
             typeList.Clear();
             Rect[] sourceRects = list.Unwrap();

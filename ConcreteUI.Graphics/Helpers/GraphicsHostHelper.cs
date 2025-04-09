@@ -57,7 +57,7 @@ namespace ConcreteUI.Graphics.Helpers
             List<string> result = new List<string>();
             for (uint i = 0; i < Constants.AdapterEnumerationLimit; i++)
             {
-                DXGIAdapter adapter = factory.EnumAdapters(i, throwException: false);
+                DXGIAdapter? adapter = factory.EnumAdapters(i, throwException: false);
                 if (adapter is null)
                     break;
                 DXGIAdapterDescription description = adapter.Description;

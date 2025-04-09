@@ -1,6 +1,5 @@
 ﻿using System;
 
-using ConcreteUI.Controls;
 using ConcreteUI.Controls.Calculation;
 
 using WitherTorch.Common.Windows.Structures;
@@ -26,7 +25,7 @@ namespace ConcreteUI.Controls
 
             public override AbstractCalculation Clone() => new ContentXCalculation(_reference);
 
-            public override ICalculationContext CreateContext() => CalculationContext.TryCreate(_reference, _offset);
+            public override ICalculationContext? CreateContext() => CalculationContext.TryCreate(_reference, _offset);
 
             private sealed class CalculationContext : ICalculationContext
             {

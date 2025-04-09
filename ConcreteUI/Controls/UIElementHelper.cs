@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -23,7 +21,7 @@ namespace ConcreteUI.Controls
 {
     public static partial class UIElementHelper
     {
-        public static void ApplyTheme(ThemeResourceProvider provider, D2D1Brush[] brushes, string[] nodes)
+        public static void ApplyTheme(ThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes)
         {
             int length = brushes.Length;
             if (length != nodes.Length)
@@ -32,7 +30,7 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static void ApplyTheme(ThemeResourceProvider provider, D2D1Brush[] brushes, string[] nodes, [InlineParameter] int length)
+        public static void ApplyTheme(ThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes, [InlineParameter] int length)
         {
             for (int i = 0; i < length; i++)
                 DisposeHelper.SwapDispose(ref brushes[i], provider.TryGetBrush(nodes[i], out D2D1Brush brush) ? brush.Clone() : null);
@@ -79,11 +77,11 @@ namespace ConcreteUI.Controls
                 element?.ApplyTheme(provider);
         }
 
-        public static D2D1Resource GetOrCreateCheckSign(ref D2D1Resource checkSign, D2D1DeviceContext context, D2D1StrokeStyle strokeStyle, in Rect drawingBounds)
+        public static D2D1Resource GetOrCreateCheckSign(ref D2D1Resource? checkSign, D2D1DeviceContext context, D2D1StrokeStyle strokeStyle, in Rect drawingBounds)
         {
             if (checkSign is not null)
                 return checkSign;
-            D2D1PathGeometry geometry = context.GetFactory().CreatePathGeometry();
+            D2D1PathGeometry geometry = context.GetFactory()!.CreatePathGeometry();
             D2D1GeometrySink sink = geometry.Open();
             float unit = (drawingBounds.Width - 2) / 7f;
             sink.BeginFigure(new PointF(1 + unit, 1 + unit * 3), D2D1FigureBegin.Filled);
@@ -161,7 +159,7 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RenderElement(DirtyAreaCollector collector, UIElement element, bool ignoreNeedRefresh)
         {
-            IReadOnlyCollection<UIElement> children = (element as IContainerElement)?.Children;
+            IReadOnlyCollection<UIElement>? children = (element as IContainerElement)?.Children;
             if (ignoreNeedRefresh || element.NeedRefresh() || collector.IsEmptyInstance)
             {
                 element.Render(collector);

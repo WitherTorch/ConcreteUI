@@ -1,6 +1,5 @@
 ﻿using System;
 
-using ConcreteUI.Controls;
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Utils;
@@ -32,7 +31,7 @@ namespace ConcreteUI.Controls
             public override AbstractCalculation Clone()
                 => new AutoHeightCalculation(_reference, _minHeight, _maxHeight);
 
-            public override ICalculationContext CreateContext()
+            public override ICalculationContext? CreateContext()
                 => CalculationContext.TryCreate(_reference, _minHeight, _maxHeight);
 
             private sealed class CalculationContext : ICalculationContext

@@ -1,6 +1,5 @@
 ﻿using System;
 
-using ConcreteUI.Controls;
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Utils;
@@ -36,7 +35,7 @@ namespace ConcreteUI.Controls
             public override AbstractCalculation Clone()
                 => new AutoWidthCalculation(_dependRef, _minWidth, _maxWidth);
 
-            public override ICalculationContext CreateContext()
+            public override ICalculationContext? CreateContext()
                 => CalculationContext.TryCreate(_dependRef, _minWidth, _maxWidth);
 
             private sealed class CalculationContext : ICalculationContext

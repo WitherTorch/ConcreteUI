@@ -1,9 +1,9 @@
-﻿using ConcreteUI.Graphics.Native.Direct2D.Brushes;
+﻿using System.Collections.Generic;
+
 using ConcreteUI.Graphics.Native.Direct2D;
-using System.Collections.Generic;
+using ConcreteUI.Graphics.Native.Direct2D.Brushes;
+
 using WitherTorch.Common.Buffers;
-using System.Drawing;
-using System.Runtime.Remoting.Contexts;
 
 namespace ConcreteUI.Theme
 {
@@ -61,7 +61,9 @@ namespace ConcreteUI.Theme
                         break;
                     case D2D1LinearGradientBrush castedBrush:
                         {
-                            D2D1GradientStopCollection collection = castedBrush.GradientStopCollection;
+                            D2D1GradientStopCollection? collection = castedBrush.GradientStopCollection;
+                            if (collection is null)
+                                break;
                             uint count = collection.Count;
                             if (count == 0)
                                 break;
@@ -86,7 +88,9 @@ namespace ConcreteUI.Theme
                         break;
                     case D2D1RadialGradientBrush castedBrush:
                         {
-                            D2D1GradientStopCollection collection = castedBrush.GradientStopCollection;
+                            D2D1GradientStopCollection? collection = castedBrush.GradientStopCollection;
+                            if (collection is null)
+                                break;
                             uint count = collection.Count;
                             if (count == 0)
                                 break;

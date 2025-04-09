@@ -15,15 +15,15 @@ namespace ConcreteUI.Controls
     partial class TextBox
     {
         #region Events
-        public event MouseInteractEventHandler RequestContextMenu;
-        public event System.Windows.Forms.KeyEventHandler KeyDown;
-        public event System.Windows.Forms.KeyEventHandler KeyUp;
-        public event TextChangingEventHandler TextChanging;
-        public event EventHandler TextChanged;
+        public event MouseInteractEventHandler? RequestContextMenu;
+        public event KeyEventHandler? KeyDown;
+        public event KeyEventHandler? KeyUp;
+        public event TextChangingEventHandler? TextChanging;
+        public event EventHandler? TextChanged;
         #endregion
 
         #region Properties
-        public Cursor PredicatedCursor => _cursor;
+        public Cursor? PredicatedCursor => _cursor;
 
         public TextAlignment Alignment
         {
@@ -94,7 +94,7 @@ namespace ConcreteUI.Controls
                     return;
                 }
 
-                TextChangingEventHandler changingHandler = TextChanging;
+                TextChangingEventHandler? changingHandler = TextChanging;
                 if (changingHandler is not null)
                 {
                     TextChangingEventArgs args = new TextChangingEventArgs(value);

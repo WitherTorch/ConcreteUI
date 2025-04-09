@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using WitherTorch.Common.Helpers;
@@ -27,35 +26,35 @@ namespace ConcreteUI.Graphics.Native.DXGI
         public DXGIFactory4(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public DXGIAdapter EnumAdapterByLuid(Luid adapterLuid, in Guid riid, bool throwException = true)
+        public DXGIAdapter? EnumAdapterByLuid(Luid adapterLuid, in Guid riid, bool throwException = true)
             => EnumAdapterByLuid(adapterLuid, UnsafeHelper.AsPointerIn(in riid), throwException);
 
-        public DXGIAdapter EnumAdapterByLuid(Luid adapterLuid, Guid* riid, bool throwException = true)
+        public DXGIAdapter? EnumAdapterByLuid(Luid adapterLuid, Guid* riid, bool throwException = true)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.EnumAdapterByLuid);
             int hr = ((delegate* unmanaged[Stdcall]<void*, Luid, Guid*, void**, int>)functionPointer)(nativePointer, adapterLuid, riid, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DXGIAdapter(nativePointer, ReferenceType.Owned);
             if (throwException)
-                throw Marshal.GetExceptionForHR(hr);
-            return null;
+                ThrowHelper.ThrowExceptionForHR(hr);
+            else
+                ThrowHelper.ResetPointerForHR(hr, ref nativePointer);
+            return nativePointer == null ? null : new DXGIAdapter(nativePointer, ReferenceType.Owned);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public DXGIAdapter EnumWarpAdapter(in Guid riid, bool throwException = true)
+        public DXGIAdapter? EnumWarpAdapter(in Guid riid, bool throwException = true)
             => EnumWarpAdapter(UnsafeHelper.AsPointerIn(in riid), throwException);
 
-        public DXGIAdapter EnumWarpAdapter(Guid* riid, bool throwException = true)
+        public DXGIAdapter? EnumWarpAdapter(Guid* riid, bool throwException = true)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.EnumWarpAdapter);
             int hr = ((delegate* unmanaged[Stdcall]<void*, Guid*, void**, int>)functionPointer)(nativePointer, riid, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DXGIAdapter(nativePointer, ReferenceType.Owned);
             if (throwException)
-                throw Marshal.GetExceptionForHR(hr);
-            return null;
+                ThrowHelper.ThrowExceptionForHR(hr);
+            else
+                ThrowHelper.ResetPointerForHR(hr, ref nativePointer);
+            return nativePointer == null ? null : new DXGIAdapter(nativePointer, ReferenceType.Owned);
         }
     }
 }

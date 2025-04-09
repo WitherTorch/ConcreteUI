@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
@@ -23,7 +22,7 @@ namespace ConcreteUI.Window
 
         #region Fields
         private readonly List<WeakReference<CoreWindow>> _childrenReferenceList = new List<WeakReference<CoreWindow>>();
-        private readonly CoreWindow _parent;
+        private readonly CoreWindow? _parent;
         private int dpi = 96;
         private float dpiScaleFactor = 1.0f; // 螢幕DPI / 96
         private float windowScaleFactor = 1.0f; //  96 / 螢幕DPI
@@ -31,9 +30,9 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Events
-        public event EventHandler<FormWindowState> WindowStateChanging;
-        public event EventHandler WindowStateChanged;
-        public new event EventHandler DpiChanged;
+        public event EventHandler<FormWindowState>? WindowStateChanging;
+        public event EventHandler? WindowStateChanged;
+        public new event EventHandler? DpiChanged;
         #endregion
 
         #region Event Triggers
@@ -96,7 +95,7 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Properties
-        public new CoreWindow Parent => _parent;
+        public new CoreWindow? Parent => _parent;
         public IThemeContext Theme => _resourceProvider.ThemeContext;
         public int Dpi => dpi;
         public float DpiScaleFactor => dpiScaleFactor;
@@ -146,7 +145,7 @@ namespace ConcreteUI.Window
         }
         #endregion
 
-        protected CoreWindow(CoreWindow parent)
+        protected CoreWindow(CoreWindow? parent)
         {
             _parent = parent;
             List<WeakReference<CoreWindow>> windowList = parent is null ? _rootWindowList : parent._childrenReferenceList;

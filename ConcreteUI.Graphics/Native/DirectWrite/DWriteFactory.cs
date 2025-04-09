@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using InlineMethod;
 
 using LocalsInit;
 
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 using WitherTorch.Common.Windows;
 
@@ -57,9 +57,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer;
             Guid guid = IID_DWriteFactory;
             int hr = DWrite.DWriteCreateFactory(factoryType, &guid, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DWriteFactory(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new DWriteFactory(nativePointer, ReferenceType.Owned);
         }
 
         /// <summary>
@@ -78,9 +77,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetSystemFontCollection);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void**, bool, int>)functionPointer)(nativePointer, &nativePointer, checkForUpdates);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DWriteFontCollection(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new DWriteFontCollection(nativePointer, ReferenceType.Owned);
         }
 
         /// <inheritdoc cref="CreateTextFormat(char*, DWriteFontCollection, DWriteFontWeight, DWriteFontStyle, DWriteFontStretch, float, char*)"/>
@@ -95,7 +93,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="CreateTextFormat(char*, DWriteFontCollection, DWriteFontWeight, DWriteFontStyle, DWriteFontStretch, float, char*)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public DWriteTextFormat CreateTextFormat(string fontFamilyName, DWriteFontCollection fontCollection,
+        public DWriteTextFormat CreateTextFormat(string fontFamilyName, DWriteFontCollection? fontCollection,
             DWriteFontWeight fontWeight, DWriteFontStyle fontStyle, DWriteFontStretch fontStretch, float fontSize, string localeName)
         {
             fixed (char* ptr = fontFamilyName, ptr2 = localeName)
@@ -120,7 +118,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// (<see cref="DWriteFontFamilyModel.WeightStretchStyle"/>) without downloadable fonts.
         /// </remarks>
 
-        public DWriteTextFormat CreateTextFormat(char* fontFamilyName, DWriteFontCollection fontCollection,
+        public DWriteTextFormat CreateTextFormat(char* fontFamilyName, DWriteFontCollection? fontCollection,
             DWriteFontWeight fontWeight, DWriteFontStyle fontStyle, DWriteFontStretch fontStretch, float fontSize, char* localeName)
         {
             void* nativePointer = NativePointer;
@@ -128,9 +126,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             int hr = ((delegate* unmanaged[Stdcall]<void*, char*, void*, DWriteFontWeight, DWriteFontStyle, DWriteFontStretch, float, char*, void**, int>)functionPointer)(
                 nativePointer, fontFamilyName, fontCollection == null ? null : fontCollection.NativePointer,
                 fontWeight, fontStyle, fontStretch, fontSize, localeName, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DWriteTextFormat(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new DWriteTextFormat(nativePointer, ReferenceType.Owned);
         }
 
         /// <inheritdoc cref="CreateTextLayout(char*, uint, DWriteTextFormat, float, float)"/>
@@ -180,9 +177,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateTextLayout);
             int hr = ((delegate* unmanaged[Stdcall]<void*, char*, uint, void*, float, float, void**, int>)functionPointer)(nativePointer, text, textLength,
                 textFormat.NativePointer, maxWidth, maxHeight, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DWriteTextLayout(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new DWriteTextLayout(nativePointer, ReferenceType.Owned);
         }
     }
 }

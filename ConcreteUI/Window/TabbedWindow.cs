@@ -1,5 +1,4 @@
-﻿using System;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -48,9 +47,9 @@ namespace ConcreteUI.Window
         #region Fields
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
         private readonly string[] menuTitles;
-        private DWriteTextLayout[] menuBarButtonLayouts;
+        private DWriteTextLayout[]? menuBarButtonLayouts;
         private float menuBarButtonLastRight;
-        private RectF[] menuBarButtonRects;
+        private RectF[]? menuBarButtonRects;
         #endregion
 
         #region Rendering Fields
@@ -59,11 +58,11 @@ namespace ConcreteUI.Window
 
         #region Properties
 
-        public RectF[] MenuBarButtonBounds => InterlockedHelper.Read(ref menuBarButtonRects);
+        public RectF[] MenuBarButtonBounds => NullSafetyHelper.ThrowIfNull(InterlockedHelper.Read(ref menuBarButtonRects));
         #endregion
 
         #region Constructor
-        protected TabbedWindow(CoreWindow parent, string[] menuTitles) : base(parent)
+        protected TabbedWindow(CoreWindow? parent, string[] menuTitles) : base(parent)
         {
             FormBorderStyle = FormBorderStyle.Sizable;
             this.menuTitles = menuTitles;

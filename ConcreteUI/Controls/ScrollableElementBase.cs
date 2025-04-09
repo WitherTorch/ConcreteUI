@@ -32,7 +32,7 @@ namespace ConcreteUI.Controls
         private readonly Timer _repeatingTimer;
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
 
-        private Action _repeatingAction;
+        private Action? _repeatingAction;
         private Point _viewportPoint, _surfaceSize;
         private Rect _contentBounds, _scrollBarBounds, _scrollBarScrollButtonBounds, _scrollBarUpButtonBounds, _scrollBarDownButtonBounds;
         private ButtonTriState _scrollButtonState, _scrollUpButtonState, _scrollDownButtonState;
@@ -55,7 +55,7 @@ namespace ConcreteUI.Controls
 
         protected abstract D2D1Brush GetBackDisabledBrush();
 
-        protected virtual D2D1Brush GetBorderBrush() => null;
+        protected virtual D2D1Brush? GetBorderBrush() => null;
 
         protected override void ApplyThemeCore(ThemeResourceProvider provider)
             => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
@@ -170,7 +170,7 @@ namespace ConcreteUI.Controls
             }
             if (redrawContent || hasScrollBar && redrawScrollBar)
             {
-                D2D1Brush borderBrush = GetBorderBrush();
+                D2D1Brush? borderBrush = GetBorderBrush();
                 if (borderBrush is not null)
                 {
                     context.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
@@ -425,7 +425,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        private void RepeatingTimer_Tick(object state) => _repeatingAction?.Invoke();
+        private void RepeatingTimer_Tick(object? state) => _repeatingAction?.Invoke();
 
         public virtual void OnMouseDown(in MouseInteractEventArgs args)
         {

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using InlineMethod;
@@ -30,33 +29,33 @@ namespace ConcreteUI.Graphics.Native.DXGI
         public DXGIFactory1(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static new DXGIFactory1 Create(in Guid riid, bool throwException = true)
+        public static new DXGIFactory1? Create(in Guid riid, bool throwException = true)
             => Create(UnsafeHelper.AsPointerIn(in riid), throwException);
 
         [LocalsInit(false)]
-        public static new DXGIFactory1 Create(Guid* riid, bool throwException = true)
+        public static new DXGIFactory1? Create(Guid* riid, bool throwException = true)
         {
             void* factory;
             int hr = DXGI.CreateDXGIFactory1(riid, &factory);
-            if (hr >= 0)
-                return factory == null ? null : new DXGIFactory1(factory, ReferenceType.Owned);
             if (throwException)
-                throw Marshal.GetExceptionForHR(hr);
-            return null;
+                ThrowHelper.ThrowExceptionForHR(hr);
+            else
+                ThrowHelper.ResetPointerForHR(hr, ref factory);
+            return factory == null ? null : new DXGIFactory1(factory, ReferenceType.Owned);
         }
 
         public bool IsCurrent => IsCurrentCore();
 
-        public DXGIAdapter1 EnumAdapters1(uint adapter, bool throwException = true)
+        public DXGIAdapter1? EnumAdapters1(uint adapter, bool throwException = true)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.EnumAdapters1);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, void**, int>)functionPointer)(nativePointer, adapter, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DXGIAdapter1(nativePointer, ReferenceType.Owned);
             if (throwException)
-                throw Marshal.GetExceptionForHR(hr);
-            return null;
+                ThrowHelper.ThrowExceptionForHR(hr);
+            else
+                ThrowHelper.ResetPointerForHR(hr, ref nativePointer);
+            return nativePointer == null ? null : new DXGIAdapter1(nativePointer, ReferenceType.Owned);
         }
 
         [Inline(InlineBehavior.Remove)]

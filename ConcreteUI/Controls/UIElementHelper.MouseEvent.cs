@@ -148,7 +148,7 @@ namespace ConcreteUI.Controls
                 mouseEvents.OnMouseUp(args);
         }
 
-        public static void OnMouseMoveForElements(IEnumerable<UIElement> elements, in MouseInteractEventArgs args, ref Cursor predicatedCursor)
+        public static void OnMouseMoveForElements(IEnumerable<UIElement> elements, in MouseInteractEventArgs args, ref Cursor? predicatedCursor)
         {
             switch (elements)
             {
@@ -168,7 +168,7 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Remove)]
-        public static void OnMouseMoveForElementsCore(IEnumerable<UIElement> elements, in MouseInteractEventArgs args, ref Cursor predicatedCursor)
+        public static void OnMouseMoveForElementsCore(IEnumerable<UIElement> elements, in MouseInteractEventArgs args, ref Cursor? predicatedCursor)
         {
             IEnumerator<UIElement> enumerator = elements.Reverse().GetEnumerator();
             while (enumerator.MoveNext())
@@ -182,15 +182,15 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static void OnMouseMoveForElements(UIElement[] elements, in MouseInteractEventArgs args, ref Cursor predicatedCursor)
+        public static void OnMouseMoveForElements(UIElement[] elements, in MouseInteractEventArgs args, ref Cursor? predicatedCursor)
             => OnMouseMoveForElements(elements, elements.Length, in args, ref predicatedCursor);
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static void OnMouseMoveForElements(UnwrappableList<UIElement> elements, in MouseInteractEventArgs args, ref Cursor predicatedCursor)
+        public static void OnMouseMoveForElements(UnwrappableList<UIElement> elements, in MouseInteractEventArgs args, ref Cursor? predicatedCursor)
             => OnMouseMoveForElements(elements.Unwrap(), elements.Count, in args, ref predicatedCursor);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void OnMouseMoveForElements(UIElement[] elements, int length, in MouseInteractEventArgs args, ref Cursor predicatedCursor)
+        public static void OnMouseMoveForElements(UIElement[] elements, int length, in MouseInteractEventArgs args, ref Cursor? predicatedCursor)
         {
             for (int i = length - 1; i >= 0; i--)
             {
@@ -202,7 +202,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void OnMouseMoveForElement(UIElement element, in MouseInteractEventArgs args, ref Cursor predicatedCursor)
+        public static void OnMouseMoveForElement(UIElement element, in MouseInteractEventArgs args, ref Cursor? predicatedCursor)
         {
             if (element is IContainerElement containerElement)
                 OnMouseMoveForElements(containerElement.Children, args, ref predicatedCursor);

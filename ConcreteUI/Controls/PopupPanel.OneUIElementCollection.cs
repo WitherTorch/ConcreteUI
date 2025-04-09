@@ -11,11 +11,11 @@ namespace ConcreteUI.Controls
     {
         private sealed class OneUIElementCollection : IReadOnlyCollection<UIElement>, IDisposable
         {
-            private UIElement _element;
+            private UIElement? _element;
 
             public int Count => MathHelper.BooleanToInt32(_element is null);
 
-            public UIElement Value
+            public UIElement? Value
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _element;
@@ -25,7 +25,7 @@ namespace ConcreteUI.Controls
 
             public IEnumerator<UIElement> GetEnumerator()
             {
-                UIElement element = _element;
+                UIElement? element = _element;
                 if (element is null)
                     return CollectionHelper.EmptyEnumerator<UIElement>();
                 return new Enumerator(element);
@@ -33,7 +33,7 @@ namespace ConcreteUI.Controls
 
             IEnumerator IEnumerable.GetEnumerator()
             {
-                UIElement element = _element;
+                UIElement? element = _element;
                 if (element is null)
                     return CollectionHelper.EmptyEnumerator();
                 return new Enumerator(element);
@@ -64,9 +64,17 @@ namespace ConcreteUI.Controls
                     _index = -1;
                 }
 
-                public UIElement Current => _index == 0 ? _element : null;
+                public UIElement Current
+                {
+                    get
+                    {
+                        if (_index == 0)
+                            return _element;
+                        throw new InvalidOperationException();
+                    }
+                }
 
-                object IEnumerator.Current => _index == 0 ? _element : null;
+                object IEnumerator.Current => Current;
 
                 public void Dispose() { }
 

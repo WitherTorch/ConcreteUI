@@ -20,14 +20,14 @@ namespace ConcreteUI.Controls.Calculation
         public PageElementDependedCalculation(UIElement depend, LayoutProperty property, Func<Rect, int, int> func)
             : this(new WeakReference<UIElement>(depend), property, func) { }
 
-        public UIElement DependElement => _dependElementRef.TryGetTarget(out UIElement result) ? result : null;
+        public UIElement? DependElement => _dependElementRef.TryGetTarget(out UIElement? result) ? result : null;
 
         public LayoutProperty DependProperty => _dependProperty;
 
         public override AbstractCalculation Clone()
             => new PageElementDependedCalculation(_dependElementRef, _dependProperty, _func);
 
-        public override ICalculationContext CreateContext()
+        public override ICalculationContext? CreateContext()
             => CalculationContext.TryCreate(_dependElementRef, _dependProperty, _func);
 
         private sealed class CalculationContext : ICalculationContext
@@ -53,9 +53,9 @@ namespace ConcreteUI.Controls.Calculation
                 _value = 0;
             }
 
-            public static CalculationContext TryCreate(WeakReference<UIElement> dependRef, LayoutProperty property, Func<Rect, int, int> func)
+            public static CalculationContext? TryCreate(WeakReference<UIElement> dependRef, LayoutProperty property, Func<Rect, int, int> func)
             {
-                if (!dependRef.TryGetTarget(out UIElement depend))
+                if (!dependRef.TryGetTarget(out UIElement? depend))
                     return null;
                 return new CalculationContext(depend, property, func);
             }

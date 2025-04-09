@@ -15,7 +15,7 @@ namespace ConcreteUI.Graphics.Extensions
 {
     public static class D2D1DeviceContextExtensions
     {
-        public unsafe static D2D1Bitmap LoadBitmap(this D2D1DeviceContext deviceContext, Bitmap bitmap)
+        public unsafe static D2D1Bitmap? LoadBitmap(this D2D1DeviceContext deviceContext, Bitmap bitmap)
         {
             var sourceArea = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
             var bitmapProperties = new D2D1BitmapProperties(new D2D1PixelFormat(DXGIFormat.R8G8B8A8_UNorm, D2D1AlphaMode.Premultiplied));

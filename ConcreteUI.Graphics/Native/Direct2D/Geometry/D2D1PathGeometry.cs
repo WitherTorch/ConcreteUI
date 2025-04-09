@@ -1,9 +1,8 @@
-﻿using System.Runtime.InteropServices;
-
-using InlineMethod;
+﻿using InlineMethod;
 
 using LocalsInit;
 
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
@@ -46,9 +45,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Open);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void*, int>)functionPointer)(nativePointer, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1GeometrySink(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1GeometrySink(nativePointer, ReferenceType.Owned);
         }
 
         /// <summary>
@@ -59,9 +57,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Stream);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void*, int>)functionPointer)(nativePointer, sink.NativePointer);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         [LocalsInit(false)]
@@ -72,9 +68,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetSegmentCount);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint*, int>)functionPointer)(nativePointer, &result);
-            if (hr >= 0)
-                return result;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return result;
         }
 
         [LocalsInit(false)]
@@ -85,9 +80,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFigureCount);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint*, int>)functionPointer)(nativePointer, &result);
-            if (hr >= 0)
-                return result;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return result;
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using WitherTorch.Common.Windows;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
@@ -46,9 +45,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Close);
             int hr = ((delegate* unmanaged[Stdcall]<void*, int>)functionPointer)(nativePointer);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
     }
 }

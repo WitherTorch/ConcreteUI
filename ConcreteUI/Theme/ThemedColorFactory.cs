@@ -3,8 +3,6 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 
-using InlineMethod;
-
 namespace ConcreteUI.Theme
 {
     public interface IThemedColorFactory

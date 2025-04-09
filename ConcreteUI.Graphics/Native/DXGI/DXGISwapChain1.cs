@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using InlineMethod;
@@ -56,9 +55,8 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDesc1);
             int hr = ((delegate* unmanaged[Stdcall]<void*, DXGISwapChainDescription1*, int>)functionPointer)(nativePointer, &desc);
-            if (hr >= 0)
-                return desc;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return desc;
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -69,9 +67,8 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFullscreenDesc);
             int hr = ((delegate* unmanaged[Stdcall]<void*, DXGISwapChainFullscreenDescription*, int>)functionPointer)(nativePointer, &fullscreenDesc);
-            if (hr >= 0)
-                return fullscreenDesc;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return fullscreenDesc;
         }
 
         public IntPtr GetHwnd()
@@ -79,9 +76,8 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetHwnd);
             int hr = ((delegate* unmanaged[Stdcall]<void*, IntPtr*, int>)functionPointer)(nativePointer, (IntPtr*)&nativePointer);
-            if (hr >= 0)
-                return (IntPtr)nativePointer;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return (IntPtr)nativePointer;
         }
 
         public void Present1(uint syncInterval, in DXGIPresentParameters presentParameters)
@@ -90,17 +86,13 @@ namespace ConcreteUI.Graphics.Native.DXGI
         public void Present1(uint syncInterval, DXGIPresentFlags flags, in DXGIPresentParameters presentParameters)
         {
             int hr = TryPresent1(syncInterval, flags, presentParameters);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         public void Present1(uint syncInterval, DXGIPresentFlags flags, DXGIPresentParameters* pPresentParameters)
         {
             int hr = TryPresent1(syncInterval, flags, pPresentParameters);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]

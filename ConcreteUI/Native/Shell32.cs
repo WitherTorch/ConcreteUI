@@ -1,6 +1,4 @@
-﻿using InlineMethod;
-
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Security;
 

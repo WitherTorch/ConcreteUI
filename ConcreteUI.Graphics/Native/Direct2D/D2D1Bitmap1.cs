@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Security;
+﻿using System.Security;
 
 using ConcreteUI.Graphics.Native.DXGI;
 
@@ -7,6 +6,7 @@ using InlineMethod;
 
 using LocalsInit;
 
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.Direct2D
@@ -35,7 +35,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         /// <summary>
         /// Retrieves the color context information associated with the bitmap.
         /// </summary>
-        public D2D1ColorContext GetColorContext()
+        public D2D1ColorContext? GetColorContext()
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetColorContext);
@@ -60,9 +60,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetSurface);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void*, int>)functionPointer)(nativePointer, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DXGISurface(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return new DXGISurface(nativePointer, ReferenceType.Owned);
         }
 
         /// <summary>
@@ -77,9 +76,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Map);
             int hr = ((delegate* unmanaged[Stdcall]<void*, D2D1MapOptions, D2D1MappedRect*, int>)functionPointer)(nativePointer, options, &mappedRect);
-            if (hr >= 0)
-                return mappedRect;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return mappedRect;
         }
 
         /// <summary>
@@ -90,9 +88,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Unmap);
             int hr = ((delegate* unmanaged[Stdcall]<void*, int>)functionPointer)(nativePointer);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
     }
 }

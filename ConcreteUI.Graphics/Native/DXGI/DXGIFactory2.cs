@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using InlineMethod;
@@ -38,27 +37,27 @@ namespace ConcreteUI.Graphics.Native.DXGI
 
         public DXGIFactory2(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
 
-        public static new DXGIFactory2 Create(in Guid riid, bool throwException = true)
+        public static new DXGIFactory2? Create(in Guid riid, bool throwException = true)
             => Create(DXGICreateFactoryFlags.None, riid, throwException);
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static new DXGIFactory2 Create(Guid* riid, bool throwException = true)
+        public static new DXGIFactory2? Create(Guid* riid, bool throwException = true)
             => Create(DXGICreateFactoryFlags.None, riid, throwException);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static DXGIFactory2 Create(DXGICreateFactoryFlags flags, in Guid riid, bool throwException = true)
+        public static DXGIFactory2? Create(DXGICreateFactoryFlags flags, in Guid riid, bool throwException = true)
             => Create(flags, UnsafeHelper.AsPointerIn(in riid), throwException);
 
         [LocalsInit(false)]
-        public static DXGIFactory2 Create(DXGICreateFactoryFlags flags, Guid* riid, bool throwException = true)
+        public static DXGIFactory2? Create(DXGICreateFactoryFlags flags, Guid* riid, bool throwException = true)
         {
             void* factory;
             int hr = DXGI.CreateDXGIFactory2(flags, riid, &factory);
-            if (hr >= 0)
-                return factory == null ? null : new DXGIFactory2(factory, ReferenceType.Owned);
             if (throwException)
-                throw Marshal.GetExceptionForHR(hr);
-            return null;
+                ThrowHelper.ThrowExceptionForHR(hr);
+            else
+                ThrowHelper.ResetPointerForHR(hr, ref factory);
+            return factory == null ? null : new DXGIFactory2(factory, ReferenceType.Owned);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -77,9 +76,8 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateSwapChainForHwnd);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void*, IntPtr, DXGISwapChainDescription1*, DXGISwapChainFullscreenDescription*, void*, void**, int>)functionPointer)(nativePointer,
                 device.NativePointer, handle, pDesc, pFullscreenDesc, null, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DXGISwapChain1(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new DXGISwapChain1(nativePointer, ReferenceType.Owned);
         }
     }
 }

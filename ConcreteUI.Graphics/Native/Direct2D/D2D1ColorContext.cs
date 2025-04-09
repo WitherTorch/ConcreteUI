@@ -1,8 +1,8 @@
-﻿using System.Runtime.InteropServices;
-using System.Security;
+﻿using System.Security;
 
 using InlineMethod;
 
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.Direct2D
@@ -64,9 +64,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetProfile);
             int hr = ((delegate* unmanaged[Stdcall]<void*, byte*, uint, int>)functionPointer)(nativePointer, profile, profileSize);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
     }
 }

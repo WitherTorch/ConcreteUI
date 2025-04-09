@@ -1,7 +1,6 @@
 ﻿using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
@@ -168,9 +167,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateBitmap);
             int hr = ((delegate* unmanaged[Stdcall]<void*, SizeU, void*, uint, D2D1BitmapProperties*, void**, int>)functionPointer)(nativePointer,
                 size, srcData, pitch, bitmapProperties, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1Bitmap(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1Bitmap(nativePointer, ReferenceType.Owned);
         }
 
         /// <summary>
@@ -201,9 +199,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateBitmapBrush);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void*, D2D1BitmapBrushProperties*, D2D1BrushProperties*, void**, int>)functionPointer)(nativePointer,
                 bitmap == null ? null : bitmap.NativePointer, bitmapBrushProperties, brushProperties, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1BitmapBrush(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1BitmapBrush(nativePointer, ReferenceType.Owned);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -219,9 +216,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateSolidColorBrush);
             int hr = ((delegate* unmanaged[Stdcall]<void*, D2D1ColorF*, D2D1BrushProperties*, void**, int>)functionPointer)(nativePointer, color, brushProperties, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1SolidColorBrush(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1SolidColorBrush(nativePointer, ReferenceType.Owned);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
@@ -251,9 +247,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateGradientStopCollection);
             int hr = ((delegate* unmanaged[Stdcall]<void*, D2D1GradientStop*, uint, D2D1Gamma, D2D1ExtendMode, void**, int>)functionPointer)(nativePointer,
                 gradientStops, gradientStopsCount, colorInterpolationGamma, extendMode, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1GradientStopCollection(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1GradientStopCollection(nativePointer, ReferenceType.Owned);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -274,9 +269,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateLinearGradientBrush);
             int hr = ((delegate* unmanaged[Stdcall]<void*, D2D1LinearGradientBrushProperties*, D2D1BrushProperties*, void*, void**, int>)functionPointer)(nativePointer,
                 linearGradientBrushProperties, brushProperties, gradientStopCollection.NativePointer, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1LinearGradientBrush(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1LinearGradientBrush(nativePointer, ReferenceType.Owned);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -297,9 +291,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateRadialGradientBrush);
             int hr = ((delegate* unmanaged[Stdcall]<void*, D2D1RadialGradientBrushProperties*, D2D1BrushProperties*, void*, void**, int>)functionPointer)(nativePointer,
                 radialGradientBrushProperties, brushProperties, gradientStopCollection.NativePointer, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1RadialGradientBrush(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1RadialGradientBrush(nativePointer, ReferenceType.Owned);
         }
 
         /// <summary>
@@ -310,12 +303,11 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateMesh);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1Mesh(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1Mesh(nativePointer, ReferenceType.Owned);
         }
 
-        public void DrawLine(PointF point0, PointF point1, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle strokeStyle = null)
+        public void DrawLine(PointF point0, PointF point1, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawLine);
@@ -324,10 +316,10 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawRectangle(in RectF rect, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle strokeStyle = null)
+        public void DrawRectangle(in RectF rect, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
             => DrawRectangle(UnsafeHelper.AsPointerIn(in rect), brush, strokeWidth, strokeStyle);
 
-        public void DrawRectangle(RectF* rect, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle strokeStyle = null)
+        public void DrawRectangle(RectF* rect, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawRectangle);
@@ -347,10 +339,10 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawRoundedRectangle(in D2D1RoundedRectangle roundedRect, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle strokeStyle = null)
+        public void DrawRoundedRectangle(in D2D1RoundedRectangle roundedRect, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
             => DrawRoundedRectangle(UnsafeHelper.AsPointerIn(in roundedRect), brush, strokeWidth, strokeStyle);
 
-        public void DrawRoundedRectangle(D2D1RoundedRectangle* roundedRect, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle strokeStyle = null)
+        public void DrawRoundedRectangle(D2D1RoundedRectangle* roundedRect, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawRoundedRectangle);
@@ -370,10 +362,10 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawEllipse(in D2D1Ellipse ellipse, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle strokeStyle = null)
+        public void DrawEllipse(in D2D1Ellipse ellipse, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
             => DrawEllipse(UnsafeHelper.AsPointerIn(in ellipse), brush, strokeWidth, strokeStyle);
 
-        public void DrawEllipse(D2D1Ellipse* ellipse, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle strokeStyle = null)
+        public void DrawEllipse(D2D1Ellipse* ellipse, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawEllipse);
@@ -392,7 +384,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             ((delegate* unmanaged[Stdcall]<void*, D2D1Ellipse*, void*, void>)functionPointer)(nativePointer, ellipse, brush.NativePointer);
         }
 
-        public void DrawGeometry(D2D1Geometry geometry, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle strokeStyle = null)
+        public void DrawGeometry(D2D1Geometry geometry, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawGeometry);
@@ -406,12 +398,12 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         /// entire fill of the geometry. If this brush is specified, the fill brush must be
         /// a bitmap brush with an extend mode of <see cref="D2D1ExtendMode.Clamp"/>.
         /// </param>
-        public void FillGeometry(D2D1Geometry geometry, D2D1Brush brush, D2D1Brush opacityBrush = null)
+        public void FillGeometry(D2D1Geometry geometry, D2D1Brush brush, D2D1Brush? opacityBrush = null)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.FillGeometry);
             ((delegate* unmanaged[Stdcall]<void*, void*, void*, void*, void>)functionPointer)(nativePointer, geometry.NativePointer, brush.NativePointer,
-                opacityBrush.NativePointer);
+                opacityBrush is null ? null : opacityBrush.NativePointer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -550,13 +542,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         [Inline(InlineBehavior.Keep, export: true)]
         public void Flush() => Flush(null, null);
 
-        public void Flush(ulong* tag1, ulong* tag2)
-        {
-            int hr = TryFlush(tag1, tag2);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
-        }
+        [Inline(InlineBehavior.Keep, export: true)]
+        public void Flush(ulong* tag1, ulong* tag2) => ThrowHelper.ThrowExceptionForHR(TryFlush(tag1, tag2));
 
         [Inline(InlineBehavior.Keep, export: true)]
         public int TryFlush() => TryFlush(null, null);
@@ -625,13 +612,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         public void EndDraw() => EndDraw(null, null);
 
         /// <inheritdoc cref="TryEndDraw(ulong*, ulong*)"/>
-        public void EndDraw(ulong* tag1, ulong* tag2)
-        {
-            int hr = TryEndDraw(tag1, tag2);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
-        }
+        [Inline(InlineBehavior.Keep, export: true)]
+        public void EndDraw(ulong* tag1, ulong* tag2) => ThrowHelper.ThrowExceptionForHR(TryEndDraw(tag1, tag2));
 
         /// <inheritdoc cref="TryEndDraw(ulong*, ulong*)"/>
         [Inline(InlineBehavior.Keep, export: true)]

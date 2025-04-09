@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Drawing;
-using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -12,7 +11,6 @@ using ConcreteUI.Utils;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {

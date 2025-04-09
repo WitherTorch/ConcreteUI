@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using InlineMethod;
@@ -74,9 +73,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetPropertyName);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, char*, uint, int>)functionPointer)(nativePointer, index, buffer, bufferLength);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <summary>
@@ -146,9 +143,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetValueByName);
             int hr = ((delegate* unmanaged[Stdcall]<void*, char*, D2D1PropertyType, byte*, uint, int>)functionPointer)(nativePointer, name, type, data, dataSize);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <inheritdoc cref="SetValue(uint, D2D1PropertyType, byte*, uint)" />
@@ -164,9 +159,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetValue);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, D2D1PropertyType, byte*, uint, int>)functionPointer)(nativePointer, index, type, data, dataSize);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <inheritdoc cref="GetValueByName(char*, D2D1PropertyType, byte*, uint)"/>
@@ -204,9 +197,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetValueByName);
             int hr = ((delegate* unmanaged[Stdcall]<void*, char*, D2D1PropertyType, byte*, uint, int>)functionPointer)(nativePointer, name, type, data, dataSize);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <inheritdoc cref="GetValue(uint, D2D1PropertyType, byte*, uint)"/>
@@ -226,9 +217,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetValue);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, D2D1PropertyType, byte*, uint, int>)functionPointer)(nativePointer, index, type, data, dataSize);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <summary>
@@ -244,15 +233,14 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         /// <summary>
         /// Retrieves the sub-properties of the given property by index.
         /// </summary>
-        public D2D1Properties GetSubProperties(uint index)
+        public D2D1Properties? GetSubProperties(uint index)
         {
             void* pProperties;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetSubProperties);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, void**, int>)functionPointer)(nativePointer, index, &pProperties);
-            if (hr >= 0)
-                return pProperties == null ? null : new D2D1Properties(pProperties, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return pProperties == null ? null : new D2D1Properties(pProperties, ReferenceType.Owned);
         }
     }
 }

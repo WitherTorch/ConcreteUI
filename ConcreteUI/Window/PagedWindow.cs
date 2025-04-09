@@ -40,12 +40,12 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Events
-        public event EventHandler CurrentPageChanging;
-        public event EventHandler CurrentPageChanged;
+        public event EventHandler? CurrentPageChanging;
+        public event EventHandler? CurrentPageChanged;
         #endregion
 
         #region Constuctor
-        protected PagedWindow(CoreWindow parent) : base(parent) { }
+        protected PagedWindow(CoreWindow? parent) : base(parent) { }
         #endregion
 
         #region Event Triggers

@@ -4,6 +4,6 @@ namespace ConcreteUI.Controls
 {
     public interface ICursorPredicator
     {
-        Cursor PredicatedCursor { get; }
+        Cursor? PredicatedCursor { get; }
     }
 }

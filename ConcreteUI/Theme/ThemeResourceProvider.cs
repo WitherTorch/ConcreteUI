@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 using ConcreteUI.Graphics.Native.Direct2D;

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
@@ -7,6 +6,7 @@ using ConcreteUI.Graphics.Native.Direct2D.Geometry;
 
 using InlineMethod;
 
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.Direct2D
@@ -37,9 +37,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateFilledGeometryRealization);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void*, float, void**, int>)functionPointer)(nativePointer, geometry.NativePointer, flatteningTolerance, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1GeometryRealization(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1GeometryRealization(nativePointer, ReferenceType.Owned);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
@@ -47,15 +46,14 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             => CreateStrokedGeometryRealization(geometry, flatteningTolerance, strokeWidth, null);
 
         public D2D1GeometryRealization CreateStrokedGeometryRealization(D2D1Geometry geometry, float flatteningTolerance, float strokeWidth,
-            D2D1StrokeStyle strokeStyle)
+            D2D1StrokeStyle? strokeStyle)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateStrokedGeometryRealization);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void*, float, float, void*, void**, int>)functionPointer)(nativePointer,
                 geometry.NativePointer, flatteningTolerance, strokeWidth, strokeStyle == null ? null : strokeStyle.NativePointer, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1GeometryRealization(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1GeometryRealization(nativePointer, ReferenceType.Owned);
         }
 
         public void DrawGeometryRealization(D2D1GeometryRealization geometryRealization, D2D1Brush brush)

@@ -6,7 +6,7 @@ namespace ConcreteUI.Controls
 {
     public abstract partial class ButtonBase : UIElement, IMouseEvents
     {
-        public event MouseInteractEventHandler Click;
+        public event MouseInteractEventHandler? Click;
 
         private bool _enabled;
         private ButtonPressState _pressState; 

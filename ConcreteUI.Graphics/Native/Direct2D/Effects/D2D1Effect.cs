@@ -1,7 +1,6 @@
-﻿using System.Runtime.InteropServices;
+﻿using InlineMethod;
 
-using InlineMethod;
-
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.Direct2D.Effects
@@ -42,12 +41,10 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Effects
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetInputCount);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, int>)functionPointer)(nativePointer, inputCount);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
-        public D2D1Image GetInput(uint index)
+        public D2D1Image? GetInput(uint index)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetInput);
@@ -63,7 +60,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Effects
             return ((delegate* unmanaged[Stdcall]<void*, uint>)functionPointer)(nativePointer);
         }
 
-        public D2D1Image GetOutput()
+        public D2D1Image? GetOutput()
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetOutput);

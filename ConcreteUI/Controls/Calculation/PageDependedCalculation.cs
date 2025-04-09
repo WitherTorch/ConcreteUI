@@ -45,7 +45,7 @@ namespace ConcreteUI.Controls.Calculation
         public override AbstractCalculation Clone()
             => new PageDependedCalculation(_func);
 
-        public override ICalculationContext CreateContext()
+        public override ICalculationContext? CreateContext()
             => new CalculationContext(_func);
 
         private sealed class CalculationContext : ICalculationContext
@@ -56,7 +56,7 @@ namespace ConcreteUI.Controls.Calculation
 
             public bool DependPageRect => true;
 
-            public UIElement DependedElement => null;
+            public UIElement? DependedElement => null;
 
             public LayoutProperty DependedProperty => LayoutProperty.None;
 

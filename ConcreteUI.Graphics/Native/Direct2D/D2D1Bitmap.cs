@@ -1,6 +1,5 @@
 ﻿using System.Drawing;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using InlineMethod;
@@ -132,9 +131,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CopyFromBitmap);
             int hr = ((delegate* unmanaged[Stdcall]<void*, PointU*, void*, RectU*, int>)functionPointer)(nativePointer, destPoint, bitmap.NativePointer, srcRect);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
@@ -150,9 +147,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CopyFromRenderTarget);
             int hr = ((delegate* unmanaged[Stdcall]<void*, PointU*, void*, RectU*, int>)functionPointer)(nativePointer, destPoint, renderTarget.NativePointer, srcRect);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
@@ -168,9 +163,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CopyFromMemory);
             int hr = ((delegate* unmanaged[Stdcall]<void*, RectU*, void*, uint, int>)functionPointer)(nativePointer, dstRect, srcData, pitch);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
     }
 }

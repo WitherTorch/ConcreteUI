@@ -1,7 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
 using System;
-using System.Threading;
-using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls

@@ -2,10 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Security;
 
-using ConcreteUI.Graphics.Helpers;
-
 using WitherTorch.Common.Windows.Helpers;
-using WitherTorch.Common;
 
 namespace ConcreteUI.Graphics.Native.DXGI
 {

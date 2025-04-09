@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using ConcreteUI.Graphics.Native.DXGI;
@@ -43,9 +42,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer;
             int hr = D2D1.D2D1CreateDevice(device.NativePointer, creationProperties, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1Device(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1Device(nativePointer, ReferenceType.Owned);
         }
 
         /// <summary>
@@ -65,9 +63,8 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateDeviceContext);
             int hr = ((delegate* unmanaged[Stdcall]<void*, D2D1DeviceContextOptions, void**, int>)functionPointer)(nativePointer, options, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new D2D1DeviceContext(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1DeviceContext(nativePointer, ReferenceType.Owned);
         }
 
         [Inline(InlineBehavior.Remove)]

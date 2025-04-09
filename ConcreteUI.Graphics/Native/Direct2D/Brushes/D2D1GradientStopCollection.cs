@@ -2,8 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 
-using ConcreteUI.Graphics.Extensions;
-
 using InlineMethod;
 
 using WitherTorch.Common.Helpers;

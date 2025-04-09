@@ -2,9 +2,9 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net472</TargetFramework>
+		<TargetFrameworks>net472;net8-windows</TargetFrameworks>
 		<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
-		<Nullable>disable</Nullable>
+		<Nullable>enable</Nullable>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<Platforms>AnyCPU;x64;ARM64;x86</Platforms>

@@ -10,8 +10,6 @@ using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
-using InlineMethod;
-
 using WitherTorch.Common;
 using WitherTorch.Common.Windows.Structures;
 

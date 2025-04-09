@@ -33,15 +33,15 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public IReadOnlyCollection<UIElement> Children => _children.GetUnderlyingList().AsReadOnly();
+        public IReadOnlyCollection<UIElement> Children => _children.GetUnderlyingList().AsReadOnlyList();
 
-        public UIElement FirstChild
+        public UIElement? FirstChild
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _children.GetUnderlyingList().FirstOrDefault();
         }
 
-        public UIElement LastChild
+        public UIElement? LastChild
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _children.GetUnderlyingList().LastOrDefault();

@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using InlineMethod;
 
 using LocalsInit;
 
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.DXGI
@@ -42,9 +42,8 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDesc);
             int hr = ((delegate* unmanaged[Stdcall]<void*, DXGISurfaceDescription*, int>)functionPointer)(nativePointer, &desc);
-            if (hr >= 0)
-                return desc;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return desc;
         }
 
         [LocalsInit(false)]
@@ -54,9 +53,8 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Map);
             int hr = ((delegate* unmanaged[Stdcall]<void*, DXGIMappedRect*, DXGIMapFlags, int>)functionPointer)(nativePointer, &lockedRect, flags);
-            if (hr >= 0)
-                return lockedRect;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return lockedRect;
         }
 
         public void Unmap()
@@ -64,9 +62,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Unmap);
             int hr = ((delegate* unmanaged[Stdcall]<void*, int>)functionPointer)(nativePointer);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
     }
 }

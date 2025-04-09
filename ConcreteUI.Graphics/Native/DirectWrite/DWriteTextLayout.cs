@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using InlineMethod;
@@ -12,7 +10,6 @@ using LocalsInit;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 using WitherTorch.Common.Windows;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics.Native.DirectWrite
 {
@@ -98,9 +95,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetMaxWidth);
             int hr = ((delegate* unmanaged[Stdcall]<void*, float, int>)functionPointer)(nativePointer, maxWidth);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -109,9 +104,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetMaxHeight);
             int hr = ((delegate* unmanaged[Stdcall]<void*, float, int>)functionPointer)(nativePointer, maxHeight);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <summary>
@@ -124,9 +117,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetFontCollection);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void*, DWriteTextRange, int>)functionPointer)(nativePointer, fontCollection.NativePointer, textRange);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <summary>
@@ -151,9 +142,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetFontFamilyName);
             int hr = ((delegate* unmanaged[Stdcall]<void*, char*, DWriteTextRange, int>)functionPointer)(nativePointer, fontFamilyName, textRange);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <summary>
@@ -166,9 +155,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetFontWeight);
             int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteFontWeight, DWriteTextRange, int>)functionPointer)(nativePointer, fontWeight, textRange);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <summary>
@@ -181,9 +168,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetFontStyle);
             int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteFontStyle, DWriteTextRange, int>)functionPointer)(nativePointer, fontStyle, textRange);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <summary>
@@ -196,9 +181,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetFontStretch);
             int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteFontStretch, DWriteTextRange, int>)functionPointer)(nativePointer, fontStretch, textRange);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <summary>
@@ -211,9 +194,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetFontSize);
             int hr = ((delegate* unmanaged[Stdcall]<void*, float, DWriteTextRange, int>)functionPointer)(nativePointer, fontSize, textRange);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <summary>
@@ -226,9 +207,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetUnderline);
             int hr = ((delegate* unmanaged[Stdcall]<void*, bool, DWriteTextRange, int>)functionPointer)(nativePointer, hasUnderline, textRange);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <summary>
@@ -241,9 +220,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetStrikethrough);
             int hr = ((delegate* unmanaged[Stdcall]<void*, bool, DWriteTextRange, int>)functionPointer)(nativePointer, hasStrikethrough, textRange);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <summary>
@@ -261,9 +238,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetDrawingEffect);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void*, DWriteTextRange, int>)functionPointer)(nativePointer,
                 drawingEffect == null ? null : drawingEffect.NativePointer, textRange);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <summary>
@@ -288,9 +263,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetLocaleName);
             int hr = ((delegate* unmanaged[Stdcall]<void*, char*, DWriteTextRange, int>)functionPointer)(nativePointer, localeName, textRange);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -311,12 +284,12 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetFontCollection(uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
-        public DWriteFontCollection GetFontCollection(uint currentPosition)
+        public DWriteFontCollection? GetFontCollection(uint currentPosition)
             => GetFontCollection(currentPosition, null);
 
         /// <inheritdoc cref="GetFontCollection(uint, DWriteTextRange*)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public DWriteFontCollection GetFontCollection(uint currentPosition, out DWriteTextRange textRange)
+        public DWriteFontCollection? GetFontCollection(uint currentPosition, out DWriteTextRange textRange)
             => GetFontCollection(currentPosition, UnsafeHelper.AsPointerOut(out textRange));
 
         /// <summary>
@@ -327,15 +300,14 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// <returns>
         /// The current font collection.
         /// </returns>
-        public DWriteFontCollection GetFontCollection(uint currentPosition, DWriteTextRange* textRange)
+        public DWriteFontCollection? GetFontCollection(uint currentPosition, DWriteTextRange* textRange)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontCollection);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, void**, DWriteTextRange*, int>)functionPointer)(nativePointer,
                 currentPosition, &nativePointer, textRange);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DWriteFontCollection(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return nativePointer == null ? null : new DWriteFontCollection(nativePointer, ReferenceType.Owned);
         }
 
         /// <inheritdoc cref="GetFontFamilyNameLength(uint, DWriteTextRange*)"/>
@@ -364,9 +336,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontFamilyNameLength);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, uint*, DWriteTextRange*, int>)functionPointer)(nativePointer,
                 currentPosition, &nameLength, textRange);
-            if (hr >= 0)
-                return nameLength;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return nameLength;
         }
 
         /// <inheritdoc cref="GetFontFamilyName(uint, char*, uint, DWriteTextRange*)"/>
@@ -416,9 +387,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontFamilyName);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, char*, uint, DWriteTextRange*, int>)functionPointer)(nativePointer,
                 currentPosition, fontFamilyName, nameSize, textRange);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <inheritdoc cref="GetFontWeight(uint, DWriteTextRange*)"/>
@@ -447,9 +416,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontWeight);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, DWriteFontWeight*, DWriteTextRange*, int>)functionPointer)(nativePointer,
                 currentPosition, &fontWeight, textRange);
-            if (hr >= 0)
-                return fontWeight;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return fontWeight;
         }
 
         /// <inheritdoc cref="GetFontStyle(uint, DWriteTextRange*)"/>
@@ -478,9 +446,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontStyle);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, DWriteFontStyle*, DWriteTextRange*, int>)functionPointer)(nativePointer,
                 currentPosition, &fontStyle, textRange);
-            if (hr >= 0)
-                return fontStyle;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return fontStyle;
         }
 
         /// <inheritdoc cref="GetFontStretch(uint, DWriteTextRange*)"/>
@@ -509,9 +476,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontStretch);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, DWriteFontStretch*, DWriteTextRange*, int>)functionPointer)(nativePointer,
                 currentPosition, &fontStretch, textRange);
-            if (hr >= 0)
-                return fontStretch;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return fontStretch;
         }
 
         /// <inheritdoc cref="GetFontSize(uint, DWriteTextRange*)"/>
@@ -540,9 +506,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontSize);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, float*, DWriteTextRange*, int>)functionPointer)(nativePointer,
                 currentPosition, &fontSize, textRange);
-            if (hr >= 0)
-                return fontSize;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return fontSize;
         }
 
         /// <inheritdoc cref="GetUnderline(uint, DWriteTextRange*)"/>
@@ -571,9 +536,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetUnderline);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, bool*, DWriteTextRange*, int>)functionPointer)(nativePointer,
                 currentPosition, &hasUnderline, textRange);
-            if (hr >= 0)
-                return hasUnderline;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return hasUnderline;
         }
 
         /// <inheritdoc cref="GetStrikethrough(uint, DWriteTextRange*)"/>
@@ -602,19 +566,18 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetStrikethrough);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, bool*, DWriteTextRange*, int>)functionPointer)(nativePointer,
                 currentPosition, &hasStrikethrough, textRange);
-            if (hr >= 0)
-                return hasStrikethrough;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return hasStrikethrough;
         }
 
         /// <inheritdoc cref="GetDrawingEffect(uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
-        public ComObject GetDrawingEffect(uint currentPosition)
+        public ComObject? GetDrawingEffect(uint currentPosition)
             => GetDrawingEffect(currentPosition, null);
 
         /// <inheritdoc cref="GetDrawingEffect(uint, DWriteTextRange*)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ComObject GetDrawingEffect(uint currentPosition, out DWriteTextRange textRange)
+        public ComObject? GetDrawingEffect(uint currentPosition, out DWriteTextRange textRange)
             => GetDrawingEffect(currentPosition, UnsafeHelper.AsPointerOut(out textRange));
 
         /// <summary>
@@ -625,15 +588,14 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// <returns>
         /// The current application-defined drawing effect.
         /// </returns>
-        public ComObject GetDrawingEffect(uint currentPosition, DWriteTextRange* textRange)
+        public ComObject? GetDrawingEffect(uint currentPosition, DWriteTextRange* textRange)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDrawingEffect);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, void*, DWriteTextRange*, int>)functionPointer)(nativePointer,
                 currentPosition, &nativePointer, textRange);
-            if (hr >= 0)
-                return nativePointer == null ? null : new ComObject(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return nativePointer == null ? null : new ComObject(nativePointer, ReferenceType.Owned);
         }
 
         /// <inheritdoc cref="GetLocaleNameLength(uint, DWriteTextRange*)"/>
@@ -662,9 +624,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetLocaleNameLength);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, uint*, DWriteTextRange*, int>)functionPointer)(nativePointer,
                 currentPosition, &nameLength, textRange);
-            if (hr >= 0)
-                return nameLength;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return nameLength;
         }
 
         /// <inheritdoc cref="GetLocaleName(uint, char*, uint, DWriteTextRange*)"/>
@@ -714,9 +675,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetLocaleName);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, char*, uint, DWriteTextRange*, int>)functionPointer)(nativePointer,
                 currentPosition, localeName, nameSize, textRange);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         /// <summary>
@@ -730,7 +689,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             int hr = TryGetLineMetrics(null, 0u, out uint lineCount);
             if (hr >= 0)
                 return Array.Empty<DWriteLineMetrics>();
-            DWriteLineMetrics[] result = null;
+            DWriteLineMetrics[]? result = null;
             while (hr == Constants.E_INSUFFICIENT_BUFFER)
             {
                 result = new DWriteLineMetrics[lineCount];
@@ -738,9 +697,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
                     hr = TryGetLineMetrics(ptr, lineCount, &lineCount);
             }
             ;
-            if (hr >= 0)
-                return result;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return result ?? Array.Empty<DWriteLineMetrics>();
         }
 
         /// <summary>
@@ -804,9 +762,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetMetrics);
             int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteTextMetrics*, int>)functionPointer)(nativePointer, &textMetrics);
-            if (hr >= 0)
-                return textMetrics;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return textMetrics;
         }
 
         /// <summary>
@@ -822,9 +779,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DetermineMinWidth);
             int hr = ((delegate* unmanaged[Stdcall]<void*, float*, int>)functionPointer)(nativePointer, &minWidth);
-            if (hr >= 0)
-                return minWidth;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return minWidth;
         }
 
         /// <inheritdoc cref="HitTestPoint(float, float, out bool, out bool)"/>
@@ -888,9 +844,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.HitTestPoint);
             int hr = ((delegate* unmanaged[Stdcall]<void*, float, float, bool*, bool*, DWriteHitTestMetrics*, int>)functionPointer)(nativePointer,
                 pointX, pointY, isTrailingHit, isInside, &hitTestMetrics);
-            if (hr >= 0)
-                return hitTestMetrics;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return hitTestMetrics;
         }
 
         /// <inheritdoc cref="HitTestTextPosition(uint, bool, float*, float*)"/>
@@ -930,9 +885,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.HitTestTextPosition);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, bool, float*, float*, DWriteHitTestMetrics*, int>)functionPointer)(nativePointer,
                 textPosition, isTrailingHit, pointX, pointY, &hitTestMetrics);
-            if (hr >= 0)
-                return hitTestMetrics;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return hitTestMetrics;
         }
 
         /// <summary>
@@ -957,7 +911,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             int hr = TryHitTestTextRange(textPosition, textLength, originX, originY, null, 0u, out uint metricsCount);
             if (hr >= 0)
                 return Array.Empty<DWriteHitTestMetrics>();
-            DWriteHitTestMetrics[] result = null;
+            DWriteHitTestMetrics[]? result = null;
             while (hr == Constants.E_INSUFFICIENT_BUFFER)
             {
                 result = new DWriteHitTestMetrics[metricsCount];
@@ -965,9 +919,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
                     hr = TryHitTestTextRange(textPosition, textLength, originX, originY, ptr, metricsCount, &metricsCount);
             }
             ;
-            if (hr >= 0)
-                return result;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return result ?? Array.Empty<DWriteHitTestMetrics>();
         }
 
         /// <summary>

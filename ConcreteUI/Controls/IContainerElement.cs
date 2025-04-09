@@ -17,9 +17,9 @@ namespace ConcreteUI.Controls
 
         IReadOnlyCollection<UIElement> Children { get; }
 
-        UIElement FirstChild { get; }
+        UIElement? FirstChild { get; }
 
-        UIElement LastChild { get; }
+        UIElement? LastChild { get; }
 
         void RenderChildBackground(UIElement child, D2D1DeviceContext context);
     }

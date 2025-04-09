@@ -152,7 +152,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
 
         public static bool operator !=(D2D1ColorF a, D2D1ColorF b) => !Equals(a, b);
 
-        public readonly override bool Equals(object obj) => obj is D2D1ColorF other && Equals(other);
+        public readonly override bool Equals(object? obj) => obj is D2D1ColorF other && Equals(other);
 
         public readonly bool Equals(D2D1ColorF other) => R == other.R && G == other.G && B == other.B && A == other.A;
 

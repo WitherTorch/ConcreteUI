@@ -3,8 +3,6 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using ConcreteUI.Graphics.Extensions;
-using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.DXGI;
 
@@ -25,8 +23,8 @@ namespace ConcreteUI.Graphics.Hosting
         protected bool _disposed;
         protected bool _sleeping;
 
-        private D2D1DeviceContext _activeContext;
-        private D2D1Bitmap1 _target;
+        private D2D1DeviceContext? _activeContext;
+        private D2D1Bitmap1? _target;
 
         private bool _alternateFlushing;
 
@@ -94,7 +92,7 @@ namespace ConcreteUI.Graphics.Hosting
         [Inline(InlineBehavior.Remove)]
         private void DisableDXGIExtendedFeature(DXGISwapChain swapChain)
         {
-            DXGIFactory factory = swapChain.GetParent<DXGIFactory>(DXGIFactory.IID_DXGIFactory);
+            DXGIFactory factory = swapChain.GetParent<DXGIFactory>(DXGIFactory.IID_DXGIFactory)!;
             factory.MakeWindowAssociation(Handle,
                 DXGIMakeWindowAssociationFlags.NoAltEnter | DXGIMakeWindowAssociationFlags.NoWindowChanges | DXGIMakeWindowAssociationFlags.NoPrintScreen);
             factory.Dispose();
@@ -103,7 +101,7 @@ namespace ConcreteUI.Graphics.Hosting
         [Inline(InlineBehavior.Remove)]
         private static D2D1DeviceContext TryQueryNewestInterface(D2D1DeviceContext context)
         {
-            D2D1DeviceContext1 context1 = context.QueryInterface<D2D1DeviceContext1>(D2D1DeviceContext1.IID_DeviceContext1, throwWhenQueryFailed: false);
+            D2D1DeviceContext1? context1 = context.QueryInterface<D2D1DeviceContext1>(D2D1DeviceContext1.IID_DeviceContext1, throwWhenQueryFailed: false);
             if (context1 is null)
                 return context;
             context.Dispose();
@@ -117,9 +115,9 @@ namespace ConcreteUI.Graphics.Hosting
         public D2D1DeviceContext GetDeviceContext() => _context;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public D2D1DeviceContext BeginDraw()
+        public D2D1DeviceContext? BeginDraw()
         {
-            D2D1DeviceContext context = _activeContext;
+            D2D1DeviceContext? context = _activeContext;
             if (context is not null)
                 return context;
             context = _context;
@@ -133,7 +131,7 @@ namespace ConcreteUI.Graphics.Hosting
         [Inline(InlineBehavior.Remove)]
         private void BeginDrawCore(D2D1DeviceContext context)
         {
-            D2D1Bitmap1 target = _target;
+            D2D1Bitmap1? target = _target;
             if (target is null)
             {
                 DXGISurface surface = _swapChain.GetBuffer<DXGISurface>(0, DXGISurface.IID_DXGISurface);
@@ -148,7 +146,7 @@ namespace ConcreteUI.Graphics.Hosting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void EndDraw()
         {
-            D2D1DeviceContext context = _activeContext;
+            D2D1DeviceContext? context = _activeContext;
             if (context is null)
                 return;
             _activeContext = null;
@@ -178,18 +176,18 @@ namespace ConcreteUI.Graphics.Hosting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Present()
         {
-            Exception exception = PresentCore();
+            Exception? exception = PresentCore();
             if (exception is null)
                 return;
             throw exception;
         }
 
-        private Exception PresentCore()
+        private Exception? PresentCore()
         {
             DXGISwapChain swapChain = _swapChain;
             if (BeforeNormalPresent(swapChain))
                 return null;
-            Exception exception = GetExceptionHRForPresent(swapChain, PresentCore(swapChain));
+            Exception? exception = GetExceptionHRForPresent(swapChain, PresentCore(swapChain));
             return exception;
         }
 
@@ -208,7 +206,7 @@ namespace ConcreteUI.Graphics.Hosting
             return false;
         }
 
-        protected virtual Exception GetExceptionHRForPresent(DXGISwapChain swapChain, int hr)
+        protected virtual Exception? GetExceptionHRForPresent(DXGISwapChain swapChain, int hr)
         {
             if (hr >= 0)
             {
@@ -227,7 +225,7 @@ namespace ConcreteUI.Graphics.Hosting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Flush()
         {
-            D2D1DeviceContext context = _activeContext;
+            D2D1DeviceContext? context = _activeContext;
             if (context is null || context.IsDisposed)
                 return;
             if (_alternateFlushing)
@@ -262,7 +260,7 @@ namespace ConcreteUI.Graphics.Hosting
             if (swapChain.IsDisposed)
                 return;
             bool beginDrawCalled;
-            D2D1DeviceContext context = _activeContext;
+            D2D1DeviceContext? context = _activeContext;
             if (context is null)
             {
                 beginDrawCalled = false;

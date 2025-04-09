@@ -1,13 +1,10 @@
-﻿using ConcreteUI.Graphics.Extensions;
-
-using InlineMethod;
+﻿using InlineMethod;
 
 using LocalsInit;
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using WitherTorch.Common.Helpers;
@@ -73,9 +70,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFontCollection);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DWriteFontCollection(nativePointer, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new DWriteFontCollection(nativePointer, ReferenceType.Owned);
         }
 
         [Inline(InlineBehavior.Keep)]
@@ -93,9 +89,8 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFont);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, void**, int>)functionPointer)(nativePointer, index, &font);
-            if (hr >= 0)
-                return font == null ? null : new DWriteFont(font, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new DWriteFont(font, ReferenceType.Owned);
         }
 
         private sealed class Enumerator : IEnumerator<DWriteFont>
@@ -112,9 +107,18 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
                 _index = uint.MaxValue;
             }
 
-            public DWriteFont Current => _index < 0 || _index >= _bound ? default : _list[_index];
+            public DWriteFont Current
+            {
+                get
+                {
+                    uint index = _index;
+                    if (index >= _bound)
+                        throw new InvalidOperationException();
+                    return _list[index];
+                }
+            }
 
-            object IEnumerator.Current => _index < 0 || _index >= _bound ? default : _list[_index];
+            object IEnumerator.Current => Current;
 
             public bool MoveNext()
             {

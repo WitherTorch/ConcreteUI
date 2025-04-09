@@ -4,7 +4,7 @@ namespace ConcreteUI.Controls.Calculation
 {
     public abstract class AbstractCalculation : ICloneable
     {
-        public abstract ICalculationContext CreateContext();
+        public abstract ICalculationContext? CreateContext();
 
         public abstract AbstractCalculation Clone();
 

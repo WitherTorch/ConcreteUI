@@ -32,7 +32,7 @@ namespace ConcreteUI.Controls
             public override AbstractCalculation Clone()
                 => new AutoHeightCalculation(_reference, _minHeight, _maxHeight);
 
-            public override ICalculationContext CreateContext()
+            public override ICalculationContext? CreateContext()
                 => CalculationContext.TryCreate(_reference, _minHeight, _maxHeight);
 
             private sealed class CalculationContext : ICalculationContext
@@ -46,7 +46,7 @@ namespace ConcreteUI.Controls
 
                 public bool DependPageRect => false;
 
-                public UIElement DependedElement => null;
+                public UIElement? DependedElement => null;
 
                 public LayoutProperty DependedProperty => LayoutProperty.None;
 
@@ -59,9 +59,9 @@ namespace ConcreteUI.Controls
                     _value = 0;
                 }
 
-                public static CalculationContext TryCreate(WeakReference<ComboBox> reference, int minHeight, int maxHeight)
+                public static CalculationContext? TryCreate(WeakReference<ComboBox> reference, int minHeight, int maxHeight)
                 {
-                    if (!reference.TryGetTarget(out ComboBox element))
+                    if (!reference.TryGetTarget(out ComboBox? element))
                         return null;
                     return new CalculationContext(element, minHeight, maxHeight);
                 }
@@ -90,7 +90,7 @@ namespace ConcreteUI.Controls
                 private int DoCalc(ComboBox element)
                 {
                     string text = element._text ?? string.Empty;
-                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, element._fontName, TextAlignment.MiddleLeft, element._fontSize);
+                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, NullSafetyHelper.ThrowIfNull(element._fontName), TextAlignment.MiddleLeft, element._fontSize);
                     if (layout is null)
                         return MathHelper.Max(_minHeight, 0);
                     int result = MathI.Ceiling(layout.GetMetrics().Height);

@@ -6,7 +6,7 @@ namespace ConcreteUI.Controls.Calculation
     {
         bool DependPageRect { get; }
 
-        UIElement DependedElement { get; }
+        UIElement? DependedElement { get; }
 
         LayoutProperty DependedProperty { get; }
 

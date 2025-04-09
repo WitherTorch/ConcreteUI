@@ -3,8 +3,6 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.DirectWrite;
 
-using WitherTorch.Common.Helpers;
-
 namespace ConcreteUI.Utils
 {
     public sealed class FontIconFactory

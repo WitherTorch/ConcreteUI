@@ -107,7 +107,7 @@ namespace ConcreteUI.Input
                         long wParam = m.WParam.ToInt64();
                         if (wParam != 1L && wParam != 2L)
                             break;
-                        InputMethodContext newContext = _context;
+                        InputMethodContext? newContext = _context;
                         InputMethodContext.Associate(handle, out InputMethodContext oldContext, newContext);
                         if (oldContext != newContext)
                             oldContext?.Dispose();

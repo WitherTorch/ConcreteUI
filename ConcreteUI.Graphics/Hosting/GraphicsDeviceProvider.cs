@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 
-using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct3D;
 using ConcreteUI.Graphics.Native.Direct3D11;
@@ -27,12 +26,12 @@ namespace ConcreteUI.Graphics.Hosting
 
         private bool _disposed;
 
-        private GraphicsDeviceProvider(D3D11Device d3dDevice, DXGIAdapter adapter, DXGIFactory factory)
+        private GraphicsDeviceProvider(D3D11Device? d3dDevice, DXGIAdapter? adapter, DXGIFactory? factory)
         {
-            d3dDevice ??= D3D11Device.Create(null, D3DDriverType.Warp, IntPtr.Zero, CreateDeviceFlag); // 當硬體 3D 裝置建立失敗時，改建立 WARP 3D 裝置
+            d3dDevice ??= NullSafetyHelper.ThrowIfNull(D3D11Device.Create(null, D3DDriverType.Warp, IntPtr.Zero, CreateDeviceFlag)); // 當硬體 3D 裝置建立失敗時，改建立 WARP 3D 裝置
 
             D3DDevice = d3dDevice;
-            DXGIDevice = d3dDevice.QueryInterface<DXGIDevice>(DXGIDevice.IID_DXGIDevice);
+            DXGIDevice = NullSafetyHelper.ThrowIfNull(d3dDevice.QueryInterface<DXGIDevice>(DXGIDevice.IID_DXGIDevice));
 
             D2DDevice = D2D1Device.Create(DXGIDevice, new D2D1CreationProperties()
             {
@@ -51,7 +50,7 @@ namespace ConcreteUI.Graphics.Hosting
                 factory ??= adapter.GetParent<DXGIFactory2>(DXGIFactory2.IID_DXGIFactory2, throwException: false);
                 factory ??= adapter.GetParent<DXGIFactory1>(DXGIFactory1.IID_DXGIFactory1, throwException: false);
                 factory ??= adapter.GetParent<DXGIFactory>(DXGIFactory.IID_DXGIFactory, throwException: true);
-                DXGIFactory = factory;
+                DXGIFactory = factory!;
                 return;
             }
 
@@ -64,7 +63,7 @@ namespace ConcreteUI.Graphics.Hosting
             if (factory is DXGIFactory1)
                 return factory;
 
-            DXGIFactory result;
+            DXGIFactory? result;
 
             if ((result = factory.QueryInterface<DXGIFactory6>(DXGIFactory6.IID_DXGIFactory6, throwWhenQueryFailed: false)) is not null)
             {
@@ -94,14 +93,14 @@ namespace ConcreteUI.Graphics.Hosting
         }
 
         public GraphicsDeviceProvider(DXGIGpuPreference preference) :
-            this(CreateDevice(preference, null, out DXGIAdapter adapter, out DXGIFactory factory), adapter, factory)
+            this(CreateDevice(preference, null, out DXGIAdapter? adapter, out DXGIFactory? factory), adapter, factory)
         { }
 
         public GraphicsDeviceProvider(string targetGpuName) :
-            this(CreateDevice(DXGIGpuPreference.Unspecified, targetGpuName, out DXGIAdapter adapter, out DXGIFactory factory), adapter, factory)
+            this(CreateDevice(DXGIGpuPreference.Unspecified, targetGpuName, out DXGIAdapter? adapter, out DXGIFactory? factory), adapter, factory)
         { }
 
-        private static D3D11Device CreateDevice(DXGIGpuPreference preference, string targetGpuName, out DXGIAdapter adapter, out DXGIFactory factory)
+        private static D3D11Device? CreateDevice(DXGIGpuPreference preference, string? targetGpuName, out DXGIAdapter? adapter, out DXGIFactory? factory)
         {
             if (preference >= DXGIGpuPreference.Invalid)
             {
@@ -128,7 +127,7 @@ namespace ConcreteUI.Graphics.Hosting
                 adapter = null;
                 for (uint i = 0; i < Constants.AdapterEnumerationLimit; i++)
                 {
-                    DXGIAdapter _adapter = factory.EnumAdapters(i, throwException: false);
+                    DXGIAdapter? _adapter = factory.EnumAdapters(i, throwException: false);
 
                     if (_adapter is null)
                         break;
@@ -155,25 +154,25 @@ namespace ConcreteUI.Graphics.Hosting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static DXGIFactory CreateDXGIFactory()
         {
-            DXGIFactory result = DXGIFactory2.Create(DXGICreateFactoryFlags.None, DXGIFactory2.IID_DXGIFactory2, throwException: false);
+            DXGIFactory? result = DXGIFactory2.Create(DXGICreateFactoryFlags.None, DXGIFactory2.IID_DXGIFactory2, throwException: false);
             if (result is not null)
                 return result;
             result = DXGIFactory1.Create(DXGIFactory1.IID_DXGIFactory1, throwException: false);
             if (result is not null)
                 return result;
-            return DXGIFactory.Create(DXGIFactory.IID_DXGIFactory, throwException: false);
+            return NullSafetyHelper.ThrowIfNull(DXGIFactory.Create(DXGIFactory.IID_DXGIFactory, throwException: false));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static DXGIAdapter SearchBestAdapter(ref DXGIFactory factory, DXGIGpuPreference preference)
+        private static DXGIAdapter? SearchBestAdapter(ref DXGIFactory factory, DXGIGpuPreference preference)
         {
-            DXGIAdapter result;
+            DXGIAdapter? result;
             if (factory is not DXGIFactory6 factory6)
             {
-                factory6 = factory.QueryInterface<DXGIFactory6>(DXGIFactory6.IID_DXGIFactory6, throwWhenQueryFailed: false);
+                factory6 = factory.QueryInterface<DXGIFactory6>(DXGIFactory6.IID_DXGIFactory6, throwWhenQueryFailed: false)!;
                 if (factory6 is null)
                     return factory.EnumAdapters(0, throwException: false);
-                DisposeHelper.SwapDispose(ref factory, factory6);
+                DisposeHelper.SwapDispose(ref factory!, factory6);
             }
             result = factory6.EnumAdapterByGpuPreference(0, preference, DXGIAdapter.IID_DXGIAdapter, throwException: false);
             if (result is not null)

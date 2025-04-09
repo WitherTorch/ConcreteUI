@@ -77,11 +77,11 @@ namespace ConcreteUI.Window
         private readonly UnwrappableList<UIElement> _overlayElementList = new UnwrappableList<UIElement>();
         private readonly UnwrappableList<UIElement> _backgroundElementList = new UnwrappableList<UIElement>();
         private readonly WindowMaterial _windowMaterial;
-        private SwapChainGraphicsHost _host;
-        private DirtyAreaCollector _collector;
-        private RenderingController _controller;
-        private UIElement _focusElement;
-        private ThemeResourceProvider _resourceProvider;
+        private SwapChainGraphicsHost? _host;
+        private DirtyAreaCollector? _collector;
+        private RenderingController? _controller;
+        private UIElement? _focusElement;
+        private ThemeResourceProvider? _resourceProvider;
         private float baseLineWidth = 1.0f;
         private bool isShown, isInitializingElements;
         private long _updateFlags = Booleans.TrueLong;
@@ -89,8 +89,8 @@ namespace ConcreteUI.Window
 
         #region Rendering Fields
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private D2D1DeviceContext _deviceContext;
-        private DWriteTextLayout _titleLayout;
+        private D2D1DeviceContext? _deviceContext;
+        private DWriteTextLayout? _titleLayout;
         protected D2D1ColorF _clearDCColor, _windowBaseColor;
         protected RectF _minRect, _maxRect, _closeRect, _pageRect, _titleBarRect;
         protected BitVector64 _titleBarButtonStatus, _titleBarButtonChangedStatus;
@@ -98,9 +98,11 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Properties
+#pragma warning disable CS0109
         public new ContextMenu ContextMenu => GetOverlayElement<ContextMenu>();
+#pragma warning restore CS0109
         public ToolTip ToolTip => GetBackgroundElement<ToolTip>();
-        public UIElement FocusedElement => _focusElement;
+        public UIElement? FocusedElement => _focusElement;
         public WindowMaterial WindowMaterial => _windowMaterial;
         #endregion
 
@@ -138,16 +140,18 @@ namespace ConcreteUI.Window
         private void InitRenderObjects()
         {
             WindowMaterial material = _windowMaterial;
-            CoreWindow parent = _parent;
+            CoreWindow? parent = _parent;
             SwapChainGraphicsHost host;
             if (parent is null)
                 host = GraphicsHostHelper.CreateSwapChainGraphicsHost(Handle, graphicsDeviceProviderLazy.Value,
                     useFlipModel: material == WindowMaterial.None && SystemConstants.VersionLevel >= SystemVersionLevel.Windows_8);
             else
-                host = GraphicsHostHelper.FromAnotherSwapChainGraphicsHost(parent._host, Handle);
+                host = GraphicsHostHelper.FromAnotherSwapChainGraphicsHost(parent._host!, Handle);
             _host = host;
             _collector = DirtyAreaCollector.TryCreate(host as SwapChainGraphicsHost1);
-            D2D1DeviceContext deviceContext = host.BeginDraw();
+            D2D1DeviceContext? deviceContext = host.BeginDraw();
+            if (deviceContext is null)
+                return;
             int dpi = Dpi;
             if (dpi != 96)
                 deviceContext.Dpi = new PointF(dpi, dpi);
@@ -156,7 +160,7 @@ namespace ConcreteUI.Window
             isInitializingElements = true;
             InitializeElements();
             isInitializingElements = false;
-            ApplyTheme(parent is null ? new ThemeResourceProvider(deviceContext, ThemeManager.CurrentTheme, _windowMaterial) : parent._resourceProvider);
+            ApplyTheme(parent is null ? new ThemeResourceProvider(deviceContext, ThemeManager.CurrentTheme, _windowMaterial) : parent._resourceProvider!);
             SystemEvents.DisplaySettingsChanging += SystemEvents_DisplaySettingsChanging;
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
@@ -191,14 +195,14 @@ namespace ConcreteUI.Window
             SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
             SystemEvents.SessionSwitch -= SystemEvents_SessionSwitch;
 
-            RenderingController controller = _controller;
+            RenderingController? controller = _controller;
             if (controller is not null)
             {
                 controller.Stop();
                 controller.WaitForExit(500);
             }
 
-            SwapChainGraphicsHost host = _host;
+            SwapChainGraphicsHost? host = _host;
             if (host is not null && !host.IsDisposed)
                 host.EndDraw();
         }
@@ -206,13 +210,13 @@ namespace ConcreteUI.Window
 
         #region Implements Methods
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GraphicsDeviceProvider GetGraphicsDeviceProvider() => _host.GetDeviceProvider();
+        public GraphicsDeviceProvider GetGraphicsDeviceProvider() => _host!.GetDeviceProvider();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public D2D1DeviceContext GetDeviceContext() => _deviceContext;
+        public D2D1DeviceContext GetDeviceContext() => NullSafetyHelper.ThrowIfNull(_deviceContext);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public RenderingController GetRenderingController() => _controller;
+        public RenderingController? GetRenderingController() => _controller;
 
         public virtual void RenderElementBackground(UIElement element, D2D1DeviceContext context)
             => context.Clear(_clearDCColor);
@@ -223,7 +227,7 @@ namespace ConcreteUI.Window
                 redrawAll = (flags & RenderingFlags.RedrawAll) == RenderingFlags.RedrawAll;
             redrawAll = !RenderCore(redrawAll, resized);
             if (redrawAll)
-                _controller.RequestUpdate(true);
+                _controller?.RequestUpdate(true);
         }
 
         ToolTip IRenderer.GetToolTip() => GetBackgroundElement<ToolTip>();
@@ -263,7 +267,7 @@ namespace ConcreteUI.Window
 
         protected virtual void OnMouseMoveForElements(in MouseInteractEventArgs args)
         {
-            Cursor predicatedCursor = null;
+            Cursor? predicatedCursor = null;
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetRenderingElements();
@@ -546,9 +550,9 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Event Handlers
-        private void SystemEvents_DisplaySettingsChanged(object sender, EventArgs e) => _controller.Unlock();
+        private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e) => _controller?.Unlock();
 
-        private void SystemEvents_DisplaySettingsChanging(object sender, EventArgs e) => _controller.Lock();
+        private void SystemEvents_DisplaySettingsChanging(object? sender, EventArgs e) => _controller?.Lock();
 
         private void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e)
         {

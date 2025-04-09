@@ -32,7 +32,7 @@ namespace ConcreteUI.Controls
             public override AbstractCalculation Clone()
                 => new AutoWidthCalculation(_reference, _minWidth, _maxWidth);
 
-            public override ICalculationContext CreateContext()
+            public override ICalculationContext? CreateContext()
                 => CalculationContext.TryCreate(_reference, _minWidth, _maxWidth);
 
             private sealed class CalculationContext : ICalculationContext
@@ -46,7 +46,7 @@ namespace ConcreteUI.Controls
 
                 public bool DependPageRect => false;
 
-                public UIElement DependedElement => null;
+                public UIElement? DependedElement => null;
 
                 public LayoutProperty DependedProperty => LayoutProperty.None;
 
@@ -59,9 +59,9 @@ namespace ConcreteUI.Controls
                     _value = 0;
                 }
 
-                public static CalculationContext TryCreate(WeakReference<Button> reference, int minWidth, int maxWidth)
+                public static CalculationContext? TryCreate(WeakReference<Button> reference, int minWidth, int maxWidth)
                 {
-                    if (!reference.TryGetTarget(out Button element))
+                    if (!reference.TryGetTarget(out Button? element))
                         return null;
                     return new CalculationContext(element, minWidth, maxWidth);
                 }
@@ -89,10 +89,10 @@ namespace ConcreteUI.Controls
 
                 private int DoCalc(Button element)
                 {
-                    string text = element._text;
+                    string? text = element._text;
                     if (string.IsNullOrEmpty(text))
                         return MathHelper.Max(_minWidth, 0);
-                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text, element._fontName, TextAlignment.MiddleCenter, element._fontSize);
+                    DWriteTextLayout layout = TextFormatUtils.CreateTextLayout(text!, NullSafetyHelper.ThrowIfNull(element._fontName), TextAlignment.MiddleCenter, element._fontSize);
                     if (layout is null)
                         return MathHelper.Max(_minWidth, 0);
                     int result = MathI.Ceiling(layout.GetMetrics().Width);

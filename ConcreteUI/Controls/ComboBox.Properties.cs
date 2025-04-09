@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Threading;
-
-using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
 
@@ -12,8 +8,8 @@ namespace ConcreteUI.Controls
 {
     partial class ComboBox
     {
-        public event EventHandler ItemClicked;
-        public event EventHandler<DropdownListEventArgs> RequestDropdownListOpening;
+        public event EventHandler? ItemClicked;
+        public event EventHandler<DropdownListEventArgs>? RequestDropdownListOpening;
 
         public bool Enabled
         {

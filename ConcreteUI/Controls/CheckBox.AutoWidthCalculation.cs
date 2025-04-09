@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Xml.Linq;
 
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Internals;
 using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
@@ -33,7 +31,7 @@ namespace ConcreteUI.Controls
             public override AbstractCalculation Clone()
                 => new AutoWidthCalculation(_reference, _minWidth, _maxWidth);
 
-            public override ICalculationContext CreateContext()
+            public override ICalculationContext? CreateContext()
                 => CalculationContext.TryCreate(_reference, _minWidth, _maxWidth);
 
             private sealed class CalculationContext : ICalculationContext

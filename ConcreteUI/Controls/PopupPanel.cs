@@ -21,7 +21,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddChild(UIElement element) => _collection.Value ??= element;
+        public void AddChild(UIElement? element) => _collection.Value ??= element;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddChildren(params UIElement[] elements) => AddChild(elements.FirstOrDefault());

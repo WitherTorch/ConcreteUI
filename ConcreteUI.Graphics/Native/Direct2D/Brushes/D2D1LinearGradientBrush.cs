@@ -37,7 +37,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
             set => SetEndPoint(value);
         }
 
-        public D2D1GradientStopCollection GradientStopCollection => GetGradientStopCollection();
+        public D2D1GradientStopCollection? GradientStopCollection => GetGradientStopCollection();
 
         [Inline(InlineBehavior.Remove)]
         private void SetStartPoint(PointF startPoint)
@@ -78,7 +78,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Brushes
         }
 
         [Inline(InlineBehavior.Remove)]
-        private D2D1GradientStopCollection GetGradientStopCollection()
+        private D2D1GradientStopCollection? GetGradientStopCollection()
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetGradientStopCollection);

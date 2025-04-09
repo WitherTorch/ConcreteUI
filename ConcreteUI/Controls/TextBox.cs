@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Threading;
 
@@ -47,9 +48,10 @@ namespace ConcreteUI.Controls
         private readonly InputMethod _ime;
         private readonly Timer _caretTimer;
 
-        private Cursor _cursor;
-        private DWriteTextLayout _layout, _watermarkLayout;
-        private string _fontName, _text, _watermark;
+        private Cursor? _cursor;
+        private DWriteTextLayout? _layout, _watermarkLayout;
+        private string? _fontName;
+        private string _text, _watermark;
         private DWriteTextRange compositionRange;
         private SelectionRange selectionRange;
         private TextAlignment _alignment;
@@ -120,7 +122,7 @@ namespace ConcreteUI.Controls
                 bounds.Right - UIConstants.ElementMarginHalf, bounds.Bottom - UIConstants.ElementMarginHalf);
         }
 
-        private void Window_FocusElementChanged(object sender, UIElement e)
+        private void Window_FocusElementChanged(object? sender, UIElement e)
         {
             bool newFocus = this == e;
             if (_focused == newFocus)
@@ -158,7 +160,7 @@ namespace ConcreteUI.Controls
             char[] separators = LineSeparators;
             if (!value.Contains(separators))
                 return value;
-            return value.Split(separators, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            return value.Split(separators, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -174,16 +176,16 @@ namespace ConcreteUI.Controls
             return (RenderObjectUpdateFlags)Interlocked.Exchange(ref _rawUpdateFlags, default);
         }
 
-        private void GetTextLayouts(out DWriteTextLayout layout, out DWriteTextLayout watermarkLayout)
+        private void GetTextLayouts(out DWriteTextLayout? layout, out DWriteTextLayout? watermarkLayout)
         {
             RenderObjectUpdateFlags flags = GetAndCleanRenderObjectUpdateFlags();
             layout = Interlocked.Exchange(ref _layout, null);
             watermarkLayout = Interlocked.Exchange(ref _watermarkLayout, null);
             if ((flags & RenderObjectUpdateFlags.Layout) == RenderObjectUpdateFlags.Layout)
             {
-                DWriteTextFormat format = layout;
+                DWriteTextFormat? format = layout;
                 if (CheckFormatIsNotAvailable(format, flags))
-                    format = TextFormatUtils.CreateTextFormat(_alignment, _fontName, _fontSize);
+                    format = TextFormatUtils.CreateTextFormat(_alignment, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
 
                 string text = _text;
                 if (!string.IsNullOrEmpty(text))
@@ -212,7 +214,7 @@ namespace ConcreteUI.Controls
             }
             if ((flags & RenderObjectUpdateFlags.WatermarkLayout) == RenderObjectUpdateFlags.WatermarkLayout)
             {
-                DWriteTextFormat format = watermarkLayout;
+                DWriteTextFormat? format = watermarkLayout;
                 if (CheckFormatIsNotAvailable(format, flags))
                     format = TextFormatUtils.CreateTextFormat(_alignment, _fontName, _fontSize, DWriteFontStyle.Oblique);
                 watermarkLayout = SharedResources.DWriteFactory.CreateTextLayout(_watermark ?? string.Empty, format);
@@ -221,7 +223,7 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static bool CheckFormatIsNotAvailable(DWriteTextFormat format, RenderObjectUpdateFlags flags)
+        private static bool CheckFormatIsNotAvailable([NotNullWhen(false)] DWriteTextFormat? format, RenderObjectUpdateFlags flags)
         {
             if (format is null || format.IsDisposed)
                 return true;
@@ -937,7 +939,7 @@ namespace ConcreteUI.Controls
         }
         #endregion
 
-        private static void CaretTimer_Tick(object state)
+        private static void CaretTimer_Tick(object? state)
         {
             TextBox _this = (TextBox)state;
             _this._caretState = !_this._caretState;

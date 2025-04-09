@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using InlineMethod;
 
 using LocalsInit;
 
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 using WitherTorch.Common.Windows.Structures;
 
@@ -46,9 +46,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetSourceSize);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, uint, int>)functionPointer)(nativePointer, size.Width, size.Height);
-            if (hr >= 0)
-                return;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -59,9 +57,8 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetSourceSize);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint*, uint*, int>)functionPointer)(nativePointer, (uint*)&size - 1, (uint*)&size);
-            if (hr >= 0)
-                return size;
-            throw Marshal.GetExceptionForHR(hr);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return size;
         }
     }
 }

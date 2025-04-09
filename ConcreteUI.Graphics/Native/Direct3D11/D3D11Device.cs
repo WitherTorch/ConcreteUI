@@ -25,11 +25,11 @@ namespace ConcreteUI.Graphics.Native.Direct3D11
         public D3D11Device(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static D3D11Device Create(DXGIAdapter adapter, D3DDriverType driverType, IntPtr software, D3D11CreateDeviceFlag createDeviceFlags)
+        public static D3D11Device? Create(DXGIAdapter? adapter, D3DDriverType driverType, IntPtr software, D3D11CreateDeviceFlag createDeviceFlags)
             => Create(adapter, driverType, software, createDeviceFlags, null, 0u);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static D3D11Device Create(DXGIAdapter adapter, D3DDriverType driverType, IntPtr software,
+        public static D3D11Device? Create(DXGIAdapter? adapter, D3DDriverType driverType, IntPtr software,
             D3D11CreateDeviceFlag createDeviceFlags, params D3DFeatureLevel[] featureLevels)
         {
             fixed (D3DFeatureLevel* ptr = featureLevels)
@@ -37,15 +37,15 @@ namespace ConcreteUI.Graphics.Native.Direct3D11
         }
 
         [LocalsInit(false)]
-        public static D3D11Device Create(DXGIAdapter adapter, D3DDriverType driverType, IntPtr software,
+        public static D3D11Device? Create(DXGIAdapter? adapter, D3DDriverType driverType, IntPtr software,
             D3D11CreateDeviceFlag createDeviceFlags, D3DFeatureLevel* featureLevels, uint featureLevelCount)
         {
             void* device;
             int hr = D3D11.D3D11CreateDevice(adapter == null ? null : adapter.NativePointer, driverType, software,
                 createDeviceFlags, featureLevels, featureLevelCount, D3D11.D3D11_SDK_VERSION, &device, null, null);
             if (hr >= 0)
-                return device == null ? null : new D3D11Device(device, ReferenceType.Owned);
-            throw Marshal.GetExceptionForHR(hr);
+                return device is null ? null : new D3D11Device(device, ReferenceType.Owned);
+            throw Marshal.GetExceptionForHR(hr)!;
         }
     }
 }

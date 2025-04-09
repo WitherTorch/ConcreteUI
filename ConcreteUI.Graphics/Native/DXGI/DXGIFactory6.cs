@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using WitherTorch.Common.Helpers;
@@ -25,19 +24,19 @@ namespace ConcreteUI.Graphics.Native.DXGI
         public DXGIFactory6(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public DXGIAdapter EnumAdapterByGpuPreference(uint adapter, DXGIGpuPreference perference, in Guid riid, bool throwException = true)
+        public DXGIAdapter? EnumAdapterByGpuPreference(uint adapter, DXGIGpuPreference perference, in Guid riid, bool throwException = true)
             => EnumAdapterByGpuPreference(adapter, perference, UnsafeHelper.AsPointerIn(in riid), throwException);
 
-        public DXGIAdapter EnumAdapterByGpuPreference(uint adapter, DXGIGpuPreference perference, Guid* riid, bool throwException = true)
+        public DXGIAdapter? EnumAdapterByGpuPreference(uint adapter, DXGIGpuPreference perference, Guid* riid, bool throwException = true)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.EnumAdapterByGpuPreference);
             int hr = ((delegate* unmanaged[Stdcall]<void*, uint, DXGIGpuPreference, Guid*, void**, int>)functionPointer)(nativePointer, adapter, perference, riid, &nativePointer);
-            if (hr >= 0)
-                return nativePointer == null ? null : new DXGIAdapter(nativePointer, ReferenceType.Owned);
             if (throwException)
-                throw Marshal.GetExceptionForHR(hr);
-            return null;
+                ThrowHelper.ThrowExceptionForHR(hr);
+            else
+                ThrowHelper.ResetPointerForHR(hr, ref nativePointer);
+            return nativePointer == null ? null : new DXGIAdapter(nativePointer, ReferenceType.Owned);
         }
     }
 }
