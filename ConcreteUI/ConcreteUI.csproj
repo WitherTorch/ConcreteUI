@@ -40,6 +40,7 @@
 				<InlineIL/>
 				<LocalsInit />
 				<InlineMethod />
+				<Absence />
 			</Weavers>
 		</WeaverConfiguration>
 	</PropertyGroup>
