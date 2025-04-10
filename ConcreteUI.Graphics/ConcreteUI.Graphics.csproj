@@ -68,8 +68,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\WitherTorch.Common\WitherTorch.Common.Windows\WitherTorch.Common.Windows.csproj" />
-	  <ProjectReference Include="..\WitherTorch.Common\WitherTorch.Common\WitherTorch.Common.csproj" />
+	  <ProjectReference Include="$(SolutionDir)\WitherTorch.Common\WitherTorch.Common.Windows\WitherTorch.Common.Windows.csproj" />
+	  <ProjectReference Include="$(SolutionDir)\WitherTorch.Common\WitherTorch.Common\WitherTorch.Common.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup Condition="'$(Platform)'=='AnyCPU'">
