@@ -34,7 +34,7 @@ namespace ConcreteUI.Controls
             toolTip.Popup += ToolTip_Popup;
         }
 
-        protected override void ApplyThemeCore(ThemeResourceProvider provider) { }
+        protected override void ApplyThemeCore(IThemeResourceProvider provider) { }
 
         private void ToolTip_Popup(object? sender, System.Windows.Forms.PopupEventArgs e)
         {

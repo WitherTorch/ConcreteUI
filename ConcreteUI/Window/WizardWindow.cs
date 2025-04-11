@@ -97,7 +97,7 @@ namespace ConcreteUI.Window
 
         #region Override Methods
 
-        protected override void ApplyThemeCore(ThemeResourceProvider provider)
+        protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             base.ApplyThemeCore(provider);
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);

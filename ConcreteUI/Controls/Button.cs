@@ -63,7 +63,7 @@ namespace ConcreteUI.Controls
             return this;
         }
 
-        protected override void ApplyThemeCore(ThemeResourceProvider provider)
+        protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
             _fontName = provider.FontName;

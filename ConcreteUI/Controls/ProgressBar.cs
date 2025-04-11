@@ -30,7 +30,7 @@ namespace ConcreteUI.Controls
             _maximium = 100.0f;
         }
 
-        protected override void ApplyThemeCore(ThemeResourceProvider provider) 
+        protected override void ApplyThemeCore(IThemeResourceProvider provider) 
             => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
 
         protected override bool RenderCore(DirtyAreaCollector collector)

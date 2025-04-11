@@ -50,7 +50,7 @@ namespace ConcreteUI.Controls
             Bounds = new Rectangle(parentBounds.Left, parentBounds.Bottom - MathI.Ceiling(Renderer.GetBaseLineWidth()), parentBounds.Width, 0);
         }
 
-        protected override void ApplyThemeCore(ThemeResourceProvider provider)
+        protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             base.ApplyThemeCore(provider);
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);

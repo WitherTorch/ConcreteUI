@@ -42,7 +42,7 @@ namespace ConcreteUI.Controls
             MenuItems = items;
         }
 
-        protected override void ApplyThemeCore(ThemeResourceProvider provider)
+        protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             ContextMenuItem[] items = MenuItems;
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);

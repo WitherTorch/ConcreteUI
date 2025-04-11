@@ -73,7 +73,7 @@ namespace ConcreteUI.Controls
             _recalcFormat = Booleans.TrueLong;
         }
 
-        protected override void ApplyThemeCore(ThemeResourceProvider provider)
+        protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             base.ApplyThemeCore(provider);
             _fontName = provider.FontName;

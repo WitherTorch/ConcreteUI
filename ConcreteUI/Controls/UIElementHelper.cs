@@ -21,7 +21,7 @@ namespace ConcreteUI.Controls
 {
     public static partial class UIElementHelper
     {
-        public static void ApplyTheme(ThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes)
+        public static void ApplyTheme(IThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes)
         {
             int length = brushes.Length;
             if (length != nodes.Length)
@@ -30,13 +30,13 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static void ApplyTheme(ThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes, [InlineParameter] int length)
+        public static void ApplyTheme(IThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes, [InlineParameter] int length)
         {
             for (int i = 0; i < length; i++)
                 DisposeHelper.SwapDispose(ref brushes[i], provider.TryGetBrush(nodes[i], out D2D1Brush? brush) ? brush.Clone() : null);
         }
 
-        public static void ApplyTheme(ThemeResourceProvider provider, IEnumerable<UIElement> elements)
+        public static void ApplyTheme(IThemeResourceProvider provider, IEnumerable<UIElement> elements)
         {
             switch (elements)
             {
@@ -56,22 +56,22 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static void ApplyTheme(ThemeResourceProvider provider, UIElement[] elements)
+        public static void ApplyTheme(IThemeResourceProvider provider, UIElement[] elements)
             => ApplyTheme(provider, elements, elements.Length);
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static void ApplyTheme(ThemeResourceProvider provider, UnwrappableList<UIElement> elements)
+        public static void ApplyTheme(IThemeResourceProvider provider, UnwrappableList<UIElement> elements)
             => ApplyTheme(provider, elements.Unwrap(), elements.Count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ApplyTheme(ThemeResourceProvider provider, UIElement[] elements, int length)
+        public static void ApplyTheme(IThemeResourceProvider provider, UIElement[] elements, int length)
         {
             for (int i = 0; i < length; i++)
                 elements[i]?.ApplyTheme(provider);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void ApplyThemeCore(ThemeResourceProvider provider, IEnumerable<UIElement> elements)
+        private static void ApplyThemeCore(IThemeResourceProvider provider, IEnumerable<UIElement> elements)
         {
             foreach (UIElement element in elements)
                 element?.ApplyTheme(provider);

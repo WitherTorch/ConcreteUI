@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -6,6 +7,7 @@ using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
+using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
@@ -129,7 +131,7 @@ namespace ConcreteUI.Controls
         public virtual void OnSizeChanged() { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void ApplyTheme(ThemeResourceProvider provider)
+        public void ApplyTheme(IThemeResourceProvider provider)
         {
             if (_themeContext is not null)
                 return;
@@ -141,13 +143,24 @@ namespace ConcreteUI.Controls
         private void ApplyThemeContext(IThemeContext themeContext)
         {
             IRenderer renderer = Renderer;
-            using ThemeResourceProvider provider = new ThemeResourceProvider(renderer.GetDeviceContext(), themeContext,
+            IThemeResourceProvider provider = ThemeResourceProvider.CreateResourceProvider(renderer.GetDeviceContext(), themeContext,
                 (renderer as CoreWindow)?.WindowMaterial ?? WindowMaterial.None);
-            ApplyThemeCore(provider);
+            try
+            {
+                ApplyThemeCore(provider);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                (provider as IDisposable)?.Dispose();
+            }
             Update();
         }
 
-        protected abstract void ApplyThemeCore(ThemeResourceProvider provider);
+        protected abstract void ApplyThemeCore(IThemeResourceProvider provider);
 
         public override int GetHashCode() => _identifier;
 

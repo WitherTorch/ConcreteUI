@@ -40,7 +40,7 @@ namespace ConcreteUI.Controls
             _text = string.Empty;
         }
 
-        protected override void ApplyThemeCore(ThemeResourceProvider provider)
+        protected override void ApplyThemeCore(IThemeResourceProvider provider)
             => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
 
         private DWriteTextLayout? UpdateTextLayout()

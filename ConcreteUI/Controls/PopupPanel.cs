@@ -41,7 +41,7 @@ namespace ConcreteUI.Controls
             _collection.Dispose();
         }
 
-        protected override void ApplyThemeCore(ThemeResourceProvider provider) => _collection.Value?.ApplyTheme(provider);
+        protected override void ApplyThemeCore(IThemeResourceProvider provider) => _collection.Value?.ApplyTheme(provider);
 
         protected override bool RenderCore(DirtyAreaCollector collector) => true;
 

@@ -58,7 +58,7 @@ namespace ConcreteUI.Controls
 
         protected virtual D2D1Brush? GetBorderBrush() => null;
 
-        protected override void ApplyThemeCore(ThemeResourceProvider provider)
+        protected override void ApplyThemeCore(IThemeResourceProvider provider)
             => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
 
         protected override void Update() => Update(UpdateFlags.All);

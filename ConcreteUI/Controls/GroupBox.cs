@@ -65,7 +65,7 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveChild(UIElement element) => _children.Remove(element);
 
-        protected override void ApplyThemeCore(ThemeResourceProvider provider)
+        protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
             foreach (UIElement child in _children)

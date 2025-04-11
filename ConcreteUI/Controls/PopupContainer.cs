@@ -34,7 +34,7 @@ namespace ConcreteUI.Controls
             _children = new ObservableList<UIElement>(new UnwrappableList<UIElement>());
         }
 
-        protected override void ApplyThemeCore(ThemeResourceProvider provider)
+        protected override void ApplyThemeCore(IThemeResourceProvider provider)
         { 
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
             foreach (UIElement child in _children)

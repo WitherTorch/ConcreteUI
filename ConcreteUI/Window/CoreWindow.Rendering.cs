@@ -82,7 +82,7 @@ namespace ConcreteUI.Window
         private DirtyAreaCollector? _collector;
         private RenderingController? _controller;
         private UIElement? _focusElement;
-        private ThemeResourceProvider? _resourceProvider;
+        private IThemeResourceProvider? _resourceProvider;
         private float baseLineWidth = 1.0f;
         private bool isShown, isInitializingElements;
         private long _updateFlags = Booleans.TrueLong;
@@ -161,7 +161,7 @@ namespace ConcreteUI.Window
             isInitializingElements = true;
             InitializeElements();
             isInitializingElements = false;
-            ApplyTheme(parent is null ? new ThemeResourceProvider(deviceContext, ThemeManager.CurrentTheme, _windowMaterial) : parent._resourceProvider!);
+            ApplyTheme(parent is null ? ThemeResourceProvider.CreateResourceProvider(deviceContext, ThemeManager.CurrentTheme, material) : parent._resourceProvider!.Clone());
             SystemEvents.DisplaySettingsChanging += SystemEvents_DisplaySettingsChanging;
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
@@ -235,7 +235,7 @@ namespace ConcreteUI.Window
 
         bool IRenderer.IsInitializingElements() => isInitializingElements;
 
-        ThemeResourceProvider IRenderer.GetThemeResourceProvider() => NullSafetyHelper.ThrowIfNull(_resourceProvider);
+        IThemeResourceProvider IRenderer.GetThemeResourceProvider() => NullSafetyHelper.ThrowIfNull(_resourceProvider);
 
         public float GetBaseLineWidth() => baseLineWidth;
         #endregion
@@ -246,7 +246,7 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Virtual Methods
-        protected virtual void ApplyThemeCore(ThemeResourceProvider provider)
+        protected virtual void ApplyThemeCore(IThemeResourceProvider provider)
         {
             _clearDCColor = provider.TryGetColor(ThemeConstants.ClearDCColorNode, out D2D1ColorF color) ? color : default;
             _windowBaseColor = provider.TryGetColor(ThemeConstants.WindowBaseColorNode, out color) ? color : default;
@@ -730,7 +730,7 @@ namespace ConcreteUI.Window
             {
                 overlayElementDict.TryAdd(type, element);
                 overlayElementList.Add(element);
-                ThemeResourceProvider? resourceProvider = _resourceProvider;
+                IThemeResourceProvider? resourceProvider = _resourceProvider;
                 if (resourceProvider is not null)
                     element.ApplyTheme(resourceProvider);
                 Update();
@@ -744,7 +744,7 @@ namespace ConcreteUI.Window
                     overlayElementList[index] = element;
                 else
                     overlayElementList.Add(element);
-                ThemeResourceProvider? resourceProvider = _resourceProvider;
+                IThemeResourceProvider? resourceProvider = _resourceProvider;
                 if (resourceProvider is not null)
                     element.ApplyTheme(resourceProvider);
                 Update();
@@ -785,7 +785,7 @@ namespace ConcreteUI.Window
             {
                 backgroundElementDict.TryAdd(type, element);
                 backgroundElementList.Add(element);
-                ThemeResourceProvider? resourceProvider = InterlockedHelper.Read(ref _resourceProvider);
+                IThemeResourceProvider? resourceProvider = InterlockedHelper.Read(ref _resourceProvider);
                 if (resourceProvider is not null)
                     element.ApplyTheme(resourceProvider);
                 Update();
@@ -799,7 +799,7 @@ namespace ConcreteUI.Window
                     backgroundElementList[index] = element;
                 else
                     backgroundElementList.Add(element);
-                ThemeResourceProvider? resourceProvider = InterlockedHelper.Read(ref _resourceProvider);
+                IThemeResourceProvider? resourceProvider = InterlockedHelper.Read(ref _resourceProvider);
                 if (resourceProvider is not null)
                     element.ApplyTheme(resourceProvider);
                 Update();
@@ -836,7 +836,7 @@ namespace ConcreteUI.Window
         public void CloseOverlayElement(Type elementType, UIElement elementForValidate)
             => (ChangeOverlayElement(elementType, null, _element => Equals(_element, elementForValidate)) as IDisposable)?.Dispose();
 
-        protected void ApplyTheme(ThemeResourceProvider provider)
+        protected void ApplyTheme(IThemeResourceProvider provider)
         {
             RenderingController? controller = _controller;
             if (controller is not null)
@@ -844,7 +844,7 @@ namespace ConcreteUI.Window
                 controller.Lock();
                 controller.WaitForRendering();
             }
-            DisposeHelper.SwapDisposeInterlocked(ref _resourceProvider, provider);
+            DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider, provider);
             ApplyThemeCore(provider);
             ConcreteUtils.ResetBlur(this);
             if (TryGetWindowListSnapshot(_childrenReferenceList, out ArrayPool<WeakReference<CoreWindow>>? pool,
@@ -854,10 +854,7 @@ namespace ConcreteUI.Window
                 {
                     if (!array[i].TryGetTarget(out CoreWindow? window) || window is null)
                         continue;
-                    D2D1DeviceContext? deviceContext = window._deviceContext;
-                    if (deviceContext is null)
-                        continue;
-                    window.ApplyTheme(provider);
+                    window.ApplyTheme(provider.Clone());
                 }
                 pool.Return(array);
             }
@@ -879,7 +876,7 @@ namespace ConcreteUI.Window
                 D2D1DeviceContext? deviceContext = window._deviceContext;
                 if (deviceContext is null)
                     continue;
-                window.ApplyTheme(new ThemeResourceProvider(deviceContext, themeContext, window._windowMaterial));
+                window.ApplyTheme(ThemeResourceProvider.CreateResourceProvider(window, themeContext));
             }
             pool.Return(array);
         }
@@ -917,6 +914,7 @@ namespace ConcreteUI.Window
             DisposeElements(_overlayElementList.Unwrap());
             DisposeElements(_backgroundElementList.Unwrap());
 
+            (_resourceProvider as IDisposable)?.Dispose();
             _controller?.Dispose();
             _titleLayout?.Dispose();
 
