@@ -130,7 +130,7 @@ namespace ConcreteUI.Internals
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void DrawDropDownButton(D2D1DeviceContext context, PointF point, float buttonHeight, D2D1Brush brush)
-            => _comboBoxDropdownIconDict.GetOrAdd(buttonHeight - UIConstants.ElementMargin, GetComboBoxDropDownIcon)?.Render(context, 
+            => _comboBoxDropdownIconDict.GetOrAdd(buttonHeight - ConcreteConstants.ElementMargin, GetComboBoxDropDownIcon)?.Render(context, 
                 AdjustPointForDropDownButton(point), brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

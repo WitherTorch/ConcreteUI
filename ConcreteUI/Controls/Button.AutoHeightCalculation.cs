@@ -80,7 +80,8 @@ namespace ConcreteUI.Controls
                 {
                     if (_calculated)
                         return _value;
-                    int value = DoCalc(_element) + UIConstants.ElementMargin;
+
+                    int value = DoCalc(_element) + ConcreteConstants.ElementMargin;
                     _value = value; 
                     _calculated = true;
                     return value;

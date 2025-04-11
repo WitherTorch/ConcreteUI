@@ -23,11 +23,11 @@ namespace ConcreteUI.Controls.Calculation
             : this(new WeakReference<UIElement>(depend), property, func) { }
 
         public ElementDependedCalculation(UIElement depend, LayoutProperty property,
-            int margin = UIConstants.ElementMargin)
+            int margin = ConcreteConstants.ElementMargin)
             : this(depend, property, AutoConfigureCalculation(property, margin, MarginType.Inside)) { }
 
         public ElementDependedCalculation(UIElement depend, LayoutProperty property,
-            MarginType marginType, int margin = UIConstants.ElementMargin)
+            MarginType marginType, int margin = ConcreteConstants.ElementMargin)
             : this(depend, property, AutoConfigureCalculation(property, margin, marginType)) { }
 
         private static Func<int, int> AutoConfigureCalculation(LayoutProperty property, int margin, MarginType marginType)

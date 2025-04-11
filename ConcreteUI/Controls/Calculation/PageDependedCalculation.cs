@@ -1,7 +1,5 @@
 ﻿using System;
 
-using ConcreteUI.Internals;
-
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls.Calculation
@@ -10,31 +8,18 @@ namespace ConcreteUI.Controls.Calculation
     {
         private readonly Func<Rect, int> _func;
 
-        public PageDependedCalculation(LayoutProperty property, int margin = UIConstants.ElementMargin)
+        public PageDependedCalculation(LayoutProperty property, int margin = ConcreteConstants.ElementMargin)
         {
-            switch (property)
+            _func = property switch
             {
-                case LayoutProperty.Left:
-                    _func = (rect) => rect.Left + margin;
-                    break;
-                case LayoutProperty.Top:
-                    _func = (rect) => rect.Top + margin;
-                    break;
-                case LayoutProperty.Right:
-                    _func = (rect) => rect.Right - margin;
-                    break;
-                case LayoutProperty.Bottom:
-                    _func = (rect) => rect.Bottom - margin;
-                    break;
-                case LayoutProperty.Height:
-                    _func = (rect) => rect.Height;
-                    break;
-                case LayoutProperty.Width:
-                    _func = (rect) => rect.Width;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(property));
-            }
+                LayoutProperty.Left => (rect) => rect.Left + margin,
+                LayoutProperty.Top => (rect) => rect.Top + margin,
+                LayoutProperty.Right => (rect) => rect.Right - margin,
+                LayoutProperty.Bottom => (rect) => rect.Bottom - margin,
+                LayoutProperty.Height => (rect) => rect.Height,
+                LayoutProperty.Width => (rect) => rect.Width,
+                _ => throw new ArgumentOutOfRangeException(nameof(property)),
+            };
         }
 
         public PageDependedCalculation(Func<Rect, int> func)

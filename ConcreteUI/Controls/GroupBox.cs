@@ -214,7 +214,8 @@ namespace ConcreteUI.Controls
         {
             if (layout is null)
                 return;
-            PointF titleLoc = new PointF(bounds.X + UIConstants.ElementMargin, bounds.Y);
+
+            PointF titleLoc = new PointF(bounds.X + ConcreteConstants.ElementMargin, bounds.Y);
             context.PushAxisAlignedClip(RectF.FromXYWH(titleLoc.X, titleLoc.Y, layout.MaxWidth, layout.MaxHeight), D2D1AntialiasMode.Aliased);
             RenderBackground(context, backBrush);
             context.DrawTextLayout(titleLoc, layout, textBrush, D2D1DrawTextOptions.Clip);
@@ -267,7 +268,7 @@ namespace ConcreteUI.Controls
         private static int GetContentBaseXCore(int x) => x + UIConstants.ElementMarginDouble;
 
         [Inline(InlineBehavior.Remove)]
-        private int GetContentBaseYCore(int y) => GetTextBaseYCore(y) + UIConstants.ElementMargin;
+        private int GetContentBaseYCore(int y) => GetTextBaseYCore(y) + ConcreteConstants.ElementMargin;
 
         [Inline(InlineBehavior.Remove)]
         private int GetTextBaseYCore(int y) => y + InterlockedHelper.Read(ref _titleHeight);

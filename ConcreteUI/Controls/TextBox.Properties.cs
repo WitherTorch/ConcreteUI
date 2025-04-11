@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 
+using ConcreteUI;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
 
@@ -120,7 +121,8 @@ namespace ConcreteUI.Controls
                 {
                     using DWriteTextLayout layout = CreateVirtualTextLayout();
                     layout.MaxWidth = ContentBounds.Width;
-                    SurfaceSize = new Size(0, MathI.Ceiling(layout.GetMetrics().Height) + UIConstants.ElementMargin);
+
+                    SurfaceSize = new Size(0, MathI.Ceiling(layout.GetMetrics().Height) + ConcreteConstants.ElementMargin);
                 }
                 CalculateCurrentViewportPoint();
                 Update(RenderObjectUpdateFlags.Layout);
@@ -162,7 +164,8 @@ namespace ConcreteUI.Controls
                     {
                         using DWriteTextLayout layout = CreateVirtualTextLayout();
                         layout.MaxWidth = bounds.Width;
-                        SurfaceSize = new Size(0, MathI.Ceiling(layout.GetMetrics().Height) + UIConstants.ElementMargin);
+
+                        SurfaceSize = new Size(0, MathI.Ceiling(layout.GetMetrics().Height) + ConcreteConstants.ElementMargin);
                     }
                 }
                 else

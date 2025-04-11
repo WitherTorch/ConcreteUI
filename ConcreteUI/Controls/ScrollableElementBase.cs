@@ -211,7 +211,7 @@ namespace ConcreteUI.Controls
         {
             Rect bounds = Bounds;
             Rect newContentBounds = bounds;
-            Point size = _surfaceSize;
+            Size size = _surfaceSize;
             bool hasScrollBar = _hasScrollBar;
             switch (_scrollBarType)
             {
@@ -223,7 +223,7 @@ namespace ConcreteUI.Controls
                     hasScrollBar = true;
                     break;
                 case ScrollBarType.AutoVertial:
-                    if (bounds.Height < size.Y && _enabled)
+                    if (bounds.Height < size.Height && _enabled)
                     {
                         goto case ScrollBarType.Vertical;
                     }
@@ -232,7 +232,7 @@ namespace ConcreteUI.Controls
                         goto case ScrollBarType.None;
                     }
             }
-            bool isStick = StickBottom && (!_hasScrollBar || _viewportPoint.Y + _contentBounds.Height >= size.Y);
+            bool isStick = StickBottom && (!_hasScrollBar || _viewportPoint.Y + _contentBounds.Height >= size.Height);
             _hasScrollBar = hasScrollBar;
             newContentBounds = OnContentBoundsChanging(newContentBounds);
             if (_contentBounds != newContentBounds)
@@ -241,8 +241,8 @@ namespace ConcreteUI.Controls
                 OnContentBoundsChanged();
             }
             Point viewportPoint = _viewportPoint;
-            int maxX = MathHelper.Max(size.X - newContentBounds.Width, 0);
-            int maxY = MathHelper.Max(size.Y - newContentBounds.Height, 0);
+            int maxX = MathHelper.Max(size.Width - newContentBounds.Width, 0);
+            int maxY = MathHelper.Max(size.Height - newContentBounds.Height, 0);
             if (isStick)
             {
                 _viewportPoint = new Point(MathHelper.Clamp(viewportPoint.X, 0, maxX), maxY);
@@ -281,7 +281,7 @@ namespace ConcreteUI.Controls
             _scrollBarUpButtonBounds = Rect.FromXYWH(X, scrollBarBounds.Y, UIConstants.ScrollBarWidth, UIConstants.ScrollBarWidth);
             _scrollBarDownButtonBounds = Rect.FromXYWH(X, scrollBarBounds.Bottom - UIConstants.ScrollBarWidth, UIConstants.ScrollBarWidth, UIConstants.ScrollBarWidth);
             float scrollBarMaxHeight = _scrollBarDownButtonBounds.Top - _scrollBarUpButtonBounds.Bottom;
-            float surfaceHeight = _surfaceSize.Y;
+            float surfaceHeight = _surfaceSize.Height;
             if (surfaceHeight == 0) surfaceHeight = 1;
             double surfaceHeightPerBarHeight = scrollBarMaxHeight < surfaceHeight ? scrollBarMaxHeight * 1.0 / surfaceHeight : 1.0;
             int height = MathHelper.Max(MathI.Ceiling(bounds.Height * surfaceHeightPerBarHeight), 10);
@@ -306,7 +306,7 @@ namespace ConcreteUI.Controls
             }
             else
             {
-                int maxY = MathHelper.Max(_surfaceSize.Y - _contentBounds.Height, 0);
+                int maxY = MathHelper.Max(_surfaceSize.Height - _contentBounds.Height, 0);
                 if (currentY > maxY)
                 {
                     currentY = maxY;
@@ -330,7 +330,7 @@ namespace ConcreteUI.Controls
             }
             else
             {
-                int maxX = MathHelper.Max(_surfaceSize.X - _contentBounds.Width, 0);
+                int maxX = MathHelper.Max(_surfaceSize.Width - _contentBounds.Width, 0);
                 if (currentX > maxX)
                 {
                     currentX = maxX;
@@ -355,10 +355,10 @@ namespace ConcreteUI.Controls
             {
                 currentY = 0;
             }
-            Point surfaceSize = _surfaceSize;
+            Size surfaceSize = _surfaceSize;
             Rect bounds = _contentBounds;
-            int maxX = MathHelper.Max(surfaceSize.X - bounds.Width, 0);
-            int maxY = MathHelper.Max(surfaceSize.Y - bounds.Height, 0);
+            int maxX = MathHelper.Max(surfaceSize.Width - bounds.Width, 0);
+            int maxY = MathHelper.Max(surfaceSize.Height - bounds.Height, 0);
             if (currentX > maxX)
             {
                 currentX = maxX;
@@ -379,7 +379,7 @@ namespace ConcreteUI.Controls
         protected bool IsScrolledToStart() => _viewportPoint.Y <= 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected bool IsScrolledToEnd() => _viewportPoint.Y >= _surfaceSize.Y - _contentBounds.Height;
+        protected bool IsScrolledToEnd() => _viewportPoint.Y >= _surfaceSize.Height - _contentBounds.Height;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ScrollToStart()
@@ -391,7 +391,7 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ScrollToEnd()
         {
-            _viewportPoint.Y = MathHelper.Max(_surfaceSize.Y - _contentBounds.Height, 0);
+            _viewportPoint.Y = MathHelper.Max(_surfaceSize.Height - _contentBounds.Height, 0);
             RecalcScrollBarAndUpdate(true);
         }
 
@@ -402,7 +402,7 @@ namespace ConcreteUI.Controls
             if (movementY != 0)
             {
                 int scrollBarMaxHeight = _scrollBarBounds.Height - 4;
-                int surfaceHeight = _surfaceSize.Y;
+                int surfaceHeight = _surfaceSize.Height;
                 int maxY = surfaceHeight - Bounds.Height;
                 int viewPortY = _viewportPoint.Y + MathI.Ceiling(movementY * 1.0 * surfaceHeight / scrollBarMaxHeight);
                 if (float.IsNaN(viewPortY) || viewPortY > maxY)

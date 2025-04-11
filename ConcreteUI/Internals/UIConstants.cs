@@ -20,19 +20,12 @@ namespace ConcreteUI.Internals
         public const float WizardWindowTitleFontSize = 22f;
         public const float WizardWindowTitleDescriptionFontSize = 14f;
 
-        //Layout Constants
-        public const int ElementMargin = 6;
-        public const int ElementMarginLarge = 10;
-        public const int ElementMarginDouble = ElementMargin * 2;
-        public const int ElementMarginHalf = ElementMargin / 2;
+        public const int ElementMarginDouble = ConcreteConstants.ElementMargin * 2;
+        public const int ElementMarginHalf = ConcreteConstants.ElementMargin / 2;
         public const int WizardLeftPadding = 22;
-        public const int WizardPadding = ElementMargin;
-        public const int WizardSubtitleLeftMargin = ElementMargin;
+        public const int WizardPadding = ConcreteConstants.ElementMargin;
+        public const int WizardSubtitleLeftMargin = ConcreteConstants.ElementMargin;
         public const int WizardSubtitleMargin = ElementMarginHalf;
-        public const int BoxHeight = 23;
-        public const int TextButtonSize = 27;
-        public const int ButtonExtraSpace = BoxHeight;
-        public const int CheckBoxExtraSpace = BoxHeight + ElementMargin * 3;
         public const float TitleBarButtonSizeHeight = 26;
         public const float TitleBarButtonSizeWidth = 36;
         public const float TitleBarIconSizeHeight = 10;
