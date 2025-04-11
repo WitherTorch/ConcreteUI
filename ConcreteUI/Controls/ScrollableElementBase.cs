@@ -33,7 +33,8 @@ namespace ConcreteUI.Controls
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
 
         private Action? _repeatingAction;
-        private Point _viewportPoint, _surfaceSize;
+        private Point _viewportPoint;
+        private Size _surfaceSize;
         private Rect _contentBounds, _scrollBarBounds, _scrollBarScrollButtonBounds, _scrollBarUpButtonBounds, _scrollBarDownButtonBounds;
         private ButtonTriState _scrollButtonState, _scrollUpButtonState, _scrollDownButtonState;
         private ScrollBarType _scrollBarType;

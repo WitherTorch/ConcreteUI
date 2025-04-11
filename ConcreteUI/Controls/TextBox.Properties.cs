@@ -120,7 +120,7 @@ namespace ConcreteUI.Controls
                 {
                     using DWriteTextLayout layout = CreateVirtualTextLayout();
                     layout.MaxWidth = ContentBounds.Width;
-                    SurfaceSize = new Point(0, MathI.Ceiling(layout.GetMetrics().Height) + UIConstants.ElementMargin);
+                    SurfaceSize = new Size(0, MathI.Ceiling(layout.GetMetrics().Height) + UIConstants.ElementMargin);
                 }
                 CalculateCurrentViewportPoint();
                 Update(RenderObjectUpdateFlags.Layout);
@@ -157,18 +157,18 @@ namespace ConcreteUI.Controls
                 {
                     Rect bounds = ContentBounds;
                     if (bounds.IsEmpty)
-                        SurfaceSize = Point.Empty;
+                        SurfaceSize = Size.Empty;
                     else
                     {
                         using DWriteTextLayout layout = CreateVirtualTextLayout();
                         layout.MaxWidth = bounds.Width;
-                        SurfaceSize = new Point(0, MathI.Ceiling(layout.GetMetrics().Height) + UIConstants.ElementMargin);
+                        SurfaceSize = new Size(0, MathI.Ceiling(layout.GetMetrics().Height) + UIConstants.ElementMargin);
                     }
                 }
                 else
                 {
                     Text = FixString(_text);
-                    SurfaceSize = new Point(int.MaxValue, 0);
+                    SurfaceSize = new Size(int.MaxValue, 0);
                 }
                 Update();
             }

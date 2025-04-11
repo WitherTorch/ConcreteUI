@@ -101,7 +101,7 @@ namespace ConcreteUI.Controls
             int selectedIndex = MathHelper.Clamp(_selectedIndex, -1, count - 1);
             _selectedIndex = selectedIndex;
             _maxViewCount = maxViewCount;
-            SurfaceSize = new Point(0, itemHeight * count);
+            SurfaceSize = new Size(0, itemHeight * count);
         }
 
         protected override bool RenderContent(DirtyAreaCollector collector)

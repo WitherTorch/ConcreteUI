@@ -53,7 +53,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        protected Point SurfaceSize
+        protected Size SurfaceSize
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _surfaceSize;
@@ -63,12 +63,12 @@ namespace ConcreteUI.Controls
                 float contentHeight = _contentBounds.Height;
                 if (contentHeight > 0)
                 {
-                    float surfaceY = _surfaceSize.Y;
-                    float valueY = value.Y;
-                    if (surfaceY != valueY)
+                    float surfaceHeight = _surfaceSize.Height;
+                    float valueHeight = value.Height;
+                    if (surfaceHeight != valueHeight)
                     {
-                        bool originOverflow = surfaceY > contentHeight;
-                        bool importOverflow = valueY > contentHeight;
+                        bool originOverflow = surfaceHeight > contentHeight;
+                        bool importOverflow = valueHeight > contentHeight;
                         if (originOverflow ^ importOverflow)
                         {
                             _surfaceSize = value;
@@ -76,7 +76,7 @@ namespace ConcreteUI.Controls
                         }
                         else if (importOverflow)
                         {
-                            bool isStick = StickBottom && _viewportPoint.Y + contentHeight >= surfaceY;
+                            bool isStick = StickBottom && _viewportPoint.Y + contentHeight >= surfaceHeight;
                             _surfaceSize = value;
                             if (isStick)
                             {
@@ -92,7 +92,7 @@ namespace ConcreteUI.Controls
                             _surfaceSize = value;
                         }
                     }
-                    else if (_surfaceSize.X != value.X)
+                    else if (_surfaceSize.Width != value.Width)
                     {
                         _surfaceSize = value;
                     }
@@ -101,9 +101,9 @@ namespace ConcreteUI.Controls
                 {
                     _surfaceSize = value;
                 }
-                if (value.X == 0)
+                if (value.Width == 0)
                 {
-                    _surfaceSize.X = Bounds.Width - _scrollBarBounds.Width;
+                    _surfaceSize.Width = Bounds.Width - _scrollBarBounds.Width;
                 }
                 Point viewportPoint = ViewportPoint;
                 if (!viewportPoint.IsEmpty) ScrollingToPoint(viewportPoint.X, viewportPoint.Y);

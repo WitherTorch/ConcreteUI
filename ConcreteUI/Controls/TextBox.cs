@@ -77,7 +77,7 @@ namespace ConcreteUI.Controls
             _fontSize = UIConstants.DefaultFontSize;
             _passwordChar = '\0';
             ScrollBarType = ScrollBarType.AutoVertial;
-            SurfaceSize = new Point(int.MaxValue, 0);
+            SurfaceSize = new Size(int.MaxValue, 0);
             DrawWhenDisabled = true;
         }
 

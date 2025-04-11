@@ -302,7 +302,7 @@ namespace ConcreteUI.Controls
 
         private void RecalculateHeight()
         {
-            SurfaceSize = new Point(0, Items.Count * _itemHeight);
+            SurfaceSize = new Size(0, Items.Count * _itemHeight);
             Update();
         }
 
