@@ -13,107 +13,83 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Utils
 {
-    internal static class GraphicsUtils
+    public static class GraphicsUtils
     {
-        [Inline(InlineBehavior.Remove)]
-        public static Rect ConvertRectangle(in RectF rawRect)
-        {
-            return new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Floor(rawRect.Right), MathI.Floor(rawRect.Bottom));
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Rect ConvertRectangle(in RectF rawRect) 
+            => new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Floor(rawRect.Right), MathI.Floor(rawRect.Bottom));
 
-        [Inline(InlineBehavior.Remove)]
-        public static Rect ConvertRectangle(in RectangleF rawRect)
-        {
-            return new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Floor(rawRect.Right), MathI.Floor(rawRect.Bottom));
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Rect ConvertRectangle(in RectangleF rawRect) 
+            => new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Floor(rawRect.Right), MathI.Floor(rawRect.Bottom));
 
-        [Inline(InlineBehavior.Remove)]
-        public static Rect AdjustRectangle(in RectF rawRect)
-        {
-            return new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Ceiling(rawRect.Right), MathI.Ceiling(rawRect.Bottom));
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Rect AdjustRectangle(in RectF rawRect) 
+            => new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Ceiling(rawRect.Right), MathI.Ceiling(rawRect.Bottom));
 
-        [Inline(InlineBehavior.Remove)]
-        public static Rect AdjustRectangle(in RectangleF rawRect)
-        {
-            return new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Ceiling(rawRect.Right), MathI.Ceiling(rawRect.Bottom));
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Rect AdjustRectangle(in RectangleF rawRect) 
+            => new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Ceiling(rawRect.Right), MathI.Ceiling(rawRect.Bottom));
 
-        [Inline(InlineBehavior.Remove)]
-        public static RectF AdjustRectangleF(in RectF rawRect)
-        {
-            return new RectF(MathF.Floor(rawRect.Left), MathF.Floor(rawRect.Top), MathF.Ceiling(rawRect.Right), MathF.Ceiling(rawRect.Bottom));
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RectF AdjustRectangleF(in RectF rawRect) 
+            => new RectF(MathF.Floor(rawRect.Left), MathF.Floor(rawRect.Top), MathF.Ceiling(rawRect.Right), MathF.Ceiling(rawRect.Bottom));
 
-        [Inline(InlineBehavior.Remove)]
-        public static RectF AdjustRectangleF(in RectangleF rawRect)
-        {
-            return new RectF(MathF.Floor(rawRect.Left), MathF.Floor(rawRect.Top), MathF.Ceiling(rawRect.Right), MathF.Ceiling(rawRect.Bottom));
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RectF AdjustRectangleF(in RectangleF rawRect) 
+            => new RectF(MathF.Floor(rawRect.Left), MathF.Floor(rawRect.Top), MathF.Ceiling(rawRect.Right), MathF.Ceiling(rawRect.Bottom));
 
-        [Inline(InlineBehavior.Remove)]
-        public static RectangleF AdjustRectangleF2(RectangleF rawRect)
-        {
-            return RectangleF.FromLTRB(MathF.Floor(rawRect.Left), MathF.Floor(rawRect.Top), MathF.Ceiling(rawRect.Right), MathF.Ceiling(rawRect.Bottom));
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RectangleF AdjustRectangleF2(RectangleF rawRect) 
+            => RectangleF.FromLTRB(MathF.Floor(rawRect.Left), MathF.Floor(rawRect.Top), MathF.Ceiling(rawRect.Right), MathF.Ceiling(rawRect.Bottom));
 
-        [Inline(InlineBehavior.Remove)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF AdjustRectangleFAsBorderBounds(in RectF rawRect, float lineWidth)
         {
             float gap = lineWidth * 0.5f;
             return new RectF(MathF.Floor(rawRect.Left) + gap, MathF.Floor(rawRect.Top) + gap, MathF.Ceiling(rawRect.Right) - gap, MathF.Ceiling(rawRect.Bottom) - gap);
         }
 
-        [Inline(InlineBehavior.Remove)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF AdjustRectangleFAsBorderBounds(in RectangleF rawRect, float lineWidth)
         {
             float gap = lineWidth * 0.5f;
             return new RectF(MathF.Floor(rawRect.Left) + gap, MathF.Floor(rawRect.Top) + gap, MathF.Ceiling(rawRect.Right) - gap, MathF.Ceiling(rawRect.Bottom) - gap);
         }
 
-        [Inline(InlineBehavior.Remove)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF AdjustRectangleAsBorderBounds(in Rect rawRect, float lineWidth)
         {
             float gap = lineWidth * 0.5f;
             return new RectF(rawRect.Left + gap, rawRect.Top + gap, rawRect.Right - gap, rawRect.Bottom - gap);
         }
 
-        [Inline(InlineBehavior.Remove)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF AdjustRectangleAsBorderBounds(in Rectangle rawRect, float lineWidth)
         {
             float gap = lineWidth * 0.5f;
             return new RectF(rawRect.Left + gap, rawRect.Top + gap, rawRect.Right - gap, rawRect.Bottom - gap);
         }
 
-        [Inline(InlineBehavior.Remove)]
-        public static RectF RoundRectangleF(in RectF rawRect)
-        {
-            return new RectF(MathF.Round(rawRect.Left), MathF.Round(rawRect.Top), MathF.Round(rawRect.Right), MathF.Round(rawRect.Bottom));
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RectF RoundRectangleF(in RectF rawRect) 
+            => new RectF(MathF.Round(rawRect.Left), MathF.Round(rawRect.Top), MathF.Round(rawRect.Right), MathF.Round(rawRect.Bottom));
 
-        [Inline(InlineBehavior.Remove)]
-        public static RectF RoundRectangleF(in RectangleF rawRect)
-        {
-            return new RectF(MathF.Round(rawRect.Left), MathF.Round(rawRect.Top), MathF.Round(rawRect.Right), MathF.Round(rawRect.Bottom));
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RectF RoundRectangleF(in RectangleF rawRect) 
+            => new RectF(MathF.Round(rawRect.Left), MathF.Round(rawRect.Top), MathF.Round(rawRect.Right), MathF.Round(rawRect.Bottom));
 
-        [Inline(InlineBehavior.Remove)]
-        public static Point AdjustPoint(in PointF rawPoint)
-        {
-            return new Point(MathI.Floor(rawPoint.X), MathI.Floor(rawPoint.Y));
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Point AdjustPoint(in PointF rawPoint) 
+            => new Point(MathI.Floor(rawPoint.X), MathI.Floor(rawPoint.Y));
 
-        [Inline(InlineBehavior.Remove)]
-        public static PointF AdjustPointF(in PointF rawPoint)
-        {
-            return new PointF(MathF.Floor(rawPoint.X), MathF.Floor(rawPoint.Y));
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PointF AdjustPointF(in PointF rawPoint) 
+            => new PointF(MathF.Floor(rawPoint.X), MathF.Floor(rawPoint.Y));
 
-        [Inline(InlineBehavior.Remove)]
-        public static PointF AdjustPointF2(in PointF rawPoint)
-        {
-            return new PointF(MathF.Floor(rawPoint.X), MathF.Ceiling(rawPoint.Y));
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PointF AdjustPointF2(in PointF rawPoint) 
+            => new PointF(MathF.Floor(rawPoint.X), MathF.Ceiling(rawPoint.Y));
 
         [Inline(InlineBehavior.Remove)]
         private static float MeasureTextWidthCore(string text, DWriteTextFormat format)
@@ -138,28 +114,20 @@ namespace ConcreteUI.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float MeasureTextWidth(string text, DWriteTextFormat format)
-        {
-            return MeasureTextWidthCore(text, format);
-        }
+        public static float MeasureTextWidth(string text, DWriteTextFormat format) 
+            => MeasureTextWidthCore(text, format);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float MeasureTextHeight(string text, DWriteTextFormat format)
-        {
-            return MeasureTextHeightCore(text, format);
-        }
+        public static float MeasureTextHeight(string text, DWriteTextFormat format) 
+            => MeasureTextHeightCore(text, format);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int MeasureTextWidthAsInt(string text, DWriteTextFormat format)
-        {
-            return MathI.Ceiling(MeasureTextWidthCore(text, format));
-        }
+        public static int MeasureTextWidthAsInt(string text, DWriteTextFormat format) 
+            => MathI.Ceiling(MeasureTextWidthCore(text, format));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int MeasureTextHeightAsInt(string text, DWriteTextFormat format)
-        {
-            return MathI.Ceiling(MeasureTextHeightCore(text, format));
-        }
+        public static int MeasureTextHeightAsInt(string text, DWriteTextFormat format) 
+            => MathI.Ceiling(MeasureTextHeightCore(text, format));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static SizeF MeasureTextSizeF(string text, DWriteTextFormat format)
