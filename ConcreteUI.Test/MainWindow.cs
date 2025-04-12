@@ -41,7 +41,7 @@ namespace ConcreteUI.Test
             }
         }
 
-        protected override void ApplyThemeCore(ThemeResourceProvider provider)
+        protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             base.ApplyThemeCore(provider);
             foreach (UnwrappableList<UIElement> elementList in _elementLists)
