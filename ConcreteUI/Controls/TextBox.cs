@@ -506,7 +506,7 @@ namespace ConcreteUI.Controls
                 return;
             }
             StringBuilderTiny builder = new StringBuilderTiny();
-            if (WTCommon.UseStackallocStringBuilder)
+            if (Limits.UseStackallocStringBuilder)
             {
                 unsafe
                 {
@@ -529,7 +529,7 @@ namespace ConcreteUI.Controls
             if (compositionRange.Length > 0)
             {
                 StringBuilderTiny builder = new StringBuilderTiny();
-                if (WTCommon.UseStackallocStringBuilder)
+                if (Limits.UseStackallocStringBuilder)
                 {
                     unsafe
                     {

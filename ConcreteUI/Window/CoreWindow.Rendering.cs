@@ -160,8 +160,8 @@ namespace ConcreteUI.Window
             ChangeBackgroundElement(new ToolTip(this, element => GetRenderingElements().Contains(element)));
             isInitializingElements = true;
             InitializeElements();
-            isInitializingElements = false;
             ApplyTheme(parent is null ? ThemeResourceProvider.CreateResourceProvider(deviceContext, ThemeManager.CurrentTheme, material) : parent._resourceProvider!.Clone());
+            isInitializingElements = false;
             SystemEvents.DisplaySettingsChanging += SystemEvents_DisplaySettingsChanging;
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
