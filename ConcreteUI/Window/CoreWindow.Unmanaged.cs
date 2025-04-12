@@ -1,20 +1,19 @@
-﻿using InlineMethod;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows.Forms;
 
-using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Structures;
+using ConcreteUI.Internals;
 using ConcreteUI.Native;
 
-using WitherTorch.Common.Extensions;
-using WitherTorch.Common.Windows.Structures;
-using ConcreteUI.Internals;
+using InlineMethod;
 
+using WitherTorch.Common.Extensions;
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Structures;
+using WitherTorch.Common.Windows.Structures;
 
 #if !DEBUG
 using InlineIL;
