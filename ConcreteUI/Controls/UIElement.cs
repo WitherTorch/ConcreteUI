@@ -7,7 +7,6 @@ using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
-using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
@@ -24,6 +23,7 @@ namespace ConcreteUI.Controls
         private static int _identifierGenerator = 0;
 
         private readonly AbstractCalculation[] _calculations = new AbstractCalculation[(int)LayoutProperty._Last];
+        private readonly SemaphoreSlim _semaphore;
         private readonly IRenderer _renderer;
         private readonly int _identifier;
 
@@ -35,6 +35,7 @@ namespace ConcreteUI.Controls
         public UIElement(IRenderer renderer)
         {
             _renderer = renderer;
+            _semaphore = new SemaphoreSlim(1, 1);
             _identifier = Interlocked.Increment(ref _identifierGenerator) - 1;
         }
 
@@ -65,17 +66,30 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void Render(DirtyAreaCollector collector, bool markDirty)
         {
+            SemaphoreSlim semaphore = _semaphore;
+            semaphore.Wait();
             ResetNeedRefreshFlag();
             Rect bounds = Bounds;
             D2D1DeviceContext context = Renderer.GetDeviceContext();
             context.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
-            bool result = RenderCore(collector);
-            context.PopAxisAlignedClip();
-            if (markDirty)
-                collector.MarkAsDirty(bounds);
-            if (result)
-                return;
-            Update();
+            bool result;
+            try
+            {
+                result = RenderCore(collector);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                context.PopAxisAlignedClip();
+                if (markDirty)
+                    collector.MarkAsDirty(bounds);
+                semaphore.Release();
+            }
+            if (!result)
+                Update();
         }
 
         protected void RenderBackground(D2D1DeviceContext context)
@@ -135,7 +149,20 @@ namespace ConcreteUI.Controls
         {
             if (_themeContext is not null)
                 return;
-            ApplyThemeCore(provider);
+            SemaphoreSlim semaphore = _semaphore;
+            semaphore.Wait();
+            try
+            {
+                ApplyThemeCore(provider);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                semaphore.Release();
+            }
             Update();
         }
 
@@ -143,6 +170,8 @@ namespace ConcreteUI.Controls
         private void ApplyThemeContext(IThemeContext themeContext)
         {
             IRenderer renderer = Renderer;
+            SemaphoreSlim semaphore = _semaphore;
+            semaphore.Wait();
             IThemeResourceProvider provider = ThemeResourceProvider.CreateResourceProvider(renderer.GetDeviceContext(), themeContext,
                 (renderer as CoreWindow)?.WindowMaterial ?? WindowMaterial.None);
             try
@@ -155,6 +184,7 @@ namespace ConcreteUI.Controls
             }
             finally
             {
+                semaphore.Release();
                 (provider as IDisposable)?.Dispose();
             }
             Update();
