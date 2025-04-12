@@ -19,16 +19,15 @@ namespace ConcreteUI.Controls.Calculation
             _func = func;
         }
 
+        public ElementDependedCalculation(UIElement depend, LayoutProperty property)
+            : this(depend, property, AutoConfigureCalculation(property, UIConstants.ElementMargin, MarginType.Inside)) { }
+        
+        public ElementDependedCalculation(UIElement depend, LayoutProperty property,
+            MarginType marginType, int margin = UIConstants.ElementMargin)
+            : this(depend, property, AutoConfigureCalculation(property, margin, marginType)) { }
+
         public ElementDependedCalculation(UIElement depend, LayoutProperty property, Func<int, int> func)
             : this(new WeakReference<UIElement>(depend), property, func) { }
-
-        public ElementDependedCalculation(UIElement depend, LayoutProperty property,
-            int margin = ConcreteConstants.ElementMargin)
-            : this(depend, property, AutoConfigureCalculation(property, margin, MarginType.Inside)) { }
-
-        public ElementDependedCalculation(UIElement depend, LayoutProperty property,
-            MarginType marginType, int margin = ConcreteConstants.ElementMargin)
-            : this(depend, property, AutoConfigureCalculation(property, margin, marginType)) { }
 
         private static Func<int, int> AutoConfigureCalculation(LayoutProperty property, int margin, MarginType marginType)
         {
@@ -38,40 +37,26 @@ namespace ConcreteUI.Controls.Calculation
             {
                 case MarginType.Outside:
                     {
-                        switch (property)
+                        return property switch
                         {
-                            case LayoutProperty.Left:
-                            case LayoutProperty.Top:
-                                return AutoConfigureCalculation(property, margin, MarginType.Subtract);
-                            case LayoutProperty.Right:
-                            case LayoutProperty.Bottom:
-                                return AutoConfigureCalculation(property, margin, MarginType.Add);
-                            case LayoutProperty.Height:
-                            case LayoutProperty.Width:
-                                return AutoConfigureCalculation(property, margin, MarginType.None);
-                            default:
-                                throw new ArgumentException("Invalid Layout Property!", nameof(property));
-                        }
+                            LayoutProperty.Left or LayoutProperty.Top => AutoConfigureCalculation(property, margin, MarginType.Subtract),
+                            LayoutProperty.Right or LayoutProperty.Bottom => AutoConfigureCalculation(property, margin, MarginType.Add),
+                            LayoutProperty.Height or LayoutProperty.Width => AutoConfigureCalculation(property, margin, MarginType.None),
+                            _ => throw new ArgumentException("Invalid Layout Property!", nameof(property)),
+                        };
                     }
                 case MarginType.Inside:
                     {
-                        switch (property)
+                        return property switch
                         {
-                            case LayoutProperty.Left:
-                            case LayoutProperty.Top:
-                                return AutoConfigureCalculation(property, margin, MarginType.Add);
-                            case LayoutProperty.Right:
-                            case LayoutProperty.Bottom:
-                                return AutoConfigureCalculation(property, margin, MarginType.Subtract);
-                            case LayoutProperty.Height:
-                            case LayoutProperty.Width:
-                                return AutoConfigureCalculation(property, margin, MarginType.None);
-                            default:
-                                throw new ArgumentException("Invalid Layout Property!", nameof(property));
-                        }
+                            LayoutProperty.Left or LayoutProperty.Top => AutoConfigureCalculation(property, margin, MarginType.Add),
+                            LayoutProperty.Right or LayoutProperty.Bottom => AutoConfigureCalculation(property, margin, MarginType.Subtract),
+                            LayoutProperty.Height or LayoutProperty.Width => AutoConfigureCalculation(property, margin, MarginType.None),
+                            _ => throw new ArgumentException("Invalid Layout Property!", nameof(property)),
+                        };
                     }
                 case MarginType.None:
-                    return (val) => val;
+                    return static (val) => val;
                 case MarginType.Add:
                     return (val) => val + margin;
                 case MarginType.Subtract:

@@ -36,66 +36,66 @@ namespace ConcreteUI.Internals
 
         private static FontIcon? GetMaxIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xE922, UIConstants.TitleBarIconSize, out FontIcon? result))
+            if (factory.TryCreateFluentUIFontIcon(0xE922, UIConstantsPrivate.TitleBarIconSize, out FontIcon? result))
                 return result;
-            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D6, UIConstants.TitleBarIconSize, out result))
+            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D6, UIConstantsPrivate.TitleBarIconSize, out result))
                 return result;
-            if (factory.TryCreateWebdingsFontIcon(0xF031, UIConstants.TitleBarIconSize, out result))
+            if (factory.TryCreateWebdingsFontIcon(0xF031, UIConstantsPrivate.TitleBarIconSize, out result))
                 return result;
             return null;
         }
 
         private static FontIcon? GetRestoreIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xE923, UIConstants.TitleBarIconSize, out FontIcon? result))
+            if (factory.TryCreateFluentUIFontIcon(0xE923, UIConstantsPrivate.TitleBarIconSize, out FontIcon? result))
                 return result;
-            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D7, UIConstants.TitleBarIconSize, out result))
+            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D7, UIConstantsPrivate.TitleBarIconSize, out result))
                 return result;
-            if (factory.TryCreateWebdingsFontIcon(0xF032, UIConstants.TitleBarIconSize, out result))
+            if (factory.TryCreateWebdingsFontIcon(0xF032, UIConstantsPrivate.TitleBarIconSize, out result))
                 return result;
             return null;
         }
 
         private static FontIcon? GetMinIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xE921, UIConstants.TitleBarIconSize, out FontIcon? result))
+            if (factory.TryCreateFluentUIFontIcon(0xE921, UIConstantsPrivate.TitleBarIconSize, out FontIcon? result))
                 return result;
-            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D5, UIConstants.TitleBarIconSize, out result))
+            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D5, UIConstantsPrivate.TitleBarIconSize, out result))
                 return result;
-            if (factory.TryCreateWebdingsFontIcon(0xF072, UIConstants.TitleBarIconSize, out result))
+            if (factory.TryCreateWebdingsFontIcon(0xF072, UIConstantsPrivate.TitleBarIconSize, out result))
                 return result;
             return null;
         }
 
         private static FontIcon? GetCloseIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xE8BB, UIConstants.TitleBarIconSize, out FontIcon? result))
+            if (factory.TryCreateFluentUIFontIcon(0xE8BB, UIConstantsPrivate.TitleBarIconSize, out FontIcon? result))
                 return result;
-            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D9, UIConstants.TitleBarIconSize, out result))
+            if (factory.TryCreateSegoeSymbolFontIcon(0x1F5D9, UIConstantsPrivate.TitleBarIconSize, out result))
                 return result;
-            if (factory.TryCreateWebdingsFontIcon(0xF030, UIConstants.TitleBarIconSize, out result))
+            if (factory.TryCreateWebdingsFontIcon(0xF030, UIConstantsPrivate.TitleBarIconSize, out result))
                 return result;
             return null;
         }
 
         private static FontIcon? GetScrollUpIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xEDDB, UIConstants.ScrollBarScrollButtonSize, out FontIcon? result))
+            if (factory.TryCreateFluentUIFontIcon(0xEDDB, UIConstantsPrivate.ScrollBarScrollButtonSize, out FontIcon? result))
                 return result;
-            if (factory.TryCreateSegoeSymbolFontIcon(0x1F53A, UIConstants.ScrollBarScrollButtonSize, out result))
+            if (factory.TryCreateSegoeSymbolFontIcon(0x1F53A, UIConstantsPrivate.ScrollBarScrollButtonSize, out result))
                 return result;
-            if (factory.TryCreateWebdingsFontIcon(0xF035, UIConstants.ScrollBarScrollButtonSize, out result))
+            if (factory.TryCreateWebdingsFontIcon(0xF035, UIConstantsPrivate.ScrollBarScrollButtonSize, out result))
                 return result;
             return null;
         }
 
         private static FontIcon? GetScrollDownIcon(FontIconFactory factory)
         {
-            if (factory.TryCreateFluentUIFontIcon(0xEDDC, UIConstants.ScrollBarScrollButtonSize, out FontIcon? result))
+            if (factory.TryCreateFluentUIFontIcon(0xEDDC, UIConstantsPrivate.ScrollBarScrollButtonSize, out FontIcon? result))
                 return result;
-            if (factory.TryCreateSegoeSymbolFontIcon(0x1F53B, UIConstants.ScrollBarScrollButtonSize, out result))
+            if (factory.TryCreateSegoeSymbolFontIcon(0x1F53B, UIConstantsPrivate.ScrollBarScrollButtonSize, out result))
                 return result;
-            if (factory.TryCreateWebdingsFontIcon(0xF036, UIConstants.ScrollBarScrollButtonSize, out result))
+            if (factory.TryCreateWebdingsFontIcon(0xF036, UIConstantsPrivate.ScrollBarScrollButtonSize, out result))
                 return result;
             return null;
         }
@@ -130,7 +130,7 @@ namespace ConcreteUI.Internals
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void DrawDropDownButton(D2D1DeviceContext context, PointF point, float buttonHeight, D2D1Brush brush)
-            => _comboBoxDropdownIconDict.GetOrAdd(buttonHeight - ConcreteConstants.ElementMargin, GetComboBoxDropDownIcon)?.Render(context, 
+            => _comboBoxDropdownIconDict.GetOrAdd(buttonHeight - UIConstants.ElementMargin, GetComboBoxDropDownIcon)?.Render(context, 
                 AdjustPointForDropDownButton(point), brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -144,8 +144,8 @@ namespace ConcreteUI.Internals
         [Inline(InlineBehavior.Remove)]
         private static PointF AdjustPointForTitleBar(PointF original)
         {
-            original.X += (UIConstants.TitleBarButtonSizeWidth - UIConstants.TitleBarIconSizeWidth) * 0.5f;
-            original.Y += (UIConstants.TitleBarButtonSizeHeight - UIConstants.TitleBarIconSizeHeight) * 0.5f;
+            original.X += (UIConstantsPrivate.TitleBarButtonSizeWidth - UIConstantsPrivate.TitleBarIconSizeWidth) * 0.5f;
+            original.Y += (UIConstantsPrivate.TitleBarButtonSizeHeight - UIConstantsPrivate.TitleBarIconSizeHeight) * 0.5f;
             return original;
         }
 
@@ -161,8 +161,8 @@ namespace ConcreteUI.Internals
         private static PointF GetTargetPointForScrollBar(in RectangleF targetRect)
         {
             PointF result = targetRect.Location;
-            result.X += (targetRect.Width - UIConstants.ScrollBarScrollButtonWidth) * 0.5f;
-            result.Y += (targetRect.Height - UIConstants.ScrollBarScrollButtonWidth) * 0.5f;
+            result.X += (targetRect.Width - UIConstantsPrivate.ScrollBarScrollButtonWidth) * 0.5f;
+            result.Y += (targetRect.Height - UIConstantsPrivate.ScrollBarScrollButtonWidth) * 0.5f;
             return result;
         }
 

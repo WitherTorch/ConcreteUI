@@ -219,7 +219,7 @@ namespace ConcreteUI.Controls
                     hasScrollBar = false;
                     break;
                 case ScrollBarType.Vertical:
-                    newContentBounds.Width -= UIConstants.ScrollBarWidth;
+                    newContentBounds.Width -= UIConstantsPrivate.ScrollBarWidth;
                     hasScrollBar = true;
                     break;
                 case ScrollBarType.AutoVertial:
@@ -275,11 +275,11 @@ namespace ConcreteUI.Controls
         {
             Rect bounds = Bounds;
             Rect contentBounds = _contentBounds;
-            Rect scrollBarBounds = new Rect(contentBounds.Right, contentBounds.Top, contentBounds.Right + UIConstants.ScrollBarWidth, contentBounds.Bottom);
+            Rect scrollBarBounds = new Rect(contentBounds.Right, contentBounds.Top, contentBounds.Right + UIConstantsPrivate.ScrollBarWidth, contentBounds.Bottom);
             int X = scrollBarBounds.X;
-            int X2 = X + (UIConstants.ScrollBarWidth - UIConstants.ScrollBarScrollButtonWidth) / 2;
-            _scrollBarUpButtonBounds = Rect.FromXYWH(X, scrollBarBounds.Y, UIConstants.ScrollBarWidth, UIConstants.ScrollBarWidth);
-            _scrollBarDownButtonBounds = Rect.FromXYWH(X, scrollBarBounds.Bottom - UIConstants.ScrollBarWidth, UIConstants.ScrollBarWidth, UIConstants.ScrollBarWidth);
+            int X2 = X + (UIConstantsPrivate.ScrollBarWidth - UIConstantsPrivate.ScrollBarScrollButtonWidth) / 2;
+            _scrollBarUpButtonBounds = Rect.FromXYWH(X, scrollBarBounds.Y, UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth);
+            _scrollBarDownButtonBounds = Rect.FromXYWH(X, scrollBarBounds.Bottom - UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth);
             float scrollBarMaxHeight = _scrollBarDownButtonBounds.Top - _scrollBarUpButtonBounds.Bottom;
             float surfaceHeight = _surfaceSize.Height;
             if (surfaceHeight == 0) surfaceHeight = 1;
@@ -287,7 +287,7 @@ namespace ConcreteUI.Controls
             int height = MathHelper.Max(MathI.Ceiling(bounds.Height * surfaceHeightPerBarHeight), 10);
             surfaceHeightPerBarHeight = (scrollBarMaxHeight - height) * 1.0 / (surfaceHeight - bounds.Height);
             int Y = _scrollBarUpButtonBounds.Bottom + MathI.Ceiling(_viewportPoint.Y * surfaceHeightPerBarHeight);
-            _scrollBarScrollButtonBounds = Rect.FromXYWH(X2, Y, UIConstants.ScrollBarScrollButtonWidth, height);
+            _scrollBarScrollButtonBounds = Rect.FromXYWH(X2, Y, UIConstantsPrivate.ScrollBarScrollButtonWidth, height);
             _scrollBarBounds = scrollBarBounds;
         }
 

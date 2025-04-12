@@ -18,6 +18,6 @@ namespace ConcreteUI.Controls
 
         PointF GetMousePosition();
 
-        IThemeResourceProvider GetThemeResourceProvider();
+        IThemeResourceProvider? GetThemeResourceProvider();
     }
 }

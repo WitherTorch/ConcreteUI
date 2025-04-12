@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 using ConcreteUI.Graphics;
@@ -79,6 +80,13 @@ namespace ConcreteUI.Controls
             ScrollBarType = ScrollBarType.AutoVertial;
             SurfaceSize = new Size(int.MaxValue, 0);
             DrawWhenDisabled = true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public TextBox WithAutoHeightCalculation(int minHeight = -1, int maxHeight = -1)
+        {
+            HeightCalculation = new AutoHeightCalculation(this, minHeight, maxHeight);
+            return this;
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)

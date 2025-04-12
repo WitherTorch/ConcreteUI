@@ -166,15 +166,15 @@ namespace ConcreteUI.Theme
                     key: "app.button.fore.inactive",
                     value: queryBrushFunction("app.control.fore.inactive"));
 
-                // 文字按鈕
+                // 字型圖示按鈕
                 yield return new KeyValuePair<string, IThemedBrushFactory>(
-                    key: "app.textbutton.face",
+                    key: "app.fontIconButton.face",
                     value: ThemedBrushFactory.FromColor(new D2D1ColorF(150, 150, 150)));
                 yield return new KeyValuePair<string, IThemedBrushFactory>(
-                    key: "app.textbutton.face.hovered",
+                    key: "app.fontIconButton.face.hovered",
                     value: ThemedBrushFactory.FromColor(new D2D1ColorF(96, 162, 252)));
                 yield return new KeyValuePair<string, IThemedBrushFactory>(
-                    key: "app.textbutton.face.pressed",
+                    key: "app.fontIconButton.face.pressed",
                     value: ThemedBrushFactory.FromColor(new D2D1ColorF(127, 180, 252)));
 
                 // 核取方塊

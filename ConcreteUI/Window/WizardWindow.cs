@@ -187,22 +187,22 @@ namespace ConcreteUI.Window
         {
             base.RecalculateLayout(windowSize, false);
             RectF pageRect = _pageRect;
-            pageRect.X += UIConstants.WizardLeftPadding;
-            pageRect.Y += UIConstants.WizardPadding;
-            pageRect.Right -= UIConstants.WizardPadding;
-            pageRect.Bottom -= UIConstants.WizardPadding;
+            pageRect.X += UIConstantsPrivate.WizardLeftPadding;
+            pageRect.Y += UIConstantsPrivate.WizardPadding;
+            pageRect.Right -= UIConstantsPrivate.WizardPadding;
+            pageRect.Bottom -= UIConstantsPrivate.WizardPadding;
             _titleLocation = pageRect.Location;
             GetLayouts((UpdateFlags)Interlocked.Exchange(ref _updateFlags, 0L), out DWriteTextLayout? titleLayout, out DWriteTextLayout? titleDescriptionLayout);
             if (titleLayout is not null)
             {
                 titleLayout.MaxWidth = pageRect.Width;
-                float descriptionLocY = MathF.Ceiling(pageRect.Y + titleLayout.GetMetrics().Height + UIConstants.WizardSubtitleMargin);
+                float descriptionLocY = MathF.Ceiling(pageRect.Y + titleLayout.GetMetrics().Height + UIConstantsPrivate.WizardSubtitleMargin);
                 if (titleDescriptionLayout is null)
                     pageRect.Top = descriptionLocY;
                 else
                 {
-                    _titleDescriptionLocation = new PointF(pageRect.X + UIConstants.WizardSubtitleLeftMargin, descriptionLocY);
-                    titleDescriptionLayout.MaxWidth = pageRect.Width - UIConstants.WizardSubtitleLeftMargin;
+                    _titleDescriptionLocation = new PointF(pageRect.X + UIConstantsPrivate.WizardSubtitleLeftMargin, descriptionLocY);
+                    titleDescriptionLayout.MaxWidth = pageRect.Width - UIConstantsPrivate.WizardSubtitleLeftMargin;
                     pageRect.Top = descriptionLocY + titleDescriptionLayout.GetMetrics().Height;
                     DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
                 }

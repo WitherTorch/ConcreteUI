@@ -239,7 +239,9 @@ namespace ConcreteUI.Controls
                     ApplyThemeContext(value);
                     return;
                 }
-                ApplyThemeCore(Renderer.GetThemeResourceProvider());
+                IThemeResourceProvider? provider = Renderer.GetThemeResourceProvider();
+                if (provider is not null)
+                    ApplyThemeCore(provider);
                 Update();
             }
         }

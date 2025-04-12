@@ -8,7 +8,7 @@ namespace ConcreteUI.Controls.Calculation
     {
         private readonly Func<Rect, int> _func;
 
-        public PageDependedCalculation(LayoutProperty property, int margin = ConcreteConstants.ElementMargin)
+        public PageDependedCalculation(LayoutProperty property, int margin = UIConstants.ElementMargin)
         {
             _func = property switch
             {

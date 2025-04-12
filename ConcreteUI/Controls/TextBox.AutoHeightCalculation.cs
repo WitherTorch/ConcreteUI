@@ -9,22 +9,22 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    partial class Button
+    partial class TextBox
     {
         public sealed class AutoHeightCalculation : AbstractCalculation
         {
-            private readonly WeakReference<Button> _reference;
+            private readonly WeakReference<TextBox> _reference;
             private readonly int _minHeight;
             private readonly int _maxHeight;
 
-            public AutoHeightCalculation(WeakReference<Button> reference, int minHeight = -1, int maxHeight = -1)
+            public AutoHeightCalculation(WeakReference<TextBox> reference, int minHeight = -1, int maxHeight = -1)
             {
                 _reference = reference;
                 _minHeight = minHeight;
                 _maxHeight = maxHeight;
             }
 
-            public AutoHeightCalculation(Button element, int minHeight = -1, int maxHeight = -1) : this(new WeakReference<Button>(element), minHeight, maxHeight)
+            public AutoHeightCalculation(TextBox element, int minHeight = -1, int maxHeight = -1) : this(new WeakReference<TextBox>(element), minHeight, maxHeight)
             {
             }
 
@@ -36,7 +36,7 @@ namespace ConcreteUI.Controls
 
             private sealed class CalculationContext : ICalculationContext
             {
-                private readonly Button _element;
+                private readonly TextBox _element;
                 private readonly int _minHeight;
                 private readonly int _maxHeight;
 
@@ -49,7 +49,7 @@ namespace ConcreteUI.Controls
 
                 public LayoutProperty DependedProperty => LayoutProperty.None;
 
-                private CalculationContext(Button element, int minHeight, int maxHeight)
+                private CalculationContext(TextBox element, int minHeight, int maxHeight)
                 {
                     _element = element;
                     _minHeight = minHeight;
@@ -58,9 +58,9 @@ namespace ConcreteUI.Controls
                     _value = 0;
                 }
 
-                public static CalculationContext? TryCreate(WeakReference<Button> reference, int minHeight, int maxHeight)
+                public static CalculationContext? TryCreate(WeakReference<TextBox> reference, int minHeight, int maxHeight)
                 {
-                    if (!reference.TryGetTarget(out Button? element))
+                    if (!reference.TryGetTarget(out TextBox? element))
                         return null;
                     return new CalculationContext(element, minHeight, maxHeight);
                 }
@@ -87,7 +87,7 @@ namespace ConcreteUI.Controls
                     return value;
                 }
 
-                private int DoCalc(Button element)
+                private int DoCalc(TextBox element)
                 {
                     string text = element._text ?? string.Empty;
                     DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(text, NullSafetyHelper.ThrowIfNull(element._fontName), TextAlignment.MiddleCenter, element._fontSize);

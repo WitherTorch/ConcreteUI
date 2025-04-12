@@ -235,7 +235,7 @@ namespace ConcreteUI.Window
 
         bool IRenderer.IsInitializingElements() => isInitializingElements;
 
-        IThemeResourceProvider IRenderer.GetThemeResourceProvider() => NullSafetyHelper.ThrowIfNull(_resourceProvider);
+        public IThemeResourceProvider? GetThemeResourceProvider() => InterlockedHelper.Read(ref _resourceProvider);
 
         public float GetBaseLineWidth() => baseLineWidth;
         #endregion
@@ -363,9 +363,9 @@ namespace ConcreteUI.Window
                 _drawingOffsetX = drawingOffsetX;
                 _drawingOffsetY = drawingOffsetY;
                 float x = windowSize.Width - 1 - drawingOffsetX, y = drawingOffsetY;
-                _closeRect = RectF.FromXYWH(x -= UIConstants.TitleBarButtonSizeWidth, y, UIConstants.TitleBarButtonSizeWidth, UIConstants.TitleBarButtonSizeHeight);
-                _maxRect = RectF.FromXYWH(x -= UIConstants.TitleBarButtonSizeWidth, y, UIConstants.TitleBarButtonSizeWidth, UIConstants.TitleBarButtonSizeHeight);
-                _minRect = RectF.FromXYWH(x - UIConstants.TitleBarButtonSizeWidth, y, UIConstants.TitleBarButtonSizeWidth, UIConstants.TitleBarButtonSizeHeight);
+                _closeRect = RectF.FromXYWH(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
+                _maxRect = RectF.FromXYWH(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
+                _minRect = RectF.FromXYWH(x - UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
                 RectF titleBarRect = _titleBarRect = RectF.FromXYWH(drawingOffsetX + 1, drawingOffsetY + 1, Width - 2, 26);
                 _pageRect = GraphicsUtils.AdjustRectangleF(new RectF(drawingOffsetX + drawingBorderWidth, titleBarRect.Bottom + 1,
                     windowSize.Width - drawingOffsetX - drawingBorderWidth, windowSize.Height - drawingBorderWidth));
@@ -733,6 +733,9 @@ namespace ConcreteUI.Window
                 IThemeResourceProvider? resourceProvider = _resourceProvider;
                 if (resourceProvider is not null)
                     element.ApplyTheme(resourceProvider);
+                LayoutEngine layoutEngine = RentLayoutEngine();
+                layoutEngine.RecalculateLayout((Rect)_pageRect, element);
+                ReturnLayoutEngine(layoutEngine);
                 Update();
                 return null;
             }
@@ -747,6 +750,9 @@ namespace ConcreteUI.Window
                 IThemeResourceProvider? resourceProvider = _resourceProvider;
                 if (resourceProvider is not null)
                     element.ApplyTheme(resourceProvider);
+                LayoutEngine layoutEngine = RentLayoutEngine();
+                layoutEngine.RecalculateLayout((Rect)_pageRect, element);
+                ReturnLayoutEngine(layoutEngine);
                 Update();
                 return result;
             }
@@ -788,6 +794,9 @@ namespace ConcreteUI.Window
                 IThemeResourceProvider? resourceProvider = InterlockedHelper.Read(ref _resourceProvider);
                 if (resourceProvider is not null)
                     element.ApplyTheme(resourceProvider);
+                LayoutEngine layoutEngine = RentLayoutEngine();
+                layoutEngine.RecalculateLayout((Rect)_pageRect, element);
+                ReturnLayoutEngine(layoutEngine);
                 Update();
                 return null;
             }
@@ -802,6 +811,9 @@ namespace ConcreteUI.Window
                 IThemeResourceProvider? resourceProvider = InterlockedHelper.Read(ref _resourceProvider);
                 if (resourceProvider is not null)
                     element.ApplyTheme(resourceProvider);
+                LayoutEngine layoutEngine = RentLayoutEngine();
+                layoutEngine.RecalculateLayout((Rect)_pageRect, element);
+                ReturnLayoutEngine(layoutEngine);
                 Update();
                 return result;
             }
