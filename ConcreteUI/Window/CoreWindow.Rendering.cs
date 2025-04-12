@@ -160,8 +160,8 @@ namespace ConcreteUI.Window
             ChangeBackgroundElement(new ToolTip(this, element => GetRenderingElements().Contains(element)));
             isInitializingElements = true;
             InitializeElements();
-            ApplyTheme(parent is null ? ThemeResourceProvider.CreateResourceProvider(deviceContext, ThemeManager.CurrentTheme, material) : parent._resourceProvider!.Clone());
             isInitializingElements = false;
+            ApplyTheme(parent is null ? ThemeResourceProvider.CreateResourceProvider(deviceContext, ThemeManager.CurrentTheme, material) : parent._resourceProvider!.Clone());
             SystemEvents.DisplaySettingsChanging += SystemEvents_DisplaySettingsChanging;
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
@@ -728,32 +728,38 @@ namespace ConcreteUI.Window
             }
             if (!overlayElementDict.TryGetValue(type, out result))
             {
-                overlayElementDict.TryAdd(type, element);
-                overlayElementList.Add(element);
                 IThemeResourceProvider? resourceProvider = _resourceProvider;
                 if (resourceProvider is not null)
                     element.ApplyTheme(resourceProvider);
+
                 LayoutEngine layoutEngine = RentLayoutEngine();
                 layoutEngine.RecalculateLayout((Rect)_pageRect, element);
                 ReturnLayoutEngine(layoutEngine);
-                Update();
+
+                overlayElementDict.TryAdd(type, element);
+                overlayElementList.Add(element);
+
+                Refresh();
                 return null;
             }
             if (result is null || predicate is null || predicate.Invoke(result))
             {
+                IThemeResourceProvider? resourceProvider = _resourceProvider;
+                if (resourceProvider is not null)
+                    element.ApplyTheme(resourceProvider);
+
+                LayoutEngine layoutEngine = RentLayoutEngine();
+                layoutEngine.RecalculateLayout((Rect)_pageRect, element);
+                ReturnLayoutEngine(layoutEngine);
+
                 int index = result is null ? -1 : overlayElementList.IndexOf(result);
                 overlayElementDict[type] = element;
                 if (index > -1)
                     overlayElementList[index] = element;
                 else
                     overlayElementList.Add(element);
-                IThemeResourceProvider? resourceProvider = _resourceProvider;
-                if (resourceProvider is not null)
-                    element.ApplyTheme(resourceProvider);
-                LayoutEngine layoutEngine = RentLayoutEngine();
-                layoutEngine.RecalculateLayout((Rect)_pageRect, element);
-                ReturnLayoutEngine(layoutEngine);
-                Update();
+
+                Refresh();
                 return result;
             }
             return null;
@@ -791,13 +797,6 @@ namespace ConcreteUI.Window
             {
                 backgroundElementDict.TryAdd(type, element);
                 backgroundElementList.Add(element);
-                IThemeResourceProvider? resourceProvider = InterlockedHelper.Read(ref _resourceProvider);
-                if (resourceProvider is not null)
-                    element.ApplyTheme(resourceProvider);
-                LayoutEngine layoutEngine = RentLayoutEngine();
-                layoutEngine.RecalculateLayout((Rect)_pageRect, element);
-                ReturnLayoutEngine(layoutEngine);
-                Update();
                 return null;
             }
             if (result is null || predicate is null || predicate.Invoke(result))
@@ -808,13 +807,6 @@ namespace ConcreteUI.Window
                     backgroundElementList[index] = element;
                 else
                     backgroundElementList.Add(element);
-                IThemeResourceProvider? resourceProvider = InterlockedHelper.Read(ref _resourceProvider);
-                if (resourceProvider is not null)
-                    element.ApplyTheme(resourceProvider);
-                LayoutEngine layoutEngine = RentLayoutEngine();
-                layoutEngine.RecalculateLayout((Rect)_pageRect, element);
-                ReturnLayoutEngine(layoutEngine);
-                Update();
                 return result;
             }
             return null;

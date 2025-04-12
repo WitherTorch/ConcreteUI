@@ -281,7 +281,7 @@ namespace ConcreteUI.Window
             float menuHeight = 0.0f;
             for (int i = 0; i < count; i++)
             {
-                DWriteTextLayout layout = GraphicsUtils.CreateCustomTextLayout(menuButtonTexts[i], format, menuExtraWidth, float.MaxValue);
+                DWriteTextLayout layout = GraphicsUtils.CreateCustomTextLayout(menuButtonTexts[i], format, menuExtraWidth, float.PositiveInfinity);
                 float height = layout.MaxHeight;
                 if (menuHeight < height)
                     menuHeight = height;

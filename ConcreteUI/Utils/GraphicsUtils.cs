@@ -157,7 +157,10 @@ namespace ConcreteUI.Utils
         public static DWriteTextLayout CreateCustomTextLayout(string text, DWriteTextFormat format, float extraWidth, float itemHeight)
         {
             DWriteTextLayout layout = SharedResources.DWriteFactory.CreateTextLayout(text, format, float.PositiveInfinity, itemHeight);
-            layout.MaxWidth = MathF.Ceiling(layout.GetMetrics().Width + extraWidth);
+            DWriteTextMetrics metrics = layout.GetMetrics();
+            layout.MaxWidth = MathF.Ceiling(metrics.Width + extraWidth);
+            if (float.IsInfinity(itemHeight))
+                layout.MaxHeight = metrics.Height;
             return layout;
         }
 

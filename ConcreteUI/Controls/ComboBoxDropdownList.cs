@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Threading;
 
+using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
@@ -46,8 +47,9 @@ namespace ConcreteUI.Controls
             _window = window;
             _isFirstTimeClick = true;
             _selectedIndex = -1;
-            Rectangle parentBounds = parent.Bounds;
-            Bounds = new Rectangle(parentBounds.Left, parentBounds.Bottom - MathI.Ceiling(Renderer.GetBaseLineWidth()), parentBounds.Width, 0);
+            LeftCalculation = new ElementDependedCalculation(parent, LayoutProperty.Left, MarginType.None);
+            RightCalculation = new ElementDependedCalculation(parent, LayoutProperty.Right, MarginType.None);
+            TopCalculation = new ElementDependedCalculation(parent, LayoutProperty.Bottom, MarginType.Subtract, MathI.Ceiling(Renderer.GetBaseLineWidth()));
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
@@ -69,9 +71,6 @@ namespace ConcreteUI.Controls
 
         public void Prepare(DWriteTextFormat format)
         {
-            if (InterlockedHelper.Read(ref _layouts) is not null) // Already shown
-                return;
-
             ComboBox parent = _parent;
             DWriteFactory factory = SharedResources.DWriteFactory;
 
@@ -81,27 +80,29 @@ namespace ConcreteUI.Controls
             if (count <= 0)
                 return;
             float lineWidth = Renderer.GetBaseLineWidth();
-            float itemWidth = Width - lineWidth * 2f - 18;
             DWriteTextLayout[] layouts = new DWriteTextLayout[count];
             for (int i = 0; i < count; i++)
             {
-                DWriteTextLayout layout = factory.CreateTextLayout(items[i], format, itemWidth, float.PositiveInfinity);
+                DWriteTextLayout layout = factory.CreateTextLayout(items[i], format);
                 layouts[i] = layout;
                 float height = layout.GetMetrics().Height;
                 if (maxHeight < height)
                     maxHeight = height;
             }
-            Interlocked.CompareExchange(ref _layouts, layouts, null);
+            DisposeHelper.SwapDispose(ref _layouts, layouts);
 
             int itemHeight = MathI.Ceiling(maxHeight) + 2;
             _itemHeight = itemHeight;
 
             int maxViewCount = parent.DropdownListVisibleCount;
-            Height = maxViewCount * itemHeight;
-            int selectedIndex = MathHelper.Clamp(_selectedIndex, -1, count - 1);
-            _selectedIndex = selectedIndex;
+            int lastIndex = MathHelper.Clamp(parent.SelectedIndex, -1, count - 1);
+            _selectedIndex = -1;
             _maxViewCount = maxViewCount;
             SurfaceSize = new Size(0, itemHeight * count);
+            int elementHeight = maxViewCount * itemHeight;
+            HeightCalculation = new FixedCalculation(elementHeight);
+            if (lastIndex > maxViewCount / 2)
+                ScrollingTo(lastIndex * itemHeight + itemHeight / 2 - elementHeight / 2);
         }
 
         protected override bool RenderContent(DirtyAreaCollector collector)
@@ -113,7 +114,7 @@ namespace ConcreteUI.Controls
             float lineWidth = Renderer.GetBaseLineWidth();
             Rect bounds = ContentBounds;
             int count = layouts.Length;
-            if (count <= 0)
+            if (count <= 0 || !bounds.IsValid)
                 return true;
             bool isClicking = _isClicking;
             int maxViewCount = _maxViewCount;
