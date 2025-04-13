@@ -76,10 +76,10 @@ namespace ConcreteUI.Test
 
             TextBox textBox = new TextBox(this, _ime)
             {
-                LeftCalculation = new ElementDependedCalculation(button, LayoutProperty.Right, MarginType.Outside),
+                LeftCalculation = new ElementDependedCalculation(button, LayoutProperty.Right, OffsetType.Outside),
                 TopCalculation = new PageDependedCalculation(LayoutProperty.Top),
                 RightCalculation = new PageDependedCalculation(LayoutProperty.Right),
-                HeightCalculation = new ElementDependedCalculation(button, LayoutProperty.Height, MarginType.None),
+                HeightCalculation = new ElementDependedCalculation(button, LayoutProperty.Height, OffsetType.None),
                 Watermark = "這裡可以輸入文字喔!"
             };
             elementList.Add(textBox);
@@ -88,7 +88,7 @@ namespace ConcreteUI.Test
             {
                 Mode = ListBoxMode.Some,
                 LeftCalculation = new PageDependedCalculation(LayoutProperty.Left),
-                TopCalculation = new ElementDependedCalculation(button, LayoutProperty.Bottom, MarginType.Outside),
+                TopCalculation = new ElementDependedCalculation(button, LayoutProperty.Bottom, OffsetType.Outside),
                 WidthCalculation = new FixedCalculation(250),
                 BottomCalculation = new PageDependedCalculation(LayoutProperty.Bottom),
             };
@@ -99,8 +99,8 @@ namespace ConcreteUI.Test
 
             GroupBox groupBox = new GroupBox(this)
             {
-                LeftCalculation = new ElementDependedCalculation(listBox, LayoutProperty.Right, MarginType.Outside),
-                TopCalculation = new ElementDependedCalculation(textBox, LayoutProperty.Bottom, MarginType.Outside),
+                LeftCalculation = new ElementDependedCalculation(listBox, LayoutProperty.Right, OffsetType.Outside),
+                TopCalculation = new ElementDependedCalculation(textBox, LayoutProperty.Bottom, OffsetType.Outside),
                 RightCalculation = new PageDependedCalculation(LayoutProperty.Right),
                 BottomCalculation = new PageDependedCalculation(LayoutProperty.Bottom),
                 Title = "群組容器",
@@ -117,7 +117,7 @@ namespace ConcreteUI.Test
             ComboBox comboBox = new ComboBox(this)
             {
                 LeftCalculation = new GroupBox.ContentXCalculation(groupBox),
-                TopCalculation = new ElementDependedCalculation(groupBox.FirstChild!, LayoutProperty.Bottom, MarginType.Outside),
+                TopCalculation = new ElementDependedCalculation(groupBox.FirstChild!, LayoutProperty.Bottom, OffsetType.Outside),
                 WidthCalculation = new FixedCalculation(200)
             }.WithAutoHeightCalculation();
             comboBox.RequestDropdownListOpening += ComboBox_RequestDropdownListOpening;
@@ -128,29 +128,29 @@ namespace ConcreteUI.Test
             Label label = new Label(this)
             {
                 LeftCalculation = new GroupBox.ContentXCalculation(groupBox),
-                TopCalculation = new ElementDependedCalculation(comboBox, LayoutProperty.Bottom, MarginType.Outside),
+                TopCalculation = new ElementDependedCalculation(comboBox, LayoutProperty.Bottom, OffsetType.Outside),
                 RightCalculation = new ElementDependedCalculation(groupBox, LayoutProperty.Right),
                 Text = "底下是進度條測試",
                 Alignment = TextAlignment.MiddleCenter
             }.WithAutoHeightCalculation();
             Button leftButton = new Button(this)
             {
-                LeftCalculation = new ElementDependedCalculation(label, LayoutProperty.Left, MarginType.None),
-                TopCalculation = new ElementDependedCalculation(label, LayoutProperty.Bottom, MarginType.Outside),
+                LeftCalculation = new ElementDependedCalculation(label, LayoutProperty.Left, OffsetType.None),
+                TopCalculation = new ElementDependedCalculation(label, LayoutProperty.Bottom, OffsetType.Outside),
                 Text = "-"
             }.WithAutoWidthCalculation().WithAutoHeightCalculation();
             Button rightButton = new Button(this)
             {
-                TopCalculation = new ElementDependedCalculation(label, LayoutProperty.Bottom, MarginType.Outside),
-                RightCalculation = new ElementDependedCalculation(label, LayoutProperty.Right, MarginType.None),
+                TopCalculation = new ElementDependedCalculation(label, LayoutProperty.Bottom, OffsetType.Outside),
+                RightCalculation = new ElementDependedCalculation(label, LayoutProperty.Right, OffsetType.None),
                 Text = "+"
             }.WithAutoWidthCalculation().WithAutoHeightCalculation();
             ProgressBar progressBar = new ProgressBar(this)
             {
-                LeftCalculation = new ElementDependedCalculation(leftButton, LayoutProperty.Right, MarginType.Outside),
-                TopCalculation = new ElementDependedCalculation(label, LayoutProperty.Bottom, MarginType.Outside),
-                RightCalculation = new ElementDependedCalculation(rightButton, LayoutProperty.Left, MarginType.Outside),
-                HeightCalculation = new ElementDependedCalculation(leftButton, LayoutProperty.Height, MarginType.None),
+                LeftCalculation = new ElementDependedCalculation(leftButton, LayoutProperty.Right, OffsetType.Outside),
+                TopCalculation = new ElementDependedCalculation(label, LayoutProperty.Bottom, OffsetType.Outside),
+                RightCalculation = new ElementDependedCalculation(rightButton, LayoutProperty.Left, OffsetType.Outside),
+                HeightCalculation = new ElementDependedCalculation(leftButton, LayoutProperty.Height, OffsetType.None),
                 Maximium = 100.0f,
                 Value = 50.0f
             };
