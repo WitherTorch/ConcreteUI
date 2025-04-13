@@ -25,11 +25,11 @@ namespace ConcreteUI.Controls.Calculation
         public ElementDependedCalculation(UIElement depend, LayoutProperty property)
             : this(depend, property, AutoConfigureCalculation(property)) { }
 
-        public ElementDependedCalculation(UIElement depend, LayoutProperty property, int offset)
-            : this(depend, property, AutoConfigureCalculation(property, offset)) { }
-
         public ElementDependedCalculation(UIElement depend, LayoutProperty property, OffsetType offsetType)
             : this(depend, property, AutoConfigureCalculation(property, offsetType)) { }
+
+        public ElementDependedCalculation(UIElement depend, LayoutProperty property, int offset)
+            : this(depend, property, AutoConfigureCalculation(property, offset)) { }
 
         public ElementDependedCalculation(UIElement depend, LayoutProperty property, OffsetType offsetType, int offset)
             : this(depend, property, AutoConfigureCalculation(property, offsetType, offset)) { }

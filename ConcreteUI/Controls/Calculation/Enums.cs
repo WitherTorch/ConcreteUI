@@ -5,14 +5,6 @@ namespace ConcreteUI.Controls.Calculation
     public enum OffsetType
     {
         /// <summary>
-        /// Outside the element depending
-        /// </summary>
-        Outside = -2,
-        /// <summary>
-        /// Inside the element depending
-        /// </summary>
-        Inside = -1,
-        /// <summary>
         /// Result = input
         /// </summary>
         None,
@@ -23,7 +15,15 @@ namespace ConcreteUI.Controls.Calculation
         /// <summary>
         /// Result = input - margin
         /// </summary>
-        Subtract
+        Subtract,
+        /// <summary>
+        /// Inside the element depending
+        /// </summary>
+        Inside,
+        /// <summary>
+        /// Outside the element depending
+        /// </summary>
+        Outside
     }
 
     [Flags]
