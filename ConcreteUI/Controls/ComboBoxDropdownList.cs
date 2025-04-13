@@ -47,9 +47,9 @@ namespace ConcreteUI.Controls
             _window = window;
             _isFirstTimeClick = true;
             _selectedIndex = -1;
-            LeftCalculation = new ElementDependedCalculation(parent, LayoutProperty.Left, MarginType.None);
-            RightCalculation = new ElementDependedCalculation(parent, LayoutProperty.Right, MarginType.None);
-            TopCalculation = new ElementDependedCalculation(parent, LayoutProperty.Bottom, MarginType.Subtract, MathI.Ceiling(Renderer.GetBaseLineWidth()));
+            LeftCalculation = new ElementDependedCalculation(parent, LayoutProperty.Left, OffsetType.None);
+            RightCalculation = new ElementDependedCalculation(parent, LayoutProperty.Right, OffsetType.None);
+            TopCalculation = new ElementDependedCalculation(parent, LayoutProperty.Bottom, OffsetType.Subtract, MathI.Ceiling(Renderer.GetBaseLineWidth()));
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)

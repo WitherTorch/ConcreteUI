@@ -82,14 +82,19 @@ namespace ConcreteUI.Utils
         private void QueueElement(ArrayPool<ICalculationContext> pool, UIElement element)
         {
             ICalculationContext[] contexts = pool.Rent((int)LayoutProperty._Last);
+            bool hasAnyContexts = false;
             for (LayoutProperty prop = LayoutProperty.Left; prop < LayoutProperty._Last; prop++)
             {
                 ICalculationContext? context = element.GetLayoutCalculation(prop)?.CreateContext();
                 if (context is null)
                     continue;
                 contexts[(int)prop] = context;
+                hasAnyContexts = true;
             }
-            _contextDict[element] = contexts;
+            if (hasAnyContexts)
+                _contextDict[element] = contexts;
+            else
+                pool.Return(contexts);
             if (element is IContainerElement containerElement)
                 QueueElements(pool, containerElement.Children);
         }
@@ -120,10 +125,10 @@ namespace ConcreteUI.Utils
             switch (elements)
             {
                 case UIElement[] array:
-                    RecalculateLayoutCore(pageRect, array, array.Length); 
+                    RecalculateLayoutCore(pageRect, array, array.Length);
                     break;
                 case UnwrappableList<UIElement> list:
-                    RecalculateLayoutCore(pageRect, list.Unwrap(), list.Count); 
+                    RecalculateLayoutCore(pageRect, list.Unwrap(), list.Count);
                     break;
                 default:
                     RecalculateLayoutCore(pageRect, elements);

@@ -2,7 +2,7 @@
 
 namespace ConcreteUI.Controls.Calculation
 {
-    public enum MarginType
+    public enum OffsetType
     {
         /// <summary>
         /// Outside the element depending
