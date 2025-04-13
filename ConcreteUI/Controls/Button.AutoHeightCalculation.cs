@@ -3,6 +3,9 @@
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
+using ConcreteUI.Utils;
+
+using InlineMethod;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -17,14 +20,17 @@ namespace ConcreteUI.Controls
             private readonly int _minHeight;
             private readonly int _maxHeight;
 
-            public AutoHeightCalculation(WeakReference<Button> reference, int minHeight = -1, int maxHeight = -1)
+            public int MinHeight => _minHeight;
+            public int MaxHeight => _maxHeight;
+
+            public AutoHeightCalculation(WeakReference<Button> reference, int minHeight = 0, int maxHeight = int.MaxValue)
             {
                 _reference = reference;
                 _minHeight = minHeight;
                 _maxHeight = maxHeight;
             }
 
-            public AutoHeightCalculation(Button element, int minHeight = -1, int maxHeight = -1) : this(new WeakReference<Button>(element), minHeight, maxHeight)
+            public AutoHeightCalculation(Button element, int minHeight = 0, int maxHeight = int.MaxValue) : this(new WeakReference<Button>(element), minHeight, maxHeight)
             {
             }
 
@@ -81,25 +87,15 @@ namespace ConcreteUI.Controls
                     if (_calculated)
                         return _value;
 
-                    int value = DoCalc(_element) + UIConstants.ElementMargin;
+                    int value = MathHelper.Clamp(DoCalcCore(_element) + UIConstants.ElementMargin, _minHeight, _maxHeight);
                     _value = value; 
                     _calculated = true;
                     return value;
                 }
 
-                private int DoCalc(Button element)
-                {
-                    string text = element._text ?? string.Empty;
-                    DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(text, NullSafetyHelper.ThrowIfNull(element._fontName), TextAlignment.MiddleCenter, element._fontSize);
-                    if (layout is null)
-                        return MathHelper.Max(_minHeight, 0);
-                    int result = MathI.Ceiling(layout.GetMetrics().Height);
-                    layout.Dispose();
-                    int maxHeight = _maxHeight;
-                    if (maxHeight < 0)
-                        return result;
-                    return MathHelper.Min(result, maxHeight);
-                }
+                [Inline(InlineBehavior.Remove)]
+                private static int DoCalcCore(Button element)
+                    => MathI.Ceiling(FontHeightHelper.GetFontHeight(NullSafetyHelper.ThrowIfNull(element._fontName), element._fontSize));
             }
         }
     }

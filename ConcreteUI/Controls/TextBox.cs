@@ -83,7 +83,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TextBox WithAutoHeightCalculation(int minHeight = -1, int maxHeight = -1)
+        public TextBox WithAutoHeightCalculation(int minHeight = 0, int maxHeight = int.MaxValue)
         {
             HeightCalculation = new AutoHeightCalculation(this, minHeight, maxHeight);
             return this;

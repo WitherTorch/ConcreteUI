@@ -3,34 +3,31 @@
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
-using ConcreteUI.Utils;
-
-using InlineMethod;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    partial class ComboBox
+    partial class Label
     {
         public sealed class AutoHeightCalculation : AbstractCalculation
         {
-            private readonly WeakReference<ComboBox> _reference;
+            private readonly WeakReference<Label> _reference;
             private readonly int _minHeight;
             private readonly int _maxHeight;
 
-			public int MinHeight => _minHeight;
-			public int MaxHeight => _maxHeight;
+            public int MinHeight => _minHeight;
+            public int MaxHeight => _maxHeight; 
 
-			public AutoHeightCalculation(WeakReference<ComboBox> reference, int minHeight = 0, int maxHeight = int.MaxValue)
+            public AutoHeightCalculation(WeakReference<Label> reference, int minHeight = 0, int maxHeight = int.MaxValue)
             {
                 _reference = reference;
                 _minHeight = minHeight;
                 _maxHeight = maxHeight;
             }
 
-            public AutoHeightCalculation(ComboBox element, int minHeight = 0, int maxHeight = int.MaxValue) : this(new WeakReference<ComboBox>(element), minHeight, maxHeight)
+            public AutoHeightCalculation(Label element, int minHeight = 0, int maxHeight = int.MaxValue) : this(new WeakReference<Label>(element), minHeight, maxHeight)
             {
             }
 
@@ -42,7 +39,7 @@ namespace ConcreteUI.Controls
 
             private sealed class CalculationContext : ICalculationContext
             {
-                private readonly ComboBox _element;
+                private readonly Label _element;
                 private readonly int _minHeight;
                 private readonly int _maxHeight;
 
@@ -55,7 +52,7 @@ namespace ConcreteUI.Controls
 
                 public LayoutProperty DependedProperty => LayoutProperty.None;
 
-                private CalculationContext(ComboBox element, int minHeight, int maxHeight)
+                private CalculationContext(Label element, int minHeight, int maxHeight)
                 {
                     _element = element;
                     _minHeight = minHeight;
@@ -64,9 +61,9 @@ namespace ConcreteUI.Controls
                     _value = 0;
                 }
 
-                public static CalculationContext? TryCreate(WeakReference<ComboBox> reference, int minHeight, int maxHeight)
+                public static CalculationContext? TryCreate(WeakReference<Label> reference, int minHeight, int maxHeight)
                 {
-                    if (!reference.TryGetTarget(out ComboBox? element))
+                    if (!reference.TryGetTarget(out Label? element))
                         return null;
                     return new CalculationContext(element, minHeight, maxHeight);
                 }
@@ -86,16 +83,19 @@ namespace ConcreteUI.Controls
                 {
                     if (_calculated)
                         return _value;
-
-                    int value = MathHelper.Clamp(DoCalcCore(_element) + UIConstants.ElementMargin, _minHeight, _maxHeight);
-                    _value = value; 
+                    int value = MathHelper.Clamp(DoCalcCore(_element, dependedValue), _minHeight, _maxHeight);
+                    _value = value;
                     _calculated = true;
                     return value;
                 }
 
-                [Inline(InlineBehavior.Remove)]
-				private static int DoCalcCore(ComboBox element)
-					=> MathI.Ceiling(FontHeightHelper.GetFontHeight(NullSafetyHelper.ThrowIfNull(element._fontName), element._fontSize));
+                private static int DoCalcCore(Label element, int dependedValue)
+                {
+                    string text = element._text;
+                    using DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(text, NullSafetyHelper.ThrowIfNull(element._fontName), element._alignment, element._fontSize);
+                    layout.MaxWidth = dependedValue;
+                    return MathI.Ceiling(layout.GetMetrics().Height);
+                }
             }
         }
     }

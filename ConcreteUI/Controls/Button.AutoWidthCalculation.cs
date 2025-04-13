@@ -2,7 +2,7 @@
 
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Internals;
+using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -17,14 +17,17 @@ namespace ConcreteUI.Controls
             private readonly int _minWidth;
             private readonly int _maxWidth;
 
-            public AutoWidthCalculation(WeakReference<Button> reference, int minWidth = -1, int maxWidth = -1)
+			public int MinWidth => _minWidth;
+			public int MaxWidth => _maxWidth;
+
+			public AutoWidthCalculation(WeakReference<Button> reference, int minWidth = 0, int maxWidth = int.MaxValue)
             {
                 _reference = reference;
                 _minWidth = minWidth;
                 _maxWidth = maxWidth;
             }
 
-            public AutoWidthCalculation(Button element, int minWidth = -1, int maxWidth = -1) : this(new WeakReference<Button>(element), minWidth, maxWidth)
+            public AutoWidthCalculation(Button element, int minWidth = 0, int maxWidth = int.MaxValue) : this(new WeakReference<Button>(element), minWidth, maxWidth)
             {
             }
 
@@ -80,26 +83,16 @@ namespace ConcreteUI.Controls
                 {
                     if (_calculated)
                         return _value;
-                    int value = DoCalc(_element) + UIConstants.ElementMarginDouble * 2;
+                    int value = MathHelper.Clamp(DoCalcCore(_element) + UIConstants.ElementMarginDouble * 2, _minWidth, _maxWidth);
                     _value = value;
                     _calculated = true;
                     return value;
                 }
 
-                private int DoCalc(Button element)
+                private static int DoCalcCore(Button element)
                 {
-                    string? text = element._text;
-                    if (StringHelper.IsNullOrEmpty(text))
-                        return MathHelper.Max(_minWidth, 0);
-                    DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(text, NullSafetyHelper.ThrowIfNull(element._fontName), TextAlignment.MiddleCenter, element._fontSize);
-                    if (layout is null)
-                        return MathHelper.Max(_minWidth, 0);
-                    int result = MathI.Ceiling(layout.GetMetrics().Width);
-                    layout.Dispose();
-                    int maxWidth = _maxWidth;
-                    if (maxWidth < 0)
-                        return result;
-                    return MathHelper.Min(result, maxWidth);
+                    using DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(NullSafetyHelper.ThrowIfNull(element._fontName), element._fontSize);
+                    return GraphicsUtils.MeasureTextHeightAsInt(element._text, format);
                 }
             }
         }

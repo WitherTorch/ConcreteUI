@@ -17,14 +17,17 @@ namespace ConcreteUI.Controls
             private readonly int _minWidth;
             private readonly int _maxWidth;
 
-            public AutoWidthCalculation(WeakReference<Label> labelRef, int minWidth = -1, int maxWidth = -1)
+            public int MinWidth => _minWidth;
+            public int MaxWidth => _maxWidth;
+
+            public AutoWidthCalculation(WeakReference<Label> labelRef, int minWidth = 0, int maxWidth = int.MaxValue)
             {
                 _dependRef = labelRef;
                 _minWidth = minWidth;
                 _maxWidth = maxWidth;
             }
 
-            public AutoWidthCalculation(Label label, int minWidth = -1, int maxWidth = -1) : this(new WeakReference<Label>(label), minWidth, maxWidth)
+            public AutoWidthCalculation(Label label, int minWidth = 0, int maxWidth = int.MaxValue) : this(new WeakReference<Label>(label), minWidth, maxWidth)
             {
             }
 

@@ -1,8 +1,9 @@
 ﻿using System;
 
 using ConcreteUI.Controls.Calculation;
-using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Internals;
+using ConcreteUI.Utils;
+
+using InlineMethod;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -11,25 +12,25 @@ namespace ConcreteUI.Controls
 {
     partial class Label
     {
-        public sealed class AutoHeightCalculation : AbstractCalculation
+        public sealed class AutoHeightWithWidthCalculation : AbstractCalculation
         {
             private readonly WeakReference<Label> _reference;
             private readonly int _minHeight;
             private readonly int _maxHeight;
 
-            public AutoHeightCalculation(WeakReference<Label> reference, int minHeight = -1, int maxHeight = -1)
+            public AutoHeightWithWidthCalculation(WeakReference<Label> reference, int minHeight = 0, int maxHeight = int.MaxValue)
             {
                 _reference = reference;
                 _minHeight = minHeight;
                 _maxHeight = maxHeight;
             }
 
-            public AutoHeightCalculation(Label element, int minHeight = -1, int maxHeight = -1) : this(new WeakReference<Label>(element), minHeight, maxHeight)
+            public AutoHeightWithWidthCalculation(Label element, int minHeight = 0, int maxHeight = int.MaxValue) : this(new WeakReference<Label>(element), minHeight, maxHeight)
             {
             }
 
             public override AbstractCalculation Clone()
-                => new AutoHeightCalculation(_reference, _minHeight, _maxHeight);
+                => new AutoHeightWithWidthCalculation(_reference, _minHeight, _maxHeight);
 
             public override ICalculationContext? CreateContext()
                 => CalculationContext.TryCreate(_reference, _minHeight, _maxHeight);
@@ -80,26 +81,15 @@ namespace ConcreteUI.Controls
                 {
                     if (_calculated)
                         return _value;
-                    int value = DoCalc(_element, dependedValue);
+                    int value = MathHelper.Clamp(DoCalcCore(_element), _minHeight, _maxHeight);
                     _value = value;
                     _calculated = true;
                     return value;
                 }
 
-                private int DoCalc(Label element, int dependedValue)
-                {
-                    string text = element._text ?? string.Empty;
-                    DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(text, NullSafetyHelper.ThrowIfNull(element._fontName), element._alignment, element._fontSize);
-                    if (layout is null)
-                        return MathHelper.Max(_minHeight, 0);
-                    layout.MaxWidth = dependedValue;
-                    int result = MathI.Ceiling(layout.GetMetrics().Height);
-                    layout.Dispose();
-                    int maxHeight = _maxHeight;
-                    if (maxHeight < 0)
-                        return result;
-                    return MathHelper.Min(result, maxHeight);
-                }
+                [Inline(InlineBehavior.Remove)]
+                private static int DoCalcCore(Label element)
+                    => MathI.Ceiling(FontHeightHelper.GetFontHeight(NullSafetyHelper.ThrowIfNull(element._fontName), element._fontSize));
             }
         }
     }

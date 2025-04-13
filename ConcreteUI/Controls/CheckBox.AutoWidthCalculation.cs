@@ -17,14 +17,17 @@ namespace ConcreteUI.Controls
             private readonly int _minWidth;
             private readonly int _maxWidth;
 
-            public AutoWidthCalculation(WeakReference<CheckBox> reference, int minWidth = -1, int maxWidth = -1)
+            public int MinWidth => _minWidth;
+            public int MaxWidth => _maxWidth;
+
+            public AutoWidthCalculation(WeakReference<CheckBox> reference, int minWidth = 0, int maxWidth = int.MaxValue)
             {
                 _reference = reference;
                 _minWidth = minWidth;
                 _maxWidth = maxWidth;
             }
 
-            public AutoWidthCalculation(CheckBox element, int minWidth = -1, int maxWidth = -1) : this(new WeakReference<CheckBox>(element), minWidth, maxWidth)
+            public AutoWidthCalculation(CheckBox element, int minWidth = 0, int maxWidth = int.MaxValue) : this(new WeakReference<CheckBox>(element), minWidth, maxWidth)
             {
             }
 
