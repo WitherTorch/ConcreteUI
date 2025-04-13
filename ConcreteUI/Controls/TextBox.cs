@@ -224,7 +224,7 @@ namespace ConcreteUI.Controls
             {
                 DWriteTextFormat? format = watermarkLayout;
                 if (CheckFormatIsNotAvailable(format, flags))
-                    format = TextFormatHelper.CreateTextFormat(_alignment, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize, DWriteFontStyle.Oblique);
+                    format = TextFormatHelper.CreateTextFormat(_alignment, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
                 watermarkLayout = SharedResources.DWriteFactory.CreateTextLayout(_watermark ?? string.Empty, format);
                 format.Dispose();
             }
