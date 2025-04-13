@@ -3,9 +3,6 @@
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
-using ConcreteUI.Utils;
-
-using InlineMethod;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -14,7 +11,7 @@ namespace ConcreteUI.Controls
 {
     partial class Label
     {
-        public sealed class AutoHeightWithWidthCalculation : AbstractCalculation
+        private sealed class AutoHeightWithWidthCalculation : AbstractCalculation
         {
             private readonly WeakReference<Label> _reference;
             private readonly int _minHeight;

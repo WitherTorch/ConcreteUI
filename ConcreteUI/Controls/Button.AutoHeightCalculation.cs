@@ -14,7 +14,7 @@ namespace ConcreteUI.Controls
 {
     partial class Button
     {
-        public sealed class AutoHeightCalculation : AbstractCalculation
+        private sealed class AutoHeightCalculation : AbstractCalculation
         {
             private readonly WeakReference<Button> _reference;
             private readonly int _minHeight;

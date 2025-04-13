@@ -11,7 +11,7 @@ namespace ConcreteUI.Controls
 {
     partial class Button
     {
-        public sealed class AutoWidthCalculation : AbstractCalculation
+        private sealed class AutoWidthCalculation : AbstractCalculation
         {
             private readonly WeakReference<Button> _reference;
             private readonly int _minWidth;

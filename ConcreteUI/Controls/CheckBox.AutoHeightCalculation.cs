@@ -1,8 +1,6 @@
 ﻿using System;
 
 using ConcreteUI.Controls.Calculation;
-using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Internals;
 using ConcreteUI.Utils;
 
 using InlineMethod;
@@ -14,7 +12,7 @@ namespace ConcreteUI.Controls
 {
     partial class CheckBox
     {
-        public sealed class AutoHeightCalculation : AbstractCalculation
+        private sealed class AutoHeightCalculation : AbstractCalculation
         {
             private readonly WeakReference<CheckBox> _reference;
             private readonly int _minHeight;

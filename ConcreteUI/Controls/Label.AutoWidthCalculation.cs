@@ -11,7 +11,7 @@ namespace ConcreteUI.Controls
 {
     partial class Label
     {
-        public sealed class AutoWidthCalculation : AbstractCalculation
+        private sealed class AutoWidthCalculation : AbstractCalculation
         {
             private readonly WeakReference<Label> _dependRef;
             private readonly int _minWidth;

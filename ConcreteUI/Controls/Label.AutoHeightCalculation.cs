@@ -12,7 +12,7 @@ namespace ConcreteUI.Controls
 {
     partial class Label
     {
-        public sealed class AutoHeightCalculation : AbstractCalculation
+        private sealed class AutoHeightCalculation : AbstractCalculation
         {
             private readonly WeakReference<Label> _reference;
             private readonly int _minHeight;
