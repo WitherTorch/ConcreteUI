@@ -3,6 +3,7 @@
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
+using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -83,26 +84,16 @@ namespace ConcreteUI.Controls
                 {
                     if (_calculated)
                         return _value;
-                    int value = DoCalc(_element) + dependedValue + MathI.Ceiling(_element.Renderer.GetBaseLineWidth()) + 3;
+                    int value = MathHelper.Clamp(DoCalcCore(_element) + dependedValue + UIConstants.ElementMargin, _minWidth, _maxWidth);
                     _value = value;
                     _calculated = true;
                     return value;
                 }
 
-                private int DoCalc(CheckBox element)
+                private static int DoCalcCore(CheckBox element)
                 {
-                    string? text = element._text;
-                    if (StringHelper.IsNullOrEmpty(text))
-                        return MathHelper.Max(_minWidth, 0);
-                    DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(text, NullSafetyHelper.ThrowIfNull(element._fontName), TextAlignment.MiddleLeft, element._fontSize);
-                    if (layout is null)
-                        return MathHelper.Max(_minWidth, 0);
-                    int result = MathI.Ceiling(layout.GetMetrics().Width);
-                    layout.Dispose();
-                    int maxWidth = _maxWidth;
-                    if (maxWidth < 0)
-                        return result;
-                    return MathHelper.Min(result, maxWidth);
+                    using DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(NullSafetyHelper.ThrowIfNull(element._fontName), element._fontSize);
+                    return GraphicsUtils.MeasureTextWidthAsInt(element._text, format);
                 }
             }
         }

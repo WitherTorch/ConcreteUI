@@ -92,7 +92,7 @@ namespace ConcreteUI.Controls
                 private static int DoCalcCore(Button element)
                 {
                     using DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(NullSafetyHelper.ThrowIfNull(element._fontName), element._fontSize);
-                    return GraphicsUtils.MeasureTextHeightAsInt(element._text, format);
+                    return GraphicsUtils.MeasureTextWidthAsInt(element._text, format);
                 }
             }
         }
