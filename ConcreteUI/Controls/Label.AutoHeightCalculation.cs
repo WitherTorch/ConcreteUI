@@ -12,25 +12,28 @@ namespace ConcreteUI.Controls
 {
     partial class Label
     {
-        public sealed class AutoHeightWithWidthCalculation : AbstractCalculation
+        public sealed class AutoHeightCalculation : AbstractCalculation
         {
             private readonly WeakReference<Label> _reference;
             private readonly int _minHeight;
             private readonly int _maxHeight;
 
-            public AutoHeightWithWidthCalculation(WeakReference<Label> reference, int minHeight = 0, int maxHeight = int.MaxValue)
+            public int MinHeight => _minHeight;
+            public int MaxHeight => _maxHeight;
+
+            public AutoHeightCalculation(WeakReference<Label> reference, int minHeight = 0, int maxHeight = int.MaxValue)
             {
                 _reference = reference;
                 _minHeight = minHeight;
                 _maxHeight = maxHeight;
             }
 
-            public AutoHeightWithWidthCalculation(Label element, int minHeight = 0, int maxHeight = int.MaxValue) : this(new WeakReference<Label>(element), minHeight, maxHeight)
+            public AutoHeightCalculation(Label element, int minHeight = 0, int maxHeight = int.MaxValue) : this(new WeakReference<Label>(element), minHeight, maxHeight)
             {
             }
 
             public override AbstractCalculation Clone()
-                => new AutoHeightWithWidthCalculation(_reference, _minHeight, _maxHeight);
+                => new AutoHeightCalculation(_reference, _minHeight, _maxHeight);
 
             public override ICalculationContext? CreateContext()
                 => CalculationContext.TryCreate(_reference, _minHeight, _maxHeight);
@@ -46,9 +49,9 @@ namespace ConcreteUI.Controls
 
                 public bool DependPageRect => false;
 
-                public UIElement DependedElement => _element;
+                public UIElement? DependedElement => null;
 
-                public LayoutProperty DependedProperty => LayoutProperty.Width;
+                public LayoutProperty DependedProperty => LayoutProperty.None;
 
                 private CalculationContext(Label element, int minHeight, int maxHeight)
                 {

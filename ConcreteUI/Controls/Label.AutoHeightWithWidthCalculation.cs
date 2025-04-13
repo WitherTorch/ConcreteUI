@@ -3,6 +3,9 @@
 using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
+using ConcreteUI.Utils;
+
+using InlineMethod;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -11,28 +14,25 @@ namespace ConcreteUI.Controls
 {
     partial class Label
     {
-        public sealed class AutoHeightCalculation : AbstractCalculation
+        public sealed class AutoHeightWithWidthCalculation : AbstractCalculation
         {
             private readonly WeakReference<Label> _reference;
             private readonly int _minHeight;
             private readonly int _maxHeight;
 
-            public int MinHeight => _minHeight;
-            public int MaxHeight => _maxHeight; 
-
-            public AutoHeightCalculation(WeakReference<Label> reference, int minHeight = 0, int maxHeight = int.MaxValue)
+            public AutoHeightWithWidthCalculation(WeakReference<Label> reference, int minHeight = 0, int maxHeight = int.MaxValue)
             {
                 _reference = reference;
                 _minHeight = minHeight;
                 _maxHeight = maxHeight;
             }
 
-            public AutoHeightCalculation(Label element, int minHeight = 0, int maxHeight = int.MaxValue) : this(new WeakReference<Label>(element), minHeight, maxHeight)
+            public AutoHeightWithWidthCalculation(Label element, int minHeight = 0, int maxHeight = int.MaxValue) : this(new WeakReference<Label>(element), minHeight, maxHeight)
             {
             }
 
             public override AbstractCalculation Clone()
-                => new AutoHeightCalculation(_reference, _minHeight, _maxHeight);
+                => new AutoHeightWithWidthCalculation(_reference, _minHeight, _maxHeight);
 
             public override ICalculationContext? CreateContext()
                 => CalculationContext.TryCreate(_reference, _minHeight, _maxHeight);
@@ -48,9 +48,9 @@ namespace ConcreteUI.Controls
 
                 public bool DependPageRect => false;
 
-                public UIElement? DependedElement => null;
+                public UIElement DependedElement => _element;
 
-                public LayoutProperty DependedProperty => LayoutProperty.None;
+                public LayoutProperty DependedProperty => LayoutProperty.Width;
 
                 private CalculationContext(Label element, int minHeight, int maxHeight)
                 {
