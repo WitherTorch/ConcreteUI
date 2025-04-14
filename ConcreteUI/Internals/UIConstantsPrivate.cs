@@ -17,7 +17,7 @@ namespace ConcreteUI.Internals
         public const int WizardSubtitleMargin = UIConstants.ElementMarginHalf;
         public const int ScrollBarWidth = 14;
         public const int ScrollBarButtonWidth = ScrollBarWidth - 4;
-        public const int ScrollBarScrollButtonWidth = ScrollBarWidth - 6;
+        public const int ScrollBarScrollButtonWidth = ScrollBarWidth - UIConstants.ElementMargin;
         public const float TitleBarButtonSizeHeight = 26;
         public const float TitleBarButtonSizeWidth = 36;
         public const float TitleBarIconSizeHeight = 10;

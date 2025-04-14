@@ -219,7 +219,7 @@ namespace ConcreteUI.Controls
                     hasScrollBar = false;
                     break;
                 case ScrollBarType.Vertical:
-                    newContentBounds.Width -= UIConstantsPrivate.ScrollBarWidth;
+                    newContentBounds.Width -= UIConstantsPrivate.ScrollBarWidth + 1;
                     hasScrollBar = true;
                     break;
                 case ScrollBarType.AutoVertial:
@@ -280,8 +280,8 @@ namespace ConcreteUI.Controls
             int X2 = X + (UIConstantsPrivate.ScrollBarWidth - UIConstantsPrivate.ScrollBarScrollButtonWidth) / 2;
             _scrollBarUpButtonBounds = Rect.FromXYWH(X, scrollBarBounds.Y, UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth);
             _scrollBarDownButtonBounds = Rect.FromXYWH(X, scrollBarBounds.Bottom - UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth);
-            float scrollBarMaxHeight = _scrollBarDownButtonBounds.Top - _scrollBarUpButtonBounds.Bottom;
-            float surfaceHeight = _surfaceSize.Height;
+            int scrollBarMaxHeight = _scrollBarDownButtonBounds.Top - _scrollBarUpButtonBounds.Bottom;
+            int surfaceHeight = _surfaceSize.Height;
             if (surfaceHeight == 0) surfaceHeight = 1;
             double surfaceHeightPerBarHeight = scrollBarMaxHeight < surfaceHeight ? scrollBarMaxHeight * 1.0 / surfaceHeight : 1.0;
             int height = MathHelper.Max(MathI.Ceiling(bounds.Height * surfaceHeightPerBarHeight), 10);
