@@ -149,7 +149,9 @@ namespace ConcreteUI.Controls
                 context.PopAxisAlignedClip();
                 DisposeHelper.NullSwapOrDispose(ref _layout, layout);
             }
-            RectF buttonRect = new RectF(bounds.Right - bounds.Bottom + bounds.Top + 1, bounds.Top + 1, bounds.Right - 1, bounds.Bottom - 1);
+
+            RectF buttonRect = new RectF(0, bounds.Top + lineWidth, bounds.Right - lineWidth, bounds.Bottom - lineWidth);
+            buttonRect.Left = buttonRect.Right - buttonRect.Height;
             context.PushAxisAlignedClip(buttonRect, D2D1AntialiasMode.Aliased);
             RenderBackground(context, backBrush);
             D2D1Brush buttonBrush = _state switch

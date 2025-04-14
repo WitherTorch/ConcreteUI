@@ -158,6 +158,7 @@ namespace ConcreteUI.Controls
                 if (recalcScrollBar)
                     RecalculateScrollBarButton();
                 Rect scrollBarBounds = _scrollBarBounds;
+                context.AntialiasMode = D2D1AntialiasMode.PerPrimitive;
                 context.PushAxisAlignedClip((RectF)scrollBarBounds, D2D1AntialiasMode.Aliased);
                 RenderBackground(context, brushes[(int)Brush.ScrollBarBackBrush]);
                 context.FillRoundedRectangle(new D2D1RoundedRectangle() { RadiusX = 3, RadiusY = 3, Rect = (RectF)_scrollBarScrollButtonBounds },
@@ -166,6 +167,7 @@ namespace ConcreteUI.Controls
                 resources.DrawScrollBarUpButton(context, (RectangleF)_scrollBarUpButtonBounds, GetButtonStateBrush(_scrollUpButtonState));
                 resources.DrawScrollBarDownButton(context, (RectangleF)_scrollBarDownButtonBounds, GetButtonStateBrush(_scrollDownButtonState));
                 context.PopAxisAlignedClip();
+                context.AntialiasMode = D2D1AntialiasMode.Aliased;
                 if (!redrawAll)
                     collector.MarkAsDirty(scrollBarBounds);
             }
