@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -9,7 +10,7 @@ namespace ConcreteUI.Theme
 {
     partial class ThemedColorFactory
     {
-        public sealed class Builder
+        public sealed class Builder : ICloneable
         {
             private readonly UnwrappableList<byte> _variantKeyList;
             private readonly UnwrappableList<D2D1ColorF> _variantColorList;
@@ -35,6 +36,25 @@ namespace ConcreteUI.Theme
                 _base = baseColor;
                 _variantKeyList = new UnwrappableList<byte>(variantKeys);
                 _variantColorList = new UnwrappableList<D2D1ColorF>(variantColors);
+            }
+
+            private Builder(Builder original)
+            {
+                _base = original._base;
+                _variantKeyList = new UnwrappableList<byte>(original._variantKeyList);
+                _variantColorList = new UnwrappableList<D2D1ColorF>(original._variantColorList);
+            }
+
+            public D2D1ColorF this[WindowMaterial material]
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
+                {
+                    int index = _variantKeyList.IndexOf((byte)material);
+                    if (index < 0)
+                        return _base;
+                    return _variantColorList[index];
+                }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -64,12 +84,16 @@ namespace ConcreteUI.Theme
                 return this;
             }
 
+            public Builder Clone() => new Builder(this);
+
             public IThemedColorFactory Build()
             {
                 if (_variantKeyList.Count > 0)
                     return new ThemedColorFactoryImpl(_base, _variantKeyList.ToArray(), _variantColorList.ToArray());
                 return new SimpleThemedColorFactoryImpl(_base);
             }
+
+            object ICloneable.Clone() => Clone();
         }
     }
 }

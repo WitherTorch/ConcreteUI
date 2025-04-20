@@ -2,7 +2,7 @@
 {
     public enum WindowMaterial : byte
     {
-        Invalid = byte.MaxValue,
+        Default = byte.MaxValue,
         None = 0,
         Integrated,
         Gaussian,

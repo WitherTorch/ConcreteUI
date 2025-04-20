@@ -75,7 +75,7 @@ namespace ConcreteUI.Theme
                 return true;
             }
 
-            public void ApplyToOtherContext(IThemeContext other, bool overrides)
+            public void BuildContextForAnother(IThemeContext other, bool overrides)
             {
                 if (other is ThemeContextBase otherContextBase)
                 {

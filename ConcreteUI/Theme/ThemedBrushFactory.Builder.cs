@@ -8,10 +8,9 @@ using WitherTorch.Common.Collections;
 
 namespace ConcreteUI.Theme
 {
-
     partial class ThemedBrushFactory
     {
-        public sealed class Builder
+        public sealed class Builder : ICloneable
         {
             private readonly UnwrappableList<byte> _variantKeyList;
             private readonly UnwrappableList<Func<D2D1DeviceContext, D2D1Brush>> _variantBrushFactoryList;
@@ -35,6 +34,25 @@ namespace ConcreteUI.Theme
                 _variantBrushFactoryList = new UnwrappableList<Func<D2D1DeviceContext, D2D1Brush>>(variantBrushes);
             }
 
+            private Builder(Builder original)
+            {
+                _base = original._base;
+                _variantKeyList = new UnwrappableList<byte>(original._variantKeyList);
+                _variantBrushFactoryList = new UnwrappableList<Func<D2D1DeviceContext, D2D1Brush>>(original._variantBrushFactoryList);
+            }
+
+            public Func<D2D1DeviceContext, D2D1Brush> this[WindowMaterial material]
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
+                {
+                    int index = _variantKeyList.IndexOf((byte)material);
+                    if (index < 0)
+                        return _base;
+                    return _variantBrushFactoryList[index];
+                }
+            }
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Builder WithVariant(WindowMaterial material, in D2D1ColorF brushColor)
                 => WithVariant(material, CreateFactoryByColor(brushColor));
@@ -45,6 +63,8 @@ namespace ConcreteUI.Theme
 
             public Builder WithVariant(WindowMaterial material, Func<D2D1DeviceContext, D2D1Brush> brushFactory)
             {
+                if (material < WindowMaterial.None || material >= WindowMaterial._Last)
+                    throw new ArgumentOutOfRangeException(nameof(material));
                 UnwrappableList<byte> variantKeyList = _variantKeyList;
                 UnwrappableList<Func<D2D1DeviceContext, D2D1Brush>> variantBrushFactoryList = _variantBrushFactoryList;
                 byte key = (byte)material;
@@ -59,12 +79,16 @@ namespace ConcreteUI.Theme
                 return this;
             }
 
+            public Builder Clone() => new Builder(this);
+
             public IThemedBrushFactory Build()
             {
                 if (_variantKeyList.Count > 0)
                     return new ThemedBrushFactoryImpl(_base, _variantKeyList.ToArray(), _variantBrushFactoryList.ToArray());
                 return new SimpleThemedBrushFactoryImpl(_base);
             }
+
+            object ICloneable.Clone() => Clone();
         }
     }
 }
