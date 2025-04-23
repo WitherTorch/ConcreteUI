@@ -856,7 +856,10 @@ namespace ConcreteUI.Window
             {
                 for (int i = 0; i < count; i++)
                 {
-                    if (!array[i].TryGetTarget(out CoreWindow? window) || window is null)
+                    if (!array[i].TryGetTarget(out CoreWindow? window) || window is null || window.IsDisposed)
+                        continue;
+                    D2D1DeviceContext? deviceContext = window._deviceContext;
+                    if (deviceContext is null || deviceContext.IsDisposed)
                         continue;
                     window.ApplyTheme(provider.Clone());
                 }
@@ -875,10 +878,10 @@ namespace ConcreteUI.Window
                 return;
             for (int i = 0; i < count; i++)
             {
-                if (!array[i].TryGetTarget(out CoreWindow? window) || window is null)
+                if (!array[i].TryGetTarget(out CoreWindow? window) || window is null || window.IsDisposed)
                     continue;
                 D2D1DeviceContext? deviceContext = window._deviceContext;
-                if (deviceContext is null)
+                if (deviceContext is null || deviceContext.IsDisposed)
                     continue;
                 window.ApplyTheme(ThemeResourceProvider.CreateResourceProvider(window, themeContext));
             }
