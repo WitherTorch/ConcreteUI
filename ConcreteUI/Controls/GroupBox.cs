@@ -235,6 +235,8 @@ namespace ConcreteUI.Controls
             int textBoundRight = bounds.Right - UIConstants.ElementMarginDouble;
             int textBoundBottom = bounds.Bottom - UIConstants.ElementMarginDouble;
             Rect textRect = new Rect(textLoc.X, textLoc.Y, textBoundRight, textBoundBottom);
+            if (!textRect.IsValid)
+                return;
             context.PushAxisAlignedClip((RectF)textRect, D2D1AntialiasMode.Aliased);
             layout.MaxWidth = textRect.Width;
             if (justText)

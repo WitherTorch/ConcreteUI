@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.Reflection.Emit;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
@@ -10,10 +11,13 @@ namespace ConcreteUI.Theme
 {
     partial class DefaultThemeProvider
     {
-        private abstract class ThemeContextBase : IThemeContext
+        private abstract class ThemeContextBase : IExtendableThemeContext
         {
             private readonly Dictionary<string, IThemedColorFactory> _colorDict;
             private readonly Dictionary<string, IThemedBrushFactory> _brushDict;
+            private readonly HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedColorFactory>>>> _colorFactoryGenerators;
+            private readonly HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedBrushFactory>>>> _brushFactoryGenerators;
+
             private string _fontName;
 
             public abstract bool IsDarkTheme { get; }
@@ -27,6 +31,8 @@ namespace ConcreteUI.Theme
             protected ThemeContextBase()
             {
                 _fontName = NullSafetyHelper.ThrowIfNull(SystemFonts.CaptionFont).Name;
+                _colorFactoryGenerators = new HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedColorFactory>>>>();
+                _brushFactoryGenerators = new HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedBrushFactory>>>>();
 
                 Dictionary<string, IThemedColorFactory> colorDict = new Dictionary<string, IThemedColorFactory>();
                 Dictionary<string, IThemedBrushFactory> brushDict = new Dictionary<string, IThemedBrushFactory>();
@@ -45,6 +51,8 @@ namespace ConcreteUI.Theme
                 _fontName = original._fontName;
                 _colorDict = new Dictionary<string, IThemedColorFactory>(original._colorDict);
                 _brushDict = new Dictionary<string, IThemedBrushFactory>(original._brushDict);
+                _colorFactoryGenerators = new HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedColorFactory>>>>(original._colorFactoryGenerators);
+                _brushFactoryGenerators = new HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedBrushFactory>>>>(original._brushFactoryGenerators);
             }
 
             public abstract IThemeContext Clone();
@@ -93,12 +101,48 @@ namespace ConcreteUI.Theme
                     foreach (KeyValuePair<string, IThemedBrushFactory> item in CreateBrushFactories(closure.GetColorFactory, closure.GetBrushFactory))
                         other.TrySetBrushFactory(item.Key.ToLowerAscii(), item.Value, overrides);
                 }
+                if (other is IExtendableThemeContext extendableOther)
+                {
+                    foreach (var generator in _colorFactoryGenerators)
+                        extendableOther.RegisterColorFactoryGenerator(generator);
+                    foreach (var generator in _brushFactoryGenerators)
+                        extendableOther.RegisterBrushFactoryGenerator(generator);
+                }
+                else
+                {
+                    foreach (var generator in _colorFactoryGenerators)
+                    {
+                        foreach (KeyValuePair<string, IThemedColorFactory> item in generator.Invoke(other))
+                            other.TrySetColorFactory(item.Key, item.Value, overrides);
+                    }
+                    foreach (var generator in _brushFactoryGenerators)
+                    {
+                        foreach (KeyValuePair<string, IThemedBrushFactory> item in generator.Invoke(other))
+                            other.TrySetBrushFactory(item.Key, item.Value, overrides);
+                    }
+                }
             }
 
             protected abstract IEnumerable<KeyValuePair<string, IThemedColorFactory>> CreateColorFactories(Func<string, IThemedColorFactory> queryFunction);
 
             protected abstract IEnumerable<KeyValuePair<string, IThemedBrushFactory>> CreateBrushFactories(
                 Func<string, IThemedColorFactory> queryColorFunction, Func<string, IThemedBrushFactory> queryBrushFunction);
+
+            public void RegisterColorFactoryGenerator(Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedColorFactory>>> generator)
+            {
+                if (!_colorFactoryGenerators.Add(generator))
+                    return;
+                foreach (KeyValuePair<string, IThemedColorFactory> item in generator.Invoke(this))
+                    _colorDict[item.Key] = item.Value;
+            }
+
+            public void RegisterBrushFactoryGenerator(Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedBrushFactory>>> generator)
+            {
+                if (!_brushFactoryGenerators.Add(generator))
+                    return;
+                foreach (KeyValuePair<string, IThemedBrushFactory> item in generator.Invoke(this))
+                    _brushDict[item.Key] = item.Value;
+            }
 
             private readonly struct ApplyToOtherContextMethodClosureFast
             {

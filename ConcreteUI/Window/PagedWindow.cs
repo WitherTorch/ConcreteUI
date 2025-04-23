@@ -65,28 +65,23 @@ namespace ConcreteUI.Window
 
         protected override void RecalculatePageLayout(in Rect pageRect)
         {
-            _recalcState.Reset();
-            RecalculatePageLayout(pageRect, _pageIndex);
+            int pageIndex = _pageIndex;
+            _recalcState.InterlockedExchange(1UL << pageIndex);
+            RecalculatePageLayout(pageRect, pageIndex);
         }
 
         protected override void RenderPage(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in RectF pageRect, bool force)
         {
-            if (isPageChanged)
-            {
-                isPageChanged = false;
-                int pageIndex = _pageIndex;
-                if (!_recalcState[pageIndex])
-                    RecalculatePageLayout((Rect)pageRect, pageIndex);
+            if (RecalculateLayoutIfPageChanged(pageRect))
                 force = true;
-            }
             base.RenderPage(deviceContext, collector, pageRect, force);
         }
+
         #endregion
 
         #region Virtual Methods
         protected virtual void RecalculatePageLayout(in Rect pageRect, int pageIndex)
         {
-            _recalcState[pageIndex] = true;
             LayoutEngine layoutEngine = RentLayoutEngine();
             layoutEngine.RecalculateLayout(pageRect, GetRenderingElements(pageIndex));
             layoutEngine.RecalculateLayout(pageRect, GetOverlayElements());
@@ -99,6 +94,19 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Normal Methods
+        protected bool RecalculateLayoutIfPageChanged(in RectF pageRect)
+        {
+            if (isPageChanged)
+            {
+                isPageChanged = false;
+                int pageIndex = _pageIndex;
+                if (!_recalcState.InterlockedSet(pageIndex, true))
+                    RecalculatePageLayout((Rect)pageRect, pageIndex);
+                return true;
+            }
+            return false;
+        }
+
         protected void TriggerResize(int pageIndex)
         {
             if (pageIndex < 0)
@@ -106,7 +114,8 @@ namespace ConcreteUI.Window
                 TriggerResize();
                 return;
             }
-            _recalcState[pageIndex] = false;
+            if (_recalcState.InterlockedSet(pageIndex, false))
+                Refresh();
         }
         #endregion
     }

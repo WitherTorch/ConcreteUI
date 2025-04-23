@@ -36,8 +36,9 @@ namespace ConcreteUI.Theme
 
         static ThemeManager()
         {
-            _providers.Add(DefaultThemeProvider.Instance);
-            _currentTheme = DefaultThemeProvider.LightTheme;
+            DefaultThemeProvider provider = DefaultThemeProvider.Instance;
+            _providers.Add(provider);
+            _currentTheme = provider.LightTheme;
         }
 
         public static void RegisterThemeProvider(IThemeProvider provider)

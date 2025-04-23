@@ -81,10 +81,13 @@ namespace ConcreteUI.Controls
                 public bool MoveNext()
                 {
                     int index = _index;
-                    if (index > 1)
-                        return false;
-                    _index = index + 1;
-                    return true;
+                    if (index == -1)
+                    {
+                        _index = index + 1;
+                        return true;
+                    }
+                    index = 1;
+                    return false;
                 }
 
                 public void Reset() => _index = -1;

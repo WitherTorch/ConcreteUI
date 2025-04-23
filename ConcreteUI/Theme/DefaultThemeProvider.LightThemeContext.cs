@@ -10,13 +10,9 @@ namespace ConcreteUI.Theme
     {
         private sealed class LightThemeContext : ThemeContextBase
         {
-            private static readonly LightThemeContext _instance = new LightThemeContext();
-
-            public static LightThemeContext Instance => _instance;
-
             public LightThemeContext() { }
 
-            public LightThemeContext(LightThemeContext original) : base(original) { }
+            private LightThemeContext(LightThemeContext original) : base(original) { }
 
             public override bool IsDarkTheme => false;
 

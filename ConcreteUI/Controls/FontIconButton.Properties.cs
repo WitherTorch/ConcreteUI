@@ -8,10 +8,10 @@ namespace ConcreteUI.Controls
 {
     partial class FontIconButton
     {
-        public FontIcon Icon
+        public FontIcon? Icon
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => NullSafetyHelper.ThrowIfNull(_icon);
+            get => _icon;
             set
             {
                 if (ReferenceEquals(_icon, value))

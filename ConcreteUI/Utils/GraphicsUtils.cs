@@ -184,7 +184,7 @@ namespace ConcreteUI.Utils
         };
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static bool CheckBrushIsSolid(D2D1SolidColorBrush brush) => brush.Color.A < 1.0f;
+        public static bool CheckBrushIsSolid(D2D1SolidColorBrush brush) => brush.Color.A >= 1.0f;
 
         [Inline(InlineBehavior.Keep, export: true)]
         public static bool CheckBrushIsSolid(D2D1LinearGradientBrush brush)

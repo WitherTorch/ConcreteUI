@@ -4,22 +4,25 @@ using WitherTorch.Common.Extensions;
 
 namespace ConcreteUI.Theme
 {
-    internal sealed partial class DefaultThemeProvider : IThemeProvider
+    public sealed partial class DefaultThemeProvider : IThemeProvider
     {
         private static readonly DefaultThemeProvider _instance = new DefaultThemeProvider();
 
+        private readonly LightThemeContext _lightTheme = new LightThemeContext();
+        private readonly DarkThemeContext _darkTheme = new DarkThemeContext();
+
         public static DefaultThemeProvider Instance => _instance;
-        public static IThemeContext LightTheme => LightThemeContext.Instance;
-        public static IThemeContext DarkTheme => DarkThemeContext.Instance;
+        public IThemeContext LightTheme => _lightTheme;
+        public IThemeContext DarkTheme => _darkTheme;
 
         private DefaultThemeProvider() { }
 
-        public bool TryGetTheme(string themeId, [NotNullWhen(true)] out IThemeContext? theme)
+        bool IThemeProvider.TryGetTheme(string themeId, [NotNullWhen(true)] out IThemeContext? theme)
         {
             theme = themeId.ToLowerAscii() switch
             {
-                "#light" => LightThemeContext.Instance,
-                "#dark" => DarkThemeContext.Instance,
+                "#light" => _lightTheme,
+                "#dark" => _darkTheme,
                 _ => null
             };
             return theme is not null;

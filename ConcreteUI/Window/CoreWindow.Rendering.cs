@@ -62,11 +62,11 @@ namespace ConcreteUI.Window
         #region Static Fields
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
-            "app.title.back",
-            "app.title.fore.active",
-            "app.title.fore.deactive",
-            "app.title.closeButton.active",
-        };
+            "back",
+            "fore.active",
+            "fore.deactive",
+            "closeButton.active",
+        }.WithPrefix("app.title.").ToLowerAscii();
         private static readonly Pool<LayoutEngine> _layoutEnginePool = new Pool<LayoutEngine>(1);
         private static readonly LazyTiny<GraphicsDeviceProvider> graphicsDeviceProviderLazy
             = new LazyTiny<GraphicsDeviceProvider>(CreateGraphicsDeviceProvider, LazyThreadSafetyMode.ExecutionAndPublication);
