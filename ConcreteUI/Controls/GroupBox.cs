@@ -79,7 +79,7 @@ namespace ConcreteUI.Controls
             Interlocked.Exchange(ref _titleHeight, GraphicsUtils.MeasureTextHeightAsInt("Ty", format));
             DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
             DisposeHelper.SwapDisposeInterlocked(ref _textLayout);
-            Update(RenderObjectUpdateFlags.Format);
+            Update(RenderObjectUpdateFlags.Format, RedrawType.RedrawAllContent);
         }
 
         public void RenderChildBackground(UIElement child, D2D1DeviceContext context)
@@ -110,10 +110,10 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Remove)]
-        private void Update(RenderObjectUpdateFlags flags)
+        private void Update(RenderObjectUpdateFlags flags, RedrawType redrawType)
         {
             InterlockedHelper.Or(ref _rawUpdateFlags, (long)flags);
-            Update();
+            Update(redrawType);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -198,10 +198,12 @@ namespace ConcreteUI.Controls
                 case RedrawType.RedrawAllContent:
                     Rect bounds = Bounds;
                     float lineWidth = renderer.GetBaseLineWidth();
+                    RenderBackground(context, backBrush);
                     context.DrawRectangle(GraphicsUtils.AdjustRectangleAsBorderBounds(new Rect(bounds.X, bounds.Y + MathI.Floor(_titleHeight * 0.5f),
                         bounds.Right, bounds.Bottom), lineWidth), brushes[(int)Brush.BorderBrush], lineWidth);
                     RenderTitle(context, backBrush, textBrush, titleLayout, bounds);
                     RenderText(context, collector, backBrush, textBrush, textLayout, justText: false);
+                    collector.MarkAsDirty(bounds);
                     break;
             }
             DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
@@ -232,9 +234,9 @@ namespace ConcreteUI.Controls
             Point textLoc = GetTextLocation();
             int textBoundRight = bounds.Right - UIConstants.ElementMarginDouble;
             int textBoundBottom = bounds.Bottom - UIConstants.ElementMarginDouble;
-            Rect textRect = Rect.FromXYWH(textLoc.X, textLoc.Y, textBoundRight, textBoundBottom);
+            Rect textRect = new Rect(textLoc.X, textLoc.Y, textBoundRight, textBoundBottom);
             context.PushAxisAlignedClip((RectF)textRect, D2D1AntialiasMode.Aliased);
-            layout.MaxWidth = textBoundRight - textLoc.X;
+            layout.MaxWidth = textRect.Width;
             if (justText)
             {
                 RenderBackground(context, backBrush);

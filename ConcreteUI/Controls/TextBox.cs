@@ -75,7 +75,7 @@ namespace ConcreteUI.Controls
             _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
             _text = string.Empty;
             _watermark = string.Empty;
-            _fontSize = UIConstants.DefaultFontSize;
+            _fontSize = UIConstants.BoxFontSize;
             _passwordChar = '\0';
             ScrollBarType = ScrollBarType.AutoVertial;
             SurfaceSize = new Size(int.MaxValue, 0);

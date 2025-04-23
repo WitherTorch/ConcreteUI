@@ -68,7 +68,7 @@ namespace ConcreteUI.Controls
             _items = new ObservableList<string>();
             _items.Updated += Items_Updated;
             ScrollBarType = ScrollBarType.AutoVertial;
-            _fontSize = UIConstants.DefaultFontSize;
+            _fontSize = UIConstants.BoxFontSize;
             _selectedIndex = -1;
             _recalcFormat = Booleans.TrueLong;
         }

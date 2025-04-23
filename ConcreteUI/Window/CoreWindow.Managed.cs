@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using ConcreteUI.Controls;
 using ConcreteUI.Internals;
 using ConcreteUI.Theme;
+using ConcreteUI.Utils;
 
 using InlineMethod;
 
@@ -158,46 +159,10 @@ namespace ConcreteUI.Window
             InitUnmanagedPart();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Inline(InlineBehavior.Remove)]
         private static WindowMaterial GetRealWindowMaterial(WindowMaterial material)
-        {
-            if (material < WindowMaterial.None || material > WindowMaterial._Last)
-                material = WindowMaterial.Default;
-            return SystemConstants.VersionLevel switch
-            {
-                SystemVersionLevel.Windows_11_After => material switch
-                {
-                    WindowMaterial.Default => WindowMaterial.Acrylic,
-                    _ => material,
-                },
-                SystemVersionLevel.Windows_11_21H2 => material switch
-                {
-                    WindowMaterial.Default or WindowMaterial.MicaAlt or
-                    WindowMaterial.Mica => WindowMaterial.Acrylic,
-                    _ => material,
-                },
-                SystemVersionLevel.Windows_10_19H1 or SystemVersionLevel.Windows_10_Redstone_4 => material switch
-                {
-                    WindowMaterial.Default or WindowMaterial.MicaAlt or
-                    WindowMaterial.Mica => WindowMaterial.Gaussian,
-                    _ => material,
-                },
-                SystemVersionLevel.Windows_10 => material switch
-                {
-                    WindowMaterial.Default or WindowMaterial.MicaAlt or
-                    WindowMaterial.Mica or WindowMaterial.Acrylic => WindowMaterial.Gaussian,
-                    _ => material,
-                },
-                SystemVersionLevel.Windows_8 or SystemVersionLevel.Windows_7 => material switch
-                {
-                    WindowMaterial.Default or WindowMaterial.MicaAlt or
-                    WindowMaterial.Mica or WindowMaterial.Acrylic or
-                    WindowMaterial.Gaussian => WindowMaterial.Integrated,
-                    _ => material,
-                },
-                _ => WindowMaterial.None
-            };
-        }
+            => material < WindowMaterial.None || material >= WindowMaterial._Last || !SequenceHelper.Contains(SystemHelper.GetAvailableMaterials(), material) ?
+            SystemHelper.GetDefaultMaterial() : material;
 
         #region Overrides Methods
         protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)

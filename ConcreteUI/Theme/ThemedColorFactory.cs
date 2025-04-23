@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
+using ConcreteUI.Utils;
 
 namespace ConcreteUI.Theme
 {
@@ -19,6 +21,10 @@ namespace ConcreteUI.Theme
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IThemedColorFactory FromColor(in D2D1ColorF color) 
             => new SimpleThemedColorFactoryImpl(color);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IThemedColorFactory FromFunction(Func<WindowMaterial, D2D1ColorF> function)
+            => new FunctionThemedColorFactoryImpl(function);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Builder CreateBuilder(in D2D1ColorF baseColor) => new Builder(baseColor);

@@ -44,7 +44,7 @@ namespace ConcreteUI.Controls
 
         public Button(IRenderer renderer) : base(renderer)
         {
-            _fontSize = UIConstants.DefaultFontSize;
+            _fontSize = UIConstants.BoxFontSize;
             _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
             _text = string.Empty;
         }

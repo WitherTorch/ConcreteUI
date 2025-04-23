@@ -16,7 +16,7 @@ namespace ConcreteUI.Controls
                 if (ReferenceEquals(_title, value))
                     return;
                 _title = value ?? string.Empty;
-                Update(RenderObjectUpdateFlags.Title);
+                Update(RenderObjectUpdateFlags.Title, RedrawType.RedrawAllContent);
             }
         }
 
@@ -29,7 +29,7 @@ namespace ConcreteUI.Controls
                 if (ReferenceEquals(_text, value))
                     return;
                 _text = value ?? string.Empty;
-                Update(RenderObjectUpdateFlags.Text);
+                Update(RenderObjectUpdateFlags.Text, RedrawType.RedrawText);
             }
         }
 

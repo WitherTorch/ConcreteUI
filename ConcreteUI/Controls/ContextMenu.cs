@@ -12,6 +12,7 @@ using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
@@ -28,7 +29,7 @@ namespace ConcreteUI.Controls
             "fore",
             "fore.inactive",
             "fore.hovered"
-        };
+        }.WithPrefix("app.contextMenu.").ToLowerAscii();
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
       
@@ -49,7 +50,7 @@ namespace ConcreteUI.Controls
             int count = items.Length;
             float itemHeight = 0f, itemWidth = 50f;
             DWriteFactory factory = SharedResources.DWriteFactory;
-            DWriteTextFormat format = factory.CreateTextFormat(provider.FontName, UIConstants.DefaultFontSize);
+            DWriteTextFormat format = factory.CreateTextFormat(provider.FontName, UIConstants.BoxFontSize);
             format.ParagraphAlignment = DWriteParagraphAlignment.Center;
             DWriteTextLayout[] layouts = new DWriteTextLayout[count];
             float lineWidth = Renderer.GetBaseLineWidth();
@@ -115,7 +116,10 @@ namespace ConcreteUI.Controls
             for (int i = 0, count = layouts.Length; i < count; i++)
             {
                 if (i == hoveredIndex)
+                {
+                    itemBounds.Bottom = (itemBounds.Top = itemBounds.Bottom) + _itemHeight;
                     continue;
+                }
                 DWriteTextLayout layout = layouts[i];
                 context.PushAxisAlignedClip(itemBounds, D2D1AntialiasMode.Aliased);
                 PointF textLocation = itemBounds.Location;

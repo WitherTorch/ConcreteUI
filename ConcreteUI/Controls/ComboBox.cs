@@ -57,7 +57,7 @@ namespace ConcreteUI.Controls
             _selectedIndex = -1;
             _dropDownListVisibleCount = 10;
             _enabled = true;
-            _fontSize = UIConstants.DefaultFontSize;
+            _fontSize = UIConstants.BoxFontSize;
             _rawUpdateFlags = -1L;
         }
 

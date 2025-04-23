@@ -79,7 +79,6 @@ namespace ConcreteUI.Controls
             int count = items.Count;
             if (count <= 0)
                 return;
-            float lineWidth = Renderer.GetBaseLineWidth();
             DWriteTextLayout[] layouts = new DWriteTextLayout[count];
             for (int i = 0; i < count; i++)
             {
@@ -94,7 +93,7 @@ namespace ConcreteUI.Controls
             int itemHeight = MathI.Ceiling(maxHeight) + 2;
             _itemHeight = itemHeight;
 
-            int maxViewCount = parent.DropdownListVisibleCount;
+            int maxViewCount = MathHelper.Min(parent.DropdownListVisibleCount, count);
             int lastIndex = MathHelper.Clamp(parent.SelectedIndex, -1, count - 1);
             _selectedIndex = -1;
             _maxViewCount = maxViewCount;

@@ -173,7 +173,7 @@ namespace ConcreteUI.Controls
             SemaphoreSlim semaphore = _semaphore;
             semaphore.Wait();
             IThemeResourceProvider provider = ThemeResourceProvider.CreateResourceProvider(renderer.GetDeviceContext(), themeContext,
-                (renderer as CoreWindow)?.WindowMaterial ?? WindowMaterial.None);
+                (renderer as CoreWindow)?.WindowMaterial ?? WindowMaterial.Default);
             try
             {
                 ApplyThemeCore(provider);

@@ -139,7 +139,7 @@ namespace ConcreteUI.Controls
             {
                 DWriteTextFormat? format = layout;
                 if (CheckFormatIsNotAvailable(format, flags))
-                    format = TextFormatHelper.CreateTextFormat(TextAlignment.MiddleCenter, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
+                    format = TextFormatHelper.CreateTextFormat(TextAlignment.MiddleLeft, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
                 string text = _text;
                 if (StringHelper.IsNullOrEmpty(text))
                     layout = null;
