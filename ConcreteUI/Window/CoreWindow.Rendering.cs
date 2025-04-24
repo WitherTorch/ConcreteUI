@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Linq;
@@ -121,8 +122,9 @@ namespace ConcreteUI.Window
         private static GraphicsDeviceProvider CreateGraphicsDeviceProvider()
         {
             string targetGpuName = ConcreteSettings.TargetGpuName;
+            bool isDebug = ConcreteSettings.UseDebugMode;
             if (StringHelper.IsNullOrEmpty(targetGpuName))
-                return new GraphicsDeviceProvider(DXGIGpuPreference.Invalid);
+                return new GraphicsDeviceProvider(DXGIGpuPreference.Invalid, isDebug);
             if (targetGpuName.StartsWith('#'))
             {
                 DXGIGpuPreference preference = targetGpuName switch
@@ -132,9 +134,9 @@ namespace ConcreteUI.Window
                     ConcreteSettings.ReservedGpuName_HighPerformance => DXGIGpuPreference.HighPerformance,
                     _ => DXGIGpuPreference.Invalid,
                 };
-                return new GraphicsDeviceProvider(preference);
+                return new GraphicsDeviceProvider(preference, isDebug);
             }
-            return new GraphicsDeviceProvider(targetGpuName);
+            return new GraphicsDeviceProvider(targetGpuName, isDebug);
         }
 
         [Inline(InlineBehavior.Remove)]

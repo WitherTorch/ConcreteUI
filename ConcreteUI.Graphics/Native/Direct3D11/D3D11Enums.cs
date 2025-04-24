@@ -3,7 +3,7 @@
 namespace ConcreteUI.Graphics.Native.Direct3D11
 {
     [Flags]
-    public enum D3D11CreateDeviceFlag
+    public enum D3D11CreateDeviceFlags
     {
         Singlethreaded = 0x1,
         Debug = 0x2,

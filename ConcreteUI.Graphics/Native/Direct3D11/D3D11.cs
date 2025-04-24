@@ -13,7 +13,7 @@ namespace ConcreteUI.Graphics.Native.Direct3D11
         public const uint D3D11_SDK_VERSION = 7U;
 
         [DllImport(D3D11_DLL)]
-        public static extern int D3D11CreateDevice(void* pAdapter, D3DDriverType DriverType, IntPtr Software, D3D11CreateDeviceFlag Flags,
+        public static extern int D3D11CreateDevice(void* pAdapter, D3DDriverType DriverType, IntPtr Software, D3D11CreateDeviceFlags Flags,
             D3DFeatureLevel* pFeatureLevels, uint FeatureLevels, uint SDKVersion, void** ppDevice, D3DFeatureLevel* pFeatureLevel, void** ppImmediateContext);
     }
 }

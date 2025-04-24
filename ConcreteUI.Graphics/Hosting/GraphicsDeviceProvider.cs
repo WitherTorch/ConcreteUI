@@ -12,11 +12,8 @@ namespace ConcreteUI.Graphics.Hosting
 {
     public unsafe sealed class GraphicsDeviceProvider : IDisposable
     {
-#if DEBUG
-        private const D3D11CreateDeviceFlag CreateDeviceFlag = D3D11CreateDeviceFlag.BgraSupport | D3D11CreateDeviceFlag.Debug;
-#else
-        private const D3D11CreateDeviceFlag CreateDeviceFlag = D3D11CreateDeviceFlag.BgraSupport;
-#endif
+        private const D3D11CreateDeviceFlags CreateDeviceFlags = D3D11CreateDeviceFlags.BgraSupport;
+        private const D3D11CreateDeviceFlags CreateDeviceFlagsForDebug = CreateDeviceFlags | D3D11CreateDeviceFlags.Debug;
 
         public readonly DXGIAdapter DXGIAdapter;
         public readonly DXGIFactory DXGIFactory;
@@ -26,9 +23,11 @@ namespace ConcreteUI.Graphics.Hosting
 
         private bool _disposed;
 
-        private GraphicsDeviceProvider(D3D11Device? d3dDevice, DXGIAdapter? adapter, DXGIFactory? factory)
+        private GraphicsDeviceProvider(D3D11Device? d3dDevice, DXGIAdapter? adapter, DXGIFactory? factory, bool isDebug)
         {
-            d3dDevice ??= NullSafetyHelper.ThrowIfNull(D3D11Device.Create(null, D3DDriverType.Warp, IntPtr.Zero, CreateDeviceFlag)); // 當硬體 3D 裝置建立失敗時，改建立 WARP 3D 裝置
+            // 當硬體 3D 裝置建立失敗時，改建立 WARP 3D 裝置
+            d3dDevice ??= NullSafetyHelper.ThrowIfNull(D3D11Device.Create(null, D3DDriverType.Warp, IntPtr.Zero,
+                isDebug ? CreateDeviceFlagsForDebug : CreateDeviceFlags));
 
             D3DDevice = d3dDevice;
             DXGIDevice = NullSafetyHelper.ThrowIfNull(d3dDevice.QueryInterface<DXGIDevice>(DXGIDevice.IID_DXGIDevice));
@@ -36,7 +35,7 @@ namespace ConcreteUI.Graphics.Hosting
             D2DDevice = D2D1Device.Create(DXGIDevice, new D2D1CreationProperties()
             {
                 Options = D2D1DeviceContextOptions.None,
-                DebugLevel = D2D1DebugLevel.None,
+                DebugLevel = isDebug ? D2D1DebugLevel.Information : D2D1DebugLevel.None,
                 ThreadingMode = D2D1ThreadingMode.MultiThreaded
             });
 
@@ -92,15 +91,15 @@ namespace ConcreteUI.Graphics.Hosting
             return factory;
         }
 
-        public GraphicsDeviceProvider(DXGIGpuPreference preference) :
-            this(CreateDevice(preference, null, out DXGIAdapter? adapter, out DXGIFactory? factory), adapter, factory)
+        public GraphicsDeviceProvider(DXGIGpuPreference preference, bool isDebug) :
+            this(CreateDevice(preference, null, isDebug, out DXGIAdapter? adapter, out DXGIFactory? factory), adapter, factory, isDebug)
         { }
 
-        public GraphicsDeviceProvider(string targetGpuName) :
-            this(CreateDevice(DXGIGpuPreference.Unspecified, targetGpuName, out DXGIAdapter? adapter, out DXGIFactory? factory), adapter, factory)
+        public GraphicsDeviceProvider(string targetGpuName, bool isDebug) :
+            this(CreateDevice(DXGIGpuPreference.Unspecified, targetGpuName, isDebug, out DXGIAdapter? adapter, out DXGIFactory? factory), adapter, factory, isDebug)
         { }
 
-        private static D3D11Device? CreateDevice(DXGIGpuPreference preference, string? targetGpuName, out DXGIAdapter? adapter, out DXGIFactory? factory)
+        private static D3D11Device? CreateDevice(DXGIGpuPreference preference, string? targetGpuName, bool isDebug, out DXGIAdapter? adapter, out DXGIFactory? factory)
         {
             if (preference >= DXGIGpuPreference.Invalid)
             {
@@ -148,7 +147,7 @@ namespace ConcreteUI.Graphics.Hosting
 
             if (adapter is null)
                 return null;
-            return D3D11Device.Create(adapter, D3DDriverType.Unknown, IntPtr.Zero, CreateDeviceFlag, Constants.FeatureLevels);
+            return D3D11Device.Create(adapter, D3DDriverType.Unknown, IntPtr.Zero, isDebug ? CreateDeviceFlagsForDebug : CreateDeviceFlags, Constants.FeatureLevels);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

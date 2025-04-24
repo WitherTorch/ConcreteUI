@@ -25,12 +25,12 @@ namespace ConcreteUI.Graphics.Native.Direct3D11
         public D3D11Device(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static D3D11Device? Create(DXGIAdapter? adapter, D3DDriverType driverType, IntPtr software, D3D11CreateDeviceFlag createDeviceFlags)
+        public static D3D11Device? Create(DXGIAdapter? adapter, D3DDriverType driverType, IntPtr software, D3D11CreateDeviceFlags createDeviceFlags)
             => Create(adapter, driverType, software, createDeviceFlags, null, 0u);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static D3D11Device? Create(DXGIAdapter? adapter, D3DDriverType driverType, IntPtr software,
-            D3D11CreateDeviceFlag createDeviceFlags, params D3DFeatureLevel[] featureLevels)
+            D3D11CreateDeviceFlags createDeviceFlags, params D3DFeatureLevel[] featureLevels)
         {
             fixed (D3DFeatureLevel* ptr = featureLevels)
                 return Create(adapter, driverType, software, createDeviceFlags, ptr, unchecked((uint)featureLevels.Length));
@@ -38,7 +38,7 @@ namespace ConcreteUI.Graphics.Native.Direct3D11
 
         [LocalsInit(false)]
         public static D3D11Device? Create(DXGIAdapter? adapter, D3DDriverType driverType, IntPtr software,
-            D3D11CreateDeviceFlag createDeviceFlags, D3DFeatureLevel* featureLevels, uint featureLevelCount)
+            D3D11CreateDeviceFlags createDeviceFlags, D3DFeatureLevel* featureLevels, uint featureLevelCount)
         {
             void* device;
             int hr = D3D11.D3D11CreateDevice(adapter == null ? null : adapter.NativePointer, driverType, software,

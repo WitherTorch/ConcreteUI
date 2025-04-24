@@ -1,5 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 
+using WitherTorch.Common;
+
 namespace ConcreteUI
 {
     public static class ConcreteSettings
@@ -11,7 +13,7 @@ namespace ConcreteUI
 
         private static WindowMaterial _windowMaterial = WindowMaterial.Default;
 
-        public static bool UseDebugMode { get; set; } = false;
+        public static bool UseDebugMode { get; set; } = WTCommon.IsDebug;
         public static string TargetGpuName { get; set; } = ReservedGpuName_Default;
         public static WindowMaterial WindowMaterial
         {
