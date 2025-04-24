@@ -159,7 +159,7 @@ namespace ConcreteUI.Graphics.Hosting
             result = DXGIFactory1.Create(DXGIFactory1.IID_DXGIFactory1, throwException: false);
             if (result is not null)
                 return result;
-            return NullSafetyHelper.ThrowIfNull(DXGIFactory.Create(DXGIFactory.IID_DXGIFactory, throwException: false));
+            return NullSafetyHelper.ThrowIfNull(DXGIFactory.Create(DXGIFactory.IID_DXGIFactory, throwException: true));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
