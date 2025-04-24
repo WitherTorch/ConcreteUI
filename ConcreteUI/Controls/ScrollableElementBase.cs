@@ -49,7 +49,7 @@ namespace ConcreteUI.Controls
             _hasScrollBar = false;
             _disposed = false;
             _updateFlagsRaw = -1L;
-            _repeatingTimer = new Timer(RepeatingTimer_Tick, null, SystemParameters.KeyboardDelay, SystemParameters.KeyboardSpeed);
+            _repeatingTimer = new Timer(RepeatingTimer_Tick, null, Timeout.Infinite, Timeout.Infinite);
         }
 
         protected abstract D2D1Brush GetBackBrush();
