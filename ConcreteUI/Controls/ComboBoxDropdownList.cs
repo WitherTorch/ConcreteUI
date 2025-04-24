@@ -191,10 +191,11 @@ namespace ConcreteUI.Controls
             if (_isClicking)
             {
                 _isClicking = false;
-                if (_selectedIndex != -1)
+                int selectedIndex = _selectedIndex;
+                if (selectedIndex >= 0)
                 {
-                    ItemClicked?.Invoke(this, EventArgs.Empty); Close();
                     Close();
+                    ItemClicked?.Invoke(this, selectedIndex);
                 }
             }
             else if (!bounds.Contains(args.X, args.Y))

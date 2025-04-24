@@ -70,6 +70,11 @@ namespace ConcreteUI.Controls
             semaphore.Wait();
             ResetNeedRefreshFlag();
             Rect bounds = Bounds;
+            if (!bounds.IsValid)
+            {
+                semaphore.Release();
+                return;
+            }
             D2D1DeviceContext context = Renderer.GetDeviceContext();
             context.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
             bool result;

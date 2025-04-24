@@ -102,6 +102,8 @@ namespace ConcreteUI.Internals
 
         private static FontIcon? GetComboBoxDropDownIcon(float layoutHeight)
         {
+            if (layoutHeight < float.Epsilon)
+                return null;
             FontIconFactory factory = FontIconFactory.Instance;
             const uint ComboBoxDropdownCharater = 0xE011;
             SizeF size = new SizeF(layoutHeight, layoutHeight);

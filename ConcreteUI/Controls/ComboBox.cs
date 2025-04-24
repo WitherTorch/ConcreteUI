@@ -142,11 +142,14 @@ namespace ConcreteUI.Controls
                 float boxRight = bounds.Right - xOffset - bounds.Height;
                 float boxBottom = bounds.Bottom;
                 RectF layoutRect = new RectF(boxLeft, boxTop, boxRight, boxBottom);
-                layout.MaxHeight = layoutRect.Height;
-                layout.MaxWidth = layoutRect.Width;
-                context.PushAxisAlignedClip(layoutRect, D2D1AntialiasMode.Aliased);
-                context.DrawTextLayout(layoutRect.Location, layout, brushes[(int)Brush.TextBrush], D2D1DrawTextOptions.Clip);
-                context.PopAxisAlignedClip();
+                if (layoutRect.IsValid)
+                {
+                    layout.MaxHeight = layoutRect.Height;
+                    layout.MaxWidth = layoutRect.Width;
+                    context.PushAxisAlignedClip(layoutRect, D2D1AntialiasMode.Aliased);
+                    context.DrawTextLayout(layoutRect.Location, layout, brushes[(int)Brush.TextBrush], D2D1DrawTextOptions.Clip);
+                    context.PopAxisAlignedClip();
+                }
                 DisposeHelper.NullSwapOrDispose(ref _layout, layout);
             }
 
@@ -265,12 +268,12 @@ namespace ConcreteUI.Controls
             }
         }
 
-        private void ListControl_ItemClicked(object? sender, EventArgs e)
+        private void ListControl_ItemClicked(object? sender, int selectedIndex)
         {
             if (sender is not ComboBoxDropdownList dropdownList)
                 return;
-            SelectedIndex = dropdownList.SelectedIndex;
-            ItemClicked?.Invoke(this, e);
+            SelectedIndex = selectedIndex;
+            ItemClicked?.Invoke(this, EventArgs.Empty);
         }
 
         public void Dispose()

@@ -5,7 +5,7 @@ namespace ConcreteUI.Controls
 {
     partial class ComboBoxDropdownList
     {
-        public event EventHandler? ItemClicked;
+        public event EventHandler<int>? ItemClicked;
 
         public new ComboBox Parent
         {

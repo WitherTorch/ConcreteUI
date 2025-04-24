@@ -142,14 +142,17 @@ namespace ConcreteUI.Controls
                 if (enabled || drawWhenDisabled)
                 {
                     RenderBackground(context, enabled ? GetBackBrush() : GetBackDisabledBrush());
-                    context.PushAxisAlignedClip((RectF)contentBounds, D2D1AntialiasMode.Aliased);
-                    redrawContentResult = !RenderContent(redrawAll ? DirtyAreaCollector.Empty : collector);
-                    context.PopAxisAlignedClip();
+                    if (contentBounds.IsValid)
+                    {
+                        context.PushAxisAlignedClip((RectF)contentBounds, D2D1AntialiasMode.Aliased);
+                        redrawContentResult = !RenderContent(redrawAll ? DirtyAreaCollector.Empty : collector);
+                        context.PopAxisAlignedClip();
+                    }
                 }
                 else
                 {
                     RenderBackground(context, GetBackDisabledBrush());
-                    if (!redrawAll)
+                    if (!redrawAll && contentBounds.IsValid)
                         collector.MarkAsDirty(contentBounds);
                 }
             }

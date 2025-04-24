@@ -188,9 +188,12 @@ namespace ConcreteUI.Controls
                     {
                         float xOffset = lineWidth + 3;
                         PointF textLoc = new PointF(_checkBoxBounds.Right + xOffset, bounds.Top);
-                        layout.MaxWidth = bounds.Right - textLoc.X;
-                        layout.MaxHeight = bounds.Bottom - textLoc.Y;
-                        context.DrawTextLayout(textLoc, layout, textBrush);
+                        if (bounds.Right > textLoc.X && bounds.Bottom > textLoc.Y)
+                        {
+                            layout.MaxWidth = bounds.Right - textLoc.X;
+                            layout.MaxHeight = bounds.Bottom - textLoc.Y;
+                            context.DrawTextLayout(textLoc, layout, textBrush);
+                        }
                         DisposeHelper.NullSwapOrDispose(ref _layout, layout);
                     }
                     context.PopAxisAlignedClip();
