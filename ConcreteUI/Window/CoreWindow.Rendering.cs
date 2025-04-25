@@ -867,8 +867,11 @@ namespace ConcreteUI.Window
                 }
                 pool.Return(array);
             }
-            TriggerResize();
-            controller?.Unlock();
+            if (controller is not null)
+            {
+                controller.RequestResize();
+                controller.Unlock();
+            }
         }
         #endregion
 

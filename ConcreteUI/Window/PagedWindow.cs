@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
+using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
 using WitherTorch.Common.Structures;
@@ -75,6 +76,12 @@ namespace ConcreteUI.Window
             if (RecalculateLayoutIfPageChanged(pageRect))
                 force = true;
             base.RenderPage(deviceContext, collector, pageRect, force);
+        }
+
+        protected override void ApplyThemeCore(IThemeResourceProvider provider)
+        {
+            base.ApplyThemeCore(provider);
+            _recalcState.InterlockedExchange(ulong.MaxValue);
         }
 
         #endregion

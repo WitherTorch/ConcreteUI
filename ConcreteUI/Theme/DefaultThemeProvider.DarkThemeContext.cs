@@ -49,12 +49,11 @@ namespace ConcreteUI.Theme
                 // 視窗基礎筆刷
                 yield return new KeyValuePair<string, IThemedBrushFactory>(
                     key: "app.title.back",
-                    value: ThemedBrushFactory.CreateBuilder(Color.White)
+                    value: ThemedBrushFactory.CreateBuilder(Color.Black)
                         .WithVariant(WindowMaterial.MicaAlt, Color.Transparent)
                         .WithVariant(WindowMaterial.Mica, Color.Transparent)
                         .WithVariant(WindowMaterial.Acrylic, new D2D1ColorF(20, 20, 20, 32))
                         .WithVariant(WindowMaterial.Gaussian, new D2D1ColorF(20, 20, 20, 64))
-                        .WithVariant(WindowMaterial.Integrated, new D2D1ColorF(0, 0, 0, 0))
                         .Build());
                 yield return new KeyValuePair<string, IThemedBrushFactory>(
                     key: "app.menu.back",
