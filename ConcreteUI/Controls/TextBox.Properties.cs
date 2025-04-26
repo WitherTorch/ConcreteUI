@@ -108,6 +108,7 @@ namespace ConcreteUI.Controls
                     }
                 }
 
+                int oldTextLength = _text.Length;
                 _text = value;
 
                 int length = value.Length;
@@ -131,7 +132,8 @@ namespace ConcreteUI.Controls
                         SurfaceSize = Size.Empty;
                     }
                 }
-                CalculateCurrentViewportPoint();
+                if (oldTextLength > length)
+                    CalculateCurrentViewportPoint();
                 Update(RenderObjectUpdateFlags.Layout);
             }
         }
