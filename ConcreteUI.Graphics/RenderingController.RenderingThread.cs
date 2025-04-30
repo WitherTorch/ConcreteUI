@@ -51,7 +51,8 @@ namespace ConcreteUI.Graphics
                 _controller = controller;
                 _thread = new Thread(ThreadLoop)
                 {
-                    IsBackground = true
+                    IsBackground = true,
+                    Priority = ThreadPriority.AboveNormal
                 };
                 _trigger = new AutoResetEvent(true);
                 _exitTrigger = new ManualResetEvent(false);
