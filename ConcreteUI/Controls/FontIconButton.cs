@@ -72,7 +72,11 @@ namespace ConcreteUI.Controls
                 return;
             _disposed = true;
             if (disposing)
+            {
                 DisposeHelper.SwapDisposeInterlocked(ref _icon);
+                DisposeHelper.DisposeAll(_brushes);
+            }
+            SequenceHelper.Clear(_brushes);
         }
 
         ~FontIconButton()

@@ -29,7 +29,7 @@ using Keys = System.Windows.Forms.Keys;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class TextBox : ScrollableElementBase, IIMEControl, IGlobalMouseEvents, IKeyEvents, ICharacterEvents, ICursorPredicator, IDisposable
+    public sealed partial class TextBox : ScrollableElementBase, IIMEControl, IGlobalMouseEvents, IKeyEvents, ICharacterEvents, ICursorPredicator
     {
         private static readonly char[] LineSeparators = ['\r', '\n'];
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
@@ -1157,17 +1157,17 @@ namespace ConcreteUI.Controls
         #region Disposing
         protected override void DisposeCore(bool disposing)
         {
+            base.DisposeCore(disposing);
             if (disposing)
             {
                 if (_imeEnabled && _focused)
-                {
                     _ime.Detach(this);
-                }
+                _caretTimer.Dispose();
+                DisposeHelper.SwapDispose(ref _layout);
+                DisposeHelper.SwapDispose(ref _watermarkLayout);
+                DisposeHelper.DisposeAll(_brushes);
             }
-            _caretTimer.Dispose();
-            DisposeHelper.SwapDispose(ref _layout);
-            DisposeHelper.SwapDispose(ref _watermarkLayout);
-            base.DisposeCore(disposing);
+            SequenceHelper.Clear(_brushes);
         }
         #endregion
 

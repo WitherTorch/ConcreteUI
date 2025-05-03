@@ -159,17 +159,27 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        private void DisposeCore()
+        private void Dispose(bool disposing)
         {
             if (_disposed)
                 return;
             _disposed = true;
-            DisposeHelper.SwapDispose(ref _layout);
+            if (disposing)
+            {
+                DisposeHelper.SwapDispose(ref _layout);
+                DisposeHelper.DisposeAll(_brushes);
+            }
+            SequenceHelper.Clear(_brushes);
+        }
+
+        ~Button()
+        {
+            Dispose(disposing: false);
         }
 
         public void Dispose()
         {
-            DisposeCore();
+            Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
     }

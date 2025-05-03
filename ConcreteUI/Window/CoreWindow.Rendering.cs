@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Linq;
@@ -923,20 +922,20 @@ namespace ConcreteUI.Window
         #region Disposing
         protected override void Dispose(bool disposing)
         {
-            DisposeElements(_overlayElementList.Unwrap());
-            DisposeElements(_backgroundElementList.Unwrap());
-
-            (_resourceProvider as IDisposable)?.Dispose();
-            _controller?.Dispose();
-            _titleLayout?.Dispose();
-
-            SwapChainGraphicsHost? host = _host;
-            if (host is null)
-            {
-                base.Dispose(disposing);
-                return;
-            }
             base.Dispose(disposing);
+            if (disposing)
+            {
+                DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider);
+                DisposeHelper.SwapDisposeInterlocked(ref _controller);
+                DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
+                DisposeHelper.SwapDisposeInterlocked(ref _host);
+                DisposeHelper.DisposeAllWeak(_overlayElementList.Unwrap());
+                DisposeHelper.DisposeAllWeak(_backgroundElementList.Unwrap());
+                DisposeHelper.DisposeAll(_brushes);
+            }
+            _overlayElementList.Clear();
+            _backgroundElementList.Clear();
+            SequenceHelper.Clear(_brushes);
         }
 
         protected static void DisposeElements(UIElement[][] elements_array)

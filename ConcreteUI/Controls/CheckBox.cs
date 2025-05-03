@@ -50,7 +50,7 @@ namespace ConcreteUI.Controls
         private ButtonTriState _buttonState;
         private long _redrawTypeRaw, _rawUpdateFlags;
         private float _fontSize;
-        private bool _checkState;
+        private bool _checkState, _disposed;
 
         public CheckBox(IRenderer renderer) : base(renderer)
         {
@@ -328,11 +328,30 @@ namespace ConcreteUI.Controls
             return _checkBoxBounds;
         }
 
+        private void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+            _disposed = true;
+            if (disposing)
+            {
+                DisposeHelper.SwapDisposeInterlocked(ref _checkSign);
+                DisposeHelper.SwapDisposeInterlocked(ref _strokeStyle);
+                DisposeHelper.SwapDisposeInterlocked(ref _layout);
+                DisposeHelper.DisposeAll(_brushes);
+            }
+            SequenceHelper.Clear(_brushes);
+        }
+
+        ~CheckBox()
+        {
+            Dispose(disposing: false);
+        }
+
         public void Dispose()
         {
-            _checkSign?.Dispose();
-            _strokeStyle?.Dispose();
-            _layout?.Dispose();
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

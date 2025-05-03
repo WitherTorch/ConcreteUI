@@ -7,11 +7,12 @@ using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
 using WitherTorch.Common.Extensions;
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class ProgressBar : UIElement
+    public sealed partial class ProgressBar : UIElement, IDisposable
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -23,6 +24,7 @@ namespace ConcreteUI.Controls
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
 
         private float _value, _maximium;
+        private bool _disposed;
 
         public ProgressBar(IRenderer renderer) : base(renderer)
         {
@@ -30,7 +32,7 @@ namespace ConcreteUI.Controls
             _maximium = 100.0f;
         }
 
-        protected override void ApplyThemeCore(IThemeResourceProvider provider) 
+        protected override void ApplyThemeCore(IThemeResourceProvider provider)
             => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
 
         protected override bool RenderCore(DirtyAreaCollector collector)
@@ -43,6 +45,30 @@ namespace ConcreteUI.Controls
             context.FillRectangle(new RectF(bounds.Left, bounds.Top, MathF.Floor(bounds.Left + bounds.Width * Value / Maximium), bounds.Bottom), brushes[(int)Brush.ForeBrush]);
             context.DrawRectangle(GraphicsUtils.AdjustRectangleAsBorderBounds(bounds, lineWidth), brushes[(int)Brush.BorderBrush], lineWidth);
             return true;
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+            _disposed = true;
+
+            if (disposing)
+            {
+                DisposeHelper.DisposeAll(_brushes);
+            }
+            SequenceHelper.Clear(_brushes);
+        }
+
+        ~ProgressBar()
+        {
+            Dispose(disposing: false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -567,16 +567,24 @@ namespace ConcreteUI.Controls
             DisposeCore(disposing);
         }
 
-        protected virtual void DisposeCore(bool disposing) => _repeatingTimer?.Dispose();
+        protected virtual void DisposeCore(bool disposing)
+        {
+            if (disposing)
+            {
+                DisposeHelper.DisposeAll(_brushes);
+            }
+            _repeatingTimer.Dispose();
+            SequenceHelper.Clear(_brushes);
+        }
 
         ~ScrollableElementBase()
         {
-            Dispose(false);
+            Dispose(disposing: false);
         }
 
         public void Dispose()
         {
-            Dispose(true);
+            Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
     }

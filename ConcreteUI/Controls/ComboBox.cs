@@ -47,7 +47,7 @@ namespace ConcreteUI.Controls
         private long _rawUpdateFlags;
         private float _fontSize;
         private int _selectedIndex, _dropDownListVisibleCount;
-        private bool _hovered, _enabled;
+        private bool _hovered, _enabled, _disposed;
 
         public ComboBox(CoreWindow window) : base(window)
         {
@@ -276,9 +276,28 @@ namespace ConcreteUI.Controls
             ItemClicked?.Invoke(this, EventArgs.Empty);
         }
 
+        private void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+            _disposed = true;
+            if (disposing)
+            {
+                DisposeHelper.SwapDisposeInterlocked(ref _layout);
+                DisposeHelper.DisposeAll(_brushes);
+            }
+            SequenceHelper.Clear(_brushes);
+        }
+
+        ~ComboBox()
+        {
+            Dispose(disposing: false);
+        }
+
         public void Dispose()
         {
-            DisposeHelper.SwapDisposeInterlocked(ref _layout);
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

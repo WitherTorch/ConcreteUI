@@ -7,7 +7,6 @@ using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
@@ -32,7 +31,7 @@ namespace ConcreteUI.Controls
         }.WithPrefix("app.contextMenu.").ToLowerAscii();
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-      
+
         private DWriteTextLayout[]? _layouts;
         private float _itemHeight;
         private int _hoveredIndex;
@@ -211,14 +210,14 @@ namespace ConcreteUI.Controls
                 return;
             _disposed = true;
             DWriteTextLayout[]? layouts = InterlockedHelper.Read(ref _layouts);
-            if (layouts is null)
-                return;
             if (disposing)
             {
-                foreach (DWriteTextLayout layout in layouts)
-                    layout.Dispose();
+                DisposeHelper.DisposeAll(layouts);
+                DisposeHelper.DisposeAll(_brushes);
             }
-            Array.Clear(layouts, 0, layouts.Length);
+            if (layouts is not null)
+                SequenceHelper.Clear(layouts);
+            SequenceHelper.Clear(_brushes);
         }
 
         ~ContextMenu()

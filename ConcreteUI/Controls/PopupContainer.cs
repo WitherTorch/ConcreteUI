@@ -13,6 +13,7 @@ using InlineMethod;
 
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
+using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
@@ -82,6 +83,11 @@ namespace ConcreteUI.Controls
             if (_disposed)
                 return;
             _disposed = true;
+            if (disposing)
+            {
+                DisposeHelper.DisposeAll(_brushes);
+            }
+            SequenceHelper.Clear(_brushes);
             DisposeChildren(disposing);
         }
 

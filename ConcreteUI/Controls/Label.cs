@@ -34,7 +34,7 @@ namespace ConcreteUI.Controls
 		private TextAlignment _alignment;
 		private long _rawUpdateFlags;
 		private float _fontSize;
-		private bool _wordWrap;
+		private bool _wordWrap, _disposed;
 
 		public Label(IRenderer renderer) : base(renderer)
 		{
@@ -133,9 +133,28 @@ namespace ConcreteUI.Controls
 			return true;
 		}
 
+		private void Dispose(bool disposing)
+		{
+			if (_disposed)
+				return;
+			_disposed = true;
+			if (disposing)
+			{
+                DisposeHelper.SwapDisposeInterlocked(ref _layout);
+				DisposeHelper.DisposeAll(_brushes);
+            }
+			SequenceHelper.Clear(_brushes);
+        }
+
+		~Label()
+		{
+			Dispose(disposing: false);
+		}
+
 		public void Dispose()
 		{
-			DisposeHelper.SwapDisposeInterlocked(ref _layout);
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
 		}
 	}
 }

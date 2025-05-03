@@ -246,8 +246,13 @@ namespace ConcreteUI.Window
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
-            DisposeHelper.SwapDisposeInterlocked(ref _titleDescriptionLayout);
+            if (disposing)
+            {
+                DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
+                DisposeHelper.SwapDisposeInterlocked(ref _titleDescriptionLayout);
+                DisposeHelper.DisposeAll(_brushes);
+            }
+            SequenceHelper.Clear(_brushes);
         }
     }
 }

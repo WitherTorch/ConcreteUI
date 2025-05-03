@@ -416,10 +416,15 @@ namespace ConcreteUI.Controls
 
         protected override void DisposeCore(bool disposing)
         {
-            _format?.Dispose();
-            _strokeStyle?.Dispose();
-            _checkSign?.Dispose();
             base.DisposeCore(disposing);
+            if (disposing)
+            {
+                DisposeHelper.SwapDisposeInterlocked(ref _strokeStyle);
+                DisposeHelper.SwapDisposeInterlocked(ref _checkSign);
+                DisposeHelper.SwapDisposeInterlocked(ref _format);
+                DisposeHelper.DisposeAll(_brushes);
+            }
+            SequenceHelper.Clear(_brushes);
         }
 
         protected override void OnScrollBarUpButtonClicked() => Scrolling(-_itemHeight);

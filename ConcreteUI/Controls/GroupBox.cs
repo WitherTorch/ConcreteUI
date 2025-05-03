@@ -277,18 +277,7 @@ namespace ConcreteUI.Controls
         [Inline(InlineBehavior.Remove)]
         private int GetTextBaseYCore(int y) => y + InterlockedHelper.Read(ref _titleHeight);
 
-        ~GroupBox()
-        {
-            DisposeCore(disposing: false);
-        }
-
-        public void Dispose()
-        {
-            DisposeCore(disposing: true);
-            GC.SuppressFinalize(this);
-        }
-
-        private void DisposeCore(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (_disposed)
                 return;
@@ -297,7 +286,9 @@ namespace ConcreteUI.Controls
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
                 DisposeHelper.SwapDisposeInterlocked(ref _textLayout);
+                DisposeHelper.DisposeAll(_brushes);
             }
+            SequenceHelper.Clear(_brushes);
             DisposeChildren(disposing);
         }
 
@@ -321,6 +312,17 @@ namespace ConcreteUI.Controls
                 }
             }
             children.Clear();
+        }
+
+        ~GroupBox()
+        {
+            Dispose(disposing: false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

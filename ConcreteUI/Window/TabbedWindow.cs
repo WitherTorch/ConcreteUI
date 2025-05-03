@@ -7,7 +7,6 @@ using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Internals;
 using ConcreteUI.Native;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
@@ -323,8 +322,13 @@ namespace ConcreteUI.Window
 
         protected override void Dispose(bool disposing)
         {
-            DisposeHelper.SwapDisposeInterlocked(ref menuBarButtonLayouts);
             base.Dispose(disposing);
+            if (disposing)
+            {
+                DisposeHelper.SwapDisposeInterlocked(ref menuBarButtonLayouts);
+                DisposeHelper.DisposeAll(_brushes);
+            }
+            SequenceHelper.Clear(_brushes);
         }
     }
 }

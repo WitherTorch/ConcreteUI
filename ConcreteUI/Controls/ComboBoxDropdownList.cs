@@ -233,15 +233,13 @@ namespace ConcreteUI.Controls
 
         protected override void DisposeCore(bool disposing)
         {
-            if (!disposing)
-                return;
-            DWriteTextLayout[]? layouts = Interlocked.Exchange(ref _layouts, null);
-            if (layouts is null)
-                return;
-            for (int i = 0, count = layouts.Length; i < count; i++)
+            base.DisposeCore(disposing);
+            if (disposing)
             {
-                layouts[i].Dispose();
+                DisposeHelper.SwapDisposeInterlocked(ref _layouts);
+                DisposeHelper.DisposeAll(_brushes);
             }
+            SequenceHelper.Clear(_brushes);
         }
     }
 }
