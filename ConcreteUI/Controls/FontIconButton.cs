@@ -58,10 +58,7 @@ namespace ConcreteUI.Controls
                 default:
                     return true;
             }
-            Rectangle bounds = Bounds;
-            SizeF iconSize = icon.Size;
-            PointF renderLoc = new PointF(bounds.X + (bounds.Width - iconSize.Width) * 0.5f, bounds.Y + (bounds.Height - iconSize.Height) * 0.5f);
-            icon.Render(context, renderLoc, brush);
+            icon.Render(context, Bounds, brush);
             DisposeHelper.NullSwapOrDispose(ref _icon, icon);
             return true;
         }

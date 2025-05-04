@@ -115,58 +115,33 @@ namespace ConcreteUI.Internals
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderMaximizeButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) 
-            => _maxIcon?.Render(context, AdjustPointForTitleBar(point), brush);
+        public void RenderMaximizeButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+            => _maxIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderRestoreButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) 
-            => _restoreIcon?.Render(context, AdjustPointForTitleBar(point), brush);
+        public void RenderRestoreButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+            => _restoreIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderMinimizeButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) 
-            => _minIcon?.Render(context, AdjustPointForTitleBar(point), brush);
+        public void RenderMinimizeButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+            => _minIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderCloseButton(D2D1DeviceContext context, PointF point, D2D1Brush brush) 
-            => _closeIcon?.Render(context, AdjustPointForTitleBar(point), brush);
+        public void RenderCloseButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+            => _closeIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawDropDownButton(D2D1DeviceContext context, PointF point, float buttonHeight, D2D1Brush brush)
-            => _comboBoxDropdownIconDict.GetOrAdd(buttonHeight - UIConstants.ElementMargin, GetComboBoxDropDownIcon)?.Render(context, 
-                AdjustPointForDropDownButton(point), brush);
+        public void DrawDropDownButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+            => _comboBoxDropdownIconDict.GetOrAdd(rect.Height - UIConstants.ElementMargin,
+                GetComboBoxDropDownIcon)?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawScrollBarUpButton(D2D1DeviceContext context, in RectangleF targetRect, D2D1Brush brush) 
-            => _scrollUpIcon?.Render(context, GetTargetPointForScrollBar(targetRect), brush);
+        public void DrawScrollBarUpButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+            => _scrollUpIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawScrollBarDownButton(D2D1DeviceContext context, in RectangleF targetRect, D2D1Brush brush) 
-            => _scrollDownIcon?.Render(context, GetTargetPointForScrollBar(targetRect), brush);
-
-        [Inline(InlineBehavior.Remove)]
-        private static PointF AdjustPointForTitleBar(PointF original)
-        {
-            original.X += (UIConstantsPrivate.TitleBarButtonSizeWidth - UIConstantsPrivate.TitleBarIconSizeWidth) * 0.5f;
-            original.Y += (UIConstantsPrivate.TitleBarButtonSizeHeight - UIConstantsPrivate.TitleBarIconSizeHeight) * 0.5f;
-            return original;
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private static PointF AdjustPointForDropDownButton(PointF original)
-        {
-            original.X += UIConstants.ElementMarginHalf;
-            original.Y += UIConstants.ElementMarginHalf;
-            return original;
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private static PointF GetTargetPointForScrollBar(in RectangleF targetRect)
-        {
-            PointF result = targetRect.Location;
-            result.X += (targetRect.Width - UIConstantsPrivate.ScrollBarScrollButtonWidth) * 0.5f;
-            result.Y += (targetRect.Height - UIConstantsPrivate.ScrollBarScrollButtonWidth) * 0.5f;
-            return result;
-        }
+        public void DrawScrollBarDownButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+            => _scrollDownIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Dispose(bool disposing)

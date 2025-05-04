@@ -164,7 +164,7 @@ namespace ConcreteUI.Controls
                 ButtonTriState.Pressed => brushes[(int)Brush.DropdownButtonPressedBrush],
                 _ => throw new InvalidOperationException(),
             };
-            FontIconResources.Instance.DrawDropDownButton(context, buttonRect.Location, buttonRect.Height, buttonBrush);
+            FontIconResources.Instance.DrawDropDownButton(context, (RectangleF)buttonRect, buttonBrush);
             context.PopAxisAlignedClip();
             return true;
         }

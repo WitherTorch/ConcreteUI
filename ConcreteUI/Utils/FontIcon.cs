@@ -1,18 +1,21 @@
 ﻿using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Utils
 {
     public sealed class FontIcon : IDisposable
     {
         private readonly DWriteTextLayout _layout;
+        private readonly SemaphoreSlim _semaphore;
         private readonly SizeF _size;
 
         private bool _disposed;
@@ -26,6 +29,7 @@ namespace ConcreteUI.Utils
         public FontIcon(string fontName, uint unicodeValue, SizeF size)
         {
             _layout = CreateLayoutFitInSize(fontName, unicodeValue, size);
+            _semaphore = new SemaphoreSlim(1, 1);
             _size = size;
         }
 
@@ -39,6 +43,9 @@ namespace ConcreteUI.Utils
             do
             {
                 DWriteTextFormat format = factory.CreateTextFormat(fontName, fontSize);
+                format.ParagraphAlignment = DWriteParagraphAlignment.Center;
+                format.TextAlignment = DWriteTextAlignment.Center;
+                format.WordWrapping = DWriteWordWrapping.NoWrap;
                 DWriteTextLayout layout = factory.CreateTextLayout(text, format);
                 format.Dispose();
                 DWriteTextMetrics metrics = layout.GetMetrics();
@@ -66,7 +73,30 @@ namespace ConcreteUI.Utils
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Render(D2D1DeviceContext context, PointF location, D2D1Brush brush)
-            => context.DrawTextLayout(location, _layout, brush, D2D1DrawTextOptions.Clip);
+            => Render(context, new RectangleF(location, _size), brush);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Render(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+        {
+            SemaphoreSlim semaphore = _semaphore;
+            DWriteTextLayout layout = _layout;
+
+            semaphore.Wait();
+            try
+            {
+                layout.MaxHeight = rect.Height;
+                layout.MaxWidth = rect.Width;
+                context.DrawTextLayout(rect.Location, layout, brush, D2D1DrawTextOptions.NoSnap | D2D1DrawTextOptions.Clip);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        }
 
         private void Dispose(bool disposing)
         {

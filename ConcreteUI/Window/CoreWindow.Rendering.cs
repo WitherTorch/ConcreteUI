@@ -510,7 +510,7 @@ namespace ConcreteUI.Window
                     deviceContext.PushAxisAlignedClip(minRect, D2D1AntialiasMode.Aliased);
                     if (!force)
                         ClearDCForTitle(deviceContext);
-                    iconStorer.RenderMinimizeButton(deviceContext, minRect.Location,
+                    iconStorer.RenderMinimizeButton(deviceContext, (RectangleF)minRect,
                         TitleBarButtonStatus[0] ? brushes[(int)Brush.TitleForeBrush] : brushes[(int)Brush.TitleForeDeactiveBrush]);
                     deviceContext.PopAxisAlignedClip();
                     collector.MarkAsDirty(minRect);
@@ -525,9 +525,9 @@ namespace ConcreteUI.Window
                     }
                     D2D1Brush foreBrush = TitleBarButtonStatus[1] ? brushes[(int)Brush.TitleForeBrush] : brushes[(int)Brush.TitleForeDeactiveBrush];
                     if (_isMaximized)
-                        iconStorer.RenderRestoreButton(deviceContext, maxRect.Location, foreBrush);
+                        iconStorer.RenderRestoreButton(deviceContext, (RectangleF)maxRect, foreBrush);
                     else
-                        iconStorer.RenderMaximizeButton(deviceContext, maxRect.Location, foreBrush);
+                        iconStorer.RenderMaximizeButton(deviceContext, (RectangleF)maxRect, foreBrush);
                     collector.MarkAsDirty(maxRect);
                     deviceContext.PopAxisAlignedClip();
                 }
@@ -540,7 +540,7 @@ namespace ConcreteUI.Window
                 {
                     ClearDCForTitle(deviceContext);
                 }
-                iconStorer.RenderCloseButton(deviceContext, closeRect.Location,
+                iconStorer.RenderCloseButton(deviceContext, (RectangleF)closeRect,
                         TitleBarButtonStatus[2] ? brushes[(int)Brush.TitleCloseButtonActiveBrush] : brushes[(int)Brush.TitleForeDeactiveBrush]);
                 deviceContext.PopAxisAlignedClip();
                 collector.MarkAsDirty(closeRect);
