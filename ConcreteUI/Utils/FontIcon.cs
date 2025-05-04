@@ -8,7 +8,6 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Utils
 {

@@ -13,7 +13,7 @@ namespace ConcreteUI.Utils
         private readonly DWriteFont?[] _fluentSymbolFonts;
         private readonly DWriteFont? _segoeSymbolFont, _webDingsFont;
         private readonly string[] _fluentSymbolFontNames =
-            ["Segoe MDL2 Assets"];
+            ["Segoe Fluent Icons", "Segoe MDL2 Assets"];
         private readonly string _segoeSymbolFontName = "Segoe UI Symbol";
         private readonly string _webDingsFontName = "Webdings";
 
