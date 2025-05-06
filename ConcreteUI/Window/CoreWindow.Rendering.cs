@@ -221,7 +221,7 @@ namespace ConcreteUI.Window
         public RenderingController? GetRenderingController() => _controller;
 
         public virtual void RenderElementBackground(UIElement element, D2D1DeviceContext context)
-            => context.Clear(_clearDCColor);
+            => context.Clear(_windowBaseColor);
 
         void IRenderingControl.Render(RenderingFlags flags)
         {
