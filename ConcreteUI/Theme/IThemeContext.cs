@@ -16,7 +16,7 @@ namespace ConcreteUI.Theme
 
         bool TrySetColorFactory(string node, IThemedColorFactory colorFactory, bool overrides);
 
-        bool TrySetBrushFactory(string node, IThemedBrushFactory colorFactory, bool overrides);
+        bool TrySetBrushFactory(string node, IThemedBrushFactory brushFactory, bool overrides);
 
         void BuildContextForAnother(IThemeContext other, bool overrides);
     }
