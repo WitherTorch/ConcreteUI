@@ -4,9 +4,10 @@ using System.Security;
 using InlineMethod;
 
 using LocalsInit;
-using WitherTorch.Common.Windows;
+
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
+using WitherTorch.Common.Windows.ObjectModels;
 
 /// <summary>
 /// Represents a collection of strings indexed by locale name.

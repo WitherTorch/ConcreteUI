@@ -1,7 +1,7 @@
 ﻿using System.Security;
 
 using WitherTorch.Common.Native;
-using WitherTorch.Common.Windows;
+using WitherTorch.Common.Windows.ObjectModels;
 
 namespace ConcreteUI.Graphics.Native.Direct2D
 {

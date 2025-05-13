@@ -9,7 +9,8 @@ using LocalsInit;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
-using WitherTorch.Common.Windows;
+using WitherTorch.Common.Windows.ObjectModels;
+
 
 namespace ConcreteUI.Graphics.Native.DirectWrite
 {
