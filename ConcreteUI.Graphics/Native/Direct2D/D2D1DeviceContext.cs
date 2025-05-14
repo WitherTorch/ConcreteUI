@@ -6,6 +6,7 @@ using System.Security;
 
 using ConcreteUI.Graphics.Native.Direct2D.Effects;
 using ConcreteUI.Graphics.Native.DXGI;
+using ConcreteUI.Graphics.Native.WIC;
 
 using InlineMethod;
 
@@ -101,6 +102,28 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateBitmap);
             int hr = ((delegate* unmanaged[Stdcall]<void*, SizeU, void*, uint, D2D1BitmapProperties1*, void**, int>)functionPointer)(nativePointer,
                 size, sourceData, pitch, bitmapProperties, &nativePointer);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1Bitmap1(nativePointer, ReferenceType.Owned);
+        }
+
+        /// <inheritdoc cref="CreateBitmapFromWicBitmap1(WICBitmapSource, D2D1BitmapProperties1*)" />
+        [Inline(InlineBehavior.Keep, export: true)]
+        public D2D1Bitmap1 CreateBitmapFromWicBitmap1(WICBitmapSource wicBitmapSource) => CreateBitmapFromWicBitmap1(wicBitmapSource, null);
+
+        /// <inheritdoc cref="CreateBitmapFromWicBitmap1(WICBitmapSource, D2D1BitmapProperties1*)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public D2D1Bitmap1 CreateBitmapFromWicBitmap1(WICBitmapSource wicBitmapSource, in D2D1BitmapProperties1 bitmapProperties)
+            => CreateBitmapFromWicBitmap1(wicBitmapSource, UnsafeHelper.AsPointerIn(in bitmapProperties));
+
+        /// <summary>
+        /// Create a D2D bitmap by copying a WIC bitmap.
+        /// </summary>
+        public D2D1Bitmap1 CreateBitmapFromWicBitmap1(WICBitmapSource wicBitmapSource, D2D1BitmapProperties1* bitmapProperties)
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateBitmapFromWicBitmap);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void*, D2D1BitmapProperties1*, void**, int>)functionPointer)(nativePointer,
+                wicBitmapSource.NativePointer, bitmapProperties, &nativePointer);
             ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
             return new D2D1Bitmap1(nativePointer, ReferenceType.Owned);
         }
