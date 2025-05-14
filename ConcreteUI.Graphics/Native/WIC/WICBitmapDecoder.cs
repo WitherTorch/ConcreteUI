@@ -6,7 +6,6 @@ using LocalsInit;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
-using WitherTorch.Common.Windows.Extensions;
 using WitherTorch.Common.Windows.ObjectModels;
 using WitherTorch.Common.Windows.ObjectModels.Adapters;
 
