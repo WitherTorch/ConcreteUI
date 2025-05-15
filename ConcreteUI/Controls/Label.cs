@@ -8,6 +8,7 @@ using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
+using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
@@ -27,8 +28,9 @@ namespace ConcreteUI.Controls
 		}.WithPrefix("app.label.").ToLowerAscii();
 
 		private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[2];
 
-		private DWriteTextLayout? _layout;
+        private DWriteTextLayout? _layout;
 		private string? _fontName;
 		private string _text;
 		private TextAlignment _alignment;
@@ -43,25 +45,21 @@ namespace ConcreteUI.Controls
 			_rawUpdateFlags = -1L;
 			_layout = null;
 			_text = string.Empty;
-		}
+        }
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public Label WithAutoWidthCalculation(int minWidth = 0, int maxWidth = int.MaxValue)
-		{
-			WidthCalculation = new AutoWidthCalculation(this, minWidth, maxWidth);
-			if (HeightCalculation is AutoHeightCalculation calculation)
-				HeightCalculation = new AutoHeightWithWidthCalculation(this, calculation.MinHeight, calculation.MaxHeight);
-			return this;
-		}
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Label WithAutoHeight()
+        {
+            HeightVariable = _autoLayoutVariableCache[0] ?? new AutoHeightVariable(this);
+            return this;
+        }
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public Label WithAutoHeightCalculation(int minHeight = 0, int maxHeight = int.MaxValue)
-		{
-			HeightCalculation = WidthCalculation is AutoWidthCalculation ?
-				new AutoHeightWithWidthCalculation(this, minHeight, maxHeight) :
-				new AutoHeightCalculation(this, minHeight, maxHeight);
-			return this;
-		}
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Label WithAutoWidth()
+        {
+            WidthVariable = _autoLayoutVariableCache[1] ?? new AutoHeightVariable(this);
+            return this;
+        }
 
 		protected override void ApplyThemeCore(IThemeResourceProvider provider)
 		{

@@ -18,6 +18,7 @@ using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Graphics.Native.DXGI;
 using ConcreteUI.Internals;
 using ConcreteUI.Internals.NativeHelpers;
+using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 

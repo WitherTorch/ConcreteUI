@@ -16,8 +16,8 @@
         Right,
         Bottom,
         //Indirect Properties (Need some extra checking for calculating layout)
-        Height,
         Width,
+        Height,
         //Special Uses Only
         _Last,
         _DirectlyLast = Height,

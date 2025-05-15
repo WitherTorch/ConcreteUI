@@ -11,6 +11,7 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.Direct2D.Geometry;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
+using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
@@ -39,6 +40,7 @@ namespace ConcreteUI.Controls
         }.WithPrefix("app.checkBox.").ToLowerAscii();
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[2];
 
         private string? _fontName;
         private string _text;
@@ -62,16 +64,16 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CheckBox WithAutoWidthCalculation(int minHeight = 0, int maxHeight = int.MaxValue)
+        public CheckBox WithAutoHeight()
         {
-            WidthCalculation = new AutoWidthCalculation(this, minHeight, maxHeight);
+            HeightVariable = _autoLayoutVariableCache[0] ?? new AutoHeightVariable(this);
             return this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CheckBox WithAutoHeightCalculation(int minHeight = 0, int maxHeight = int.MaxValue)
+        public CheckBox WithAutoWidth()
         {
-            HeightCalculation = new AutoHeightCalculation(this, minHeight, maxHeight);
+            WidthVariable = _autoLayoutVariableCache[1] ?? new AutoWidthVariable(this);
             return this;
         }
 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Threading;
 
-using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
@@ -47,9 +46,9 @@ namespace ConcreteUI.Controls
             _window = window;
             _isFirstTimeClick = true;
             _selectedIndex = -1;
-            LeftCalculation = new ElementDependedCalculation(parent, LayoutProperty.Left, OffsetType.None);
-            RightCalculation = new ElementDependedCalculation(parent, LayoutProperty.Right, OffsetType.None);
-            TopCalculation = new ElementDependedCalculation(parent, LayoutProperty.Bottom, OffsetType.Subtract, MathI.Ceiling(Renderer.GetBaseLineWidth()));
+            LeftVariable = parent.LeftReference;
+            RightVariable = parent.RightReference;
+            TopVariable = parent.BottomReference - MathI.Ceiling(Renderer.GetBaseLineWidth());
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
@@ -99,7 +98,7 @@ namespace ConcreteUI.Controls
             _maxViewCount = maxViewCount;
             SurfaceSize = new Size(0, itemHeight * count);
             int elementHeight = maxViewCount * itemHeight;
-            HeightCalculation = new FixedCalculation(elementHeight);
+            HeightVariable = elementHeight;
             if (lastIndex > maxViewCount / 2)
                 ScrollingTo(lastIndex * itemHeight + itemHeight / 2 - elementHeight / 2);
         }

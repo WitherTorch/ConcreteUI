@@ -3,10 +3,11 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
+using ConcreteUI.Layout;
+using ConcreteUI.Layout.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
@@ -22,7 +23,8 @@ namespace ConcreteUI.Controls
 
         private static int _identifierGenerator = 0;
 
-        private readonly AbstractCalculation[] _calculations = new AbstractCalculation[(int)LayoutProperty._Last];
+        private readonly LayoutVariable?[] _layoutReferences = new LayoutVariable?[(int)LayoutProperty._Last];
+        private readonly LayoutVariable?[] _layoutVariables = new LayoutVariable?[(int)LayoutProperty._Last];
         private readonly SemaphoreSlim _semaphore;
         private readonly IRenderer _renderer;
         private readonly int _identifier;
@@ -39,11 +41,17 @@ namespace ConcreteUI.Controls
             _identifier = Interlocked.Increment(ref _identifierGenerator) - 1;
         }
 
-        public AbstractCalculation GetLayoutCalculation(LayoutProperty property)
-            => _calculations[(int)property];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LayoutVariable GetLayoutReference(LayoutProperty property)
+            => _layoutReferences[(int)property] ??= new UIElementLayoutVariable(this, property);
 
-        public void SetLayoutCalculation(LayoutProperty property, AbstractCalculation calculation)
-            => _calculations[(int)property] = calculation;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LayoutVariable? GetLayoutVariable(LayoutProperty property)
+            => _layoutVariables[(int)property];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetLayoutVariable(LayoutProperty property, LayoutVariable? variable)
+            => _layoutVariables[(int)property] = variable;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual void Update()

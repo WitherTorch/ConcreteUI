@@ -37,7 +37,7 @@
 		</AllowedReferenceRelatedFileExtensions>
 		<WeaverConfiguration>
 			<Weavers>
-				<InlineIL/>
+				<InlineIL />
 				<LocalsInit />
 				<InlineMethod />
 				<Absence />

@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
 using System.Runtime.CompilerServices;
 
-using ConcreteUI.Controls.Calculation;
+using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 
 using InlineMethod;
@@ -102,12 +102,18 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public AbstractCalculation LeftCalculation
+        public LayoutVariable LeftReference
         {
             [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutCalculation(LayoutProperty.Left);
+            get => GetLayoutReference(LayoutProperty.Left);
+        }
+
+        public LayoutVariable? LeftVariable
+        {
             [Inline(InlineBehavior.Keep, export: true)]
-            set => SetLayoutCalculation(LayoutProperty.Left, value);
+            get => GetLayoutVariable(LayoutProperty.Left);
+            [Inline(InlineBehavior.Keep, export: true)]
+            set => SetLayoutVariable(LayoutProperty.Left, value);
         }
 
         public int Y
@@ -134,12 +140,18 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public AbstractCalculation TopCalculation
+        public LayoutVariable TopReference
         {
             [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutCalculation(LayoutProperty.Top);
+            get => GetLayoutReference(LayoutProperty.Top);
+        }
+
+        public LayoutVariable? TopVariable
+        {
             [Inline(InlineBehavior.Keep, export: true)]
-            set => SetLayoutCalculation(LayoutProperty.Top, value);
+            get => GetLayoutVariable(LayoutProperty.Top);
+            [Inline(InlineBehavior.Keep, export: true)]
+            set => SetLayoutVariable(LayoutProperty.Top, value);
         }
 
         public int Right
@@ -155,12 +167,18 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public AbstractCalculation RightCalculation
+        public LayoutVariable RightReference
         {
             [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutCalculation(LayoutProperty.Right);
+            get => GetLayoutReference(LayoutProperty.Right);
+        }
+
+        public LayoutVariable? RightVariable
+        {
             [Inline(InlineBehavior.Keep, export: true)]
-            set => SetLayoutCalculation(LayoutProperty.Right, value);
+            get => GetLayoutVariable(LayoutProperty.Right);
+            [Inline(InlineBehavior.Keep, export: true)]
+            set => SetLayoutVariable(LayoutProperty.Right, value);
         }
 
         public int Bottom
@@ -176,12 +194,18 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public AbstractCalculation BottomCalculation
+        public LayoutVariable BottomReference
         {
             [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutCalculation(LayoutProperty.Bottom);
+            get => GetLayoutReference(LayoutProperty.Bottom);
+        }
+
+        public LayoutVariable? BottomVariable
+        {
             [Inline(InlineBehavior.Keep, export: true)]
-            set => SetLayoutCalculation(LayoutProperty.Bottom, value);
+            get => GetLayoutVariable(LayoutProperty.Bottom);
+            [Inline(InlineBehavior.Keep, export: true)]
+            set => SetLayoutVariable(LayoutProperty.Bottom, value);
         }
 
         public int Height
@@ -196,12 +220,18 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public AbstractCalculation HeightCalculation
+        public LayoutVariable HeightReference
         {
             [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutCalculation(LayoutProperty.Height);
+            get => GetLayoutReference(LayoutProperty.Height);
+        }
+
+        public LayoutVariable? HeightVariable
+        {
             [Inline(InlineBehavior.Keep, export: true)]
-            set => SetLayoutCalculation(LayoutProperty.Height, value);
+            get => GetLayoutVariable(LayoutProperty.Height);
+            [Inline(InlineBehavior.Keep, export: true)]
+            set => SetLayoutVariable(LayoutProperty.Height, value);
         }
 
         public int Width
@@ -216,12 +246,18 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public AbstractCalculation WidthCalculation
+        public LayoutVariable WidthReference
         {
             [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutCalculation(LayoutProperty.Width);
+            get => GetLayoutReference(LayoutProperty.Width);
+        }
+
+        public LayoutVariable? WidthVariable
+        {
             [Inline(InlineBehavior.Keep, export: true)]
-            set => SetLayoutCalculation(LayoutProperty.Width, value);
+            get => GetLayoutVariable(LayoutProperty.Width);
+            [Inline(InlineBehavior.Keep, export: true)]
+            set => SetLayoutVariable(LayoutProperty.Width, value);
         }
 
         public IThemeContext? CurrentTheme

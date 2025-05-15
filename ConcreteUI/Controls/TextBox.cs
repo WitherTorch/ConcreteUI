@@ -11,6 +11,7 @@ using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Input;
 using ConcreteUI.Internals;
 using ConcreteUI.Internals.NativeHelpers;
+using ConcreteUI.Layout;
 using ConcreteUI.Native;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
@@ -44,7 +45,8 @@ namespace ConcreteUI.Controls
             "selection.fore"
         }.WithPrefix("app.textBox.").ToLowerAscii();
 
-        private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last]; 
+        private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[2];
         private readonly CoreWindow _window;
         private readonly InputMethod _ime;
         private readonly Timer _caretTimer;
@@ -83,9 +85,9 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TextBox WithAutoHeightCalculation(int minHeight = 0, int maxHeight = int.MaxValue)
+        public TextBox WithAutoHeight()
         {
-            HeightCalculation = new AutoHeightCalculation(this, minHeight, maxHeight);
+            HeightVariable = new AutoHeightVariable(this);
             return this;
         }
 

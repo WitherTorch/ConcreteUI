@@ -9,6 +9,7 @@ using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
+using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
@@ -37,6 +38,7 @@ namespace ConcreteUI.Controls
         }.WithPrefix("app.comboBox.").ToLowerAscii();
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[1];
         private readonly ObservableList<string> _items;
         private readonly CoreWindow _window;
 
@@ -62,9 +64,9 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ComboBox WithAutoHeightCalculation()
+        public ComboBox WithAutoHeight()
         {
-            HeightCalculation = new AutoHeightCalculation(this);
+            HeightVariable = _autoLayoutVariableCache[0] ?? new AutoHeightVariable(this);
             return this;
         }
 

@@ -10,6 +10,8 @@ using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
+using ConcreteUI.Layout;
+using ConcreteUI.Layout.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
@@ -18,6 +20,7 @@ using InlineMethod;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Threading;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
@@ -32,9 +35,10 @@ namespace ConcreteUI.Controls
         }.WithPrefix("app.groupBox.").ToLowerAscii();
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-
+        private readonly LazyTiny<LayoutVariable>[] _contentLayoutReferences;
         private readonly ObservableList<UIElement> _children;
 
+        private LazyTiny<LayoutVariable> _textTopVariableLazy;
         private DWriteTextLayout? _titleLayout, _textLayout;
         private string? _fontName;
         private string _title, _text;
@@ -46,12 +50,25 @@ namespace ConcreteUI.Controls
         {
             _children = new ObservableList<UIElement>(new UnwrappableList<UIElement>(capacity: 0));
             _children.BeforeAdd += Children_BeforeAdded;
-
             _title = string.Empty;
             _text = string.Empty;
             _redrawTypeRaw = (long)RedrawType.RedrawAllContent;
             _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
+
+            LazyTiny<LayoutVariable>[] contentLayoutVariables = new LazyTiny<LayoutVariable>[(int)LayoutProperty._Last];
+            contentLayoutVariables[(int)LayoutProperty.Left] = new LazyTiny<LayoutVariable>(() => new ContentLeftVariable(this), LazyThreadSafetyMode.PublicationOnly);
+            contentLayoutVariables[(int)LayoutProperty.Top] = new LazyTiny<LayoutVariable>(() => new ContentTopVariable(this), LazyThreadSafetyMode.PublicationOnly);
+            contentLayoutVariables[(int)LayoutProperty.Right] = new LazyTiny<LayoutVariable>(() => new ContentRightVariable(this), LazyThreadSafetyMode.PublicationOnly);
+            contentLayoutVariables[(int)LayoutProperty.Bottom] = new LazyTiny<LayoutVariable>(() => new ContentBottomVariable(this), LazyThreadSafetyMode.PublicationOnly);
+            contentLayoutVariables[(int)LayoutProperty.Width] = new LazyTiny<LayoutVariable>(() => new ContentWidthVariable(this), LazyThreadSafetyMode.PublicationOnly);
+            contentLayoutVariables[(int)LayoutProperty.Height] = new LazyTiny<LayoutVariable>(() => new ContentHeightVariable(this), LazyThreadSafetyMode.PublicationOnly);
+            _contentLayoutReferences = contentLayoutVariables;
+            _textTopVariableLazy = new LazyTiny<LayoutVariable>(() => new TextTopVariable(this), LazyThreadSafetyMode.PublicationOnly);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LayoutVariable GetContentLayoutReference(LayoutProperty property)
+            => _contentLayoutReferences[(int)property].Value;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddChild(UIElement element) => _children.Add(element);
@@ -231,7 +248,7 @@ namespace ConcreteUI.Controls
             if (layout is null)
                 return;
             Rect bounds = Bounds;
-            Point textLoc = GetTextLocation();
+            Point textLoc = TextLocation;
             int textBoundRight = bounds.Right - UIConstants.ElementMarginDouble;
             int textBoundBottom = bounds.Bottom - UIConstants.ElementMarginDouble;
             Rect textRect = new Rect(textLoc.X, textLoc.Y, textBoundRight, textBoundBottom);
@@ -248,34 +265,20 @@ namespace ConcreteUI.Controls
             context.PopAxisAlignedClip();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int GetContentBaseX() => GetContentBaseXCore(Location.X);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int GetContentBaseY() => GetContentBaseYCore(Location.Y);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point GetContentLocation()
-        {
-            Point location = Location;
-            return new Point(GetContentBaseXCore(location.X), GetContentBaseYCore(location.Y));
-        }
+        [Inline(InlineBehavior.Remove)]
+        private static int GetContentLeftCore(int x) => x + UIConstants.ElementMarginDouble;
 
         [Inline(InlineBehavior.Remove)]
-        private Point GetTextLocation()
-        {
-            Point location = Location;
-            return new Point(GetContentBaseXCore(location.X), GetTextBaseYCore(location.Y));
-        }
+        private int GetContentTopCore(int y) => GetTextTopCore(y) + UIConstants.ElementMargin;
 
         [Inline(InlineBehavior.Remove)]
-        private static int GetContentBaseXCore(int x) => x + UIConstants.ElementMarginDouble;
+        private static int GetContentRightCore(int right) => right - UIConstants.ElementMarginDouble;
 
         [Inline(InlineBehavior.Remove)]
-        private int GetContentBaseYCore(int y) => GetTextBaseYCore(y) + UIConstants.ElementMargin;
+        private static int GetContentBottomCore(int bottom) => bottom - UIConstants.ElementMarginDouble;
 
         [Inline(InlineBehavior.Remove)]
-        private int GetTextBaseYCore(int y) => y + InterlockedHelper.Read(ref _titleHeight);
+        private int GetTextTopCore(int y) => y + InterlockedHelper.Read(ref _titleHeight);
 
         private void Dispose(bool disposing)
         {
