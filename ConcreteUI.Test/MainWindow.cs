@@ -5,8 +5,8 @@ using System.IO;
 using System.Reflection;
 
 using ConcreteUI.Controls;
-using ConcreteUI.Controls.Calculation;
 using ConcreteUI.Input;
+using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Window;
 
@@ -68,18 +68,18 @@ namespace ConcreteUI.Test
             Button button = new Button(this)
             {
                 Text = "請點我!",
-                LeftCalculation = new PageDependedCalculation(LayoutProperty.Left),
-                TopCalculation = new PageDependedCalculation(LayoutProperty.Top)
-            }.WithAutoWidthCalculation().WithAutoHeightCalculation();
+                LeftVariable = LayoutVariable.PageReference(LayoutProperty.Left) + UIConstants.ElementMargin,
+                TopVariable = LayoutVariable.PageReference(LayoutProperty.Top) + UIConstants.ElementMargin,
+            }.WithAutoWidth().WithAutoHeight();
             button.Click += Button_Click;
             elementList.Add(button);
 
             TextBox textBox = new TextBox(this, _ime)
             {
-                LeftCalculation = new ElementDependedCalculation(button, LayoutProperty.Right, OffsetType.Outside),
-                TopCalculation = new PageDependedCalculation(LayoutProperty.Top),
-                RightCalculation = new PageDependedCalculation(LayoutProperty.Right),
-                HeightCalculation = new ElementDependedCalculation(button, LayoutProperty.Height, OffsetType.None),
+                LeftVariable = button.RightReference + UIConstants.ElementMargin,
+                TopVariable = LayoutVariable.PageReference(LayoutProperty.Top) + UIConstants.ElementMargin,
+                RightVariable = LayoutVariable.PageReference(LayoutProperty.Right) - UIConstants.ElementMargin,
+                HeightVariable = button.HeightReference,
                 Watermark = "這裡可以輸入文字喔!"
             };
             elementList.Add(textBox);
@@ -87,10 +87,10 @@ namespace ConcreteUI.Test
             ListBox listBox = new ListBox(this)
             {
                 Mode = ListBoxMode.Some,
-                LeftCalculation = new PageDependedCalculation(LayoutProperty.Left),
-                TopCalculation = new ElementDependedCalculation(button, LayoutProperty.Bottom, OffsetType.Outside),
-                WidthCalculation = new FixedCalculation(250),
-                BottomCalculation = new PageDependedCalculation(LayoutProperty.Bottom),
+                LeftVariable = LayoutVariable.PageReference(LayoutProperty.Left) + UIConstants.ElementMargin,
+                TopVariable = textBox.BottomReference + UIConstants.ElementMargin,
+                WidthVariable = 250,
+                BottomVariable = LayoutVariable.PageReference(LayoutProperty.Bottom) - UIConstants.ElementMargin,
             };
             IList<string> items = listBox.Items;
             for (int i = 1; i <= 200; i++)
@@ -99,27 +99,27 @@ namespace ConcreteUI.Test
 
             GroupBox groupBox = new GroupBox(this)
             {
-                LeftCalculation = new ElementDependedCalculation(listBox, LayoutProperty.Right, OffsetType.Outside),
-                TopCalculation = new ElementDependedCalculation(textBox, LayoutProperty.Bottom, OffsetType.Outside),
-                RightCalculation = new PageDependedCalculation(LayoutProperty.Right),
-                BottomCalculation = new PageDependedCalculation(LayoutProperty.Bottom),
+                LeftVariable = listBox.RightReference + UIConstants.ElementMargin,
+                TopVariable = textBox.BottomReference + UIConstants.ElementMargin,
+                RightVariable = LayoutVariable.PageReference(LayoutProperty.Right) - UIConstants.ElementMargin,
+                BottomVariable = LayoutVariable.PageReference(LayoutProperty.Bottom) - UIConstants.ElementMargin,
                 Title = "群組容器",
             };
             elementList.Add(groupBox);
 
             groupBox.AddChild(new CheckBox(this)
             {
-                LeftCalculation = new GroupBox.ContentXCalculation(groupBox),
-                TopCalculation = new GroupBox.ContentYCalculation(groupBox),
+                LeftVariable = groupBox.ContentLeftReference,
+                TopVariable = groupBox.ContentTopReference,
                 Text = "可以勾選的方塊"
-            }.WithAutoWidthCalculation().WithAutoHeightCalculation());
+            }.WithAutoWidth().WithAutoHeight());
 
             ComboBox comboBox = new ComboBox(this)
             {
-                LeftCalculation = new GroupBox.ContentXCalculation(groupBox),
-                TopCalculation = new ElementDependedCalculation(groupBox.FirstChild!, LayoutProperty.Bottom, OffsetType.Outside),
-                WidthCalculation = new FixedCalculation(200)
-            }.WithAutoHeightCalculation();
+                LeftVariable = groupBox.ContentLeftReference,
+                TopVariable = groupBox.FirstChild!.BottomReference + UIConstants.ElementMargin,
+                WidthVariable = 200
+            }.WithAutoHeight();
             comboBox.RequestDropdownListOpening += ComboBox_RequestDropdownListOpening;
             items = comboBox.Items;
             for (int i = 1; i <= 200; i++)
@@ -127,30 +127,30 @@ namespace ConcreteUI.Test
             groupBox.AddChild(comboBox);
             Label label = new Label(this)
             {
-                LeftCalculation = new GroupBox.ContentXCalculation(groupBox),
-                TopCalculation = new ElementDependedCalculation(comboBox, LayoutProperty.Bottom, OffsetType.Outside),
-                RightCalculation = new ElementDependedCalculation(groupBox, LayoutProperty.Right),
+                LeftVariable = groupBox.ContentLeftReference,
+                TopVariable = comboBox.BottomReference + UIConstants.ElementMargin,
+                RightVariable = groupBox.ContentRightReference,
                 Text = "底下是進度條測試",
                 Alignment = TextAlignment.MiddleCenter
-            }.WithAutoHeightCalculation();
+            }.WithAutoHeight();
             Button leftButton = new Button(this)
             {
-                LeftCalculation = new ElementDependedCalculation(label, LayoutProperty.Left, OffsetType.None),
-                TopCalculation = new ElementDependedCalculation(label, LayoutProperty.Bottom, OffsetType.Outside),
+                LeftVariable = label.LeftReference,
+                TopVariable = label.BottomReference + UIConstants.ElementMargin,
                 Text = "-"
-            }.WithAutoWidthCalculation().WithAutoHeightCalculation();
+            }.WithAutoWidth().WithAutoHeight();
             Button rightButton = new Button(this)
             {
-                TopCalculation = new ElementDependedCalculation(label, LayoutProperty.Bottom, OffsetType.Outside),
-                RightCalculation = new ElementDependedCalculation(label, LayoutProperty.Right, OffsetType.None),
+                TopVariable = label.BottomReference + UIConstants.ElementMargin,
+                RightVariable = label.RightReference,
                 Text = "+"
-            }.WithAutoWidthCalculation().WithAutoHeightCalculation();
+            }.WithAutoWidth().WithAutoHeight();
             ProgressBar progressBar = new ProgressBar(this)
             {
-                LeftCalculation = new ElementDependedCalculation(leftButton, LayoutProperty.Right, OffsetType.Outside),
-                TopCalculation = new ElementDependedCalculation(label, LayoutProperty.Bottom, OffsetType.Outside),
-                RightCalculation = new ElementDependedCalculation(rightButton, LayoutProperty.Left, OffsetType.Outside),
-                HeightCalculation = new ElementDependedCalculation(leftButton, LayoutProperty.Height, OffsetType.None),
+                LeftVariable = leftButton.RightReference + UIConstants.ElementMargin,
+                TopVariable = label.BottomReference + UIConstants.ElementMargin,
+                RightVariable = rightButton.LeftReference - UIConstants.ElementMargin,
+                HeightVariable = leftButton.HeightReference,
                 Maximium = 100.0f,
                 Value = 50.0f
             };
