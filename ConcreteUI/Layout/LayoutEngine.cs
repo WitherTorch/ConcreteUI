@@ -132,7 +132,7 @@ namespace ConcreteUI.Layout
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void RecalculateLayoutCore(Rect pageRect, UIElement[] elements, int length)
+        private unsafe void RecalculateLayoutCore(in Rect pageRect, UIElement[] elements, int length)
         {
             if (length <= 0 || !ArrayHelper.HasNonNullItem(elements))
                 return;
@@ -214,7 +214,6 @@ namespace ConcreteUI.Layout
                     }
                 }
                 element.Bounds = UnsafeHelper.Read<Rectangle>(values);
-                Array.Clear(variables, 0, (int)LayoutProperty._Last);
             }
 
             elementDict.Clear();

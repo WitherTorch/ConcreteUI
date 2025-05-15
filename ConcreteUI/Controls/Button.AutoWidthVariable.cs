@@ -24,7 +24,7 @@ namespace ConcreteUI.Controls
                 if (!_reference.TryGetTarget(out Button? element))
                     return 0;
                 using DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(NullSafetyHelper.ThrowIfNull(element._fontName), element._fontSize);
-                return GraphicsUtils.MeasureTextWidthAsInt(element._text, format) + UIConstants.ElementMarginDouble;
+                return GraphicsUtils.MeasureTextWidthAsInt(element._text, format) + UIConstants.ElementMarginDouble * 2;
             }
         }
     }

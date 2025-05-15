@@ -30,9 +30,16 @@ namespace ConcreteUI.Layout
         public readonly int?[] GetComputedValues(UIElement element)
         {
             LayoutVariable?[]? variables = _elementDict[element];
-            if (variables is null)
-                return Array.Empty<int?>();
             int?[] result = new int?[(int)LayoutProperty._Last];
+            if (variables is null)
+            {
+                Rect bounds = element.Bounds;
+                result[(int)LayoutProperty.Left] = bounds.Left;
+                result[(int)LayoutProperty.Top] = bounds.Top;
+                result[(int)LayoutProperty.Right] = bounds.Right;
+                result[(int)LayoutProperty.Bottom] = bounds.Bottom;
+                return result;
+            }
             for (LayoutProperty property = LayoutProperty.Left; property < LayoutProperty._Last; property++)
             {
                 LayoutVariable? variable = variables[(int)property];
@@ -47,7 +54,19 @@ namespace ConcreteUI.Layout
         {
             LayoutVariable?[]? variables = _elementDict[element];
             if (variables is null)
-                return 0;
+            {
+                Rect bounds = element.Bounds;
+                return property switch
+                {
+                    LayoutProperty.Left => bounds.Left,
+                    LayoutProperty.Top => bounds.Top,
+                    LayoutProperty.Right => bounds.Right,
+                    LayoutProperty.Bottom => bounds.Bottom,
+                    LayoutProperty.Height => bounds.Height,
+                    LayoutProperty.Width => bounds.Width,
+                    _ => 0
+                };
+            }
             LayoutVariable? variable = variables[(int)property];
             if (variable is not null)
                 return GetComputedValue(variable);
