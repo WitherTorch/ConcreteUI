@@ -428,6 +428,7 @@ namespace ConcreteUI.Controls
             if (_enabled && _hasScrollBar && _scrollButtonState != ButtonTriState.Pressed && Bounds.Contains(args.Location))
             {
                 Scrolling(-args.Delta);
+                OnMouseMove(args);
             }
         }
 
