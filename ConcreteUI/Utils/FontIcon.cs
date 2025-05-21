@@ -25,14 +25,16 @@ namespace ConcreteUI.Utils
             get => _size;
         }
 
-        public FontIcon(string fontName, uint unicodeValue, SizeF size)
+        public FontIcon(string fontName, uint unicodeValue, SizeF size) : this(fontName, DWriteFontWeight.Normal, DWriteFontStyle.Normal, unicodeValue, size) { }
+
+        public FontIcon(string fontName, DWriteFontWeight fontWeight, DWriteFontStyle fontStyle, uint unicodeValue, SizeF size)
         {
-            _layout = CreateLayoutFitInSize(fontName, unicodeValue, size);
+            _layout = CreateLayoutFitInSize(fontName, fontWeight, fontStyle, unicodeValue, size);
             _semaphore = new SemaphoreSlim(1, 1);
             _size = size;
         }
 
-        private static DWriteTextLayout CreateLayoutFitInSize(string fontName, uint unicodeValue, SizeF size)
+        private static DWriteTextLayout CreateLayoutFitInSize(string fontName, DWriteFontWeight fontWeight, DWriteFontStyle fontStyle, uint unicodeValue, SizeF size)
         {
             string text = StringHelper.GetStringFromUtf32Character(unicodeValue);
             DWriteFactory factory = SharedResources.DWriteFactory;
@@ -41,7 +43,7 @@ namespace ConcreteUI.Utils
             float fontSize = targetHeight;
             do
             {
-                DWriteTextFormat format = factory.CreateTextFormat(fontName, fontSize);
+                DWriteTextFormat format = factory.CreateTextFormat(fontName, fontSize, fontWeight, fontStyle);
                 format.ParagraphAlignment = DWriteParagraphAlignment.Center;
                 format.TextAlignment = DWriteTextAlignment.Center;
                 format.WordWrapping = DWriteWordWrapping.NoWrap;
@@ -52,14 +54,14 @@ namespace ConcreteUI.Utils
                 if (realHeight > targetHeight)
                 {
                     layout.Dispose();
-                    fontSize -= targetHeight - realHeight;
+                    fontSize -= realHeight - targetHeight;
                     continue;
                 }
                 float realWidth = metrics.Width;
                 if (realWidth > targetWidth)
                 {
                     layout.Dispose();
-                    fontSize -= targetWidth - realWidth;
+                    fontSize -= realWidth - targetWidth;
                     continue;
                 }
                 layout.MaxWidth = size.Width;

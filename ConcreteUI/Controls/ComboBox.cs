@@ -66,7 +66,7 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ComboBox WithAutoHeight()
         {
-            HeightVariable = _autoLayoutVariableCache[0] ?? new AutoHeightVariable(this);
+            HeightVariable = AutoHeightReference;
             return this;
         }
 

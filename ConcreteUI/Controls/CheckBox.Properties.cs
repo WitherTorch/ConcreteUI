@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System;
 using WitherTorch.Common.Helpers;
+using ConcreteUI.Layout;
 
 namespace ConcreteUI.Controls
 {
@@ -48,6 +49,18 @@ namespace ConcreteUI.Controls
                 _text = value;
                 Update(RenderObjectUpdateFlags.Layout);
             }
+        }
+
+        public LayoutVariable AutoWidthReference
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _autoLayoutVariableCache[0] ??= new AutoWidthVariable(this);
+        }
+
+        public LayoutVariable AutoHeightReference
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _autoLayoutVariableCache[1] ??= new AutoHeightVariable(this);
         }
     }
 }

@@ -52,16 +52,16 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Button WithAutoHeight()
+        public Button WithAutoWidth()
         {
-            HeightVariable = _autoLayoutVariableCache[0] ?? new AutoHeightVariable(this);
+            WidthVariable = AutoWidthReference;
             return this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Button WithAutoWidth()
+        public Button WithAutoHeight()
         {
-            WidthVariable = _autoLayoutVariableCache[1] ?? new AutoWidthVariable(this);
+            HeightVariable = AutoHeightReference;
             return this;
         }
 

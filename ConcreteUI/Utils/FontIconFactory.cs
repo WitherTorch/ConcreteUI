@@ -50,13 +50,17 @@ namespace ConcreteUI.Utils
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryCreateFluentUIFontIcon(uint unicodeValue, SizeF size, [NotNullWhen(true)] out FontIcon? icon)
+            => TryCreateFluentUIFontIcon(unicodeValue, DWriteFontWeight.Normal, DWriteFontStyle.Normal, size, out icon);
+
+        public bool TryCreateFluentUIFontIcon(uint unicodeValue, DWriteFontWeight fontWeight, DWriteFontStyle fontStyle, SizeF size, [NotNullWhen(true)] out FontIcon? icon)
         {
             DWriteFont?[] fonts = _fluentSymbolFonts;
             string[] fontNames = _fluentSymbolFontNames;
             for (int i = 0, length = fonts.Length; i < length; i++)
             {
-                if (TryCreateFontIconCore(fonts[i], fontNames[i], unicodeValue, size, out icon))
+                if (TryCreateFontIconCore(fonts[i], fontNames[i], fontWeight, fontStyle, unicodeValue, size, out icon))
                     return true;
             }
             icon = null;
@@ -65,20 +69,28 @@ namespace ConcreteUI.Utils
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryCreateSegoeSymbolFontIcon(uint unicodeValue, SizeF size, [NotNullWhen(true)] out FontIcon? icon)
-            => TryCreateFontIconCore(_segoeSymbolFont, _segoeSymbolFontName, unicodeValue, size, out icon);
+            => TryCreateSegoeSymbolFontIcon(unicodeValue, DWriteFontWeight.Normal, DWriteFontStyle.Normal, size, out icon);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryCreateSegoeSymbolFontIcon(uint unicodeValue, DWriteFontWeight fontWeight, DWriteFontStyle fontStyle, SizeF size, [NotNullWhen(true)] out FontIcon? icon)
+            => TryCreateFontIconCore(_segoeSymbolFont, _segoeSymbolFontName, fontWeight, fontStyle, unicodeValue, size, out icon);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryCreateWebdingsFontIcon(uint unicodeValue, SizeF size, [NotNullWhen(true)] out FontIcon? icon)
-            => TryCreateFontIconCore(_webDingsFont, _webDingsFontName, unicodeValue, size, out icon);
+            => TryCreateWebdingsFontIcon(unicodeValue, DWriteFontWeight.Normal, DWriteFontStyle.Normal, size, out icon);
 
-        private static bool TryCreateFontIconCore(DWriteFont? font, string fontName, uint unicodeValue, SizeF size, [NotNullWhen(true)] out FontIcon? icon)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryCreateWebdingsFontIcon(uint unicodeValue, DWriteFontWeight fontWeight, DWriteFontStyle fontStyle, SizeF size, [NotNullWhen(true)] out FontIcon? icon)
+            => TryCreateFontIconCore(_webDingsFont, _webDingsFontName, fontWeight, fontStyle, unicodeValue, size, out icon);
+
+        private static bool TryCreateFontIconCore(DWriteFont? font, string fontName, DWriteFontWeight fontWeight, DWriteFontStyle fontStyle, uint unicodeValue, SizeF size, [NotNullWhen(true)] out FontIcon? icon)
         {
             if (font is null || !font.HasCharacter(unicodeValue))
             {
                 icon = null;
                 return false;
             }
-            icon = new FontIcon(fontName, unicodeValue, size);
+            icon = new FontIcon(fontName, fontWeight, fontStyle, unicodeValue, size);
             return true;
         }
     }

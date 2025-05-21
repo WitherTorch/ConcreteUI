@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
+using ConcreteUI.Layout;
+
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
@@ -88,6 +90,12 @@ namespace ConcreteUI.Controls
             get => _dropDownListVisibleCount;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => _dropDownListVisibleCount = value;
+        }
+
+        public LayoutVariable AutoHeightReference
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _autoLayoutVariableCache[0] ??= new AutoHeightVariable(this);
         }
     }
 }

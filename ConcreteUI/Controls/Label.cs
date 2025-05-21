@@ -48,16 +48,16 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Label WithAutoHeight()
+        public Label WithAutoWidth()
         {
-            HeightVariable = _autoLayoutVariableCache[0] ?? new AutoHeightVariable(this);
+			WidthVariable = AutoWidthReference;
             return this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Label WithAutoWidth()
+        public Label WithAutoHeight()
         {
-            WidthVariable = _autoLayoutVariableCache[1] ?? new AutoWidthVariable(this);
+            HeightVariable = AutoHeightReference;
             return this;
         }
 

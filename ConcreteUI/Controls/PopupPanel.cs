@@ -17,7 +17,7 @@ namespace ConcreteUI.Controls
 
         public PopupPanel(CoreWindow window) : base(window)
         {
-            _collection = new OneUIElementCollection();
+            _collection = new OneUIElementCollection(this);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -11,7 +11,14 @@ namespace ConcreteUI.Controls
     {
         private sealed class OneUIElementCollection : IReadOnlyCollection<UIElement>, IDisposable
         {
+            private readonly PopupPanel _owner;
+
             private UIElement? _element;
+
+            public OneUIElementCollection(PopupPanel owner)
+            {
+                _owner = owner;
+            }
 
             public int Count => MathHelper.BooleanToInt32(_element is null);
 
@@ -20,7 +27,19 @@ namespace ConcreteUI.Controls
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _element;
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set => _element = value;
+                set
+                {
+                    UIElement? oldElement = _element;
+                    if (oldElement == value)
+                    {
+                        if (oldElement is not null)
+                            oldElement.Parent = null;
+                        return;
+                    }
+                    _element = value;
+                    if (value is not null)
+                        value.Parent = _owner;
+                }
             }
 
             public IEnumerator<UIElement> GetEnumerator()

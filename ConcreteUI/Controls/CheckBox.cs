@@ -64,16 +64,16 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CheckBox WithAutoHeight()
+        public CheckBox WithAutoWidth()
         {
-            HeightVariable = _autoLayoutVariableCache[0] ?? new AutoHeightVariable(this);
+            WidthVariable = AutoWidthReference;
             return this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CheckBox WithAutoWidth()
+        public CheckBox WithAutoHeight()
         {
-            WidthVariable = _autoLayoutVariableCache[1] ?? new AutoWidthVariable(this);
+            HeightVariable = AutoHeightReference;
             return this;
         }
 

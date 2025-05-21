@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using ConcreteUI;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
+using ConcreteUI.Layout;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -218,6 +219,12 @@ namespace ConcreteUI.Controls
         }
 
         public bool HasSelection => selectionRange.Length > 0;
+
+        public LayoutVariable AutoHeightReference
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _autoLayoutVariableCache[0] ??= new AutoHeightVariable(this);
+        }
         #endregion
     }
 }

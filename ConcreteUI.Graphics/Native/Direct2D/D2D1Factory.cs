@@ -8,6 +8,7 @@ using InlineMethod;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 using WitherTorch.Common.Windows.ObjectModels;
+using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics.Native.Direct2D
 {
@@ -37,6 +38,33 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         public D2D1Factory() : base() { }
 
         public D2D1Factory(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
+
+        public D2D1RectangleGeometry CreateRectangleGeometry(in RectF rect)
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateRectangleGeometry);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, RectF*, void**, int>)functionPointer)(nativePointer, UnsafeHelper.AsPointerIn(rect), &nativePointer);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1RectangleGeometry(nativePointer, ReferenceType.Owned);
+        }
+
+        public D2D1RoundedRectangleGeometry CreateRoundedRectangleGeometry(in D2D1RoundedRectangle roundedRect)
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateRoundedRectangleGeometry);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, D2D1RoundedRectangle*, void**, int>)functionPointer)(nativePointer, UnsafeHelper.AsPointerIn(roundedRect), &nativePointer);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1RoundedRectangleGeometry(nativePointer, ReferenceType.Owned);
+        }
+
+        public D2D1EllipseGeometry CreateEllipseGeometry(in D2D1Ellipse ellipse)
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateEllipseGeometry);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, D2D1Ellipse*, void**, int>)functionPointer)(nativePointer, UnsafeHelper.AsPointerIn(ellipse), &nativePointer);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1EllipseGeometry(nativePointer, ReferenceType.Owned);
+        }
 
         /// <summary>
         /// Returns an initially empty path geometry interface. A geometry sink is created
