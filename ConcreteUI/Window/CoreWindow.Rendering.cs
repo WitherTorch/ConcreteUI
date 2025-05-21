@@ -834,7 +834,7 @@ namespace ConcreteUI.Window
             }
         }
 
-        [Inline(InlineBehavior.Remove)]
+        [Inline(InlineBehavior.Keep, export: true)]
         public void CloseOverlayElement(UIElement elementForValidate)
             => CloseOverlayElement(elementForValidate.GetType(), elementForValidate);
 
