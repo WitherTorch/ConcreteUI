@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
+using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Layout;
 
 using WitherTorch.Common.Helpers;
@@ -33,6 +34,36 @@ namespace ConcreteUI.Controls
                 if (_fontSize == value)
                     return;
                 _fontSize = value;
+                DisposeHelper.SwapDisposeInterlocked(ref _layout);
+                Update(RenderObjectUpdateFlags.Format);
+            }
+        }
+
+        public DWriteFontWeight FontWeight
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _fontWeight;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                if (_fontWeight == value)
+                    return;
+                _fontWeight = value;
+                DisposeHelper.SwapDisposeInterlocked(ref _layout);
+                Update(RenderObjectUpdateFlags.Format);
+            }
+        }
+
+        public DWriteFontStyle FontStyle
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _fontStyle;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                if (_fontStyle == value)
+                    return;
+                _fontStyle = value;
                 DisposeHelper.SwapDisposeInterlocked(ref _layout);
                 Update(RenderObjectUpdateFlags.Format);
             }

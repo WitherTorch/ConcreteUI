@@ -22,6 +22,14 @@ namespace ConcreteUI.Internals
             return result;
         }
 
+        public static DWriteTextFormat CreateTextFormat(TextAlignment alignment, string fontName, float fontSize, DWriteFontWeight weight, DWriteFontStyle style)
+        {
+            DWriteFactory factory = SharedResources.DWriteFactory;
+            DWriteTextFormat result = factory.CreateTextFormat(fontName, fontSize, fontWeight: weight, fontStyle: style);
+            SetAlignment(result, alignment);
+            return result;
+        }
+
         public static DWriteTextLayout CreateTextLayout(string text, string fontName, TextAlignment alignment, float fontSize)
         {
             DWriteFactory factory = SharedResources.DWriteFactory;

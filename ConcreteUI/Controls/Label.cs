@@ -34,6 +34,8 @@ namespace ConcreteUI.Controls
 		private string? _fontName;
 		private string _text;
 		private TextAlignment _alignment;
+		private DWriteFontWeight _fontWeight;
+		private DWriteFontStyle _fontStyle;
 		private long _rawUpdateFlags;
 		private float _fontSize;
 		private bool _wordWrap, _disposed;
@@ -42,6 +44,8 @@ namespace ConcreteUI.Controls
 		{
 			_fontSize = UIConstants.DefaultFontSize;
 			_alignment = TextAlignment.MiddleLeft;
+			_fontWeight = DWriteFontWeight.Normal;
+			_fontStyle = DWriteFontStyle.Normal;
 			_rawUpdateFlags = -1L;
 			_layout = null;
 			_text = string.Empty;
@@ -89,7 +93,7 @@ namespace ConcreteUI.Controls
 			{
 				DWriteTextFormat? format = layout;
 				if (CheckFormatIsNotAvailable(format, flags))
-					format = TextFormatHelper.CreateTextFormat(_alignment, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
+					format = TextFormatHelper.CreateTextFormat(_alignment, NullSafetyHelper.ThrowIfNull(_fontName), _fontSize, _fontWeight, _fontStyle);
 				string text = _text;
 				if (StringHelper.IsNullOrEmpty(text))
 					layout = null;
