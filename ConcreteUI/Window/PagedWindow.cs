@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Controls;
@@ -62,13 +63,19 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Override Methods
-        protected override IEnumerable<UIElement> GetRenderingElements() => GetRenderingElements(_pageIndex);
+        protected override IEnumerable<UIElement> GetRenderingElements()
+        {
+            int pageIndex = _pageIndex;
+            return pageIndex < 0 ? Enumerable.Empty<UIElement>() : GetRenderingElements(pageIndex);
+        }
 
         protected override void RecalculatePageLayout(in Rect pageRect)
         {
             int pageIndex = _pageIndex;
-            _recalcState.InterlockedExchange(1UL << pageIndex);
+            if (pageIndex < 0)
+                return;
             RecalculatePageLayout(pageRect, pageIndex);
+            _recalcState.InterlockedExchange(1UL << pageIndex);
         }
 
         protected override void RenderPage(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in RectF pageRect, bool force)
@@ -81,7 +88,7 @@ namespace ConcreteUI.Window
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             base.ApplyThemeCore(provider);
-            _recalcState.InterlockedExchange(ulong.MaxValue);
+            _recalcState.InterlockedExchange(0);
         }
 
         #endregion
@@ -107,6 +114,8 @@ namespace ConcreteUI.Window
             {
                 isPageChanged = false;
                 int pageIndex = _pageIndex;
+                if (pageIndex < 0)
+                    return true;
                 if (!_recalcState.InterlockedSet(pageIndex, true))
                     RecalculatePageLayout((Rect)pageRect, pageIndex);
                 return true;
