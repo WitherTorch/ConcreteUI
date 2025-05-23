@@ -32,13 +32,16 @@ namespace ConcreteUI.Controls
         private IContainerElement? _parent;
         private IThemeContext? _themeContext;
         private Rectangle _bounds;
+        private string _themePrefix;
         private long _requestRedraw;
 
-        public UIElement(IRenderer renderer)
+        public UIElement(IRenderer renderer, string themePrefix)
         {
             _renderer = renderer;
             _semaphore = new SemaphoreSlim(1, 1);
             _identifier = Interlocked.Increment(ref _identifierGenerator) - 1;
+            _themePrefix = themePrefix;
+            OnThemePrefixChanged(themePrefix);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -204,6 +207,8 @@ namespace ConcreteUI.Controls
         }
 
         protected abstract void ApplyThemeCore(IThemeResourceProvider provider);
+
+        protected abstract void OnThemePrefixChanged(string prefix);
 
         public override int GetHashCode() => _identifier;
 

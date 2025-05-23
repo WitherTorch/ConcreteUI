@@ -12,25 +12,25 @@ using ConcreteUI.Window;
 using InlineMethod;
 
 using WitherTorch.Common.Collections;
-using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
     public sealed partial class PopupContainer : PopupElementBase, IContainerElement
     {
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
+        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
         {
             "back",
             "border"
-        }.WithPrefix("app.control.").ToLowerAscii();
+        };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly ObservableList<UIElement> _children;
 
         private bool _disposed;
 
-        public PopupContainer(CoreWindow window) : base(window)
+        public PopupContainer(CoreWindow window) : base(window, "app.control")
         {
             _children = new ObservableList<UIElement>(new UnwrappableList<UIElement>());
         }
@@ -41,6 +41,9 @@ namespace ConcreteUI.Controls
             foreach (UIElement child in _children)
                 child.ApplyTheme(provider);
         }
+
+        protected override void OnThemePrefixChanged(string prefix)
+            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         public void AddChild(UIElement element) => _children.Add(element);
 

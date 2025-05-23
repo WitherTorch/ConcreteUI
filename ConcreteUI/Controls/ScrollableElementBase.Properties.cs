@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using System.Runtime.CompilerServices;
 
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
@@ -130,12 +131,18 @@ namespace ConcreteUI.Controls
             set => _stickBottom = value;
         }
 
-        protected bool UseRawScrollBarBackBrush
+        public string ScrollBarThemePrefix
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _useRawScrollBarBackBrush;
+            get => _scrollBarThemePrefix;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => _useRawScrollBarBackBrush = value;
+            set
+            {
+                if (SequenceHelper.Equals(_scrollBarThemePrefix, value))
+                    return;
+                _scrollBarThemePrefix = value;
+                OnScrollBarThemePrefixChanged(value);
+            }
         }
     }
 }

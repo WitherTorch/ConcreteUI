@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -15,7 +16,7 @@ namespace ConcreteUI.Controls
     {
         private readonly OneUIElementCollection _collection;
 
-        public PopupPanel(CoreWindow window) : base(window)
+        public PopupPanel(CoreWindow window) : base(window, string.Empty)
         {
             _collection = new OneUIElementCollection(this);
         }
@@ -42,6 +43,8 @@ namespace ConcreteUI.Controls
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider) => _collection.Value?.ApplyTheme(provider);
+
+        protected override void OnThemePrefixChanged(string prefix) { }
 
         protected override bool RenderCore(DirtyAreaCollector collector) => true;
 

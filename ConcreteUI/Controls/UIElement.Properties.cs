@@ -6,6 +6,8 @@ using ConcreteUI.Theme;
 
 using InlineMethod;
 
+using WitherTorch.Common.Helpers;
+
 namespace ConcreteUI.Controls
 {
     partial class UIElement
@@ -279,6 +281,20 @@ namespace ConcreteUI.Controls
                 if (provider is not null)
                     ApplyThemeCore(provider);
                 Update();
+            }
+        }
+
+        public string ThemePrefix
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _themePrefix;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                if (SequenceHelper.Equals(_themePrefix, value))
+                    return;
+                _themePrefix = value;
+                OnThemePrefixChanged(value);
             }
         }
 

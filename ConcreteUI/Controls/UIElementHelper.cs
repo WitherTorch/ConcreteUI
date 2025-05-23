@@ -81,6 +81,14 @@ namespace ConcreteUI.Controls
                 element?.ApplyTheme(provider);
         }
 
+        [Inline(InlineBehavior.Keep, export: true)]
+        public static void CopyStringArrayAndAppendDottedPrefix(string[] source, string[] destination, int length, string prefix)
+        {
+            prefix = prefix.ToLowerAscii();
+            for (int i = 0; i < length; i++)
+                destination[i] = prefix + "." + source[i].ToLowerAscii();
+        }
+
         public static D2D1Resource GetOrCreateCheckSign(ref D2D1Resource? checkSign, D2D1DeviceContext context, D2D1StrokeStyle strokeStyle, in Rect drawingBounds)
         {
             if (checkSign is not null)

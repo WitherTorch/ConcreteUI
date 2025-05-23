@@ -19,7 +19,7 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class ContextMenu : PopupElementBase, IDisposable, IKeyEvents
     {
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
+        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
         {
             "back",
             "back.hovered",
@@ -28,16 +28,17 @@ namespace ConcreteUI.Controls
             "fore",
             "fore.inactive",
             "fore.hovered"
-        }.WithPrefix("app.contextMenu.").ToLowerAscii();
+        };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly string[] _brushNames = new string[(int)Brush._Last];
 
         private DWriteTextLayout[]? _layouts;
         private float _itemHeight;
         private int _hoveredIndex;
         private bool _isPressed, _disposed;
 
-        public ContextMenu(CoreWindow window, ContextMenuItem[] items) : base(window)
+        public ContextMenu(CoreWindow window, ContextMenuItem[] items) : base(window, "app.contextMenu")
         {
             MenuItems = items;
         }
@@ -78,6 +79,9 @@ namespace ConcreteUI.Controls
             Size = size;
             DisposeHelper.SwapDisposeInterlocked(ref _layouts, layouts);
         }
+
+        protected override void OnThemePrefixChanged(string prefix)
+            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         protected override bool RenderCore(DirtyAreaCollector collector)
         {

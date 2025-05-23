@@ -27,7 +27,7 @@ namespace ConcreteUI.Controls
     {
         public event EventHandler? CheckedChanged;
 
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
+        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
         {
             "border",
             "border.hovered" ,
@@ -37,9 +37,10 @@ namespace ConcreteUI.Controls
             "border.pressed.checked",
             "mark",
             "fore"
-        }.WithPrefix("app.checkBox.").ToLowerAscii();
+        };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[2];
 
         private string? _fontName;
@@ -54,7 +55,7 @@ namespace ConcreteUI.Controls
         private float _fontSize;
         private bool _checkState, _disposed;
 
-        public CheckBox(IRenderer renderer) : base(renderer)
+        public CheckBox(IRenderer renderer) : base(renderer, "app.checkBox")
         {
             _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
             _redrawTypeRaw = (long)RedrawType.RedrawAllContent;
@@ -86,6 +87,9 @@ namespace ConcreteUI.Controls
             DisposeHelper.SwapDispose(ref _layout);
             Update(RedrawType.RedrawAllContent);
         }
+
+        protected override void OnThemePrefixChanged(string prefix)
+            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         public override void OnSizeChanged()
         {

@@ -12,7 +12,7 @@ namespace ConcreteUI.Controls
         private ButtonPressState _pressState; 
         private bool previousMouseEnterState;
 
-        public ButtonBase(IRenderer renderer) : base(renderer)
+        public ButtonBase(IRenderer renderer, string themePrefix) : base(renderer, themePrefix)
         {
             _enabled = true;
             _pressState = ButtonPressState.Default;

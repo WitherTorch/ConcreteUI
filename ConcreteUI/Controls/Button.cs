@@ -22,7 +22,7 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class Button : ButtonBase, IDisposable
     {
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
+        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
         {
             "border",
             "border.hovered",
@@ -31,9 +31,10 @@ namespace ConcreteUI.Controls
             "face.pressed",
             "fore",
             "fore.inactive",
-        }.WithPrefix("app.button.").ToLowerAscii();
+        };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[2];
 
         private DWriteTextLayout? _layout;
@@ -44,7 +45,7 @@ namespace ConcreteUI.Controls
         private float _fontSize;
         private long _rawUpdateFlags;
 
-        public Button(IRenderer renderer) : base(renderer)
+        public Button(IRenderer renderer) : base(renderer, "app.button")
         {
             _fontSize = UIConstants.BoxFontSize;
             _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
@@ -72,6 +73,9 @@ namespace ConcreteUI.Controls
             DisposeHelper.SwapDisposeInterlocked(ref _layout);
             Update(RenderObjectUpdateFlags.Format);
         }
+
+        protected override void OnThemePrefixChanged(string prefix)
+            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         [Inline(InlineBehavior.Remove)]
         private void Update(RenderObjectUpdateFlags flags)

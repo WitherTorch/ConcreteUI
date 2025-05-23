@@ -28,14 +28,14 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class ListBox : ScrollableElementBase
     {
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
+        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
         {
             "back",
             "back.disabled",
             "border",
             "fore"
-        }.WithPrefix("app.listBox.").ToLowerAscii();
-        private static readonly string[] _checkBoxBrushNames = new string[(int)CheckBoxBrush._Last]
+        };
+        private static readonly string[] CheckBoxBrushNamesTemplate = new string[(int)CheckBoxBrush._Last]
         {
             "border",
             "border.hovered" ,
@@ -44,16 +44,19 @@ namespace ConcreteUI.Controls
             "border.hovered.checked" ,
             "border.pressed.checked",
             "mark"
-        }.WithPrefix("app.checkBox.").ToLowerAscii();
+        };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly D2D1Brush[] _checkBoxBrushes = new D2D1Brush[(int)CheckBoxBrush._Last];
+        private readonly string[] _checkBoxBrushNames = new string[(int)CheckBoxBrush._Last];
         private readonly List<BitVector64> _stateVectorList;
         private readonly ObservableList<string> _items;
 
         private D2D1StrokeStyle? _strokeStyle;
         private D2D1Resource? _checkSign;
         private DWriteTextFormat? _format;
+        private string _checkBoxThemePrefix;
         private string? _fontName;
         private Rectangle _checkBoxBounds;
         private ListBoxMode _chooseMode;
@@ -62,7 +65,7 @@ namespace ConcreteUI.Controls
         private float _fontSize;
         private int _itemHeight, _selectedIndex;
 
-        public ListBox(IRenderer renderer) : base(renderer)
+        public ListBox(IRenderer renderer) : base(renderer, "app.listBox")
         {
             _stateVectorList = new List<BitVector64>(1);
             _items = new ObservableList<string>();
@@ -71,6 +74,8 @@ namespace ConcreteUI.Controls
             _fontSize = UIConstants.BoxFontSize;
             _selectedIndex = -1;
             _recalcFormat = Booleans.TrueLong;
+            _checkBoxThemePrefix = "app.checkBox";
+            OnCheckBoxThemePrefixChanged("app.checkBox");
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
@@ -88,6 +93,12 @@ namespace ConcreteUI.Controls
             RecalculateHeight();
             Update();
         }
+
+        protected override void OnThemePrefixChanged(string prefix)
+            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
+
+        private void OnCheckBoxThemePrefixChanged(string prefix)
+            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(CheckBoxBrushNamesTemplate, _checkBoxBrushNames, (int)CheckBoxBrush._Last, prefix);
 
         protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
         protected override D2D1Brush GetBackDisabledBrush() => _brushes[(int)Brush.BackDisabledBrush];

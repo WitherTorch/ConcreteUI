@@ -21,17 +21,21 @@ namespace ConcreteUI.Controls
 {
     public abstract partial class ScrollableElementBase : UIElement, IDisposable, IMouseEvents, IMouseScrollEvent
     {
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
+        protected const string DefaultPrefixForScrollBar = "app.scrollBar";
+        
+        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
         {
             "back",
             "fore",
             "fore.hovered",
             "fore.pressed",
-        }.WithPrefix("app.scrollBar.").ToLowerAscii();
+        };
 
         private readonly Timer _repeatingTimer;
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly string[] _brushNames = new string[(int)Brush._Last];
 
+        private string _scrollBarThemePrefix;
         private Action? _repeatingAction;
         private Point _viewportPoint;
         private Size _surfaceSize;
@@ -42,7 +46,9 @@ namespace ConcreteUI.Controls
         private float _pinY;
         private bool _enabled, _drawWhenDisabled, _hasScrollBar, _stickBottom, _useRawScrollBarBackBrush, _disposed;
 
-        protected ScrollableElementBase(IRenderer renderer) : base(renderer)
+        protected ScrollableElementBase(IRenderer renderer, string themePrefix) : this(renderer, themePrefix, DefaultPrefixForScrollBar) { }
+
+        protected ScrollableElementBase(IRenderer renderer, string themePrefix, string scrollBarThemePrefix) : base(renderer, themePrefix)
         {
             _enabled = true;
             _drawWhenDisabled = false;
@@ -50,6 +56,8 @@ namespace ConcreteUI.Controls
             _disposed = false;
             _updateFlagsRaw = -1L;
             _repeatingTimer = new Timer(RepeatingTimer_Tick, null, Timeout.Infinite, Timeout.Infinite);
+            _scrollBarThemePrefix = scrollBarThemePrefix;
+            OnScrollBarThemePrefixChanged(scrollBarThemePrefix);
         }
 
         protected abstract D2D1Brush GetBackBrush();
@@ -60,6 +68,9 @@ namespace ConcreteUI.Controls
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
             => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+
+        private void OnScrollBarThemePrefixChanged(string prefix)
+            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         protected override void Update() => Update(UpdateFlags.All);
 

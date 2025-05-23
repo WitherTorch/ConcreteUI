@@ -114,5 +114,18 @@ namespace ConcreteUI.Controls
             }
         }
 
+        public string CheckBoxThemePrefix
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _checkBoxThemePrefix;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                if (SequenceHelper.Equals(_checkBoxThemePrefix, value))
+                    return;
+                _checkBoxThemePrefix = value;
+                OnCheckBoxThemePrefixChanged(value);
+            }
+        }
     }
 }

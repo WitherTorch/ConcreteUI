@@ -7,7 +7,7 @@ namespace ConcreteUI.Controls
     {
         private readonly CoreWindow _window;
 
-        protected PopupElementBase(CoreWindow window) : base(window)
+        protected PopupElementBase(CoreWindow window, string themePrefix) : base(window, themePrefix)
         {
             _window = window;
         }

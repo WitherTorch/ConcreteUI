@@ -33,7 +33,7 @@ namespace ConcreteUI.Controls
     public sealed partial class TextBox : ScrollableElementBase, IIMEControl, IGlobalMouseEvents, IKeyEvents, ICharacterEvents, ICursorPredicator
     {
         private static readonly char[] LineSeparators = ['\r', '\n'];
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
+        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
         {
             "back",
             "back.disabled",
@@ -43,9 +43,10 @@ namespace ConcreteUI.Controls
             "fore.inactive",
             "selection.back",
             "selection.fore"
-        }.WithPrefix("app.textBox.").ToLowerAscii();
+        };
 
-        private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last]; 
+        private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[1];
         private readonly CoreWindow _window;
         private readonly InputMethod _ime;
@@ -64,7 +65,7 @@ namespace ConcreteUI.Controls
         private char _passwordChar;
         private bool _caretState, _focused, _multiLine, _imeEnabled;
 
-        public TextBox(CoreWindow window, InputMethod ime) : base(window)
+        public TextBox(CoreWindow window, InputMethod ime) : base(window, "app.textBox")
         {
             _window = window;
             window.FocusElementChanged += Window_FocusElementChanged;
@@ -100,6 +101,9 @@ namespace ConcreteUI.Controls
             DisposeHelper.SwapDispose(ref _watermarkLayout);
             Update(RenderObjectUpdateFlags.Format);
         }
+
+        protected override void OnThemePrefixChanged(string prefix)
+            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
 

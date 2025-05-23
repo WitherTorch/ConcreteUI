@@ -11,7 +11,6 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
 using ConcreteUI.Layout;
-using ConcreteUI.Layout.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
@@ -27,14 +26,15 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class GroupBox : UIElement, IDisposable, IContainerElement
     {
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
+        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
         {
             "back",
             "border",
             "fore"
-        }.WithPrefix("app.groupBox.").ToLowerAscii();
+        };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly LazyTiny<LayoutVariable>[] _contentLayoutReferences;
         private readonly ObservableList<UIElement> _children;
 
@@ -46,7 +46,7 @@ namespace ConcreteUI.Controls
         private int _titleHeight;
         private bool _disposed;
 
-        public GroupBox(IRenderer renderer) : base(renderer)
+        public GroupBox(IRenderer renderer) : base(renderer, "app.groupBox")
         {
             _children = new ObservableList<UIElement>(new UnwrappableList<UIElement>(capacity: 0));
             _children.BeforeAdd += Children_BeforeAdded;
@@ -98,6 +98,9 @@ namespace ConcreteUI.Controls
             DisposeHelper.SwapDisposeInterlocked(ref _textLayout);
             Update(RenderObjectUpdateFlags.Format, RedrawType.RedrawAllContent);
         }
+
+        protected override void OnThemePrefixChanged(string prefix)
+            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         public void RenderChildBackground(UIElement child, D2D1DeviceContext context)
             => RenderBackground(context, _brushes[(int)Brush.BackBrush]);

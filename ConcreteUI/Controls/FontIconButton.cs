@@ -15,19 +15,20 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class FontIconButton : ButtonBase, IDisposable
     {
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
+        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
         {
             "face",
             "face.hovered",
             "face.pressed"
-        }.WithPrefix("app.fontIconButton.").ToLowerAscii();
+        };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly string[] _brushNames = new string[(int)Brush._Last];
 
         private FontIcon? _icon;
         private bool _disposed;
 
-        public FontIconButton(IRenderer renderer) : base(renderer)
+        public FontIconButton(IRenderer renderer) : base(renderer, "app.fontIconButton.")
         {
             _icon = null;
             _disposed = false;
@@ -35,6 +36,9 @@ namespace ConcreteUI.Controls
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
             => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+
+        protected override void OnThemePrefixChanged(string prefix)
+            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         protected override bool RenderCore(DirtyAreaCollector collector)
         {

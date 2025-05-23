@@ -21,7 +21,7 @@ namespace ConcreteUI.Controls
         private UIElement? _currentElement;
         private bool isPopup = false;
 
-        public ToolTip(CoreWindow window, Func<UIElement, bool>? checkingFunc = null) : base(window)
+        public ToolTip(CoreWindow window, Func<UIElement, bool>? checkingFunc = null) : base(window, string.Empty)
         {
             this.window = window;
             this.checkingFunc = checkingFunc;
@@ -35,6 +35,8 @@ namespace ConcreteUI.Controls
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider) { }
+
+        protected override void OnThemePrefixChanged(string prefix) { }
 
         private void ToolTip_Popup(object? sender, System.Windows.Forms.PopupEventArgs e)
         {

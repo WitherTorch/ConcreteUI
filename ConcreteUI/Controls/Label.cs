@@ -14,7 +14,6 @@ using ConcreteUI.Utils;
 
 using InlineMethod;
 
-using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
@@ -22,12 +21,13 @@ namespace ConcreteUI.Controls
 {
 	public sealed partial class Label : UIElement, IDisposable
 	{
-		private static readonly string[] _brushNames = new string[(int)Brush._Last]
+		private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
 		{
 			"fore"
-		}.WithPrefix("app.label.").ToLowerAscii();
+		};
 
 		private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+		private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[2];
 
         private DWriteTextLayout? _layout;
@@ -40,7 +40,7 @@ namespace ConcreteUI.Controls
 		private float _fontSize;
 		private bool _wordWrap, _disposed;
 
-		public Label(IRenderer renderer) : base(renderer)
+		public Label(IRenderer renderer) : base(renderer, "app.label")
 		{
 			_fontSize = UIConstants.DefaultFontSize;
 			_alignment = TextAlignment.MiddleLeft;
@@ -73,7 +73,10 @@ namespace ConcreteUI.Controls
 			Update(RenderObjectUpdateFlags.Format);
 		}
 
-		[Inline(InlineBehavior.Remove)]
+        protected override void OnThemePrefixChanged(string prefix)
+            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
+
+        [Inline(InlineBehavior.Remove)]
 		private void Update(RenderObjectUpdateFlags flags)
 		{
 			InterlockedHelper.Or(ref _rawUpdateFlags, (long)flags);

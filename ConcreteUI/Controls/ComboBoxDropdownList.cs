@@ -20,7 +20,7 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGlobalMouseEvents
     {
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
+        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
         {
             "back",
             "back.disabled",
@@ -29,9 +29,10 @@ namespace ConcreteUI.Controls
             "list.back.hovered",
             "list.back.pressed",
             "list.fore.hovered",
-        }.WithPrefix("app.comboBox.").ToLowerAscii();
+        };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+        private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly ComboBox _parent;
         private readonly CoreWindow _window;
 
@@ -39,7 +40,7 @@ namespace ConcreteUI.Controls
         private int _itemHeight, _selectedIndex, _maxViewCount;
         private bool _isClicking, _isClickingClient, _isFirstTimeClick;
 
-        public ComboBoxDropdownList(ComboBox parent, CoreWindow window) : base(window)
+        public ComboBoxDropdownList(ComboBox parent, CoreWindow window) : base(window, "app.comboBox")
         {
             ScrollBarType = ScrollBarType.AutoVertial;
             _parent = parent;
@@ -59,6 +60,9 @@ namespace ConcreteUI.Controls
             using DWriteTextFormat format = TextFormatHelper.CreateTextFormat(TextAlignment.MiddleLeft, provider.FontName, parent.FontSize);
             Prepare(format);
         }
+
+        protected override void OnThemePrefixChanged(string prefix)
+            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
 
