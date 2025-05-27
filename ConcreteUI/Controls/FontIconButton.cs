@@ -28,7 +28,7 @@ namespace ConcreteUI.Controls
         private FontIcon? _icon;
         private bool _disposed;
 
-        public FontIconButton(IRenderer renderer) : base(renderer, "app.fontIconButton.")
+        public FontIconButton(IRenderer renderer) : base(renderer, "app.fontIconButton")
         {
             _icon = null;
             _disposed = false;
