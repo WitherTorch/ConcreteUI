@@ -14,7 +14,6 @@ using ConcreteUI.Utils;
 
 using InlineMethod;
 
-using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
