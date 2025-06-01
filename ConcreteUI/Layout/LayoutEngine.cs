@@ -168,7 +168,7 @@ namespace ConcreteUI.Layout
             var enumerator = elementDict.GetEnumerator();
             while (enumerator.MoveNext())
             {
-                enumerator.Current.Destruct(out UIElement? element, out LayoutVariable?[]? variables);
+                enumerator.Current.Deconstruct(out UIElement? element, out LayoutVariable?[]? variables);
 
                 bool hasNull = false;
                 for (int i = (int)LayoutProperty.Left; i <= (int)LayoutProperty.Top; i++)
