@@ -241,7 +241,7 @@ namespace ConcreteUI.Controls
         {
             if (format is null || format.IsDisposed)
                 return true;
-            if ((flags & RenderObjectUpdateFlags.Format) ==  RenderObjectUpdateFlags.Format)
+            if ((flags & RenderObjectUpdateFlags.Format) == RenderObjectUpdateFlags.Format)
             {
                 format.Dispose();
                 return true;
@@ -350,7 +350,8 @@ namespace ConcreteUI.Controls
                 context.PopAxisAlignedClip();
                 if (focused)
                     DrawCaret(context, watermarkLayout, layoutPoint, 0);
-                DisposeHelper.NullSwapOrDispose(ref _layout, layout);
+                if (layout is not null)
+                    DisposeHelper.NullSwapOrDispose(ref _layout, layout);
                 DisposeHelper.NullSwapOrDispose(ref _watermarkLayout, watermarkLayout);
                 return true;
             }
@@ -361,7 +362,8 @@ namespace ConcreteUI.Controls
             RenderLayout(context, focused, layout, bounds);
             context.PopAxisAlignedClip();
             DisposeHelper.NullSwapOrDispose(ref _layout, layout);
-            DisposeHelper.NullSwapOrDispose(ref _watermarkLayout, watermarkLayout);
+            if (watermarkLayout is not null)
+                DisposeHelper.NullSwapOrDispose(ref _watermarkLayout, watermarkLayout);
 
             return true;
         }

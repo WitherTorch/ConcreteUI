@@ -226,8 +226,10 @@ namespace ConcreteUI.Controls
                     collector.MarkAsDirty(bounds);
                     break;
             }
-            DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
-            DisposeHelper.NullSwapOrDispose(ref _textLayout, textLayout);
+            if (titleLayout is not null)
+                DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
+            if (textLayout is not null)
+                DisposeHelper.NullSwapOrDispose(ref _textLayout, textLayout);
             return true;
         }
 

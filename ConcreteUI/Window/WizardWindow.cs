@@ -174,11 +174,15 @@ namespace ConcreteUI.Window
             deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
             ClearDC(deviceContext);
             if (titleLayout is not null)
+            {
                 deviceContext.DrawTextLayout(_titleLocation, titleLayout, brushes[(int)Brush.WizardTitleBrush], D2D1DrawTextOptions.None);
+                DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
+            }
             if (titleDescriptionLayout is not null)
+            {
                 deviceContext.DrawTextLayout(_titleDescriptionLocation, titleDescriptionLayout, brushes[(int)Brush.WizardTitleDescriptionBrush], D2D1DrawTextOptions.None);
-            DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
-            DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
+                DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
+            }
             deviceContext.PopAxisAlignedClip();
             collector.MarkAsDirty(GraphicsUtils.ConvertRectangle(rect));
         }

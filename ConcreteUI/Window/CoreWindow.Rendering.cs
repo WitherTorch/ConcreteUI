@@ -480,7 +480,7 @@ namespace ConcreteUI.Window
             if (force)
             {
                 DWriteTextLayout? titleLayout = Interlocked.Exchange(ref _titleLayout, null);
-                if ((Interlocked.Exchange(ref _updateFlags, Booleans.FalseLong) & (long)UpdateFlags.ChangeTitle) == (long)UpdateFlags.ChangeTitle)
+                if (titleLayout is null || (Interlocked.Exchange(ref _updateFlags, Booleans.FalseLong) & (long)UpdateFlags.ChangeTitle) == (long)UpdateFlags.ChangeTitle)
                 {
                     DWriteFactory factory = SharedResources.DWriteFactory;
                     DWriteTextFormat? titleFormat = titleLayout;
@@ -496,7 +496,7 @@ namespace ConcreteUI.Window
                 if (titleBarStates[0])
                 {
                     deviceContext.PushAxisAlignedClip(_titleBarRect, D2D1AntialiasMode.Aliased);
-                    deviceContext.DrawTextLayout(new PointF(_drawingOffsetX + 7.5f, _drawingOffsetY + 1.5f), titleLayout!, brushes[(int)Brush.TitleForeBrush]);
+                    deviceContext.DrawTextLayout(new PointF(_drawingOffsetX + 7.5f, _drawingOffsetY + 1.5f), titleLayout, brushes[(int)Brush.TitleForeBrush]);
                     deviceContext.PopAxisAlignedClip();
                 }
                 DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);

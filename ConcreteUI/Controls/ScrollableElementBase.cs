@@ -44,7 +44,7 @@ namespace ConcreteUI.Controls
         private ScrollBarType _scrollBarType;
         private long _updateFlagsRaw;
         private float _pinY;
-        private bool _enabled, _drawWhenDisabled, _hasScrollBar, _stickBottom, _useRawScrollBarBackBrush, _disposed;
+        private bool _enabled, _drawWhenDisabled, _hasScrollBar, _stickBottom, _disposed;
 
         protected ScrollableElementBase(IRenderer renderer, string themePrefix) : this(renderer, themePrefix, DefaultPrefixForScrollBar) { }
 
