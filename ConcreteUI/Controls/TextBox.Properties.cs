@@ -198,9 +198,9 @@ namespace ConcreteUI.Controls
                 _imeEnabled = value;
 
                 if (value && Enabled && _focused)
-                    _ime.Attach(this);
+                    _ime?.Attach(this);
                 else
-                    _ime.Detach(this);
+                    _ime?.Detach(this);
             }
         }
 

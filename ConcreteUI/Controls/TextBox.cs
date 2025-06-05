@@ -25,6 +25,8 @@ using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Text;
 using WitherTorch.Common.Windows.Structures;
 
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
+
 using Cursor = System.Windows.Forms.Cursor;
 using Keys = System.Windows.Forms.Keys;
 
@@ -49,7 +51,7 @@ namespace ConcreteUI.Controls
         private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[1];
         private readonly CoreWindow _window;
-        private readonly InputMethod _ime;
+        private readonly InputMethod? _ime;
         private readonly Timer _caretTimer;
 
         private Cursor? _cursor;
@@ -65,12 +67,10 @@ namespace ConcreteUI.Controls
         private char _passwordChar;
         private bool _caretState, _focused, _multiLine, _imeEnabled;
 
-        public TextBox(CoreWindow window, InputMethod ime) : base(window, "app.textBox")
+        public TextBox(CoreWindow window) : base(window, "app.textBox")
         {
             _window = window;
             window.FocusElementChanged += Window_FocusElementChanged;
-            _ime = ime;
-            _imeEnabled = true;
             _caretTimer = new Timer(CaretTimer_Tick, this, Timeout.Infinite, Timeout.Infinite);
             _caretState = true;
             _caretIndex = 0;
@@ -83,6 +83,12 @@ namespace ConcreteUI.Controls
             ScrollBarType = ScrollBarType.AutoVertial;
             SurfaceSize = new Size(int.MaxValue, 0);
             DrawWhenDisabled = true;
+        }
+
+        public TextBox(CoreWindow window, InputMethod? ime) : this(window)
+        {
+            _ime = ime;
+            _imeEnabled = ime is not null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -114,16 +120,13 @@ namespace ConcreteUI.Controls
         protected override void OnEnableChanged(bool enable)
         {
             base.OnEnableChanged(enable);
-            if (enable)
+            InputMethod? ime = _imeEnabled ? _ime : null;
+            if (ime is not null)
             {
-                if (_focused)
-                    _ime.Attach(this);
+                if (enable && _focused)
+                    ime.Attach(this);
                 else
-                    _ime.Detach(this);
-            }
-            else
-            {
-                _ime.Detach(this);
+                    ime.Detach(this);
             }
             Update();
         }
@@ -149,13 +152,13 @@ namespace ConcreteUI.Controls
                 _caretTimer.Change(500, 500);
                 if (_imeEnabled && enabled)
                 {
-                    _ime.Attach(this);
+                    _ime?.Attach(this);
                 }
             }
             else
             {
                 _caretTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                _ime.Detach(this);
+                _ime?.Detach(this);
                 compositionRange.Length = 0;
                 selectionRange.Length = 0;
                 if (!_multiLine)
@@ -1169,7 +1172,7 @@ namespace ConcreteUI.Controls
             if (disposing)
             {
                 if (_imeEnabled && _focused)
-                    _ime.Detach(this);
+                    _ime?.Detach(this);
                 _caretTimer.Dispose();
                 DisposeHelper.SwapDispose(ref _layout);
                 DisposeHelper.SwapDispose(ref _watermarkLayout);
