@@ -131,7 +131,10 @@ namespace ConcreteUI.Window
                 return;
             }
             if (_recalcState.InterlockedSet(pageIndex, false))
-                Refresh();
+            {
+                isPageChanged = true;
+                Update();
+            }
         }
         #endregion
     }
