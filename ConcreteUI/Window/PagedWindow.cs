@@ -130,11 +130,9 @@ namespace ConcreteUI.Window
                 TriggerResize();
                 return;
             }
-            if (_recalcState.InterlockedSet(pageIndex, false))
-            {
-                isPageChanged = true;
-                Update();
-            }
+            _recalcState.InterlockedSet(pageIndex, false);
+            isPageChanged = true;
+            Update();
         }
         #endregion
     }
