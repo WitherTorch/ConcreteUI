@@ -61,51 +61,43 @@ namespace ConcreteUI.Controls
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                float contentHeight = _contentBounds.Height;
-                if (contentHeight > 0)
+                Size oldSize = _surfaceSize;
+                if (oldSize == value)
+                    return;
+                _surfaceSize = value;
+
+                int contentHeight = _contentBounds.Height;
+                if (contentHeight <= 0)
+                    return;
+                int oldHeight = oldSize.Height;
+                int newHeight = value.Height;
+                if (oldHeight == newHeight)
+                    return;
+                bool isSticky = StickBottom;
+                bool recalcScrollBarImmediately = false;
+                if (oldHeight > contentHeight)
                 {
-                    float surfaceHeight = _surfaceSize.Height;
-                    float valueHeight = value.Height;
-                    if (surfaceHeight != valueHeight)
-                    {
-                        bool originOverflow = surfaceHeight > contentHeight;
-                        bool importOverflow = valueHeight > contentHeight;
-                        if (originOverflow ^ importOverflow)
-                        {
-                            _surfaceSize = value;
-                            RecalculateLayout();
-                        }
-                        else if (importOverflow)
-                        {
-                            bool isStick = StickBottom && _viewportPoint.Y + contentHeight >= surfaceHeight;
-                            _surfaceSize = value;
-                            if (isStick)
-                            {
-                                ScrollToEnd();
-                            }
-                            else
-                            {
-                                RecalcScrollBarAndUpdate();
-                            }
-                        }
-                        else
-                        {
-                            _surfaceSize = value;
-                        }
-                    }
-                    else if (_surfaceSize.Width != value.Width)
-                    {
-                        _surfaceSize = value;
-                    }
+                    isSticky &= _viewportPoint.Y + contentHeight >= oldHeight;
+                    recalcScrollBarImmediately = newHeight <= contentHeight;
                 }
                 else
                 {
-                    _surfaceSize = value;
+                    recalcScrollBarImmediately = newHeight > contentHeight;
                 }
-                if (value.Width == 0)
+                if (recalcScrollBarImmediately)
                 {
-                    _surfaceSize.Width = Bounds.Width - _scrollBarBounds.Width;
+                    RecalculateLayout();
+                    if (value.Width == 0)
+                        _surfaceSize.Width = Bounds.Width - _scrollBarBounds.Width;
                 }
+                else
+                {
+                    RecalcScrollBarAndUpdate();
+                    if (value.Width == 0)
+                        _surfaceSize.Width = oldSize.Width;
+                }
+                if (isSticky)
+                    ScrollToEnd();
                 Point viewportPoint = ViewportPoint;
                 if (!viewportPoint.IsEmpty) ScrollingToPoint(viewportPoint.X, viewportPoint.Y);
             }
