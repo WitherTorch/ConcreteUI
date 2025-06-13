@@ -78,7 +78,7 @@ namespace ConcreteUI.Controls
                 if (oldHeight > contentHeight)
                 {
                     isSticky &= _viewportPoint.Y + contentHeight >= oldHeight;
-                    recalcScrollBarImmediately = newHeight <= contentHeight;
+                    recalcScrollBarImmediately = newHeight != oldHeight;
                 }
                 else
                 {
@@ -88,18 +88,25 @@ namespace ConcreteUI.Controls
                 {
                     RecalculateLayout();
                     if (value.Width == 0)
-                        _surfaceSize.Width = Bounds.Width - _scrollBarBounds.Width;
+                    {
+                        value.Width = _contentBounds.Width;
+                        _surfaceSize = value;
+                    }
                 }
                 else
                 {
                     RecalcScrollBarAndUpdate();
                     if (value.Width == 0)
-                        _surfaceSize.Width = oldSize.Width;
+                    {
+                        value.Width = oldSize.Width;
+                        _surfaceSize = value;
+                    }
                 }
                 if (isSticky)
                     ScrollToEnd();
                 Point viewportPoint = ViewportPoint;
-                if (!viewportPoint.IsEmpty) ScrollingToPoint(viewportPoint.X, viewportPoint.Y);
+                if (!viewportPoint.IsEmpty) 
+                    ScrollingToPoint(viewportPoint.X, viewportPoint.Y);
             }
         }
 

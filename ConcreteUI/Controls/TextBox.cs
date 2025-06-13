@@ -83,6 +83,7 @@ namespace ConcreteUI.Controls
             ScrollBarType = ScrollBarType.AutoVertial;
             SurfaceSize = new Size(int.MaxValue, 0);
             DrawWhenDisabled = true;
+            StickBottom = true;
         }
 
         public TextBox(CoreWindow window, InputMethod? ime) : this(window)
@@ -133,7 +134,7 @@ namespace ConcreteUI.Controls
 
         protected override Rect OnContentBoundsChanging(in Rect bounds)
         {
-            if (bounds.Width < 6 || bounds.Height < 6)
+            if (bounds.Width < UIConstants.ElementMargin || bounds.Height < UIConstants.ElementMargin)
                 return default;
             return new Rect(bounds.Left + UIConstants.ElementMarginHalf, bounds.Top + UIConstants.ElementMarginHalf,
                 bounds.Right - UIConstants.ElementMarginHalf, bounds.Bottom - UIConstants.ElementMarginHalf);
@@ -267,17 +268,25 @@ namespace ConcreteUI.Controls
         private static void SetRenderingProperties(DWriteTextLayout layout, in Rect bounds, bool multiLine)
         {
             if (multiLine)
-            {
-                layout.MaxWidth = MathHelper.Max(0f, bounds.Width);
-                layout.MaxHeight = float.PositiveInfinity;
-                layout.WordWrapping = DWriteWordWrapping.EmergencyBreak;
-            }
+                SetRenderingPropertiesForMultiLine(layout, bounds.Width);
             else
-            {
-                layout.MaxWidth = float.PositiveInfinity;
-                layout.MaxHeight = MathHelper.Max(0f, bounds.Height);
-                layout.WordWrapping = DWriteWordWrapping.NoWrap;
-            }
+                SetRenderingPropertiesForSingleLine(layout, bounds.Height);
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static void SetRenderingPropertiesForMultiLine(DWriteTextLayout layout, int maxWidth)
+        {
+            layout.MaxWidth = MathHelper.MakeUnsigned(maxWidth);
+            layout.MaxHeight = float.PositiveInfinity;
+            layout.WordWrapping = DWriteWordWrapping.EmergencyBreak;
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static void SetRenderingPropertiesForSingleLine(DWriteTextLayout layout, int maxHeight)
+        {
+            layout.MaxWidth = float.PositiveInfinity;
+            layout.MaxHeight = MathHelper.MakeUnsigned(maxHeight);
+            layout.WordWrapping = DWriteWordWrapping.EmergencyBreak;
         }
 
         private void CalculateCurrentViewportPoint()
@@ -341,7 +350,7 @@ namespace ConcreteUI.Controls
 
             GetTextLayouts(out DWriteTextLayout? layout, out DWriteTextLayout? watermarkLayout);
             collector.MarkAsDirty(bounds);
-            if (layout is null || layout.DetermineMinWidth() <= 0.0f)
+            if (layout is null || (layout.DetermineMinWidth() <= 0.0f && (!_multiLine || !SequenceHelper.Contains(_text, '\n'))))
             {
                 if (watermarkLayout is null)
                     return true;
@@ -360,7 +369,6 @@ namespace ConcreteUI.Controls
             }
 
             SetRenderingProperties(layout, bounds, _multiLine);
-
             context.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
             RenderLayout(context, focused, layout, bounds);
             context.PopAxisAlignedClip();

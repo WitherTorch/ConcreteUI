@@ -126,7 +126,7 @@ namespace ConcreteUI.Controls
                     {
                         using DWriteTextLayout layout = CreateVirtualTextLayout();
                         layout.MaxWidth = contentWidth;
-                        SurfaceSize = new Size(0, MathI.Ceiling(layout.GetMetrics().Height) + UIConstants.ElementMargin);
+                        SurfaceSize = new Size(0, MathI.Ceiling(layout.GetMetrics().Height));
                     }
                     else
                     {

@@ -1,5 +1,7 @@
 ﻿using System;
 
+using ConcreteUI.Graphics.Native.DirectWrite;
+using ConcreteUI.Internals;
 using ConcreteUI.Layout;
 using ConcreteUI.Utils;
 
@@ -12,15 +14,30 @@ namespace ConcreteUI.Controls
         private sealed class AutoHeightVariable : LayoutVariable
         {
             private readonly WeakReference<TextBox> _reference;
+
             public AutoHeightVariable(TextBox element)
             {
                 _reference = new WeakReference<TextBox>(element);
             }
+
             public override int Compute(in LayoutVariableManager manager)
             {
                 if (!_reference.TryGetTarget(out TextBox? element))
                     return 0;
-                return MathI.Ceiling(FontHeightHelper.GetFontHeight(NullSafetyHelper.ThrowIfNull(element._fontName), element._fontSize)) + UIConstants.ElementMargin;
+                return MathI.Ceiling(ComputeCore(element, manager)) + UIConstants.ElementMargin;
+            }
+
+            private static float ComputeCore(TextBox element, in LayoutVariableManager manager)
+            {
+                string fontName = NullSafetyHelper.ThrowIfNull(element._fontName);
+                float fontSize = element._fontSize;
+                if (element._multiLine)
+                {
+                    using DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(element._text, fontName, element._alignment, fontSize);
+                    SetRenderingPropertiesForMultiLine(layout, manager.GetComputedValue(element, LayoutProperty.Width) - UIConstants.ElementMargin);
+                    return layout.GetMetrics().Height;
+                }
+                return FontHeightHelper.GetFontHeight(fontName, fontSize);
             }
         }
     }
