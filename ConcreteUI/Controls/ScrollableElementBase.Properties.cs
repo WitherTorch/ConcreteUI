@@ -66,47 +66,7 @@ namespace ConcreteUI.Controls
                     return;
                 _surfaceSize = value;
 
-                int contentHeight = _contentBounds.Height;
-                if (contentHeight <= 0)
-                    return;
-                int oldHeight = oldSize.Height;
-                int newHeight = value.Height;
-                if (oldHeight == newHeight)
-                    return;
-                bool isSticky = StickBottom;
-                bool recalcScrollBarImmediately = false;
-                if (oldHeight > contentHeight)
-                {
-                    isSticky &= _viewportPoint.Y + contentHeight >= oldHeight;
-                    recalcScrollBarImmediately = newHeight != oldHeight;
-                }
-                else
-                {
-                    recalcScrollBarImmediately = newHeight > contentHeight;
-                }
-                if (recalcScrollBarImmediately)
-                {
-                    RecalculateLayout();
-                    if (value.Width == 0)
-                    {
-                        value.Width = _contentBounds.Width;
-                        _surfaceSize = value;
-                    }
-                }
-                else
-                {
-                    RecalcScrollBarAndUpdate();
-                    if (value.Width == 0)
-                    {
-                        value.Width = oldSize.Width;
-                        _surfaceSize = value;
-                    }
-                }
-                if (isSticky)
-                    ScrollToEnd();
-                Point viewportPoint = ViewportPoint;
-                if (!viewportPoint.IsEmpty) 
-                    ScrollingToPoint(viewportPoint.X, viewportPoint.Y);
+                RecalculateLayout(Bounds, oldSize);
             }
         }
 

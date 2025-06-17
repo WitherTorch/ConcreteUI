@@ -223,11 +223,12 @@ namespace ConcreteUI.Controls
 
         public override void OnLocationChanged() => RecalculateLayout();
 
-        private void RecalculateLayout()
+        private void RecalculateLayout() => RecalculateLayout(Bounds, _surfaceSize);
+
+        private void RecalculateLayout(in Rect bounds, Size surfaceSizeForDetection)
         {
-            Rect bounds = Bounds;
             Rect newContentBounds = bounds;
-            Size size = _surfaceSize;
+            Size surfaceSize = _surfaceSize;
             bool hasScrollBar = _hasScrollBar;
             switch (_scrollBarType)
             {
@@ -239,7 +240,7 @@ namespace ConcreteUI.Controls
                     hasScrollBar = true;
                     break;
                 case ScrollBarType.AutoVertial:
-                    if (bounds.Height < size.Height && _enabled)
+                    if (bounds.Height < surfaceSize.Height && _enabled)
                     {
                         goto case ScrollBarType.Vertical;
                     }
@@ -248,7 +249,7 @@ namespace ConcreteUI.Controls
                         goto case ScrollBarType.None;
                     }
             }
-            bool isStick = StickBottom && (!_hasScrollBar || _viewportPoint.Y + _contentBounds.Height >= size.Height);
+            bool isStick = StickBottom && (!_hasScrollBar || _viewportPoint.Y + _contentBounds.Height >= surfaceSizeForDetection.Height);
             _hasScrollBar = hasScrollBar;
             newContentBounds = OnContentBoundsChanging(newContentBounds);
             if (_contentBounds != newContentBounds)
@@ -257,24 +258,16 @@ namespace ConcreteUI.Controls
                 OnContentBoundsChanged();
             }
             Point viewportPoint = _viewportPoint;
-            int maxX = MathHelper.Max(size.Width - newContentBounds.Width, 0);
-            int maxY = MathHelper.Max(size.Height - newContentBounds.Height, 0);
+            int maxX = MathHelper.Max(surfaceSize.Width - newContentBounds.Width, 0);
+            int maxY = MathHelper.Max(surfaceSize.Height - newContentBounds.Height, 0);
             if (isStick)
-            {
                 _viewportPoint = new Point(MathHelper.Clamp(viewportPoint.X, 0, maxX), maxY);
-            }
             else
-            {
                 _viewportPoint = new Point(MathHelper.Clamp(viewportPoint.X, 0, maxX), MathHelper.Clamp(viewportPoint.Y, 0, maxY));
-            }
             if (hasScrollBar)
-            {
                 RecalcScrollBarAndUpdate(true);
-            }
             else
-            {
                 Update(UpdateFlags.Content);
-            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
