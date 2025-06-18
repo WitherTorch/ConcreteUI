@@ -890,6 +890,12 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             return hitTestMetrics;
         }
 
+        /// <inheritdoc cref="HitTestTextRange(uint, uint, float, float)" />
+        /// <param name="textRange">The specified range</param>
+        [Inline(InlineBehavior.Keep, export: true)]
+        public DWriteHitTestMetrics[] HitTestTextRange(DWriteTextRange textRange, float originX, float originY)
+            => HitTestTextRange(textRange.StartPosition, textRange.Length, originX, originY);
+
         /// <summary>
         /// The application calls this function to get a set of hit-test metrics corresponding to a range of text positions. <br/>
         /// The main usage for this is to draw highlighted selection of the text string.

@@ -70,8 +70,8 @@ namespace ConcreteUI.Controls
             {
                 if (!cached)
                 {
-                    cachedRange.StartPosition = MathHelper.Min(_startPos, _endPos);
-                    cachedRange.Length = _length;
+                    cachedRange.StartPosition = MathHelper.MakeUnsigned(MathHelper.Min(_startPos, _endPos));
+                    cachedRange.Length = MathHelper.MakeUnsigned(_length);
                     cached = true;
                 }
                 return cachedRange;

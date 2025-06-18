@@ -216,9 +216,9 @@ namespace ConcreteUI.Controls
                         {
                             if (compositionRange.StartPosition > 0)
                             {
-                                text = string.Concat(new string(passwordChar, compositionRange.StartPosition),
-                                    text.Substring(compositionRange.StartPosition, compositionRange.Length),
-                                    new string(passwordChar, text.Length - (compositionRange.StartPosition + compositionRange.Length)));
+                                text = string.Concat(new string(passwordChar, MathHelper.MakeSigned(compositionRange.StartPosition)),
+                                    text.Substring(MathHelper.MakeSigned(compositionRange.StartPosition), MathHelper.MakeSigned(compositionRange.Length)),
+                                    new string(passwordChar, text.Length - MathHelper.MakeSigned(compositionRange.StartPosition + compositionRange.Length)));
                             }
                         }
                         else
@@ -399,7 +399,7 @@ namespace ConcreteUI.Controls
                 D2D1Brush selectionBackBrush = brushes[(int)Brush.SelectionBackBrush];
                 D2D1Brush selectionForeBrush = brushes[(int)Brush.SelectionForeBrush];
                 layout.SetDrawingEffect(selectionForeBrush, textRange);
-                DWriteHitTestMetrics[] metricsArray = layout.HitTestTextRange(MathHelper.MakeUnsigned(textRange.StartPosition),
+                DWriteHitTestMetrics[] metricsArray = layout.HitTestTextRange(textRange.StartPosition,
                    MathHelper.MakeUnsigned(selectionRange.Length), 0, 0);
                 int length = metricsArray is null ? 0 : metricsArray.Length;
                 if (length > 0)
@@ -525,11 +525,11 @@ namespace ConcreteUI.Controls
             DWriteTextRange range = compositionRange;
             if (range.Length <= 0)
             {
-                range.StartPosition = CaretIndex;
-                range.Length = str.Length;
+                range.StartPosition = MathHelper.MakeUnsigned(CaretIndex);
+                range.Length = MathHelper.MakeUnsigned(str.Length);
                 _compositionCaretIndex = cursorPosition;
                 compositionRange = range;
-                Text = Text.Insert(range.StartPosition, str);
+                Text = Text.Insert(MathHelper.MakeSigned(range.StartPosition), str);
                 return;
             }
             StringBuilderTiny builder = new StringBuilderTiny();
@@ -542,9 +542,9 @@ namespace ConcreteUI.Controls
                 }
             }
             builder.Append(Text);
-            builder.Remove(range.StartPosition, range.Length);
-            builder.Insert(range.StartPosition, str);
-            range.Length = str.Length;
+            builder.Remove(MathHelper.MakeSigned(compositionRange.StartPosition), MathHelper.MakeSigned(range.Length));
+            builder.Insert(MathHelper.MakeSigned(range.StartPosition), str);
+            range.Length = MathHelper.MakeUnsigned(str.Length);
             _compositionCaretIndex = cursorPosition;
             compositionRange = range;
             Text = builder.ToString();
@@ -565,11 +565,11 @@ namespace ConcreteUI.Controls
                     }
                 }
                 builder.Append(Text);
-                builder.Remove(compositionRange.StartPosition, compositionRange.Length);
-                builder.Insert(compositionRange.StartPosition, str);
+                builder.Remove(MathHelper.MakeSigned(compositionRange.StartPosition), MathHelper.MakeSigned(compositionRange.Length));
+                builder.Insert(MathHelper.MakeSigned(compositionRange.StartPosition), str);
                 Text = builder.ToString();
                 builder.Dispose();
-                CaretIndex += compositionRange.Length;
+                CaretIndex += MathHelper.MakeSigned(compositionRange.Length);
                 _compositionCaretIndex = 0;
                 compositionRange.Length = 0;
                 Update();
@@ -588,7 +588,7 @@ namespace ConcreteUI.Controls
         {
             if (compositionRange.Length > 0)
             {
-                CaretIndex += compositionRange.Length;
+                CaretIndex += MathHelper.MakeSigned(compositionRange.Length);
                 compositionRange.Length = 0;
                 Update();
             }
@@ -661,7 +661,7 @@ namespace ConcreteUI.Controls
         #region TextBox Functions
         public void Cut()
         {
-            string text = selectionRange.Length <= 0 ? string.Empty : _text.Substring(selectionRange.ToTextRange().StartPosition, selectionRange.Length);
+            string text = selectionRange.Length <= 0 ? string.Empty : _text.Substring(MathHelper.MakeSigned(selectionRange.ToTextRange().StartPosition), selectionRange.Length);
             RemoveSelection();
             if (_window.InvokeRequired)
             {
@@ -675,7 +675,7 @@ namespace ConcreteUI.Controls
 
         public void Copy()
         {
-            string text = selectionRange.Length <= 0 ? string.Empty : _text.Substring(selectionRange.ToTextRange().StartPosition, selectionRange.Length);
+            string text = selectionRange.Length <= 0 ? string.Empty : _text.Substring(MathHelper.MakeSigned(selectionRange.ToTextRange().StartPosition), selectionRange.Length);
             if (_window.InvokeRequired)
             {
                 _window.Invoke(new Action(() => System.Windows.Forms.Clipboard.SetText(text)));
@@ -718,8 +718,8 @@ namespace ConcreteUI.Controls
             if (selectionLength <= 0)
                 return;
             DWriteTextRange range = selectionRange.ToTextRange();
-            CaretIndex = range.StartPosition;
-            Text = Text.Remove(range.StartPosition, selectionLength);
+            CaretIndex = MathHelper.MakeSigned(compositionRange.StartPosition);
+            Text = Text.Remove(MathHelper.MakeSigned(range.StartPosition), selectionLength);
             selectionRange.Length = 0;
             this.selectionRange = selectionRange;
             Update();
@@ -797,7 +797,7 @@ namespace ConcreteUI.Controls
         private void MoveToEnd(bool isSelectionMode)
         {
             int caretIndex = CaretIndex;
-            int compositionLength = compositionRange.Length;
+            int compositionLength = MathHelper.MakeSigned(compositionRange.Length);
             int textLength = Text.Length, selectionStartPos = textLength, selectionEndPos = textLength;
             bool isInComposition = compositionLength > 0;
             SelectionRange selectionRange = this.selectionRange;
@@ -864,7 +864,7 @@ namespace ConcreteUI.Controls
         [Inline(InlineBehavior.Remove)]
         private void MoveRight(bool isSelectionMode)
         {
-            int compositionLength = compositionRange.Length;
+            int compositionLength = MathHelper.MakeSigned(compositionRange.Length);
             if (compositionLength > 0)
             {
                 _compositionCaretIndex = MathHelper.Min(_compositionCaretIndex + 1, compositionLength);

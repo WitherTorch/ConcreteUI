@@ -13,14 +13,14 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// <summary>
         /// The start text position of the range.
         /// </summary>
-        public int StartPosition;
+        public uint StartPosition;
 
         /// <summary>
         /// The number of text positions in the range.
         /// </summary>
-        public int Length;
+        public uint Length;
 
-        public DWriteTextRange(int startPosition, int length)
+        public DWriteTextRange(uint startPosition, uint length)
         {
             StartPosition = startPosition;
             Length = length;
