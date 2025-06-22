@@ -1,4 +1,6 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using WitherTorch.Common.Windows.Structures;
 
@@ -25,6 +27,20 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             StartPosition = startPosition;
             Length = length;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator ==(DWriteTextRange left, DWriteTextRange right) => left.Equals(right);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(DWriteTextRange left, DWriteTextRange right) => left.Equals(right);
+
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) => obj is DWriteTextRange other && Equals(other);
+
+        public readonly bool Equals(DWriteTextRange other) => StartPosition == other.StartPosition && Length == other.Length;
+
+        public override readonly int GetHashCode() => StartPosition.GetHashCode() ^ Length.GetHashCode();
+
+        public override readonly string ToString() => $"{{ Start: {StartPosition}, Length: {Length} }}";
     }
 
     /// <summary>
@@ -89,6 +105,12 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// Total number of lines.
         /// </summary>
         public uint LineCount;
+
+        public override readonly string ToString() =>
+            $"{{ Left: {Left}, Top: {Top}, Width: {Width}, " +
+            $"WidthIncludingTrailingWhitespace: {WidthIncludingTrailingWhitespace}, " +
+            $"Height: {Height}, LayoutWidth: {LayoutWidth}, LayoutHeight: {LayoutHeight}, " +
+            $"MaxBidiReorderingDepth: {MaxBidiReorderingDepth}, LineCount: {LineCount} }}";
     }
 
     /// <summary>
@@ -131,6 +153,11 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// The line is trimmed.
         /// </summary>
         public SysBool IsTrimmed;
+
+        public override readonly string ToString() =>
+            $"{{ Length: {Length}, TrailingWhitespaceLength: {TrailingWhitespaceLength}, " +
+            $"NewlineLength: {NewlineLength}, Height: {Height}, Baseline: {Baseline}, " +
+            $"IsTrimmed: {IsTrimmed} }}";
     }
 
     /// <summary>
@@ -183,5 +210,10 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// Range is trimmed.
         /// </summary>
         public SysBool IsTrimmed;
+
+        public override readonly string ToString() =>
+            $"{{ TextPosition: {TextPosition}, Length: {Length}, Left: {Left}, " +
+            $"Top: {Top}, Width: {Width}, Height: {Height}, BidiLevel: {BidiLevel}, " +
+            $"IsText: {IsText}, IsTrimmed: {IsTrimmed} }}";
     }
 }

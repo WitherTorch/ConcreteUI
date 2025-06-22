@@ -19,8 +19,7 @@ namespace ConcreteUI.Controls
                 _enabled = value;
 
                 OnEnableChanged(value);
-                RecalculateLayout();
-                Update();
+                Update(UpdateFlags.RecalcLayout);
             }
         }
 
@@ -49,8 +48,7 @@ namespace ConcreteUI.Controls
                     return;
                 _scrollBarType = value;
 
-                RecalculateLayout();
-                Update();
+                Update(UpdateFlags.RecalcLayout);
             }
         }
 
@@ -61,12 +59,10 @@ namespace ConcreteUI.Controls
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                Size oldSize = _surfaceSize;
-                if (oldSize == value)
+                if (_surfaceSize == value)
                     return;
                 _surfaceSize = value;
-
-                RecalculateLayout(Bounds, oldSize);
+                Update(UpdateFlags.RecalcLayout);
             }
         }
 

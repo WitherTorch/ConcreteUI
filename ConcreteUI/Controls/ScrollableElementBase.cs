@@ -94,14 +94,6 @@ namespace ConcreteUI.Controls
         private UpdateFlags GetUpdateFlagsAndReset()
             => (UpdateFlags)Interlocked.Exchange(ref _updateFlagsRaw, (long)UpdateFlags.None);
 
-        [Inline(InlineBehavior.Remove)]
-        private void RecalcScrollBarAndUpdate()
-            => RecalcScrollBarAndUpdate(false);
-
-        [Inline(InlineBehavior.Remove)]
-        private void RecalcScrollBarAndUpdate(bool redrawAll)
-            => Update((redrawAll ? UpdateFlags.All : UpdateFlags.ScrollBar) | UpdateFlags.RecalcScrollBar);
-
         protected abstract bool RenderContent(DirtyAreaCollector collector);
 
         protected virtual void OnScrollBarUpButtonClicked() => Scrolling(-60);
@@ -138,11 +130,15 @@ namespace ConcreteUI.Controls
 
             D2D1DeviceContext context = Renderer.GetDeviceContext();
             Rect bounds = Bounds;
-            Rect contentBounds = _contentBounds;
             D2D1Brush[] brushes = _brushes;
             bool enabled = _enabled;
             bool drawWhenDisabled = _drawWhenDisabled;
             bool hasScrollBar = _hasScrollBar;
+
+            if ((updateFlags & UpdateFlags.RecalcLayout) == UpdateFlags.RecalcLayout)
+                updateFlags = (updateFlags & ~UpdateFlags.RecalcLayout) | RecalculateLayout(bounds);
+
+            Rect contentBounds = _contentBounds;
             bool recalcScrollBar = (updateFlags & UpdateFlags.RecalcScrollBar) == UpdateFlags.RecalcScrollBar;
             bool redrawAll = (updateFlags & UpdateFlags.All) == UpdateFlags.All;
             bool redrawScrollBar = (updateFlags & UpdateFlags.ScrollBar) == UpdateFlags.ScrollBar;
@@ -219,16 +215,19 @@ namespace ConcreteUI.Controls
             };
         }
 
-        public override void OnSizeChanged() => RecalculateLayout();
+        public override void OnSizeChanged() => Update(UpdateFlags.RecalcLayout);
 
-        public override void OnLocationChanged() => RecalculateLayout();
+        public override void OnLocationChanged() => Update(UpdateFlags.RecalcLayout);
 
-        private void RecalculateLayout() => RecalculateLayout(Bounds, _surfaceSize);
+        private Size _oldSurfaceSize = Size.Empty;
 
-        private void RecalculateLayout(in Rect bounds, Size surfaceSizeForDetection)
+        private UpdateFlags RecalculateLayout(in Rect bounds)
         {
-            Rect newContentBounds = bounds;
+            Rect contentBounds = bounds;
+            Size oldSurfaceSize = _oldSurfaceSize;
             Size surfaceSize = _surfaceSize;
+            _oldSurfaceSize = surfaceSize;
+
             bool hasScrollBar = _hasScrollBar;
             switch (_scrollBarType)
             {
@@ -236,7 +235,7 @@ namespace ConcreteUI.Controls
                     hasScrollBar = false;
                     break;
                 case ScrollBarType.Vertical:
-                    newContentBounds.Width -= UIConstantsPrivate.ScrollBarWidth + 1;
+                    contentBounds.Width -= UIConstantsPrivate.ScrollBarWidth + 1;
                     hasScrollBar = true;
                     break;
                 case ScrollBarType.AutoVertial:
@@ -249,25 +248,25 @@ namespace ConcreteUI.Controls
                         goto case ScrollBarType.None;
                     }
             }
-            bool isStick = StickBottom && (!_hasScrollBar || _viewportPoint.Y + _contentBounds.Height >= surfaceSizeForDetection.Height);
+            bool isStick = StickBottom && (!_hasScrollBar || _viewportPoint.Y + _contentBounds.Height >= oldSurfaceSize.Height);
             _hasScrollBar = hasScrollBar;
-            newContentBounds = OnContentBoundsChanging(newContentBounds);
-            if (_contentBounds != newContentBounds)
+            contentBounds = OnContentBoundsChanging(contentBounds);
+            if (_contentBounds != contentBounds)
             {
-                _contentBounds = newContentBounds;
+                _contentBounds = contentBounds;
                 OnContentBoundsChanged();
             }
             Point viewportPoint = _viewportPoint;
-            int maxX = MathHelper.Max(surfaceSize.Width - newContentBounds.Width, 0);
-            int maxY = MathHelper.Max(surfaceSize.Height - newContentBounds.Height, 0);
+            int maxX = MathHelper.Max(surfaceSize.Width - contentBounds.Width, 0);
+            int maxY = MathHelper.Max(surfaceSize.Height - contentBounds.Height, 0);
             if (isStick)
                 _viewportPoint = new Point(MathHelper.Clamp(viewportPoint.X, 0, maxX), maxY);
             else
                 _viewportPoint = new Point(MathHelper.Clamp(viewportPoint.X, 0, maxX), MathHelper.Clamp(viewportPoint.Y, 0, maxY));
+            
             if (hasScrollBar)
-                RecalcScrollBarAndUpdate(true);
-            else
-                Update(UpdateFlags.Content);
+                return UpdateFlags.RecalcScrollBar | UpdateFlags.All;
+            return UpdateFlags.Content;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -321,11 +320,10 @@ namespace ConcreteUI.Controls
                     currentY = maxY;
                 }
             }
-            if (_viewportPoint.Y != currentY)
-            {
-                _viewportPoint.Y = currentY;
-                RecalcScrollBarAndUpdate(update);
-            }
+            if (_viewportPoint.Y == currentY)
+                return;
+            _viewportPoint.Y = currentY;
+            Update(UpdateFlags.RecalcScrollBar | UpdateFlags.All);
         }
 
         protected virtual void ScrollingX(int scrollStep, bool update = true) => ScrollingTo(_viewportPoint.X + scrollStep, update);
@@ -345,11 +343,10 @@ namespace ConcreteUI.Controls
                     currentX = maxX;
                 }
             }
-            if (_viewportPoint.X != currentX)
-            {
-                _viewportPoint.X = currentX;
-                RecalcScrollBarAndUpdate(update);
-            }
+            if (_viewportPoint.X == currentX)
+                return;
+            _viewportPoint.X = currentX;
+            Update(UpdateFlags.RecalcScrollBar | UpdateFlags.All);
         }
 
         protected virtual void ScrollingToPoint(int viewportX, int viewportY, bool update = true)
@@ -377,11 +374,10 @@ namespace ConcreteUI.Controls
                 currentY = maxY;
             }
             Point newViewportPoint = new Point(currentX, currentY);
-            if (_viewportPoint != newViewportPoint)
-            {
-                _viewportPoint = newViewportPoint;
-                RecalcScrollBarAndUpdate(update);
-            }
+            if (_viewportPoint == newViewportPoint)
+                return;
+            _viewportPoint = newViewportPoint;
+            Update(UpdateFlags.RecalcScrollBar | UpdateFlags.All);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -394,14 +390,14 @@ namespace ConcreteUI.Controls
         public void ScrollToStart()
         {
             _viewportPoint.Y = 0;
-            RecalcScrollBarAndUpdate(true);
+            Update(UpdateFlags.RecalcScrollBar | UpdateFlags.All);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ScrollToEnd()
         {
             _viewportPoint.Y = MathHelper.Max(_surfaceSize.Height - _contentBounds.Height, 0);
-            RecalcScrollBarAndUpdate(true);
+            Update(UpdateFlags.RecalcScrollBar | UpdateFlags.All);
         }
 
         private void MoveScrollBarButtonY(int movementY)
@@ -423,7 +419,7 @@ namespace ConcreteUI.Controls
                     viewPortY = 0;
                 }
                 _viewportPoint.Y = viewPortY;
-                RecalcScrollBarAndUpdate(true);
+                Update(UpdateFlags.RecalcScrollBar | UpdateFlags.All);
             }
         }
 

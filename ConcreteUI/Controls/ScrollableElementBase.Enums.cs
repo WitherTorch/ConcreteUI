@@ -11,7 +11,8 @@ namespace ConcreteUI.Controls
             Content = 0b001,
             ScrollBar = 0b010,
             All = Content | ScrollBar,
-            RecalcScrollBar = 0b100
+            RecalcScrollBar = 0b100,
+            RecalcLayout = 0b1000 | RecalcScrollBar,
         }
 
         private enum Brush
