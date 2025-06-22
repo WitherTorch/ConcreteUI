@@ -129,7 +129,32 @@ namespace ConcreteUI.Graphics.Native.WIC
             return new WICBitmapDecoder(nativePointer, ReferenceType.Owned);
         }
 
+        public WICBitmapScaler CreateBitmapScaler()
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateBitmapScaler);
+            int hr = ((delegate*<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new WICBitmapScaler(nativePointer, ReferenceType.Owned);
+        }
 
+        public WICBitmapClipper CreateBitmapClipper()
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateBitmapClipper);
+            int hr = ((delegate*<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new WICBitmapClipper(nativePointer, ReferenceType.Owned);
+        }
+
+        public WICBitmapFlipRotator CreateBitmapFlipRotator()
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateBitmapFlipRotator);
+            int hr = ((delegate*<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new WICBitmapFlipRotator(nativePointer, ReferenceType.Owned);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint ConvertFileAccessToWin32GenericAccess(FileAccess access)
