@@ -140,16 +140,14 @@ namespace ConcreteUI.Window
             {
                 if (InvokeRequired)
                 {
-                    if (_focusedFunc == null)
-                    {
-                        _focusedFunc = () => base.Focused;
-                    }
+                    _focusedFunc ??= () => base.Focused;
+#if NET8_0_OR_GREATER
+                    return Invoke(_focusedFunc);
+#else
                     return (bool)Invoke(_focusedFunc);
+#endif
                 }
-                else
-                {
-                    return base.Focused;
-                }
+                return base.Focused;
             }
         }
 
@@ -808,7 +806,7 @@ namespace ConcreteUI.Window
                     loc.Y -= (Size.Height - Size2.Height) / 2;
                     if (loc.X < 0) loc.X = 0;
                     if (loc.Y < 0) loc.Y = 0;
-                    if (User32.SetWindowPos(Handle, IntPtr.Zero, loc.X, loc.Y, Size.Width, Size.Height, 
+                    if (User32.SetWindowPos(Handle, IntPtr.Zero, loc.X, loc.Y, Size.Width, Size.Height,
                         WindowPositionFlags.SwapWithNoRedraw | WindowPositionFlags.SwapWithNoActivate) != 0)
                     {
                         Location = loc;
@@ -830,10 +828,9 @@ namespace ConcreteUI.Window
         {
             if (InvokeRequired)
             {
-                if (_pointToClientFunc == null)
-                    _pointToClientFunc = base.PointToClient;
-                if (IsDisposed) return new PointF(0, 0);
-                else return ScalingPointF((Point)Invoke(_pointToClientFunc, point), windowScaleFactor);
+                if (IsDisposed)
+                    return PointF.Empty;
+                return ScalingPointF((Point)Invoke((_pointToClientFunc ??= base.PointToClient), point), windowScaleFactor);
             }
             else
             {
@@ -845,10 +842,9 @@ namespace ConcreteUI.Window
         {
             if (InvokeRequired)
             {
-                if (_pointToClientFunc == null)
-                    _pointToClientFunc = base.PointToClient;
-                if (IsDisposed) return new Point(0, 0);
-                else return (Point)Invoke(_pointToClientFunc, point);
+                if (IsDisposed)
+                    return Point.Empty;
+                return (Point)Invoke((_pointToClientFunc ??= base.PointToClient), point);
             }
             else
             {
@@ -860,9 +856,12 @@ namespace ConcreteUI.Window
         {
             if (InvokeRequired)
             {
-                if (_clipboard_ContainsTextFunc == null)
-                    _clipboard_ContainsTextFunc = Clipboard.ContainsText;
+                _clipboard_ContainsTextFunc ??= Clipboard.ContainsText;
+#if NET8_0_OR_GREATER
+                return Invoke(_clipboard_ContainsTextFunc);
+#else
                 return (bool)Invoke(_clipboard_ContainsTextFunc);
+#endif
             }
             else
             {
@@ -871,8 +870,8 @@ namespace ConcreteUI.Window
         }
 
 
-        #endregion
-        #endregion
+#endregion
+#endregion
 
         #region Inline Macros
         [Inline(InlineBehavior.Remove)]

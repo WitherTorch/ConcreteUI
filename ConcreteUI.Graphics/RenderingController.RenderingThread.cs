@@ -4,11 +4,8 @@ using System.Threading;
 
 using ConcreteUI.Graphics.Native;
 
-using InlineMethod;
-
 using LocalsInit;
 
-using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Helpers;
 
 namespace ConcreteUI.Graphics
@@ -18,20 +15,17 @@ namespace ConcreteUI.Graphics
         private sealed class RenderingThread : IDisposable
         {
             private static readonly long NativeTicksPerSecond;
-            private static readonly long NativeTicksPerMillisecond;
-            private static readonly long NativeTicksForLargeSleepGap;
-            private static readonly long NativeTicksForSmallSleepGap;
 
             private static long _serialNumber = -1;
 
             private readonly RenderingController _controller;
             private readonly Thread _thread;
+            private readonly AutoResetEvent _trigger;
+            private readonly ManualResetEvent _exitTrigger;
 
             private bool _disposed;
             private uint _framesPerSecond;
             private long _nativeTicksPerFrameCycle;
-            private AutoResetEvent? _trigger;
-            private ManualResetEvent? _exitTrigger;
 
             [LocalsInit(false)]
             unsafe static RenderingThread()
@@ -40,10 +34,6 @@ namespace ConcreteUI.Graphics
                 if (!Kernel32.QueryPerformanceFrequency(&frequency))
                     throw new NotSupportedException("Cannot query QPC frequency!");
                 NativeTicksPerSecond = frequency;
-                NativeTicksPerMillisecond = frequency / 1000;
-
-                NativeTicksForLargeSleepGap = frequency / 1000 * 15;
-                NativeTicksForSmallSleepGap = frequency / 1000 / 5;
             }
 
             public RenderingThread(RenderingController controller, uint framesPerSecond)
@@ -54,7 +44,7 @@ namespace ConcreteUI.Graphics
                     IsBackground = true,
                     Priority = ThreadPriority.AboveNormal
                 };
-                _trigger = new AutoResetEvent(true);
+                _trigger = new AutoResetEvent(false);
                 _exitTrigger = new ManualResetEvent(false);
                 _framesPerSecond = framesPerSecond;
                 _nativeTicksPerFrameCycle = NativeTicksPerSecond / framesPerSecond;
@@ -75,35 +65,56 @@ namespace ConcreteUI.Graphics
 
             public void DoRender()
             {
-                _trigger?.Set();
+                AutoResetEvent trigger = _trigger;
+                if (trigger.SafeWaitHandle.IsClosed)
+                    return;
+                try
+                {
+                    trigger.Set();
+                }
+                catch (Exception)
+                {
+                }
             }
 
             public void Stop()
             {
                 Interlocked.Exchange(ref _nativeTicksPerFrameCycle, -1);
-                _trigger?.Set();
+                AutoResetEvent trigger = _trigger;
+                if (trigger.SafeWaitHandle.IsClosed)
+                    return;
+                try
+                {
+                    trigger.Set();
+                }
+                catch (ObjectDisposedException)
+                {
+                }
             }
 
-            private void ThreadLoop()
+            private unsafe void ThreadLoop()
             {
                 ThreadHelper.SetCurrentThreadName("Concrete UI Rendering Thread #" + Interlocked.Increment(ref _serialNumber).ToString("D"));
                 RenderingController controller = _controller;
-                AutoResetEvent? trigger = _trigger;
-                ManualResetEvent? exitTrigger = _exitTrigger;
-                long lastRenderTime = GetCurrentNativeTicks();
+                AutoResetEvent trigger = _trigger;
+                ManualResetEvent exitTrigger = _exitTrigger;
+                IntPtr sleepTimer = Kernel32.CreateWaitableTimerW(null, false, null);
                 do
                 {
-                    trigger?.WaitOne(Timeout.Infinite, exitContext: true);
+                    trigger.WaitOne(Timeout.Infinite, exitContext: true);
                     long frameCycle = Interlocked.Read(ref _nativeTicksPerFrameCycle);
                     if (frameCycle < 0L)
                         break;
-                    lastRenderTime = GetCurrentNativeTicks() - lastRenderTime;
-                    if (frameCycle > lastRenderTime)
-                        SleepInTicks(frameCycle - lastRenderTime, removeNonPositiveCheck: true);
-                    lastRenderTime = GetCurrentNativeTicks();
+                    frameCycle += GetSystemTimeInNativeTicks();
+                    Thread.MemoryBarrier();
                     controller.RenderCore();
+                    Kernel32.SetWaitableTimer(sleepTimer, &frameCycle, 0, null, null, false);
+                    Kernel32.WaitForSingleObject(sleepTimer, Timeout.Infinite);
                 } while (true);
-                exitTrigger?.Set();
+                Kernel32.CloseHandle(sleepTimer);
+                trigger.Dispose();
+                exitTrigger.Set();
+                exitTrigger.Dispose();
             }
 
             [LocalsInit(false)]
@@ -116,71 +127,29 @@ namespace ConcreteUI.Graphics
                 return result;
             }
 
-#pragma warning disable CS0162
-            [Inline(InlineBehavior.Remove)]
-            private static void SleepInTicks(long ticks, [InlineParameter] bool removeNonPositiveCheck)
-            {
-                if (!removeNonPositiveCheck && ticks <= 0)
-                    return;
-                if (Constants.UsePreciseSleepFunction)
-                {
-                    SleepInNativeTicksPrecise(ticks);
-                    return;
-                }
-                SleepInNativeTicksImprecise(ticks);
-            }
-#pragma warning restore CS0162
-
+            [LocalsInit(false)]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static void SleepInNativeTicksPrecise(long ticks)
+            private static unsafe long GetSystemTimeInNativeTicks()
             {
-                if (ticks >= NativeTicksForLargeSleepGap)
-                {
-                    SleepInNativeTicksPreciseLarge(ticks);
-                    return;
-                }
-                SleepInNativeTicksPreciseSmall(ticks);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static void SleepInNativeTicksImprecise(long ticks)
-            {
-                Thread.Sleep(unchecked((int)(ticks / NativeTicksPerMillisecond)));
-            }
-
-            private static void SleepInNativeTicksPreciseLarge(long ticks)
-            {
-                long now = GetCurrentNativeTicks();
-                Thread.Sleep(unchecked((int)(ticks / NativeTicksPerMillisecond)));
-                if ((now - GetCurrentNativeTicks()) >= ticks)
-                    return;
-                SleepInNativeTicksPreciseSmall(ticks);
-            }
-
-            private static void SleepInNativeTicksPreciseSmall(long ticks)
-            {
-                long now = GetCurrentNativeTicks();
-                long gap = NativeTicksForSmallSleepGap;
-                do
-                {
-                    SleepInNativeTicksPreciseTiny();
-                    long oldNow = now;
-                    now = GetCurrentNativeTicks();
-                    ticks -= now - oldNow;
-                } while (ticks >= gap);
-                if (ticks > 0)
-                    SleepInNativeTicksPreciseTiny();
-            }
-
-            [Inline(InlineBehavior.Remove)]
-            private static void SleepInNativeTicksPreciseTiny()
-            {
-                Thread.Sleep(0);
-                Thread.Yield();
+                long result;
+                Kernel32.GetSystemTimeAsFileTime(&result);
+                return result;
             }
 
             public bool WaitForExit(int millisecondsTimeout)
-                => _exitTrigger?.WaitOne(millisecondsTimeout) != false;
+            {
+                ManualResetEvent exitTrigger = _exitTrigger;
+                if (exitTrigger.SafeWaitHandle.IsClosed)
+                    return true;
+                try
+                {
+                    return exitTrigger.WaitOne(millisecondsTimeout);
+                }
+                catch (ObjectDisposedException)
+                {
+                    return true;
+                }
+            }
 
             private void DisposeCore()
             {
@@ -189,8 +158,6 @@ namespace ConcreteUI.Graphics
                 _disposed = true;
                 Stop();
                 WaitForExit(200);
-                DisposeHelper.SwapDispose(ref _trigger);
-                DisposeHelper.SwapDispose(ref _exitTrigger);
             }
 
             public void Dispose()

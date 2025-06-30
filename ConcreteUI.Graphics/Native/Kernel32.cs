@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 using System.Security;
 
 namespace ConcreteUI.Graphics.Native
@@ -13,5 +14,20 @@ namespace ConcreteUI.Graphics.Native
 
         [DllImport(KERNEL32_DLL)]
         public static extern bool QueryPerformanceCounter(long* lpPerformanceCount);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern void GetSystemTimeAsFileTime(long* lpSystemTimeAsFileTime);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern IntPtr CreateWaitableTimerW(void* lpTimerAttributes, bool bManualReset, char* lpTimerName);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern bool SetWaitableTimer(IntPtr hTimer, long* lpDueTime, nint lPeriod, void* pfnCompletionRoutine, void* lpArgToCompletionRoutine, bool fResume);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern uint WaitForSingleObject(IntPtr hHandle, int dwMilliseconds);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern bool CloseHandle(IntPtr hObject);
     }
 }
