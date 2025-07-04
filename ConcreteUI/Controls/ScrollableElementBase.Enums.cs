@@ -5,7 +5,7 @@ namespace ConcreteUI.Controls
     partial class ScrollableElementBase
     {
         [Flags]
-        protected enum UpdateFlags : long
+        protected enum UpdateFlags : ulong
         {
             None = 0b000,
             Content = 0b001,
@@ -13,6 +13,11 @@ namespace ConcreteUI.Controls
             All = Content | ScrollBar,
             RecalcScrollBar = 0b100,
             RecalcLayout = 0b1000 | RecalcScrollBar,
+
+            _TriggerRenderEventStart = 0b10000,
+            TriggerViewportPointChanged = _TriggerRenderEventStart,
+
+            _NormalFlagAllTrue = _TriggerRenderEventStart - 1
         }
 
         private enum Brush

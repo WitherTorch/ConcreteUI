@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Drawing;
 using System.Threading;
 
 using ConcreteUI.Graphics;
@@ -8,14 +7,13 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
-using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
     public sealed partial class FontIconButton : ButtonBase, IDisposable
     {
-        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
+        private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
             "face",
             "face.hovered",
@@ -23,7 +21,6 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly string[] _brushNames = new string[(int)Brush._Last];
 
         private FontIcon? _icon;
         private bool _disposed;
@@ -35,10 +32,7 @@ namespace ConcreteUI.Controls
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
-            => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
-
-        protected override void OnThemePrefixChanged(string prefix)
-            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
+            => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int) Brush._Last);
 
         protected override bool RenderCore(DirtyAreaCollector collector)
         {

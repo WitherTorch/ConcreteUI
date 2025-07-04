@@ -14,7 +14,7 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class ProgressBar : UIElement, IDisposable
     {
-        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
+        private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
             "back",
             "border",
@@ -22,7 +22,6 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly string[] _brushNames = new string[(int)Brush._Last];
 
         private float _value, _maximium;
         private bool _disposed;
@@ -34,10 +33,7 @@ namespace ConcreteUI.Controls
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
-            => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
-
-        protected override void OnThemePrefixChanged(string prefix)
-            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
+            => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
 
         protected override bool RenderCore(DirtyAreaCollector collector)
         {

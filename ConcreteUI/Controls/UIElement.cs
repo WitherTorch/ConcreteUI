@@ -13,6 +13,7 @@ using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
 using WitherTorch.Common;
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
@@ -40,8 +41,7 @@ namespace ConcreteUI.Controls
             _renderer = renderer;
             _semaphore = new SemaphoreSlim(1, 1);
             _identifier = Interlocked.Increment(ref _identifierGenerator) - 1;
-            _themePrefix = themePrefix;
-            OnThemePrefixChanged(themePrefix);
+            _themePrefix = themePrefix.ToLowerAscii();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -183,7 +183,21 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ApplyThemeContext(IThemeContext themeContext)
+        private void ApplyThemeContext(IThemeContext? value)
+        {
+            if (value is not null)
+            {
+                ApplyThemeContextCore(value);
+                return;
+            }
+            IThemeResourceProvider? provider = Renderer.GetThemeResourceProvider();
+            if (provider is not null)
+                ApplyThemeCore(provider);
+            Update();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ApplyThemeContextCore(IThemeContext themeContext)
         {
             IRenderer renderer = Renderer;
             SemaphoreSlim semaphore = _semaphore;
@@ -207,8 +221,6 @@ namespace ConcreteUI.Controls
         }
 
         protected abstract void ApplyThemeCore(IThemeResourceProvider provider);
-
-        protected abstract void OnThemePrefixChanged(string prefix);
 
         public override int GetHashCode() => _identifier;
 

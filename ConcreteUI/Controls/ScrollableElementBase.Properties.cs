@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using System.Runtime.CompilerServices;
 
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
@@ -66,10 +67,38 @@ namespace ConcreteUI.Controls
             }
         }
 
-        protected Point ViewportPoint
+        public Point ViewportPoint
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _viewportPoint;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            protected set
+            {
+                if (_viewportPoint == value)
+                    return;
+                Size surfaceSize = _surfaceSize;
+                Rect bounds = _contentBounds;
+                if (value.X < 0)
+                    value.X = 0;
+                else
+                {
+                    int maxX = MathHelper.Max(surfaceSize.Width - bounds.Width, 0);
+                    if (value.X > maxX)
+                        value.X = maxX;
+                }
+                if (value.Y < 0)
+                    value.Y = 0;
+                else
+                {
+                    int maxY = MathHelper.Max(surfaceSize.Height - bounds.Height, 0);
+                    if (value.Y > maxY)
+                        value.Y = maxY;
+                }
+                if (_viewportPoint == value)
+                    return;
+                _viewportPoint = value;
+                Update(UpdateFlags.RecalcScrollBar | UpdateFlags.TriggerViewportPointChanged | UpdateFlags.All);
+            }
         }
 
         protected Rect ContentBounds
@@ -95,8 +124,7 @@ namespace ConcreteUI.Controls
             {
                 if (SequenceHelper.Equals(_scrollBarThemePrefix, value))
                     return;
-                _scrollBarThemePrefix = value;
-                OnScrollBarThemePrefixChanged(value);
+                _scrollBarThemePrefix = value.ToLowerAscii();
             }
         }
     }

@@ -6,6 +6,7 @@ using System.Threading;
 using WitherTorch.Common;
 using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
@@ -123,8 +124,7 @@ namespace ConcreteUI.Controls
             {
                 if (SequenceHelper.Equals(_checkBoxThemePrefix, value))
                     return;
-                _checkBoxThemePrefix = value;
-                OnCheckBoxThemePrefixChanged(value);
+                _checkBoxThemePrefix = value.ToLowerAscii();
             }
         }
     }

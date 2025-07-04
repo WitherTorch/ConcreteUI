@@ -44,8 +44,6 @@ namespace ConcreteUI.Controls
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider) => _collection.Value?.ApplyTheme(provider);
 
-        protected override void OnThemePrefixChanged(string prefix) { }
-
         protected override bool RenderCore(DirtyAreaCollector collector) => true;
 
         public void RenderChildBackground(UIElement child, D2D1DeviceContext context) => RenderBackground(context);

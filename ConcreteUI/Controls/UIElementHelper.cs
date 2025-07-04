@@ -27,6 +27,14 @@ namespace ConcreteUI.Controls
             if (length != nodes.Length)
                 throw new ArgumentException("The length of " + nameof(nodes) + " must equals to the length of " + nameof(brushes) + " !");
             ApplyTheme(provider, brushes, nodes, length);
+        }       
+        
+        public static void ApplyTheme(IThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes, string nodePrefix)
+        {
+            int length = brushes.Length;
+            if (length != nodes.Length)
+                throw new ArgumentException("The length of " + nameof(nodes) + " must equals to the length of " + nameof(brushes) + " !");
+            ApplyTheme(provider, brushes, nodes, nodePrefix, length);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
@@ -34,6 +42,13 @@ namespace ConcreteUI.Controls
         {
             for (int i = 0; i < length; i++)
                 ApplyTheme(provider, ref brushes[i], nodes[i]);
+        }
+
+        [Inline(InlineBehavior.Keep, export: true)]
+        public static void ApplyTheme(IThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes, string nodePrefix, [InlineParameter] int length)
+        {
+            for (int i = 0; i < length; i++)
+                ApplyTheme(provider, ref brushes[i], nodePrefix + "." + nodes[i]);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
@@ -79,14 +94,6 @@ namespace ConcreteUI.Controls
         {
             foreach (UIElement element in elements)
                 element?.ApplyTheme(provider);
-        }
-
-        [Inline(InlineBehavior.Keep, export: true)]
-        public static void CopyStringArrayAndAppendDottedPrefix(string[] source, string[] destination, int length, string prefix)
-        {
-            prefix = prefix.ToLowerAscii();
-            for (int i = 0; i < length; i++)
-                destination[i] = prefix + "." + source[i].ToLowerAscii();
         }
 
         public static D2D1Resource GetOrCreateCheckSign(ref D2D1Resource? checkSign, D2D1DeviceContext context, D2D1StrokeStyle strokeStyle, in Rect drawingBounds)

@@ -17,7 +17,6 @@ using ConcreteUI.Utils;
 using InlineMethod;
 
 using WitherTorch.Common.Collections;
-using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Threading;
 using WitherTorch.Common.Windows.Structures;
@@ -26,7 +25,7 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class GroupBox : UIElement, IDisposable, IContainerElement
     {
-        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
+        private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
             "back",
             "border",
@@ -34,7 +33,6 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly LazyTiny<LayoutVariable>[] _contentLayoutReferences;
         private readonly ObservableList<UIElement> _children;
 
@@ -84,7 +82,7 @@ namespace ConcreteUI.Controls
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
-            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
             foreach (UIElement child in _children)
                 child.ApplyTheme(provider);
             string fontName = provider.FontName;
@@ -98,9 +96,6 @@ namespace ConcreteUI.Controls
             DisposeHelper.SwapDisposeInterlocked(ref _textLayout);
             Update(RenderObjectUpdateFlags.Format, RedrawType.RedrawAllContent);
         }
-
-        protected override void OnThemePrefixChanged(string prefix)
-            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         public void RenderChildBackground(UIElement child, D2D1DeviceContext context)
             => RenderBackground(context, _brushes[(int)Brush.BackBrush]);

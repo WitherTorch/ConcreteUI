@@ -21,13 +21,12 @@ namespace ConcreteUI.Controls
 {
 	public sealed partial class Label : UIElement, IDisposable
 	{
-		private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
+		private static readonly string[] _brushNames = new string[(int)Brush._Last]
 		{
 			"fore"
 		};
 
 		private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-		private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[2];
 
         private DWriteTextLayout? _layout;
@@ -67,14 +66,11 @@ namespace ConcreteUI.Controls
 
 		protected override void ApplyThemeCore(IThemeResourceProvider provider)
 		{
-			UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
-			_fontName = provider.FontName;
+            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
+            _fontName = provider.FontName;
 			DisposeHelper.SwapDisposeInterlocked(ref _layout);
 			Update(RenderObjectUpdateFlags.Format);
 		}
-
-        protected override void OnThemePrefixChanged(string prefix)
-            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         [Inline(InlineBehavior.Remove)]
 		private void Update(RenderObjectUpdateFlags flags)

@@ -20,7 +20,7 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGlobalMouseEvents
     {
-        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
+        private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
             "back",
             "back.disabled",
@@ -32,7 +32,6 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly ComboBox _parent;
         private readonly CoreWindow _window;
 
@@ -55,14 +54,11 @@ namespace ConcreteUI.Controls
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             base.ApplyThemeCore(provider);
-            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
             ComboBox parent = _parent;
             using DWriteTextFormat format = TextFormatHelper.CreateTextFormat(TextAlignment.MiddleLeft, provider.FontName, parent.FontSize);
             Prepare(format);
         }
-
-        protected override void OnThemePrefixChanged(string prefix)
-            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
 
@@ -228,11 +224,11 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        protected override void OnScrollBarUpButtonClicked() => base.Scrolling(-_itemHeight, true);
+        public override void Scrolling(int scrollStep) => base.Scrolling(scrollStep / 4);
 
-        protected override void OnScrollBarDownButtonClicked() => base.Scrolling(_itemHeight, true);
+        protected override void OnScrollBarUpButtonClicked() => base.Scrolling(-_itemHeight);
 
-        protected override void Scrolling(int scrollStep, bool update) => base.Scrolling(scrollStep / 4, update);
+        protected override void OnScrollBarDownButtonClicked() => base.Scrolling(_itemHeight);
 
         protected override void DisposeCore(bool disposing)
         {

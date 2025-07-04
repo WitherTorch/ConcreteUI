@@ -25,8 +25,6 @@ using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Text;
 using WitherTorch.Common.Windows.Structures;
 
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
-
 using Cursor = System.Windows.Forms.Cursor;
 using Keys = System.Windows.Forms.Keys;
 
@@ -35,7 +33,7 @@ namespace ConcreteUI.Controls
     public sealed partial class TextBox : ScrollableElementBase, IIMEControl, IGlobalMouseEvents, IKeyEvents, ICharacterEvents, ICursorPredicator
     {
         private static readonly char[] LineSeparators = ['\r', '\n'];
-        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
+        private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
             "back",
             "back.disabled",
@@ -48,7 +46,6 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[1];
         private readonly CoreWindow _window;
         private readonly InputMethod? _ime;
@@ -102,15 +99,12 @@ namespace ConcreteUI.Controls
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             base.ApplyThemeCore(provider);
-            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
             _fontName = provider.FontName;
             DisposeHelper.SwapDispose(ref _layout);
             DisposeHelper.SwapDispose(ref _watermarkLayout);
             Update(RenderObjectUpdateFlags.Format);
         }
-
-        protected override void OnThemePrefixChanged(string prefix)
-            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
 
@@ -163,7 +157,7 @@ namespace ConcreteUI.Controls
                 compositionRange.Length = 0;
                 selectionRange.Length = 0;
                 if (!_multiLine)
-                    ScrollingToPoint(0, 0, false);
+                    ViewportPoint = Point.Empty;
             }
             Update();
         }
@@ -337,7 +331,7 @@ namespace ConcreteUI.Controls
             }
             #endregion
             #endregion
-            ScrollingToPoint((int)Math.Round(viewportPoint.X), (int)Math.Round(viewportPoint.Y), drag);
+            ViewportPoint = new Point(MathI.Round(viewportPoint.X), MathI.Round(viewportPoint.Y));
         }
 
         protected override bool RenderContent(DirtyAreaCollector collector)

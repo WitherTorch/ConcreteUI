@@ -28,14 +28,14 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class ListBox : ScrollableElementBase
     {
-        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
+        private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
             "back",
             "back.disabled",
             "border",
             "fore"
         };
-        private static readonly string[] CheckBoxBrushNamesTemplate = new string[(int)CheckBoxBrush._Last]
+        private static readonly string[] _checkBoxBrushNames = new string[(int)CheckBoxBrush._Last]
         {
             "border",
             "border.hovered" ,
@@ -47,9 +47,7 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly D2D1Brush[] _checkBoxBrushes = new D2D1Brush[(int)CheckBoxBrush._Last];
-        private readonly string[] _checkBoxBrushNames = new string[(int)CheckBoxBrush._Last];
         private readonly List<BitVector64> _stateVectorList;
         private readonly ObservableList<string> _items;
 
@@ -74,16 +72,15 @@ namespace ConcreteUI.Controls
             _fontSize = UIConstants.BoxFontSize;
             _selectedIndex = -1;
             _recalcFormat = Booleans.TrueLong;
-            _checkBoxThemePrefix = "app.checkBox";
-            OnCheckBoxThemePrefixChanged("app.checkBox");
+            _checkBoxThemePrefix = "app.checkBox".ToLowerAscii();
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             base.ApplyThemeCore(provider);
             _fontName = provider.FontName;
-            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
-            UIElementHelper.ApplyTheme(provider, _checkBoxBrushes, _checkBoxBrushNames, (int)CheckBoxBrush._Last);
+            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
+            UIElementHelper.ApplyTheme(provider, _checkBoxBrushes, _checkBoxBrushNames, ThemePrefix, (int)CheckBoxBrush._Last);
             DisposeHelper.SwapDisposeInterlocked(ref _format);
             Interlocked.Exchange(ref _recalcFormat, Booleans.TrueLong);
             using DWriteTextFormat textFormat = SharedResources.DWriteFactory.CreateTextFormat(_fontName, _fontSize);
@@ -93,12 +90,6 @@ namespace ConcreteUI.Controls
             RecalculateHeight();
             Update();
         }
-
-        protected override void OnThemePrefixChanged(string prefix)
-            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
-
-        private void OnCheckBoxThemePrefixChanged(string prefix)
-            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(CheckBoxBrushNamesTemplate, _checkBoxBrushNames, (int)CheckBoxBrush._Last, prefix);
 
         protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
         protected override D2D1Brush GetBackDisabledBrush() => _brushes[(int)Brush.BackDisabledBrush];
@@ -113,7 +104,7 @@ namespace ConcreteUI.Controls
 
         private void Items_Updated(object? sender, EventArgs e) => RecalculateHeight();
 
-        protected override void Scrolling(int rollStep, bool update = true) => base.Scrolling(rollStep / 4, update);
+        public override void Scrolling(int rollStep) => base.Scrolling(rollStep / 4);
 
         [Inline(InlineBehavior.Remove)]
         private bool CheckFormatIsNotAvailable([NotNullWhen(false)] DWriteTextFormat? format)

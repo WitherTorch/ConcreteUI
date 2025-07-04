@@ -19,7 +19,7 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class ContextMenu : PopupElementBase, IDisposable, IKeyEvents
     {
-        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
+        private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
             "back",
             "back.hovered",
@@ -31,7 +31,6 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly string[] _brushNames = new string[(int)Brush._Last];
 
         private DWriteTextLayout[]? _layouts;
         private float _itemHeight;
@@ -46,7 +45,7 @@ namespace ConcreteUI.Controls
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             ContextMenuItem[] items = MenuItems;
-            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
             int count = items.Length;
             float itemHeight = 0f, itemWidth = 50f;
             DWriteFactory factory = SharedResources.DWriteFactory;
@@ -79,9 +78,6 @@ namespace ConcreteUI.Controls
             Size = size;
             DisposeHelper.SwapDisposeInterlocked(ref _layouts, layouts);
         }
-
-        protected override void OnThemePrefixChanged(string prefix)
-            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         protected override bool RenderCore(DirtyAreaCollector collector)
         {

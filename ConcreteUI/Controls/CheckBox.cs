@@ -27,7 +27,7 @@ namespace ConcreteUI.Controls
     {
         public event EventHandler? CheckedChanged;
 
-        private static readonly string[] BrushNamesTemplate = new string[(int)Brush._Last]
+        private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
             "border",
             "border.hovered" ,
@@ -40,7 +40,6 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly string[] _brushNames = new string[(int)Brush._Last];
         private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[2];
 
         private string? _fontName;
@@ -80,16 +79,13 @@ namespace ConcreteUI.Controls
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
-            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
             _fontName = provider.FontName;
             _rawUpdateFlags = -1L;
             _fontSize = UIConstants.DefaultFontSize;
             DisposeHelper.SwapDispose(ref _layout);
             Update(RedrawType.RedrawAllContent);
         }
-
-        protected override void OnThemePrefixChanged(string prefix)
-            => UIElementHelper.CopyStringArrayAndAppendDottedPrefix(BrushNamesTemplate, _brushNames, (int)Brush._Last, prefix);
 
         public override void OnSizeChanged()
         {

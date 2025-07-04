@@ -6,6 +6,7 @@ using ConcreteUI.Theme;
 
 using InlineMethod;
 
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
@@ -272,15 +273,7 @@ namespace ConcreteUI.Controls
                 if (ReferenceEquals(_themeContext, value))
                     return;
                 _themeContext = value;
-                if (value is not null)
-                {
-                    ApplyThemeContext(value);
-                    return;
-                }
-                IThemeResourceProvider? provider = Renderer.GetThemeResourceProvider();
-                if (provider is not null)
-                    ApplyThemeCore(provider);
-                Update();
+                ApplyThemeContext(value);
             }
         }
 
@@ -293,8 +286,8 @@ namespace ConcreteUI.Controls
             {
                 if (SequenceHelper.Equals(_themePrefix, value))
                     return;
-                _themePrefix = value;
-                OnThemePrefixChanged(value);
+                _themePrefix = value.ToLowerAscii();
+                ApplyThemeContext(_themeContext);
             }
         }
 
