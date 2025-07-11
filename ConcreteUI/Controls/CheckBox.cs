@@ -48,7 +48,6 @@ namespace ConcreteUI.Controls
         private DWriteTextLayout? _layout;
         private D2D1Resource? _checkSign;
 
-        private Rect _checkBoxBounds;
         private ButtonTriState _buttonState;
         private long _redrawTypeRaw, _rawUpdateFlags;
         private float _fontSize;
@@ -89,13 +88,7 @@ namespace ConcreteUI.Controls
 
         public override void OnSizeChanged()
         {
-            RecalculateCheckBoxBounds();
-            Update();
-        }
-
-        public override void OnLocationChanged()
-        {
-            RecalculateCheckBoxBounds();
+            DisposeHelper.SwapDisposeInterlocked(ref _checkSign);
             Update();
         }
 
@@ -175,21 +168,20 @@ namespace ConcreteUI.Controls
             else if (redrawType == RedrawType.NoRedraw)
                 return true;
             D2D1DeviceContext context = Renderer.GetDeviceContext();
+            Rectangle bounds = Bounds;
             float lineWidth = Renderer.GetBaseLineWidth();
             switch (redrawType)
             {
                 case RedrawType.RedrawAllContent:
                     RenderObjectUpdateFlags flags = GetAndCleanRenderObjectUpdateFlags();
-                    Rect bounds = Bounds;
                     D2D1Brush textBrush = _brushes[(int)Brush.TextBrush];
                     context.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
                     RenderBackground(context);
-                    DrawCheckBox(context, lineWidth);
+                    DrawCheckBox(context, null, (RectF)bounds, lineWidth);
                     DWriteTextLayout? layout = GetTextLayout(flags);
                     if (layout is not null)
                     {
-                        float xOffset = lineWidth + 3;
-                        PointF textLoc = new PointF(_checkBoxBounds.Right + xOffset, bounds.Top);
+                        PointF textLoc = new PointF(bounds.X + bounds.Height + lineWidth * 2.0f, bounds.Top);
                         if (bounds.Right > textLoc.X && bounds.Bottom > textLoc.Y)
                         {
                             layout.MaxWidth = bounds.Right - textLoc.X;
@@ -202,14 +194,13 @@ namespace ConcreteUI.Controls
                     collector.MarkAsDirty(bounds);
                     break;
                 case RedrawType.RedrawCheckBox:
-                    DrawCheckBox(context, lineWidth);
-                    collector.MarkAsDirty(GetCheckBoxBounds());
+                    DrawCheckBox(context, collector, (RectF)bounds, lineWidth);
                     break;
             }
             return true;
         }
 
-        private void DrawCheckBox(in D2D1DeviceContext context, float lineWidth)
+        private void DrawCheckBox(D2D1DeviceContext context, DirtyAreaCollector? collector, in RectF bounds, float lineWidth)
         {
             if (_strokeStyle is null)
             {
@@ -252,14 +243,14 @@ namespace ConcreteUI.Controls
             }
             if (backBrush is null)
                 return;
-            Rect drawingBounds = _checkBoxBounds;
+            RectF renderingBounds = RectF.FromXYWH(bounds.X, bounds.Y, bounds.Height, bounds.Height);
+            context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
             if (checkState)
             {
-                context.PushAxisAlignedClip((RectF)drawingBounds, D2D1AntialiasMode.Aliased);
                 RenderBackground(context, backBrush);
-                context.Transform = new Matrix3x2() { Translation = new Vector2(drawingBounds.X, drawingBounds.Y), M11 = 1f, M22 = 1f };
+                context.Transform = new Matrix3x2() { Translation = new Vector2(renderingBounds.X, renderingBounds.Y), M11 = 1f, M22 = 1f };
                 D2D1StrokeStyle strokeStyle = _strokeStyle;
-                D2D1Resource checkSign = UIElementHelper.GetOrCreateCheckSign(ref _checkSign, context, strokeStyle, drawingBounds);
+                D2D1Resource checkSign = UIElementHelper.GetOrCreateCheckSign(ref _checkSign, context, strokeStyle, renderingBounds);
                 if (checkSign is D2D1GeometryRealization geometryRealization && context is D2D1DeviceContext1 context1)
                     context1.DrawGeometryRealization(geometryRealization, brushes[(int)Brush.MarkBrush]);
                 else if (checkSign is D2D1Geometry geometry)
@@ -268,17 +259,15 @@ namespace ConcreteUI.Controls
             }
             else
             {
-                context.PushAxisAlignedClip((RectF)drawingBounds, D2D1AntialiasMode.Aliased);
                 RenderBackground(context);
-                context.DrawRectangle(GraphicsUtils.AdjustRectangleAsBorderBounds(drawingBounds, lineWidth), backBrush, lineWidth);
+                context.DrawRectangle(GraphicsUtils.AdjustRectangleFAsBorderBounds(renderingBounds, lineWidth), backBrush, lineWidth);
             }
             context.PopAxisAlignedClip();
+            collector?.MarkAsDirty(renderingBounds);
         }
 
         public void OnMouseMove(in MouseInteractEventArgs args)
         {
-            if (_checkBoxBounds.IsEmpty)
-                return;
             ButtonTriState oldButtonState = _buttonState;
             ButtonTriState newButtonState = ButtonTriState.None;
             if (Bounds.Contains(args.Location))
@@ -315,19 +304,6 @@ namespace ConcreteUI.Controls
                 }
                 Update(RedrawType.RedrawCheckBox);
             }
-        }
-
-        private void RecalculateCheckBoxBounds()
-        {
-            Rect bounds = Bounds;
-            bounds.Width = bounds.Height;
-            _checkBoxBounds = bounds;
-            DisposeHelper.SwapDisposeInterlocked(ref _checkSign);
-        }
-
-        public Rect GetCheckBoxBounds()
-        {
-            return _checkBoxBounds;
         }
 
         private void Dispose(bool disposing)

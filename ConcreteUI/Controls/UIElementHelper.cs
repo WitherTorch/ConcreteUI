@@ -96,13 +96,13 @@ namespace ConcreteUI.Controls
                 element?.ApplyTheme(provider);
         }
 
-        public static D2D1Resource GetOrCreateCheckSign(ref D2D1Resource? checkSign, D2D1DeviceContext context, D2D1StrokeStyle strokeStyle, in Rect drawingBounds)
+        public static D2D1Resource GetOrCreateCheckSign(ref D2D1Resource? checkSign, D2D1DeviceContext context, D2D1StrokeStyle strokeStyle, in RectF renderingBounds)
         {
             if (checkSign is not null)
                 return checkSign;
             D2D1PathGeometry geometry = context.GetFactory()!.CreatePathGeometry();
             D2D1GeometrySink sink = geometry.Open();
-            float unit = (drawingBounds.Width - 2) / 7f;
+            float unit = (renderingBounds.Width - 2) / 7f;
             sink.BeginFigure(new PointF(1 + unit, 1 + unit * 3), D2D1FigureBegin.Filled);
             sink.AddLine(new PointF(1 + unit * 3, 1 + unit * 5));
             sink.AddLine(new PointF(1 + unit * 6, 1 + unit * 2));

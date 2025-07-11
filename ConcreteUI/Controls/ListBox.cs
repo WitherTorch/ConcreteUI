@@ -11,7 +11,6 @@ using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.Direct2D.Geometry;
 using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
@@ -56,7 +55,6 @@ namespace ConcreteUI.Controls
         private DWriteTextFormat? _format;
         private string _checkBoxThemePrefix;
         private string? _fontName;
-        private Rectangle _checkBoxBounds;
         private ListBoxMode _chooseMode;
         private ButtonTriState _buttonState;
         private long _recalcFormat;
@@ -80,13 +78,13 @@ namespace ConcreteUI.Controls
             base.ApplyThemeCore(provider);
             _fontName = provider.FontName;
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
-            UIElementHelper.ApplyTheme(provider, _checkBoxBrushes, _checkBoxBrushNames, ThemePrefix, (int)CheckBoxBrush._Last);
+            UIElementHelper.ApplyTheme(provider, _checkBoxBrushes, _checkBoxBrushNames, _checkBoxThemePrefix, (int)CheckBoxBrush._Last);
             DisposeHelper.SwapDisposeInterlocked(ref _format);
             Interlocked.Exchange(ref _recalcFormat, Booleans.TrueLong);
             using DWriteTextFormat textFormat = SharedResources.DWriteFactory.CreateTextFormat(_fontName, _fontSize);
             textFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
             Interlocked.Exchange(ref _itemHeight, MathI.Ceiling(GraphicsUtils.MeasureTextHeight("Ty", textFormat)) + 2);
-            RecalculateCheckBoxBounds();
+            DisposeHelper.SwapDisposeInterlocked(ref _checkSign);
             RecalculateHeight();
             Update();
         }
@@ -126,19 +124,17 @@ namespace ConcreteUI.Controls
                 format = BuildTextFormat();
             ListBoxMode mode = Mode;
             Rect bounds = ContentBounds;
-            RectangleF checkBoxBounds = _checkBoxBounds;
             float lineWidth = Renderer.GetBaseLineWidth();
+            float doubledLineWidth = 2.0f * lineWidth;
             int itemHeight = _itemHeight;
             int currentTop = ViewportPoint.Y;
             int startIndex = currentTop / itemHeight;
             int yOffset = startIndex * itemHeight - currentTop;
             int pointY = Location.Y + yOffset;
             int endIndex = MathHelper.CeilDiv(currentTop + Size.Height, itemHeight);
-            float xOffset = 2f;
-            if (mode == ListBoxMode.None)
-                xOffset += bounds.X;
-            else
-                xOffset += checkBoxBounds.Right;
+            float xOffset = bounds.X + doubledLineWidth;
+            if (mode != ListBoxMode.None)
+                xOffset += itemHeight + doubledLineWidth;
 
             List<BitVector64> stateVectorList = _stateVectorList;
             D2D1Brush textBrush = brushes[(int)Brush.TextBrush];
@@ -146,20 +142,20 @@ namespace ConcreteUI.Controls
             for (int i = startIndex, count = items.Count, selectedIndex = _selectedIndex; i <= endIndex && i < count; i++)
             {
                 string item = items[i];
-
+                RectF itemBounds = new RectF(bounds.X + doubledLineWidth, pointY, bounds.Right - doubledLineWidth, pointY + itemHeight);
                 switch (mode)
                 {
                     case ListBoxMode.None:
                         if (StringHelper.IsNullOrWhiteSpace(item))
                             break;
-                        context.DrawText(item, format, new RectF(xOffset, pointY, bounds.Right - lineWidth, pointY + itemHeight),
-                            textBrush, D2D1DrawTextOptions.Clip, DWriteMeasuringMode.Natural);
+                        itemBounds.X = xOffset;
+                        context.DrawText(item, format, itemBounds, textBrush, D2D1DrawTextOptions.Clip, DWriteMeasuringMode.Natural);
                         break;
                     case ListBoxMode.Any:
-                        DrawRadioBox(context, pointY + 2, GetCheckStateCore(stateVectorList, i), selectedIndex == i, lineWidth);
+                        DrawRadioBox(context, itemBounds, GetCheckStateCore(stateVectorList, i), selectedIndex == i, doubledLineWidth, lineWidth, itemHeight);
                         goto case ListBoxMode.None;
                     case ListBoxMode.Some:
-                        DrawCheckBox(context, pointY + 2, GetCheckStateCore(stateVectorList, i), selectedIndex == i, lineWidth);
+                        DrawCheckBox(context, itemBounds, GetCheckStateCore(stateVectorList, i), selectedIndex == i, doubledLineWidth, lineWidth, itemHeight);
                         goto case ListBoxMode.None;
                 }
                 pointY += itemHeight;
@@ -170,7 +166,7 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        private void DrawCheckBox(in D2D1DeviceContext context, int offsetY, bool isChecked, bool isCurrentlyItem, float lineWidth)
+        private void DrawCheckBox(in D2D1DeviceContext context, in RectF bounds, bool isChecked, bool isCurrentlyItem, float gap, float lineWidth, float itemHeight)
         {
             if (_strokeStyle == null)
             {
@@ -226,29 +222,29 @@ namespace ConcreteUI.Controls
             }
             if (backBrush is null)
                 return;
-            Rectangle drawingBounds = _checkBoxBounds;
-            drawingBounds.Y = offsetY;
+            RectF renderingBounds = RectF.FromXYWH(bounds.X + gap, bounds.Y + gap, itemHeight - gap, itemHeight - gap);
+            context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
             if (isChecked)
             {
-                context.PushAxisAlignedClip((RectF)drawingBounds, D2D1AntialiasMode.Aliased);
                 RenderBackground(context, backBrush);
-                context.Transform = new Matrix3x2() { Translation = new Vector2(drawingBounds.X, drawingBounds.Y), M11 = 1, M22 = 1 };
+                context.Transform = new Matrix3x2() { Translation = new Vector2(renderingBounds.X, renderingBounds.Y), M11 = 1f, M22 = 1f };
                 D2D1StrokeStyle strokeStyle = _strokeStyle;
-                D2D1Resource checkSign = UIElementHelper.GetOrCreateCheckSign(ref _checkSign, context, strokeStyle, drawingBounds);
+                D2D1Resource checkSign = UIElementHelper.GetOrCreateCheckSign(ref _checkSign, context, strokeStyle, renderingBounds);
                 if (checkSign is D2D1GeometryRealization geometryRealization && context is D2D1DeviceContext1 context1)
                     context1.DrawGeometryRealization(geometryRealization, brushes[(int)CheckBoxBrush.MarkBrush]);
                 else if (checkSign is D2D1Geometry geometry)
                     context.DrawGeometry(geometry, brushes[(int)CheckBoxBrush.MarkBrush], 2.0f, strokeStyle);
                 context.Transform = Matrix3x2.Identity;
-                context.PopAxisAlignedClip();
             }
             else
             {
-                context.DrawRectangle(GraphicsUtils.AdjustRectangleFAsBorderBounds(drawingBounds, lineWidth), backBrush, lineWidth);
+                RenderBackground(context);
+                context.DrawRectangle(GraphicsUtils.AdjustRectangleFAsBorderBounds(renderingBounds, lineWidth), backBrush, lineWidth);
             }
+            context.PopAxisAlignedClip();
         }
 
-        private void DrawRadioBox(in D2D1DeviceContext context, int offsetY, bool isChecked, bool isCurrentlyItem, float lineWidth)
+        private void DrawRadioBox(in D2D1DeviceContext context, in RectF bounds, bool isChecked, bool isCurrentlyItem, float gap, float lineWidth, float itemHeight)
         {
             D2D1Brush[] brushes = _checkBoxBrushes;
             D2D1Brush? backBrush = null;
@@ -273,12 +269,11 @@ namespace ConcreteUI.Controls
             }
             if (backBrush is null)
                 return;
-            Rectangle drawingBounds = _checkBoxBounds;
-            drawingBounds.Y = offsetY;
+            RectF renderingBounds = RectF.FromXYWH(bounds.X + gap, bounds.Y + gap, itemHeight - gap * 2, itemHeight - gap * 2);
             context.AntialiasMode = D2D1AntialiasMode.PerPrimitive;
-            context.PushAxisAlignedClip((RectF)drawingBounds, D2D1AntialiasMode.Aliased);
-            context.Transform = new Matrix3x2() { Translation = new Vector2(drawingBounds.X, drawingBounds.Y), M11 = 1, M22 = 1 };
-            PointF centerPoint = new PointF(drawingBounds.Width * 0.5f, drawingBounds.Height * 0.5f);
+            context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
+            context.Transform = new Matrix3x2() { Translation = new Vector2(renderingBounds.X, renderingBounds.Y), M11 = 1, M22 = 1 };
+            PointF centerPoint = new PointF(renderingBounds.Width * 0.5f, renderingBounds.Height * 0.5f);
             float width = centerPoint.X - lineWidth * 2.0f;
             context.DrawEllipse(new D2D1Ellipse(centerPoint, width, width), backBrush, lineWidth * 2.0f);
             if (isChecked)
@@ -291,17 +286,6 @@ namespace ConcreteUI.Controls
             context.PopAxisAlignedClip();
         }
 
-        private void RecalculateCheckBoxBounds()
-        {
-            int itemHeight = _itemHeight;
-            if (itemHeight <= 4)
-                return;
-            Rect bounds = ContentBounds;
-            int buttonSize = itemHeight - 4;
-            _checkBoxBounds = new Rectangle(bounds.X + 2, 0, buttonSize, buttonSize);
-            DisposeHelper.SwapDisposeInterlocked(ref _checkSign);
-        }
-
         private void RecalculateHeight()
         {
             SurfaceSize = new Size(0, Items.Count * _itemHeight);
@@ -310,16 +294,8 @@ namespace ConcreteUI.Controls
 
         public override void OnSizeChanged()
         {
-            RecalculateCheckBoxBounds();
-            RecalculateHeight();
+            DisposeHelper.SwapDisposeInterlocked(ref _checkSign);
             base.OnSizeChanged();
-        }
-
-        public override void OnLocationChanged()
-        {
-            RecalculateCheckBoxBounds();
-            RecalculateHeight();
-            base.OnLocationChanged();
         }
 
         public override void OnMouseMove(in MouseInteractEventArgs args)
