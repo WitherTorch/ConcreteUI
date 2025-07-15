@@ -712,7 +712,7 @@ namespace ConcreteUI.Controls
             if (selectionLength <= 0)
                 return;
             DWriteTextRange range = selectionRange.ToTextRange();
-            CaretIndex = MathHelper.MakeSigned(compositionRange.StartPosition);
+            CaretIndex = MathHelper.MakeSigned(range.StartPosition);
             Text = Text.Remove(MathHelper.MakeSigned(range.StartPosition), selectionLength);
             selectionRange.Length = 0;
             this.selectionRange = selectionRange;
