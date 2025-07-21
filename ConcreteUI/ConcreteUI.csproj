@@ -68,6 +68,10 @@
 		</PackageReference>
 	</ItemGroup>
 
+	<ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+		<PackageReference Include="Umbani.CompilerServices" Version="1.0.1" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<ProjectReference Include="..\ConcreteUI.Graphics\ConcreteUI.Graphics.csproj" />
 		<ProjectReference Include="$(SolutionDir)\WitherTorch.Common\WitherTorch.Common.Windows\WitherTorch.Common.Windows.csproj" />
