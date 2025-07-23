@@ -558,7 +558,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         private D2D1TextAntialiasMode GetTextAntialiasMode()
         {
             void* nativePointer = NativePointer;
-            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetAntialiasMode);
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetTextAntialiasMode);
             return ((delegate* unmanaged[Stdcall]<void*, D2D1TextAntialiasMode>)functionPointer)(nativePointer);
         }
 
