@@ -31,12 +31,14 @@ namespace ConcreteUI.Window
             {
                 if (_pageIndex == value)
                     return;
+                RenderingController? controller = GetRenderingController();
+                controller?.Lock();
                 OnCurrentPageChanging();
                 ClearFocusElement();
                 _pageIndex = value;
                 isPageChanged = true;
                 OnCurrentPageChanged();
-                Update();
+                controller?.Unlock();
             }
         }
         #endregion
