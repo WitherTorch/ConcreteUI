@@ -13,7 +13,7 @@ namespace ConcreteUI.Controls
         {
             private readonly WeakReference<CheckBox> _reference;
 
-			public AutoHeightVariable(CheckBox element)
+            public AutoHeightVariable(CheckBox element)
             {
                 _reference = new WeakReference<CheckBox>(element);
             }

@@ -16,31 +16,31 @@ namespace ConcreteUI.Utils
     public static class GraphicsUtils
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Rect ConvertRectangle(in RectF rawRect) 
+        public static Rect ConvertRectangle(in RectF rawRect)
             => new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Floor(rawRect.Right), MathI.Floor(rawRect.Bottom));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Rect ConvertRectangle(in RectangleF rawRect) 
+        public static Rect ConvertRectangle(in RectangleF rawRect)
             => new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Floor(rawRect.Right), MathI.Floor(rawRect.Bottom));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Rect AdjustRectangle(in RectF rawRect) 
+        public static Rect AdjustRectangle(in RectF rawRect)
             => new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Ceiling(rawRect.Right), MathI.Ceiling(rawRect.Bottom));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Rect AdjustRectangle(in RectangleF rawRect) 
+        public static Rect AdjustRectangle(in RectangleF rawRect)
             => new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Ceiling(rawRect.Right), MathI.Ceiling(rawRect.Bottom));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RectF AdjustRectangleF(in RectF rawRect) 
+        public static RectF AdjustRectangleF(in RectF rawRect)
             => new RectF(MathF.Floor(rawRect.Left), MathF.Floor(rawRect.Top), MathF.Ceiling(rawRect.Right), MathF.Ceiling(rawRect.Bottom));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RectF AdjustRectangleF(in RectangleF rawRect) 
+        public static RectF AdjustRectangleF(in RectangleF rawRect)
             => new RectF(MathF.Floor(rawRect.Left), MathF.Floor(rawRect.Top), MathF.Ceiling(rawRect.Right), MathF.Ceiling(rawRect.Bottom));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RectangleF AdjustRectangleF2(RectangleF rawRect) 
+        public static RectangleF AdjustRectangleF2(RectangleF rawRect)
             => RectangleF.FromLTRB(MathF.Floor(rawRect.Left), MathF.Floor(rawRect.Top), MathF.Ceiling(rawRect.Right), MathF.Ceiling(rawRect.Bottom));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,23 +72,23 @@ namespace ConcreteUI.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RectF RoundRectangleF(in RectF rawRect) 
+        public static RectF RoundRectangleF(in RectF rawRect)
             => new RectF(MathF.Round(rawRect.Left), MathF.Round(rawRect.Top), MathF.Round(rawRect.Right), MathF.Round(rawRect.Bottom));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RectF RoundRectangleF(in RectangleF rawRect) 
+        public static RectF RoundRectangleF(in RectangleF rawRect)
             => new RectF(MathF.Round(rawRect.Left), MathF.Round(rawRect.Top), MathF.Round(rawRect.Right), MathF.Round(rawRect.Bottom));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Point AdjustPoint(in PointF rawPoint) 
+        public static Point AdjustPoint(in PointF rawPoint)
             => new Point(MathI.Floor(rawPoint.X), MathI.Floor(rawPoint.Y));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PointF AdjustPointF(in PointF rawPoint) 
+        public static PointF AdjustPointF(in PointF rawPoint)
             => new PointF(MathF.Floor(rawPoint.X), MathF.Floor(rawPoint.Y));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PointF AdjustPointF2(in PointF rawPoint) 
+        public static PointF AdjustPointF2(in PointF rawPoint)
             => new PointF(MathF.Floor(rawPoint.X), MathF.Ceiling(rawPoint.Y));
 
         [Inline(InlineBehavior.Remove)]
@@ -114,19 +114,19 @@ namespace ConcreteUI.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float MeasureTextWidth(string text, DWriteTextFormat format) 
+        public static float MeasureTextWidth(string text, DWriteTextFormat format)
             => MeasureTextWidthCore(text, format);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float MeasureTextHeight(string text, DWriteTextFormat format) 
+        public static float MeasureTextHeight(string text, DWriteTextFormat format)
             => MeasureTextHeightCore(text, format);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int MeasureTextWidthAsInt(string text, DWriteTextFormat format) 
+        public static int MeasureTextWidthAsInt(string text, DWriteTextFormat format)
             => MathI.Ceiling(MeasureTextWidthCore(text, format));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int MeasureTextHeightAsInt(string text, DWriteTextFormat format) 
+        public static int MeasureTextHeightAsInt(string text, DWriteTextFormat format)
             => MathI.Ceiling(MeasureTextHeightCore(text, format));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

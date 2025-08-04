@@ -16,7 +16,7 @@ namespace ConcreteUI.Theme
                 _factory = factory;
             }
 
-            public D2D1Brush CreateBrushByMaterial(D2D1DeviceContext context, WindowMaterial material) 
+            public D2D1Brush CreateBrushByMaterial(D2D1DeviceContext context, WindowMaterial material)
                 => context.CreateSolidColorBrush(_factory.CreateColorByMaterial(material));
 
             public D2D1ColorF CreateColorByMaterial(WindowMaterial material) => _factory.CreateColorByMaterial(material);

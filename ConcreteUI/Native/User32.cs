@@ -55,8 +55,8 @@ namespace ConcreteUI.Native
         public static extern int SetWindowCompositionAttribute(IntPtr hwnd, WindowCompositionAttributeData* data);
 
         [DllImport(USER32_DLL)]
-        public static extern bool SystemParametersInfoW(uint uiAction, uint uiParam, void* pvParam, uint fWinIni); 
-        
+        public static extern bool SystemParametersInfoW(uint uiAction, uint uiParam, void* pvParam, uint fWinIni);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool SetWindowText(IntPtr handle, string text)
         {

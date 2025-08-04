@@ -89,10 +89,6 @@ namespace ConcreteUI.Utils
                 layout.MaxWidth = rect.Width;
                 context.DrawTextLayout(rect.Location, layout, brush, D2D1DrawTextOptions.NoSnap | D2D1DrawTextOptions.Clip);
             }
-            catch (Exception)
-            {
-                throw;
-            }
             finally
             {
                 semaphore.Release();

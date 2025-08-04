@@ -32,7 +32,7 @@ namespace ConcreteUI.Controls
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
-            => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int) Brush._Last);
+            => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
 
         protected override bool RenderCore(DirtyAreaCollector collector)
         {

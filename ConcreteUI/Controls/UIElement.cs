@@ -93,10 +93,6 @@ namespace ConcreteUI.Controls
             {
                 result = RenderCore(collector);
             }
-            catch (Exception)
-            {
-                throw;
-            }
             finally
             {
                 context.PopAxisAlignedClip();

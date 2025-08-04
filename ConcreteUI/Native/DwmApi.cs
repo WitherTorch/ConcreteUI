@@ -45,7 +45,7 @@ namespace ConcreteUI.Native
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T DwmGetWindowAttributeOrDefault<T>(IntPtr hwnd, DwmWindowAttribute attr, T defaultValue = default) where T : unmanaged 
+        public static T DwmGetWindowAttributeOrDefault<T>(IntPtr hwnd, DwmWindowAttribute attr, T defaultValue = default) where T : unmanaged
             => DwmGetWindowAttribute(hwnd, attr, out T result) ? result : defaultValue;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

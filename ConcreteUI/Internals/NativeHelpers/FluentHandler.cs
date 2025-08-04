@@ -129,10 +129,10 @@ namespace ConcreteUI.Internals.NativeHelpers
         public static unsafe void ApplyWin11Corner(IntPtr handle)
             => DwmApi.DwmSetWindowAttribute(handle, DwmWindowAttribute.WindowCornerPreference, DwmWindowCornerPreference.Round);
 
-        public static object FixLagForAcrylic(Form form) 
+        public static object FixLagForAcrylic(Form form)
             => new AcrylicLagFixFor21H2(form, isAcrylic: true);
 
-        public static object FixLagForBlur(Form form) 
+        public static object FixLagForBlur(Form form)
             => new AcrylicLagFixFor21H2(form, isAcrylic: false);
 
         private sealed class AcrylicLagFixFor21H2
@@ -168,7 +168,7 @@ namespace ConcreteUI.Internals.NativeHelpers
                 DisableBlur(window.Handle, window.CurrentTheme?.IsDarkTheme ?? false);
             }
 
-            private void ResizeBegin(object? sender, EventArgs e) 
+            private void ResizeBegin(object? sender, EventArgs e)
                 => _isResizing = true;
 
             private void ResizeEnd(object? sender, EventArgs e)

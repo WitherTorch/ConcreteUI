@@ -19,7 +19,7 @@ namespace ConcreteUI.Theme
     public static partial class ThemedColorFactory
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IThemedColorFactory FromColor(in D2D1ColorF color) 
+        public static IThemedColorFactory FromColor(in D2D1ColorF color)
             => new SimpleThemedColorFactoryImpl(color);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

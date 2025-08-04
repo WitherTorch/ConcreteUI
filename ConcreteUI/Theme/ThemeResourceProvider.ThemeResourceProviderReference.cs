@@ -22,10 +22,10 @@ namespace ConcreteUI.Theme
 
             public IThemeResourceProvider Clone() => this;
 
-            public bool TryGetBrush(string node, [NotNullWhen(true)] out D2D1Brush? brush) 
+            public bool TryGetBrush(string node, [NotNullWhen(true)] out D2D1Brush? brush)
                 => _provider.TryGetBrush(node, out brush);
 
-            public bool TryGetColor(string node, out D2D1ColorF color) 
+            public bool TryGetColor(string node, out D2D1ColorF color)
                 => _provider.TryGetColor(node, out color);
         }
     }

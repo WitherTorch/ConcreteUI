@@ -41,7 +41,7 @@ namespace ConcreteUI.Theme
 
             public IEnumerable<WindowMaterial> GetVariants()
             {
-                foreach (byte variant in _variantKeys) 
+                foreach (byte variant in _variantKeys)
                     yield return (WindowMaterial)variant;
             }
 

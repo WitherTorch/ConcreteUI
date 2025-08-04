@@ -9,7 +9,7 @@ namespace ConcreteUI.Utils
         private static readonly ConcurrentDictionary<string, ConcurrentDictionary<float, float>> _fontHeightDict
             = new ConcurrentDictionary<string, ConcurrentDictionary<float, float>>();
 
-        public static float GetFontHeight(string fontFamily, float fontSize) => 
+        public static float GetFontHeight(string fontFamily, float fontSize) =>
             _fontHeightDict.GetOrAdd(fontFamily, _ => new ConcurrentDictionary<float, float>())
                 .GetOrAdd(fontSize, GetFontHeightCore, fontFamily);
 

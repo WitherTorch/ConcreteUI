@@ -22,8 +22,8 @@ namespace ConcreteUI.Controls
             public override int Compute(in LayoutVariableManager manager)
             {
                 if (!_reference.TryGetTarget(out Label? element))
-                    return 0; 
-                using DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(element._text, 
+                    return 0;
+                using DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(element._text,
                     NullSafetyHelper.ThrowIfNull(element._fontName), element._alignment, element._fontSize);
                 return MathI.Ceiling(layout.GetMetrics().Width);
             }

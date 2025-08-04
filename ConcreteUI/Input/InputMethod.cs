@@ -34,7 +34,7 @@ namespace ConcreteUI.Input
         {
             IIMEControl? oldControl = _attachedControl;
             if (oldControl == control)
-                return; 
+                return;
             if (control is null)
             {
                 DetachCore();

@@ -870,8 +870,8 @@ namespace ConcreteUI.Window
         }
 
 
-#endregion
-#endregion
+        #endregion
+        #endregion
 
         #region Inline Macros
         [Inline(InlineBehavior.Remove)]

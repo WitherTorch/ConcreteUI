@@ -29,7 +29,7 @@ namespace ConcreteUI.Controls
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                if (_fontSize == value) 
+                if (_fontSize == value)
                     return;
                 _fontSize = value;
                 DisposeHelper.SwapDisposeInterlocked(ref _layout);

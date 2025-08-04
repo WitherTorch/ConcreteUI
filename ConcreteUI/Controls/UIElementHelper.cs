@@ -27,8 +27,8 @@ namespace ConcreteUI.Controls
             if (length != nodes.Length)
                 throw new ArgumentException("The length of " + nameof(nodes) + " must equals to the length of " + nameof(brushes) + " !");
             ApplyTheme(provider, brushes, nodes, length);
-        }       
-        
+        }
+
         public static void ApplyTheme(IThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes, string nodePrefix)
         {
             int length = brushes.Length;

@@ -10,7 +10,7 @@ namespace ConcreteUI.Layout.Internals
         {
             _value = value;
         }
-       
+
         public int Value
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

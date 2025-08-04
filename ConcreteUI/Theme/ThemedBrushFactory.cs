@@ -23,15 +23,15 @@ namespace ConcreteUI.Theme
         public static IThemedBrushFactory FromColor(in D2D1ColorF color) => CreateBuilder(color).Build();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IThemedBrushFactory FromColorFactory(IThemedColorFactory factory) 
+        public static IThemedBrushFactory FromColorFactory(IThemedColorFactory factory)
             => new ThemedColorFactoryAdapter(factory);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IThemedBrushFactory AmplifiedFrom(IThemedBrushFactory factory, float amplifier) 
+        public static IThemedBrushFactory AmplifiedFrom(IThemedBrushFactory factory, float amplifier)
             => new AmplifiedThemedBrushFactory(factory, amplifier);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IThemedBrushFactory FromFunction(Func<D2D1DeviceContext, WindowMaterial, D2D1Brush> function) 
+        public static IThemedBrushFactory FromFunction(Func<D2D1DeviceContext, WindowMaterial, D2D1Brush> function)
             => new FunctionThemedBrushFactoryImpl(function);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -9,7 +9,7 @@ namespace ConcreteUI.Controls
         public event MouseInteractEventHandler? Click;
 
         private bool _enabled;
-        private ButtonPressState _pressState; 
+        private ButtonPressState _pressState;
         private bool previousMouseEnterState;
 
         public ButtonBase(IRenderer renderer, string themePrefix) : base(renderer, themePrefix)
