@@ -56,21 +56,24 @@ namespace ConcreteUI.Controls
                 List<BitVector64> stateVectorList = _stateVectorList;
                 ArrayPool<int> pool = ArrayPool<int>.Shared;
                 int[] buffer = pool.Rent(count);
-                int currentIndex = 0;
-                for (int i = 0; i < count; i++)
+                try
                 {
-                    if (GetCheckStateCore(stateVectorList, i))
-                        buffer[currentIndex++] = i;
+                    int currentIndex = 0;
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (GetCheckStateCore(stateVectorList, i))
+                            buffer[currentIndex++] = i;
+                    }
+                    if (currentIndex <= 0)
+                        return Array.Empty<int>();
+                    int[] result = new int[currentIndex];
+                    Array.Copy(buffer, result, currentIndex);
+                    return result;
                 }
-                if (currentIndex <= 0)
+                finally
                 {
-                    pool.Return(buffer);
-                    return Array.Empty<int>();
+                    pool.Return(buffer, clearArray: true);
                 }
-                int[] result = new int[currentIndex];
-                Array.Copy(buffer, result, currentIndex);
-                pool.Return(result, clearArray: true);
-                return result;
             }
         }
 
