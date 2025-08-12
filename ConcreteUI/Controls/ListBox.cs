@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -20,7 +21,6 @@ using WitherTorch.Common;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
@@ -47,7 +47,7 @@ namespace ConcreteUI.Controls
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
         private readonly D2D1Brush[] _checkBoxBrushes = new D2D1Brush[(int)CheckBoxBrush._Last];
-        private readonly List<BitVector64> _stateVectorList;
+        private readonly BitList _stateVectorList;
         private readonly ObservableList<string> _items;
 
         private D2D1StrokeStyle? _strokeStyle;
@@ -63,14 +63,70 @@ namespace ConcreteUI.Controls
 
         public ListBox(IRenderer renderer) : base(renderer, "app.listBox")
         {
-            _stateVectorList = new List<BitVector64>(1);
+            _stateVectorList = new BitList();
             _items = new ObservableList<string>();
             _items.Updated += Items_Updated;
+            _items.BeforeAdd += Item_BeforeAdd;
             ScrollBarType = ScrollBarType.AutoVertial;
             _fontSize = UIConstants.BoxFontSize;
             _selectedIndex = -1;
             _recalcFormat = Booleans.TrueLong;
             _checkBoxThemePrefix = "app.checkBox".ToLowerAscii();
+        }
+
+        public void CopySelectedItemsToBuffer(string[] destination, int startIndex, out int itemCopied)
+        {
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
+            ObservableList<string> items = _items;
+            int count = items.Count;
+            if (count <= 0)
+            {
+                itemCopied = 0;
+                return;
+            }
+            CopySelectedItemsToBufferCore(items, count, destination, startIndex, out itemCopied);
+        }
+
+        public void CopySelectedIndicesToBuffer(int[] destination, int startIndex, out int itemCopied)
+        {
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
+            int count = _items.Count;
+            if (count <= 0)
+            {
+                itemCopied = 0;
+                return;
+            }
+            CopySelectedIndicesToBufferCore(count, destination, startIndex, out itemCopied);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void CopySelectedItemsToBufferCore(ObservableList<string> items, int count, string[] destination, int startIndex, out int itemCopied)
+        {
+            BitList stateVectorList = _stateVectorList;
+            itemCopied = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (!stateVectorList[i])
+                    continue;
+                destination[startIndex++] = items[i];
+                itemCopied++;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void CopySelectedIndicesToBufferCore(int count, int[] destination, int startIndex, out int itemCopied)
+        {
+            BitList stateVectorList = _stateVectorList;
+            itemCopied = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (!stateVectorList[i])
+                    continue;
+                destination[startIndex++] = i;
+                itemCopied++;
+            }
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
@@ -101,6 +157,8 @@ namespace ConcreteUI.Controls
         }
 
         private void Items_Updated(object? sender, EventArgs e) => RecalculateHeight();
+
+        private void Item_BeforeAdd(object? sender, BeforeListAddOrRemoveEventArgs<string> e) => _stateVectorList.Add(false);
 
         public override void Scrolling(int rollStep) => base.Scrolling(rollStep / 4);
 
@@ -136,7 +194,7 @@ namespace ConcreteUI.Controls
             if (mode != ListBoxMode.None)
                 xOffset += itemHeight + doubledLineWidth;
 
-            List<BitVector64> stateVectorList = _stateVectorList;
+            BitList stateVectorList = _stateVectorList;
             D2D1Brush textBrush = brushes[(int)Brush.TextBrush];
             IList<string> items = _items.GetUnderlyingList();
             for (int i = startIndex, count = items.Count, selectedIndex = _selectedIndex; i <= endIndex && i < count; i++)
@@ -152,10 +210,10 @@ namespace ConcreteUI.Controls
                         context.DrawText(item, format, itemBounds, textBrush, D2D1DrawTextOptions.Clip, DWriteMeasuringMode.Natural);
                         break;
                     case ListBoxMode.Any:
-                        DrawRadioBox(context, itemBounds, GetCheckStateCore(stateVectorList, i), selectedIndex == i, doubledLineWidth, lineWidth, itemHeight);
+                        DrawRadioBox(context, itemBounds, stateVectorList[i], selectedIndex == i, doubledLineWidth, lineWidth, itemHeight);
                         goto case ListBoxMode.None;
                     case ListBoxMode.Some:
-                        DrawCheckBox(context, itemBounds, GetCheckStateCore(stateVectorList, i), selectedIndex == i, doubledLineWidth, lineWidth, itemHeight);
+                        DrawCheckBox(context, itemBounds, stateVectorList[i], selectedIndex == i, doubledLineWidth, lineWidth, itemHeight);
                         goto case ListBoxMode.None;
                 }
                 pointY += itemHeight;
@@ -410,63 +468,20 @@ namespace ConcreteUI.Controls
         protected override void OnScrollBarDownButtonClicked() => Scrolling(_itemHeight);
 
         [Inline(InlineBehavior.Remove)]
-        private bool GetCheckStateCore(int index)
-            => GetCheckStateCore(_stateVectorList, index);
+        private bool GetCheckStateCore(int index) => _stateVectorList[index];
 
         [Inline(InlineBehavior.Remove)]
-        private static bool GetCheckStateCore(List<BitVector64> stateVectorList, int index)
-        {
-            int vectorIndex = index >> 6;
-            if (stateVectorList.Count <= vectorIndex)
-                return false;
-            int vectorOffset = index & 63;
-            return stateVectorList[vectorIndex][vectorOffset];
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private void SetCheckStateCore(int index, bool state)
-            => SetCheckStateCore(_stateVectorList, index, state);
-
-        [Inline(InlineBehavior.Remove)]
-        private static void SetCheckStateCore(List<BitVector64> stateVectorList, int index, bool state)
-        {
-            int vectorIndex = index >> 6;
-            for (int i = stateVectorList.Count; i <= vectorIndex; i++)
-                stateVectorList.Add(new BitVector64());
-            int vectorOffset = index & 63;
-            BitVector64 vector = stateVectorList[vectorIndex];
-            vector[vectorOffset] = state;
-            stateVectorList[vectorIndex] = vector;
-        }
+        private void SetCheckStateCore(int index, bool state) => _stateVectorList[index] = state;
 
         [Inline(InlineBehavior.Remove)]
         private void RevertCheckStateCore(int index)
             => RevertCheckStateCore(_stateVectorList, index);
 
         [Inline(InlineBehavior.Remove)]
-        private static void RevertCheckStateCore(List<BitVector64> stateVectorList, int index)
-        {
-            int vectorIndex = index >> 6;
-            for (int i = stateVectorList.Count; i <= vectorIndex; i++)
-                stateVectorList.Add(new BitVector64());
-            int vectorOffset = index & 63;
-            BitVector64 vector = stateVectorList[vectorIndex];
-            vector[vectorOffset] = !vector[vectorOffset];
-            stateVectorList[vectorIndex] = vector;
-        }
+        private static void RevertCheckStateCore(BitList stateVectorList, int index)
+            => stateVectorList[index] = !stateVectorList[index];
 
         [Inline(InlineBehavior.Remove)]
-        private void ClearCheckStateCore()
-            => ClearCheckStateCore(_stateVectorList);
-
-        [Inline(InlineBehavior.Remove)]
-        private static void ClearCheckStateCore(List<BitVector64> stateVectorList)
-        {
-            int count = stateVectorList.Count;
-            for (int i = 0; i < count; i++)
-            {
-                stateVectorList[i] = new BitVector64();
-            }
-        }
+        private void ClearCheckStateCore() => _stateVectorList.Clear();
     }
 }

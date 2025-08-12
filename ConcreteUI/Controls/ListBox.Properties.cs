@@ -8,7 +8,6 @@ using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
@@ -24,26 +23,20 @@ namespace ConcreteUI.Controls
                 int count = items.Count;
                 if (count <= 0)
                     return Array.Empty<string>();
-                List<BitVector64> stateVectorList = _stateVectorList;
                 ArrayPool<string> pool = ArrayPool<string>.Shared;
                 string[] buffer = pool.Rent(count);
                 try
                 {
-                    int currentIndex = 0;
-                    for (int i = 0; i < count; i++)
-                    {
-                        if (GetCheckStateCore(stateVectorList, i))
-                            buffer[currentIndex++] = items[i];
-                    }
-                    if (currentIndex <= 0)
+                    CopySelectedItemsToBufferCore(items, count, buffer, 0, out int resultLength);
+                    if (resultLength <= 0)
                         return Array.Empty<string>();
-                    string[] result = new string[currentIndex];
-                    Array.Copy(buffer, result, currentIndex);
+                    string[] result = new string[resultLength];
+                    Array.Copy(buffer, result, resultLength);
                     return result;
                 }
                 finally
                 {
-                    pool.Return(buffer, clearArray: true);
+                    pool.Return(buffer);
                 }
             }
         }
@@ -56,26 +49,20 @@ namespace ConcreteUI.Controls
                 int count = items.Count;
                 if (count <= 0)
                     return Array.Empty<int>();
-                List<BitVector64> stateVectorList = _stateVectorList;
                 ArrayPool<int> pool = ArrayPool<int>.Shared;
                 int[] buffer = pool.Rent(count);
                 try
                 {
-                    int currentIndex = 0;
-                    for (int i = 0; i < count; i++)
-                    {
-                        if (GetCheckStateCore(stateVectorList, i))
-                            buffer[currentIndex++] = i;
-                    }
-                    if (currentIndex <= 0)
+                    CopySelectedIndicesToBufferCore(count, buffer, 0, out int resultLength);
+                    if (resultLength <= 0)
                         return Array.Empty<int>();
-                    int[] result = new int[currentIndex];
-                    Array.Copy(buffer, result, currentIndex);
+                    int[] result = new int[resultLength];
+                    Array.Copy(buffer, result, resultLength);
                     return result;
                 }
                 finally
                 {
-                    pool.Return(buffer, clearArray: true);
+                    pool.Return(buffer);
                 }
             }
         }
