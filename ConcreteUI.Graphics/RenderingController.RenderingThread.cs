@@ -17,7 +17,7 @@ namespace ConcreteUI.Graphics
         {
             private static readonly long NativeTicksPerSecond;
 
-            private static long _serialNumber = -1;
+            private static ulong _idCounter = 0;
 
             private readonly RenderingController _controller;
             private readonly Thread _thread;
@@ -95,7 +95,7 @@ namespace ConcreteUI.Graphics
 
             private unsafe void ThreadLoop()
             {
-                ThreadHelper.SetCurrentThreadName("Concrete UI Rendering Thread #" + InterlockedHelper.GetAndIncrement(ref _serialNumber).ToString("D"));
+                ThreadHelper.SetCurrentThreadName("Concrete UI Rendering Thread #" + InterlockedHelper.GetAndIncrement(ref _idCounter).ToString("D"));
                 RenderingController controller = _controller;
                 AutoResetEvent trigger = _trigger;
                 ManualResetEvent exitTrigger = _exitTrigger;
