@@ -76,7 +76,7 @@ namespace ConcreteUI.Layout
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void QueueElement(UIElement element)
         {
-            LazyTinyRefStruct<LayoutVariable[]> contextsLazy = new LazyTinyRefStruct<LayoutVariable[]>(static () => new LayoutVariable[(int)LayoutProperty._Last]);
+            LazyTinyRef<LayoutVariable[]> contextsLazy = new LazyTinyRef<LayoutVariable[]>(static () => new LayoutVariable[(int)LayoutProperty._Last]);
 
             TreeDictionary<UIElement, LayoutVariable?[]> elementDict = _elementDict;
             TreeDictionary<LayoutVariable, StrongBox<int?>> computeDict = _computeDict;
