@@ -526,7 +526,7 @@ namespace ConcreteUI.Controls
                 Text = Text.Insert(MathHelper.MakeSigned(range.StartPosition), str);
                 return;
             }
-            StringBuilderTiny builder = new StringBuilderTiny();
+            using StringBuilderTiny builder = new StringBuilderTiny();
             if (Limits.UseStackallocStringBuilder)
             {
                 unsafe
@@ -542,14 +542,13 @@ namespace ConcreteUI.Controls
             _compositionCaretIndex = cursorPosition;
             compositionRange = range;
             Text = builder.ToString();
-            builder.Dispose();
         }
 
         void IIMEControl.OnIMECompositionResult(string str, IMECompositionFlags flags)
         {
             if (compositionRange.Length > 0)
             {
-                StringBuilderTiny builder = new StringBuilderTiny();
+                using StringBuilderTiny builder = new StringBuilderTiny();
                 if (Limits.UseStackallocStringBuilder)
                 {
                     unsafe
@@ -562,7 +561,6 @@ namespace ConcreteUI.Controls
                 builder.Remove(MathHelper.MakeSigned(compositionRange.StartPosition), MathHelper.MakeSigned(compositionRange.Length));
                 builder.Insert(MathHelper.MakeSigned(compositionRange.StartPosition), str);
                 Text = builder.ToString();
-                builder.Dispose();
                 CaretIndex += MathHelper.MakeSigned(compositionRange.Length);
                 _compositionCaretIndex = 0;
                 compositionRange.Length = 0;
