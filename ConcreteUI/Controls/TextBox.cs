@@ -340,7 +340,8 @@ namespace ConcreteUI.Controls
             D2D1Brush[] brushes = _brushes;
             Rect bounds = ContentBounds;
             bool focused = _focused;
-            RenderBackground(context, Enabled ? brushes[(int)Brush.BackBrush] : brushes[(int)Brush.BackDisabledBrush]);
+            D2D1Brush backBrush = Enabled ? brushes[(int)Brush.BackBrush] : brushes[(int)Brush.BackDisabledBrush];
+            RenderBackground(context, backBrush);
 
             GetTextLayouts(out DWriteTextLayout? layout, out DWriteTextLayout? watermarkLayout);
             collector.MarkAsDirty(bounds);
@@ -352,7 +353,8 @@ namespace ConcreteUI.Controls
                 //文字為空，繪製浮水印
                 PointF layoutPoint = bounds.Location;
                 context.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
-                RenderLayoutCore(context, brushes[(int)Brush.ForeInactiveBrush], watermarkLayout, layoutPoint);
+                using (ClearTypeToken token = ClearTypeToken.TryEnterClearTypeMode(Renderer, context, backBrush))
+                    RenderLayoutCore(context, brushes[(int)Brush.ForeInactiveBrush], watermarkLayout, layoutPoint);
                 context.PopAxisAlignedClip();
                 if (focused)
                     DrawCaret(context, watermarkLayout, layoutPoint, 0);
@@ -364,7 +366,8 @@ namespace ConcreteUI.Controls
 
             SetRenderingProperties(layout, bounds, _multiLine);
             context.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
-            RenderLayout(context, focused, layout, bounds);
+            using (ClearTypeToken token = ClearTypeToken.TryEnterClearTypeMode(Renderer, context, backBrush))
+                RenderLayout(context, focused, layout, bounds);
             context.PopAxisAlignedClip();
             DisposeHelper.NullSwapOrDispose(ref _layout, layout);
             if (watermarkLayout is not null)
@@ -423,6 +426,7 @@ namespace ConcreteUI.Controls
             }
         }
 
+        [Inline(InlineBehavior.Remove)]
         private static void RenderLayoutCore(D2D1DeviceContext context, D2D1Brush foreBrush, DWriteTextLayout layout, in PointF point)
         {
             //繪製文字
