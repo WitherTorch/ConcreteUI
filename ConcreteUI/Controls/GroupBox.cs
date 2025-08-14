@@ -241,9 +241,9 @@ namespace ConcreteUI.Controls
             context.PopAxisAlignedClip();
         }
 
-        [Inline(InlineBehavior.Remove)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RenderText(D2D1DeviceContext context, DirtyAreaCollector collector, D2D1Brush backBrush, D2D1Brush textBrush,
-            DWriteTextLayout? layout, [InlineParameter] bool justText)
+            DWriteTextLayout? layout, bool justText)
         {
             if (layout is null)
                 return;
@@ -261,7 +261,8 @@ namespace ConcreteUI.Controls
                 RenderBackground(context, backBrush);
                 collector.MarkAsDirty(textRect);
             }
-            context.DrawTextLayout(textLoc, layout, textBrush, D2D1DrawTextOptions.None);
+            using (ClearTypeToken token = ClearTypeToken.TryEnterClearTypeMode(Renderer, context, backBrush))
+                context.DrawTextLayout(textLoc, layout, textBrush, D2D1DrawTextOptions.None);
             context.PopAxisAlignedClip();
         }
 
