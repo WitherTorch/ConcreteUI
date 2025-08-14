@@ -6,6 +6,7 @@ using ConcreteUI.Graphics.Native;
 
 using LocalsInit;
 
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Helpers;
 
 namespace ConcreteUI.Graphics
@@ -94,7 +95,7 @@ namespace ConcreteUI.Graphics
 
             private unsafe void ThreadLoop()
             {
-                ThreadHelper.SetCurrentThreadName("Concrete UI Rendering Thread #" + Interlocked.Increment(ref _serialNumber).ToString("D"));
+                ThreadHelper.SetCurrentThreadName("Concrete UI Rendering Thread #" + InterlockedHelper.GetAndIncrement(ref _serialNumber).ToString("D"));
                 RenderingController controller = _controller;
                 AutoResetEvent trigger = _trigger;
                 ManualResetEvent exitTrigger = _exitTrigger;
