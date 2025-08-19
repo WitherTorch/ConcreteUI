@@ -671,7 +671,18 @@ namespace ConcreteUI.Controls
 
         public void Copy()
         {
-            string text = selectionRange.Length <= 0 ? string.Empty : _text.Substring(MathHelper.MakeSigned(selectionRange.ToTextRange().StartPosition), selectionRange.Length);
+            SelectionRange selectionRange = this.selectionRange;
+            string text;
+            if (selectionRange.Length > 0)
+            {
+                text = _text.Substring(MathHelper.MakeSigned(selectionRange.ToTextRange().StartPosition), selectionRange.Length);
+                if (string.IsNullOrEmpty(text))
+                    text = string.Empty;
+            }
+            else
+            {
+                text = string.Empty;
+            }
             if (_window.InvokeRequired)
             {
                 _window.Invoke(new Action(() => System.Windows.Forms.Clipboard.SetText(text)));
