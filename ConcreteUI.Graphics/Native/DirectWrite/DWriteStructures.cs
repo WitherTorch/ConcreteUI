@@ -29,6 +29,15 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool Contains(uint position)
+        {
+            uint startPosition = StartPosition;
+            if (position < startPosition)
+                return false;
+            return (position - startPosition) < Length;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(DWriteTextRange left, DWriteTextRange right) => left.Equals(right);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
