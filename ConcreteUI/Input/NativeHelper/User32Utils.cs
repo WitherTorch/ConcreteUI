@@ -8,7 +8,7 @@ namespace ConcreteUI.Input.NativeHelper
     {
         public static ushort GetCurrentInputLanguage()
         {
-            return User32.GetKeyboardLayout(0).GetWords().lowWord;
+            return User32.GetKeyboardLayout(0).GetWords().LowWord;
         }
     }
 }

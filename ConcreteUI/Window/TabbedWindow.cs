@@ -1,6 +1,5 @@
 ﻿using System.Drawing;
 using System.Threading;
-using System.Windows.Forms;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
@@ -63,7 +62,6 @@ namespace ConcreteUI.Window
         #region Constructor
         protected TabbedWindow(CoreWindow? parent, string[] menuTitles) : base(parent)
         {
-            FormBorderStyle = FormBorderStyle.Sizable;
             this.menuTitles = menuTitles;
         }
         #endregion
@@ -301,9 +299,9 @@ namespace ConcreteUI.Window
         #endregion
 
         #region WndProc
-        protected override void WndProc(ref Message m)
+        protected override bool TryProcessSystemWindowMessage(WindowMessage message, nint wParam, nint lParam, out nint result)
         {
-            switch ((WindowMessage)m.Msg)
+            switch (message)
             {
                 case WindowMessage.MouseLeave:
                     ulong val = MenuBarButtonStatus.Exchange(0UL);
@@ -314,15 +312,14 @@ namespace ConcreteUI.Window
                     }
                     goto default;
                 default:
-                    base.WndProc(ref m);
-                    break;
+                    return base.TryProcessSystemWindowMessage(message, wParam, lParam, out result);
             }
         }
         #endregion
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
-            base.Dispose(disposing);
+            base.DisposeCore(disposing);
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref menuBarButtonLayouts);

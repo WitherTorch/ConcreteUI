@@ -9,10 +9,10 @@ using ConcreteUI.Input;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Window;
+using ConcreteUI.Window2;
 
 using WitherTorch.Common.Collections;
-
-using FormStartPosition = System.Windows.Forms.FormStartPosition;
+using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Test
 {
@@ -27,18 +27,36 @@ namespace ConcreteUI.Test
             InitializeBaseInformation();
         }
 
+        protected override CreateWindowInfo GetCreateWindowInfo()
+        {
+            CreateWindowInfo windowInfo = base.GetCreateWindowInfo();
+            windowInfo.Width = 950;
+            windowInfo.Height = 700;
+            return windowInfo;
+        }
+
+        protected override void OnHandleCreated(nint handle)
+        {
+            base.OnHandleCreated(handle);
+            if (!Screen.TryGetScreenInfoFromHwnd(handle, out ScreenInfo info))
+                return;
+            Rect bounds = RawBounds;
+            Rect screenBounds = info.Bounds;
+            RawBounds = new Rectangle(
+                x: screenBounds.X + ((screenBounds.Width - bounds.Width) / 2),
+                y: screenBounds.Y + ((screenBounds.Height - bounds.Height) / 2),
+                height: bounds.Height,
+                width: bounds.Width);
+        }
+
         private void InitializeBaseInformation()
         {
-            ClientSize = new Size(950, 700);
             MinimumSize = new Size(640, 560);
             Text = nameof(MainWindow);
-            StartPosition = FormStartPosition.CenterScreen;
-            Stream? stream = Assembly.GetEntryAssembly()?.GetManifestResourceStream("ConcreteUI.Test.app-icon.ico");
-            if (stream is not null)
-            {
-                Icon = new Icon(stream);
-                stream.Dispose();
-            }
+            using Stream? stream = Assembly.GetEntryAssembly()?.GetManifestResourceStream("ConcreteUI.Test.app-icon.ico");
+            if (stream is null)
+                return;
+            Icon = new Icon(stream);
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
@@ -195,9 +213,9 @@ namespace ConcreteUI.Test
             _progressBar!.Value += 1.0f;
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
-            base.Dispose(disposing);
+            base.DisposeCore(disposing);
             if (disposing)
             {
                 foreach (UnwrappableList<UIElement> elementList in _elementLists)

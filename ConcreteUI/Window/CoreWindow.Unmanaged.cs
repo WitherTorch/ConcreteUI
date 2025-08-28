@@ -1,52 +1,40 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
+using ConcreteUI.Controls;
 using ConcreteUI.Internals;
 using ConcreteUI.Native;
+using ConcreteUI.Window2;
+
+using InlineIL;
 
 using InlineMethod;
 
+using LocalsInit;
+
+using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.Structures;
 
-#if !DEBUG
-using InlineIL;
-#endif
-
 namespace ConcreteUI.Window
 {
     public unsafe partial class CoreWindow
     {
-#if DEBUG
-        protected delegate void WndProcDelegate(ref Message m);
-        protected delegate HitTestValue HitTestDelegate(in PointF clientPoint);
-#endif
-
         #region Static Fields
-        private static readonly ThreadLocal<int> _threadId = new ThreadLocal<int>(Kernel32.GetCurrentThreadId, false);
-#if DEBUG
-        private WndProcDelegate? UIDependentWndProc;
-        private HitTestDelegate? UIDependentCustomHitTest;
-#else
         private void* UIDependentWndProc;
         private void* UIDependentCustomHitTest;
-#endif
         #endregion
 
         #region Fields
-        private bool _isMaximized;
+        private bool _isMaximized, _isCreateByDefaultX, _isCreateByDefaultY;
         private int _borderWidth;
-        private FormWindowState _windowState = FormWindowState.Normal;
-        private IntPtr _handle, _beforeHitTest;
+        private nint _beforeHitTest;
         private SizeF _minimumSize, _maximumSize;
-        private List<IMessageFilter> _filterList = new List<IMessageFilter>(1);
-        private string _text = string.Empty;
+        private UnwrappableList<IWindowMessageFilter> _filterList = new UnwrappableList<IWindowMessageFilter>(1);
         #endregion
 
         #region Special Fields
@@ -54,223 +42,213 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Properties
-        protected override CreateParams CreateParams
-        {
-            get
-            {
-                bool useFlipModelSwapChain = _windowMaterial == WindowMaterial.None && SystemConstants.VersionLevel == SystemVersionLevel.Windows_8;
-                CreateParams result = base.CreateParams;
-                if (useFlipModelSwapChain)
-                    result.ExStyle |= 0x00200000;
-                return result;
-            }
-        }
-
-        /// <inheritdoc cref="Control.Handle"/>
-        public new IntPtr Handle
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                IntPtr handle = _handle;
-                if (handle == IntPtr.Zero)
-                {
-                    Thread.MemoryBarrier();
-                    return _handle;
-                }
-                return handle;
-            }
-        }
-
-        /// <inheritdoc cref="Control.IsHandleCreated"/>
-        public new bool IsHandleCreated
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Handle != IntPtr.Zero;
-        }
-
-        /// <inheritdoc cref="Form.ClientSize"/>
-        public new SizeF ClientSize
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => ScalingSizeF(base.ClientSize, windowScaleFactor);
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => base.ClientSize = ScalingSize(value, dpiScaleFactor);
-        }
-
-        /// <inheritdoc cref="Form.MinimumSize"/>
-        public new SizeF MinimumSize
+        public SizeF MinimumSize
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _minimumSize;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                if (_handle != IntPtr.Zero)
-                    base.MinimumSize = ScalingSize(value, dpiScaleFactor);
+                if (value.Width < 0)
+                    value.Width = 0;
+                if (value.Height < 0)
+                    value.Height = 0;
                 _minimumSize = value;
+                SizeF maximumSize = _maximumSize;
+                _maximumSize = new SizeF(MathHelper.Max(value.Width, maximumSize.Width),
+                    MathHelper.Max(value.Height, maximumSize.Height));
+
+                IntPtr handle = Handle;
+                if (handle == IntPtr.Zero)
+                    return;
+                User32.SetWindowPos(handle, IntPtr.Zero, 0, 0, 0, 0,
+                    WindowPositionFlags.SwapWithNoMove | WindowPositionFlags.SwapWithNoSize |
+                    WindowPositionFlags.SwapWithNoZOrder | WindowPositionFlags.SwapWithNoActivate);
             }
         }
 
-        /// <inheritdoc cref="Form.MaximumSize"/>
-        public new SizeF MaximumSize
+        public SizeF MaximumSize
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _maximumSize;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                if (_handle != IntPtr.Zero)
-                {
-                    base.MaximumSize = ScalingSize(value, dpiScaleFactor);
-                }
-                _maximumSize = value;
+                SizeF minimumSize = _minimumSize;
+                _maximumSize = new SizeF(MathHelper.Max(value.Width, minimumSize.Width),
+                    MathHelper.Max(value.Height, minimumSize.Height));
+
+                IntPtr handle = Handle;
+                if (handle == IntPtr.Zero)
+                    return;
+                User32.SetWindowPos(handle, IntPtr.Zero, 0, 0, 0, 0,
+                    WindowPositionFlags.SwapWithNoMove | WindowPositionFlags.SwapWithNoSize |
+                    WindowPositionFlags.SwapWithNoZOrder | WindowPositionFlags.SwapWithNoActivate);
             }
         }
 
         protected int FormBorderWidth => _borderWidth;
-
-        #region Thread-Safe Property Overwrite
-        private Func<bool>? _focusedFunc;
-
-        /// <inheritdoc/>
-        public new bool Focused
-        {
-            get
-            {
-                if (InvokeRequired)
-                {
-                    _focusedFunc ??= () => base.Focused;
-#if NET8_0_OR_GREATER
-                    return Invoke(_focusedFunc);
-#else
-                    return (bool)Invoke(_focusedFunc);
-#endif
-                }
-                return base.Focused;
-            }
-        }
-
-        /// <inheritdoc cref="Form.Text"/>
-        public new string Text
-        {
-            get => _text;
-            set
-            {
-                if (ReferenceEquals(_text, value))
-                    return;
-                _text = value;
-                IntPtr handle = Handle;
-                if (handle == IntPtr.Zero)
-                {
-                    base.Text = value;
-                    return;
-                }
-                User32.SetWindowText(handle, value);
-                InterlockedHelper.Or(ref _updateFlags, (long)UpdateFlags.ChangeTitle);
-                Update();
-            }
-        }
-        #endregion
         #endregion
 
         #region Initialize
         [Inline(InlineBehavior.RemovePrivate)]
-        private void InitUnmanagedPart()
-        {
-#if !DEBUG
-            UIDependentWndProc = default;
-            UIDependentCustomHitTest = default;
-#endif
-        }
+        private void InitUnmanagedPart() { }
         #endregion
 
         #region WndProcs
-
-        protected override void WndProc(ref Message m)
+        protected override bool TryProcessWindowMessage(WindowMessage message, nint wParam, nint lParam, out nint result)
         {
-            List<IMessageFilter> filterList = _filterList;
-            for (int i = 0, count = filterList.Count; i < count; i++)
+            UnwrappableList<IWindowMessageFilter> filterList = _filterList;
+            IWindowMessageFilter[] filters = filterList.Unwrap();
+            for (nuint i = 0, count = MathHelper.MakeUnsigned(filterList.Count); i < count; i++)
             {
-                if (filterList[i].PreFilterMessage(ref m))
-                    return;
+                if (UnsafeHelper.AddByteOffset(ref filters[0], i).TryProcessWindowMessage(message, wParam, lParam, out result))
+                    return true;
             }
-            switch ((WindowMessage)m.Msg)
+            return base.TryProcessWindowMessage(message, wParam, lParam, out result);
+        }
+
+        protected override bool TryProcessSystemWindowMessage(WindowMessage message, nint wParam, nint lParam, out nint result)
+        {
+            switch (message)
             {
-                case WindowMessage.Create:
-                    _handle = m.HWnd;
-                    goto default;
-                case WindowMessage.Destroy:
-                    _handle = IntPtr.Zero;
-                    goto default;
-                case WindowMessage.Char:
-                    OnCharacterInputForElements((char)m.WParam.ToInt32());
-                    break;
                 case WindowMessage.DpiChanged:
                     {
-                        ChangeDpi(m.WParam.GetWords().highWord);
-                        Rect* ptr = (Rect*)m.LParam.ToPointer();
-                        if (ptr != default)
+                        ChangeDpi(wParam.GetWords().HighWord);
+                        if (lParam != 0)
                         {
-                            ref Rect clientRect = ref *ptr;
+                            Rect clientRect = UnsafeHelper.ReadUnaligned<Rect>((void*)lParam);
                             User32.SetWindowPos(Handle,
                                 IntPtr.Zero,
                                 clientRect.Left,
                                 clientRect.Top,
-                                clientRect.Right - clientRect.Left,
-                                clientRect.Bottom - clientRect.Top
-                                , WindowPositionFlags.SwapWithNoZOrder | WindowPositionFlags.SwapWithNoActivate);
+                                clientRect.Width,
+                                clientRect.Height,
+                                WindowPositionFlags.SwapWithNoZOrder | WindowPositionFlags.SwapWithNoActivate);
                         }
-                        m.Result = IntPtr.Zero;
                         break;
                     }
-                case WindowMessage.Size:
-                    FormWindowState state;
-                    switch (m.WParam.ToInt64())
+                case WindowMessage.Sizing:
                     {
-                        case 2: //SIZE_MAXIMIZED
-                            state = FormWindowState.Maximized;
-                            _isMaximized = true;
-                            if (_windowState != FormWindowState.Maximized)
-                            {
-                                OnWindowStateChanging(state);
-                                _windowState = FormWindowState.Maximized;
-                                OnWindowStateChanged();
-                            }
-                            break;
-                        case 1: //SIZE_MINIMIZED
-                            state = FormWindowState.Minimized;
-                            _isMaximized = false;
-                            if (_windowState != FormWindowState.Minimized)
-                            {
-                                OnWindowStateChanging(state);
-                                _windowState = FormWindowState.Minimized;
-                                OnWindowStateChanged();
-                            }
-                            break;
-                        case 0: //SIZE_RESTORED
-                            state = FormWindowState.Normal;
-                            _isMaximized = false;
-                            if (_windowState != FormWindowState.Normal)
-                            {
-                                OnWindowStateChanging(state);
-                                _windowState = FormWindowState.Normal;
-                                OnWindowStateChanged();
-                            }
-                            break;
-                        default:
-                            break;
+                        SizeF minimumSize = _minimumSize;
+                        SizeF maximumSize = _maximumSize;
+                        if (minimumSize == SizeF.Empty && maximumSize == SizeF.Empty)
+                            goto default;
+
+                        float dpiScaleFactor = _dpiScaleFactor;
+                        Rect rect = UnsafeHelper.ReadUnaligned<Rect>((void*)lParam);
+                        Size oldSize = rect.Size;
+                        Size newSize = Clamp(oldSize, ScalingSize(minimumSize, dpiScaleFactor), ScalingSize(maximumSize, dpiScaleFactor));
+                        if (newSize == oldSize)
+                            goto default;
+
+#if false
+                        switch (wParam)
+                        {
+                            case 1: // WMSZ_LEFT
+                            case 4: // WMSZ_TOPLEFT
+                                UnsafeHelper.WriteUnaligned((void*)lParam, new Rect(rect.Right - newSize.Width, rect.Top, rect.Right, rect.Top + newSize.Height));
+                                break;
+                            case 2: // WMSZ_RIGHT
+                            case 3: // WMSZ_TOP
+                            case 5: // WMSZ_TOPRIGHT
+                                UnsafeHelper.WriteUnaligned((void*)lParam, Rect.FromXYWH(rect.Location, newSize));
+                                break;
+                            case 6: // WMSZ_BOTTOM
+                            case 8: // WMSZ_BOTTOMRIGHT
+                                UnsafeHelper.WriteUnaligned((void*)lParam, new Rect(rect.Left, rect.Bottom - newSize.Height, rect.Left + newSize.Width, rect.Bottom));
+                                break;
+                            case 7: // WMSZ_BOTTOMLEFT
+                                UnsafeHelper.WriteUnaligned((void*)lParam, new Rect(rect.Right - newSize.Width, rect.Bottom - newSize.Height, rect.Right, rect.Bottom));
+                                break;
+                        }
+#endif
                     }
                     goto default;
-                case WindowMessage.WindowPositionChanging:
-                    getWindowRect_Temp = default;
-                    goto default;
-                #region WndProc for Rendering
+                case WindowMessage.Size:
+                    {
+                        switch (wParam)
+                        {
+                            case 2: // SIZE_MAXIMIZED
+                                _isMaximized = true;
+                                break;
+                            case 1: // SIZE_MINIMIZED
+                            case 0: // SIZE_RESTORED
+                                _isMaximized = false;
+                                break;
+                            default:
+                                break;
+                        }
+
+                        SizeF minimumSize = _minimumSize;
+                        SizeF maximumSize = _maximumSize;
+                        if (minimumSize == SizeF.Empty && maximumSize == SizeF.Empty)
+                            goto default;
+
+                        IntPtr handle = Handle;
+                        if (handle == IntPtr.Zero)
+                            goto default;
+
+                        (ushort width, ushort height) = lParam.GetWords();
+                        float dpiScaleFactor = _dpiScaleFactor;
+                        Size oldSize = new Size(width, height);
+                        Size newSize = Clamp(oldSize, ScalingSize(minimumSize, dpiScaleFactor), ScalingSize(maximumSize, dpiScaleFactor));
+                        if (oldSize == newSize)
+                            goto default;
+
+#if false
+                        User32.SetWindowPos(handle, IntPtr.Zero, 0, 0, newSize.Width, newSize.Height,
+                            WindowPositionFlags.SwapWithNoMove | WindowPositionFlags.SwapWithNoZOrder | WindowPositionFlags.SwapWithNoActivate);
+#endif
+                        goto default;
+                    }
+                #region Normal input events
+                case WindowMessage.Char:
+                    OnCharacterInputForElements((char)wParam);
+                    break;
+                case WindowMessage.KeyDown:
+                    OnKeyDown(new KeyInteractEventArgs((VirtualKey)wParam, (ushort)lParam));
+                    break;
+                case WindowMessage.KeyUp:
+                    OnKeyUp(new KeyInteractEventArgs((VirtualKey)wParam, (ushort)lParam));
+                    break;
+                case WindowMessage.MouseWheel:
+                    {
+                        Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
+                        (ushort keys, ushort delta) = wParam.GetWords();
+                        OnMouseScroll(new MouseInteractEventArgs(
+                            point: PointToClient(point),
+                            keys: (MouseKeys)keys,
+                            delta: 10));
+                    }
+                    break;
+                case WindowMessage.LeftButtonDown:
+                case WindowMessage.MiddleButtonDown:
+                case WindowMessage.RightButtonDown:
+                    {
+                        Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
+                        OnMouseDown(new MouseInteractEventArgs(
+                            point: ScalingPointF(point, _windowScaleFactor),
+                            keys: (MouseKeys)wParam));
+                    }
+                    break;
+                case WindowMessage.LeftButtonUp:
+                case WindowMessage.MiddleButtonUp:
+                case WindowMessage.RightButtonUp:
+                    {
+                        Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
+                        OnMouseUp(new MouseInteractEventArgs(
+                            point: ScalingPointF(point, _windowScaleFactor),
+                            keys: (MouseKeys)wParam));
+                    }
+                    break;
+                #endregion
+                #region Rendering
                 case WindowMessage.NCMouseMove:
-                    IntPtr hitTest = m.WParam;
+                    nint hitTest = wParam;
                     if (_beforeHitTest != hitTest)
                     {
-                        switch ((HitTestValue)_beforeHitTest.ToInt32())
+                        switch ((HitTestValue)_beforeHitTest)
                         {
                             case HitTestValue.CloseButton:
                                 _titleBarButtonStatus[2] = false;
@@ -289,7 +267,7 @@ namespace ConcreteUI.Window
                                 break;
                         }
                         _beforeHitTest = hitTest;
-                        switch ((HitTestValue)hitTest.ToInt32())
+                        switch ((HitTestValue)hitTest)
                         {
                             case HitTestValue.CloseButton:
                                 _titleBarButtonStatus[2] = true;
@@ -309,9 +287,13 @@ namespace ConcreteUI.Window
                     goto default;
                 case WindowMessage.MouseMove:
                     {
+                        Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
+                        OnMouseMove(new MouseInteractEventArgs(
+                            point: ScalingPointF(point, _windowScaleFactor),
+                            keys: (MouseKeys)wParam));
                         if (_beforeHitTest != (nint)HitTestValue.Client)
                         {
-                            switch ((HitTestValue)_beforeHitTest.ToInt32())
+                            switch ((HitTestValue)_beforeHitTest)
                             {
                                 case HitTestValue.CloseButton:
                                     _titleBarButtonStatus[2] = false;
@@ -342,33 +324,26 @@ namespace ConcreteUI.Window
                     Update();
                     goto default;
                 case WindowMessage.DisplayChange:
-                    ChangeDpi(User32.GetDpiForWindow(m.HWnd));
+                    ChangeDpi(User32.GetDpiForWindow(Handle));
                     _controller?.UpdateMonitorFpsStatus();
                     Update();
                     goto default;
                 #endregion
                 default:
-                    InvokeUIDependentWndProc(ref m);
-                    break;
+                    return TryProcessUIWindowMessage(message, wParam, lParam, out result);
             }
+            result = 0;
+            return true;
         }
 
-        private void WndProcForConcreteUI(ref Message m)
+        private bool TryProcessUIWindowMessage_Default(WindowMessage message, nint wParam, nint lParam, out nint result)
         {
-            switch ((WindowMessage)m.Msg)
+            switch (message)
             {
-                case WindowMessage.Create:
-                    {
-                        base.WndProc(ref m);
-                        User32.SetWindowPos(Handle, IntPtr.Zero, 0, 0, 0, 0,
-                            WindowPositionFlags.SwapWithFrameChanged | WindowPositionFlags.SwapWithNoSize | WindowPositionFlags.SwapWithNoMove);
-                    }
-                    break;
                 case WindowMessage.Activate:
                     {
-                        base.WndProc(ref m);
                         Margins margins;
-                        var useBackdrop = SystemConstants.VersionLevel switch
+                        bool useBackdrop = SystemConstants.VersionLevel switch
                         {
                             SystemVersionLevel.Windows_11_After => _windowMaterial > WindowMaterial.Gaussian,
                             _ => false,
@@ -378,212 +353,138 @@ namespace ConcreteUI.Window
                         else
                             margins = default;
                         DwmApi.DwmExtendFrameIntoClientArea(Handle, &margins);
+                        result = 0;
                     }
                     break;
                 case WindowMessage.NCCalcSize:
                     {
-                        if (m.WParam == default)
+                        if (wParam == default)
                         {
-                            Rect* ptr = (Rect*)m.LParam.ToPointer();
-                            if (ptr != default)
+                            if (lParam != default)
                             {
-                                ref Rect clientRect = ref *ptr;
-                                clientRect.Right = clientRect.Left + base.ClientSize.Width;
-                                clientRect.Bottom = clientRect.Top + base.ClientSize.Height;
+                                Size clientSize = RawClientSize;
+                                ref Rect newClientRect = ref *(Rect*)lParam;
+                                newClientRect.Right = newClientRect.Left + clientSize.Width;
+                                newClientRect.Bottom = newClientRect.Top + clientSize.Height;
                             }
                         }
                         else
                         {
                             AppBarData data = new AppBarData() { cbSize = sizeof(AppBarData) };
-                            if (((Shell32.SHAppBarMessage(0x00000004, &data).ToInt64() & 0x1) == 0x1) && FormBorderStyle == FormBorderStyle.Sizable)
+                            if (((Shell32.SHAppBarMessage(0x00000004, &data).ToInt64() & 0x1) == 0x1) && HasSizableBorder)
                             {
                                 WindowPlacement windowPlacement = new WindowPlacement() { Length = sizeof(WindowPlacement) };
                                 User32.GetWindowPlacement(Handle, &windowPlacement);
                                 if (windowPlacement.ShowCmd == ShowWindowCommands.ShowMaximized)
                                 {
-                                    NCCalcSizeParameters* lpParams = (NCCalcSizeParameters*)m.LParam.ToPointer();
+                                    NCCalcSizeParameters* lpParams = (NCCalcSizeParameters*)lParam;
                                     Rect clientRect = lpParams->rcNewWindow;
                                     int metrics_paddedBorder = User32.GetSystemMetrics(SystemMetric.SM_CXPADDEDBORDER);
                                     int yBorder = User32.GetSystemMetrics(SystemMetric.SM_CYFRAME) + metrics_paddedBorder;
-                                    float dpiScaleFactor = this.dpiScaleFactor;
+                                    float dpiScaleFactor = _dpiScaleFactor;
                                     clientRect.Bottom -= yBorder + (dpiScaleFactor == 1.0f ? 1 : MathI.Ceiling(1 * dpiScaleFactor));
                                     lpParams->rcNewWindow = clientRect;
                                 }
                             }
                         }
-                        m.Result = IntPtr.Zero;
+                        result = 0;
                     }
                     break;
                 case WindowMessage.NCHitTest:
                     {
-                        HitTestValue hitTest = DoHitTestConcreteUI(m.LParam);
-                        m.Result = hitTest == HitTestValue.NoWhere ? (nint)HitTestValue.Client : (nint)hitTest;
-                    }
-                    break;
-                case WindowMessage.NCLeftButtonDown:
-                    {
-                        HitTestValue state = (HitTestValue)m.WParam.ToInt32();
-                        switch (state)
-                        {
-                            case HitTestValue.MinimizeButton:
-                            case HitTestValue.MaximizeButton:
-                            case HitTestValue.CloseButton:
-                                m.Result = IntPtr.Zero;
-                                break;
-                            default:
-                                base.WndProc(ref m);
-                                break;
-                        }
-                    }
-                    break;
-                case WindowMessage.NCLeftButtonUp:
-                    {
-                        HitTestValue state = (HitTestValue)m.WParam.ToInt32();
-                        switch (state)
-                        {
-                            case HitTestValue.MinimizeButton:
-                                WindowState = FormWindowState.Minimized;
-                                m.Result = IntPtr.Zero;
-                                break;
-                            case HitTestValue.MaximizeButton:
-                                if (WindowState == FormWindowState.Maximized)
-                                    WindowState = FormWindowState.Normal;
-                                else
-                                    WindowState = FormWindowState.Maximized;
-                                m.Result = IntPtr.Zero;
-                                break;
-                            case HitTestValue.CloseButton:
-                                Close();
-                                m.Result = IntPtr.Zero;
-                                break;
-                            default:
-                                base.WndProc(ref m);
-                                break;
-                        }
+                        HitTestValue hitTest = DoHitTestConcreteUI(lParam);
+                        result = hitTest == HitTestValue.NoWhere ? (nint)HitTestValue.Client : (nint)hitTest;
                     }
                     break;
                 default:
+                    goto Transfer;
+            }
+
+            return true;
+        Transfer:
+            return base.TryProcessSystemWindowMessage(message, wParam, lParam, out result);
+        }
+
+        private bool TryProcessUIWindowMessage_Integrated(WindowMessage message, nint wParam, nint lParam, out nint result)
+        {
+            if (DwmApi.DwmDefWindowProc(Handle, (int)message, wParam, lParam, UnsafeHelper.AsPointerOut(out result)))
+                return true;
+
+            switch (message)
+            {
+                case WindowMessage.Activate:
+                case WindowMessage.DwmCompositionChanged:
+                    Margins margins = new Margins(-1);
+                    DwmApi.DwmExtendFrameIntoClientArea(Handle, &margins);
+                    goto default;
+                case WindowMessage.NCHitTest:
                     {
-                        base.WndProc(ref m);
-                        break;
+                        HitTestValue hitTest = DoHitTestForIntergratedUI(lParam);
+                        if (hitTest == HitTestValue.NoWhere)
+                            goto Transfer;
+                        result = (nint)hitTest;
                     }
+                    break;
+                default:
+                    goto Transfer;
             }
+
+            return true;
+        Transfer:
+            return base.TryProcessSystemWindowMessage(message, wParam, lParam, out result);
         }
 
-        private void WndProcForIntergratedUI(ref Message m)
-        {
-            IntPtr result = m.Result;
-            if (DwmApi.DwmDefWindowProc(m.HWnd, m.Msg, m.WParam, m.LParam, &result))
-            {
-                m.Result = result;
-            }
-            else
-            {
-                switch ((WindowMessage)m.Msg)
-                {
-                    case WindowMessage.Create:
-                        {
-                            base.WndProc(ref m);
-                            User32.SetWindowPos(Handle, IntPtr.Zero, 0, 0, 0, 0,
-                                WindowPositionFlags.SwapWithFrameChanged | WindowPositionFlags.SwapWithNoSize | WindowPositionFlags.SwapWithNoMove);
-                        }
-                        break;
-                    case WindowMessage.Activate:
-                    case WindowMessage.DwmCompositionChanged:
-                        Margins margins = new Margins(-1);
-                        DwmApi.DwmExtendFrameIntoClientArea(Handle, &margins);
-                        goto default;
-                    case WindowMessage.NCHitTest:
-                        {
-                            HitTestValue hitTest = DoHitTestForIntergratedUI(m.LParam);
-                            if (hitTest == HitTestValue.NoWhere)
-                            {
-                                goto default;
-                            }
-                            else
-                            {
-                                m.Result = (IntPtr)hitTest;
-                            }
-                        }
-                        break;
-                    default:
-                        {
-                            base.WndProc(ref m);
-                            break;
-                        }
-                }
-            }
-        }
-
-#if DEBUG
-        private void InvokeUIDependentWndProc(ref Message msg)
-        {
-            WndProcDelegate? wndProc = UIDependentWndProc;
-            if (wndProc is null)
-            {
-                if (WindowMaterial == WindowMaterial.Integrated)
-                    wndProc = WndProcForIntergratedUI;
-                else
-                    wndProc = WndProcForConcreteUI;
-                UIDependentWndProc = wndProc;
-            }
-            wndProc.Invoke(ref msg);
-        }
-#else
-        [Inline(InlineBehavior.Remove)]
-        private void InvokeUIDependentWndProc(ref Message m)
+        private bool TryProcessUIWindowMessage(WindowMessage message, nint wParam, nint lParam, out nint result)
         {
             void* wndProc = UIDependentWndProc;
             if (wndProc == null)
             {
                 if (_windowMaterial == WindowMaterial.Integrated)
                 {
-                    IL.Emit.Ldarg_0();
-                    IL.Emit.Ldftn(new MethodRef(typeof(CoreWindow), nameof(WndProcForIntergratedUI)));
-                    IL.Emit.Dup();
+                    IL.Emit.Ldftn(new MethodRef(typeof(CoreWindow), nameof(TryProcessUIWindowMessage_Integrated)));
                     IL.Pop(out wndProc);
-                    IL.Emit.Stfld(FieldRef.Field(typeof(CoreWindow), nameof(UIDependentWndProc)));
+                    UIDependentWndProc = wndProc;
                 }
                 else
                 {
-                    IL.Emit.Ldarg_0();
-                    IL.Emit.Ldftn(new MethodRef(typeof(CoreWindow), nameof(WndProcForConcreteUI)));
-                    IL.Emit.Dup();
+                    IL.Emit.Ldftn(new MethodRef(typeof(CoreWindow), nameof(TryProcessUIWindowMessage_Default)));
                     IL.Pop(out wndProc);
-                    IL.Emit.Stfld(FieldRef.Field(typeof(CoreWindow), nameof(UIDependentWndProc)));
+                    UIDependentWndProc = wndProc;
                 }
             }
             IL.Emit.Ldarg_0();
             IL.Emit.Ldarg_1();
+            IL.Emit.Ldarg_2();
+            IL.Emit.Ldarg_3();
+            IL.PushOutRef(out result);
             IL.Push(wndProc);
             IL.Emit.Calli(StandAloneMethodSig.ManagedMethod(System.Reflection.CallingConventions.HasThis,
-                typeof(void), TypeRef.Type<Message>().MakeByRefType()));
+                typeof(bool), typeof(WindowMessage), typeof(nint), typeof(nint), TypeRef.Type<nint>().MakeByRefType()));
+            return IL.Return<bool>();
         }
-#endif
         #endregion
 
         #region HitTests
-        private HitTestValue DoHitTestForIntergratedUI(IntPtr LParam)
+        private HitTestValue DoHitTestForIntergratedUI(IntPtr lParam)
         {
-            return CustomHitTest(ScalingPointF(PointToClientBase(GetPointFromIntPtr(LParam)), windowScaleFactor));
+            return CustomHitTest(ScalingPointF(PointToClientRaw(UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32()), _windowScaleFactor));
         }
 
-        private HitTestValue DoHitTestConcreteUI(IntPtr LParam)
+        private HitTestValue DoHitTestConcreteUI(IntPtr lParam)
         {
-            Rect windowRect = GetWindowRect();
-            var point = GetPointFromIntPtr(LParam);
+            Rectangle bounds = base.Bounds;
+            Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
             if (!_isMaximized) // Disable border hit testing to maximized window
             {
-                FormBorderStyle formBorderStyle = FormBorderStyle;
-                if (formBorderStyle == FormBorderStyle.Sizable || formBorderStyle == FormBorderStyle.SizableToolWindow)
+                if (HasSizableBorder)
                 {
                     int borderWidth = _borderWidth;
                     int x = point.X;
                     int y = point.Y;
-                    int topBorder = windowRect.Top + borderWidth;
-                    int leftBorder = windowRect.Left + borderWidth;
-                    int rightBorder = windowRect.Right - borderWidth;
-                    int bottomBorder = windowRect.Bottom - borderWidth;
+                    int topBorder = bounds.Top + borderWidth;
+                    int leftBorder = bounds.Left + borderWidth;
+                    int rightBorder = bounds.Right - borderWidth;
+                    int bottomBorder = bounds.Bottom - borderWidth;
                     if (y < topBorder)
                     {
                         if (x < leftBorder) return HitTestValue.TopLeftBorder;
@@ -603,24 +504,9 @@ namespace ConcreteUI.Window
                     }
                 }
             }
-            return CustomHitTest(ScalingPointFInRect(point, windowRect, windowScaleFactor));
+            return CustomHitTest(ScalingPointFInRect(point, bounds, _windowScaleFactor));
         }
 
-#if DEBUG
-        private HitTestValue InvokeUIDependentCustomHitTest(in PointF point)
-        {
-            HitTestDelegate? hitTest = UIDependentCustomHitTest;
-            if (hitTest is null)
-            {
-                if (_windowMaterial == WindowMaterial.Integrated)
-                    hitTest = CustomHitTestForIntegratedUI;
-                else
-                    hitTest = CustomHitTestForConcreteUI;
-                UIDependentCustomHitTest = hitTest;
-            }
-            return hitTest.Invoke(in point);
-        }
-#else
         [Inline(InlineBehavior.Remove)]
         private HitTestValue InvokeUIDependentCustomHitTest(in PointF point)
         {
@@ -629,19 +515,15 @@ namespace ConcreteUI.Window
             {
                 if (_windowMaterial == WindowMaterial.Integrated)
                 {
-                    IL.Emit.Ldarg_0();
                     IL.Emit.Ldftn(new MethodRef(typeof(CoreWindow), nameof(CustomHitTestForIntegratedUI)));
-                    IL.Emit.Dup();
                     IL.Pop(out hitTest);
-                    IL.Emit.Stfld(FieldRef.Field(typeof(CoreWindow), nameof(UIDependentCustomHitTest)));
+                    UIDependentCustomHitTest = hitTest;
                 }
                 else
                 {
-                    IL.Emit.Ldarg_0();
                     IL.Emit.Ldftn(new MethodRef(typeof(CoreWindow), nameof(CustomHitTestForConcreteUI)));
-                    IL.Emit.Dup();
                     IL.Pop(out hitTest);
-                    IL.Emit.Stfld(FieldRef.Field(typeof(CoreWindow), nameof(UIDependentCustomHitTest)));
+                    UIDependentCustomHitTest = hitTest;
                 }
             }
             IL.Emit.Ldarg_0();
@@ -651,34 +533,9 @@ namespace ConcreteUI.Window
                 typeof(HitTestValue), TypeRef.Type<PointF>().MakeByRefType()));
             return IL.Return<HitTestValue>();
         }
-#endif
         #endregion
 
         #region Normal Methods
-        Rect getWindowRect_Temp;
-
-        [Inline(InlineBehavior.RemovePrivate)]
-        private Rect GetWindowRect()
-        {
-            Rect rect = getWindowRect_Temp;
-            if (rect.IsEmptySize)
-            {
-                if (User32.GetWindowRect(_handle, &rect))
-                {
-                    getWindowRect_Temp = rect;
-                    return rect;
-                }
-                else
-                {
-                    return default;
-                }
-            }
-            else
-            {
-                return rect;
-            }
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ChangeDpi(int newDpi)
         {
@@ -686,18 +543,14 @@ namespace ConcreteUI.Window
             SizeF minimumSize = _minimumSize, maximumSize = _maximumSize;
             if (newDpi == 96)
             {
-                baseLineWidth = windowScaleFactor = dpiScaleFactor = 1.0f;
-                if (!minimumSize.IsEmpty)
-                    base.MinimumSize = ScalingSize(minimumSize, 1f);
-                if (!maximumSize.IsEmpty)
-                    base.MaximumSize = ScalingSize(maximumSize, 1f);
+                baseLineWidth = _windowScaleFactor = _dpiScaleFactor = 1.0f;
             }
             else
             {
                 float dpiScaleFactor = newDpi / 96.0f;
                 float windowScaleFactor = 96.0f / newDpi;
-                this.dpiScaleFactor = dpiScaleFactor;
-                this.windowScaleFactor = windowScaleFactor;
+                _dpiScaleFactor = dpiScaleFactor;
+                _windowScaleFactor = windowScaleFactor;
                 if (dpiScaleFactor > 1f)
                 {
                     float factor = MathF.Round(dpiScaleFactor - float.Epsilon);
@@ -705,27 +558,19 @@ namespace ConcreteUI.Window
                 }
                 else
                     baseLineWidth = windowScaleFactor;
-                if (!minimumSize.IsEmpty)
-                {
-                    base.MinimumSize = ScalingSize(_minimumSize, dpiScaleFactor);
-                }
-                if (!maximumSize.IsEmpty)
-                {
-                    base.MaximumSize = ScalingSize(_maximumSize, dpiScaleFactor);
-                }
             }
             dpi = newDpi;
             OnDpiChanged();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddMessageFilter(IMessageFilter filter)
+        public void AddMessageFilter(IWindowMessageFilter filter)
         {
             _filterList.Add(filter);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RemoveMessageFilter(IMessageFilter filter)
+        public void RemoveMessageFilter(IWindowMessageFilter filter)
         {
             _filterList.Remove(filter);
         }
@@ -783,103 +628,132 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Override Methods
-        protected override void OnHandleCreated(EventArgs e)
+        protected override CreateWindowInfo GetCreateWindowInfo()
         {
-            base.OnHandleCreated(e);
-            if (_windowMaterial != WindowMaterial.Integrated)
-                ControlBox = false;
+            CreateWindowInfo windowInfo = base.GetCreateWindowInfo();
+            WindowMaterial material = _windowMaterial;
+            if (material != WindowMaterial.Integrated)
+                windowInfo.Styles &= ~WindowStyles.SystemMenu;
+            if (material == WindowMaterial.None && SystemConstants.VersionLevel == SystemVersionLevel.Windows_8)
+                windowInfo.ExtendedStyles |= WindowExtendedStyles.NoRedirectionBitmap;
+
+            const int CW_USEDEFAULT = unchecked((int)0x80000000);
+
+            int x = windowInfo.X;
+            int width = windowInfo.Width;
+            _isCreateByDefaultX = x <= CW_USEDEFAULT & width <= CW_USEDEFAULT;
+            int y = windowInfo.Y;
+            int height = windowInfo.Height;
+            _isCreateByDefaultY = y <= CW_USEDEFAULT & height <= CW_USEDEFAULT;
+            return windowInfo;
+        }
+
+        protected override void OnHandleCreated(IntPtr handle)
+        {
+            base.OnHandleCreated(handle);
+
+            User32.SetWindowPos(handle, IntPtr.Zero, 0, 0, 0, 0,
+                            WindowPositionFlags.SwapWithFrameChanged | WindowPositionFlags.SwapWithNoSize |
+                            WindowPositionFlags.SwapWithNoMove | WindowPositionFlags.SwapWithNoZOrder);
+
             SystemVersionLevel versionLevel = SystemConstants.VersionLevel;
             if (versionLevel > SystemVersionLevel.Windows_10 || (versionLevel == SystemVersionLevel.Windows_10 && Environment.OSVersion.Version.Build >= 14393))
-                ChangeDpi(User32.GetDpiForWindow(Handle));
-            Size Size = base.Size;
-            float dpiScaleFactor = this.dpiScaleFactor;
-            if (dpiScaleFactor != 1.0f && !Size.IsEmpty)
+                ChangeDpi(User32.GetDpiForWindow(handle));
+            float dpiScaleFactor = _dpiScaleFactor;
+            if (dpiScaleFactor != 1.0f)
             {
-                Size Size2 = Size;
-                Size.Width = (int)(Size.Width * dpiScaleFactor);
-                Size.Height = (int)(Size.Height * dpiScaleFactor);
-                var startPos = StartPosition;
-                if (startPos != FormStartPosition.WindowsDefaultLocation && startPos != FormStartPosition.WindowsDefaultBounds)
+                Rect rect;
+                if (!User32.GetWindowRect(handle, &rect))
+                    Marshal.ThrowExceptionForHR(User32.GetLastError());
+                bool isDefaultX = _isCreateByDefaultX, isDefaultY = _isCreateByDefaultY;
+                if ((isDefaultX | isDefaultY) && !rect.IsEmptySize)
                 {
-                    Point loc = Location;
-                    loc.X -= (Size.Width - Size2.Width) / 2;
-                    loc.Y -= (Size.Height - Size2.Height) / 2;
-                    if (loc.X < 0) loc.X = 0;
-                    if (loc.Y < 0) loc.Y = 0;
-                    if (User32.SetWindowPos(Handle, IntPtr.Zero, loc.X, loc.Y, Size.Width, Size.Height,
-                        WindowPositionFlags.SwapWithNoRedraw | WindowPositionFlags.SwapWithNoActivate) != 0)
+                    if (!isDefaultX)
                     {
-                        Location = loc;
-                        base.Size = Size;
+                        int newWidth = MathI.Ceiling(rect.Width * dpiScaleFactor);
+                        rect.X -= (newWidth - rect.Width) / 2;
+                        rect.Width = newWidth;
                     }
+                    if (!isDefaultY)
+                    {
+                        int newHeight = MathI.Ceiling(rect.Width * dpiScaleFactor);
+                        rect.Y -= (newHeight - rect.Height) / 2;
+                        rect.Height = newHeight;
+                    }
+                    User32.SetWindowPos(handle, IntPtr.Zero, rect.X, rect.Y, rect.Width, rect.Height,
+                        WindowPositionFlags.SwapWithNoRedraw | WindowPositionFlags.SwapWithNoActivate);
                 }
             }
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.Opaque, true);
-            InitRenderObjects();
+            InitRenderObjects(handle);
         }
 
         #region Thread-Safe Function Overwrite
-        private Func<Point, Point>? _pointToClientFunc;
-        private Func<bool>? _clipboard_ContainsTextFunc;
-
-        public new bool InvokeRequired => _handle != default && User32.GetWindowThreadProcessId(_handle, null) != _threadId.Value;
-
-        public new PointF PointToClient(Point point)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public PointF PointToLocal(Point point)
         {
-            if (InvokeRequired)
-            {
-                if (IsDisposed)
-                    return PointF.Empty;
-                return ScalingPointF((Point)Invoke((_pointToClientFunc ??= base.PointToClient), point), windowScaleFactor);
-            }
-            else
-            {
-                return ScalingPointF(base.PointToClient(point), windowScaleFactor);
-            }
+            IntPtr handle = Handle;
+            if (handle == IntPtr.Zero)
+                return Point.Empty;
+
+            return ScalingPointF(PointToLocalCore(handle, point), _windowScaleFactor);
         }
 
-        public Point PointToClientBase(Point point)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Point PointToLocalRaw(Point point)
         {
-            if (InvokeRequired)
-            {
-                if (IsDisposed)
-                    return Point.Empty;
-                return (Point)Invoke((_pointToClientFunc ??= base.PointToClient), point);
-            }
-            else
-            {
-                return base.PointToClient(point);
-            }
+            IntPtr handle = Handle;
+            if (handle == IntPtr.Zero)
+                return Point.Empty;
+
+            return PointToLocalCore(handle, point);
         }
 
-        public bool Clipboard_ContainsText()
+        [LocalsInit(false)]
+        private static Point PointToLocalCore(IntPtr handle, Point point)
         {
-            if (InvokeRequired)
-            {
-                _clipboard_ContainsTextFunc ??= Clipboard.ContainsText;
-#if NET8_0_OR_GREATER
-                return Invoke(_clipboard_ContainsTextFunc);
-#else
-                return (bool)Invoke(_clipboard_ContainsTextFunc);
-#endif
-            }
-            else
-            {
-                return Clipboard.ContainsText();
-            }
+            Rect rect;
+            if (!User32.GetWindowRect(handle, &rect))
+                return Point.Empty;
+
+            return new Point(point.X - rect.X, point.Y - rect.Y);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public PointF PointToClient(Point point)
+        {
+            IntPtr handle = Handle;
+            if (handle == IntPtr.Zero)
+                return Point.Empty;
+
+            return ScalingPointF(PointToClientCore(handle, point), _windowScaleFactor);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Point PointToClientRaw(Point point)
+        {
+            IntPtr handle = Handle;
+            if (handle == IntPtr.Zero)
+                return Point.Empty;
+
+            return PointToClientCore(handle, point);
+        }
+
+        [LocalsInit(false)]
+        private static Point PointToClientCore(IntPtr handle, Point point)
+        {
+            Rect windowRect, clientRect;
+            if (!User32.GetWindowRect(handle, &windowRect) || !User32.GetClientRect(handle, &clientRect))
+                return Point.Empty;
+
+            return new Point(point.X - windowRect.X - clientRect.X, point.Y - windowRect.Y - clientRect.Y);
+        }
 
         #endregion
         #endregion
 
         #region Inline Macros
         [Inline(InlineBehavior.Remove)]
-        protected static Point GetPointFromIntPtr(IntPtr pointer)
-            => (*(Point16*)&pointer).ToPoint32();
-
-        [Inline(InlineBehavior.Remove)]
-        public static Size ScalingSize(SizeF original, float dpiScaleFactor)
+        private static Size ScalingSize(SizeF original, float dpiScaleFactor)
         {
             if (dpiScaleFactor == 1.0f)
                 return new Size(MathI.Floor(original.Width), MathI.Floor(original.Height));
@@ -888,7 +762,7 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Remove)]
-        public static SizeF ScalingSizeF(Size original, float windowScaleFactor)
+        private static SizeF ScalingSizeF(Size original, float windowScaleFactor)
         {
             if (windowScaleFactor == 1.0f)
                 return original;
@@ -897,7 +771,7 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Remove)]
-        public static PointF ScalingPointF(Point original, float windowScaleFactor)
+        private static PointF ScalingPointF(Point original, float windowScaleFactor)
         {
             if (windowScaleFactor == 1.0f)
                 return original;
@@ -906,7 +780,7 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Remove)]
-        public static PointF ScalingPointF(PointF original, float windowScaleFactor)
+        private static PointF ScalingPointF(PointF original, float windowScaleFactor)
         {
             if (windowScaleFactor == 1.0f)
                 return original;
@@ -915,7 +789,7 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Remove)]
-        public static PointF ScalingPointFInRect(Point original, Rect rect, float windowScaleFactor)
+        private static PointF ScalingPointFInRect(Point original, Rect rect, float windowScaleFactor)
         {
             if (windowScaleFactor == 1.0f)
                 return new PointF(original.X - rect.Left, original.Y - rect.Top);
@@ -924,15 +798,36 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Remove)]
-        public static Rect ScalingRect(Rect original, float windowScaleFactor)
+        private static Rect ScalingRect(RectF original, float dpiScaleFactor)
+        {
+            if (dpiScaleFactor == 1.0f)
+                return (Rect)original;
+            return new Rect(top: MathI.FloorPositive(original.Top * dpiScaleFactor),
+                left: MathI.FloorPositive(original.Left * dpiScaleFactor),
+                right: MathI.Ceiling(original.Right * dpiScaleFactor),
+                bottom: MathI.Ceiling(original.Bottom * dpiScaleFactor));
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static RectF ScalingRectF(Rect original, float windowScaleFactor)
         {
             if (windowScaleFactor == 1.0f)
-                return original;
-            return new Rect(top: MathI.FloorPositive(original.Top * windowScaleFactor),
-                left: MathI.FloorPositive(original.Left * windowScaleFactor),
-                right: MathI.Ceiling(original.Right * windowScaleFactor),
-               bottom: MathI.Ceiling(original.Bottom * windowScaleFactor));
+                return (RectF)original;
+            return new RectF(top: original.Top * windowScaleFactor,
+                left: original.Left * windowScaleFactor,
+                right: original.Right * windowScaleFactor,
+                bottom: original.Bottom * windowScaleFactor);
         }
+
+        [Inline(InlineBehavior.Remove)]
+        private static SizeF Clamp(Size original, SizeF min, SizeF max)
+            => new SizeF(width: MathHelper.Clamp(original.Width, min.Width, max.Width),
+                height: MathHelper.Clamp(original.Height, min.Height, max.Height));
+
+        [Inline(InlineBehavior.Remove)]
+        private static Size Clamp(Size original, Size min, Size max)
+            => new Size(width: MathHelper.Clamp(original.Width, min.Width, max.Width),
+                height: MathHelper.Clamp(original.Height, min.Height, max.Height));
         #endregion
     }
 }

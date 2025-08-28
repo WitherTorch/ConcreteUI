@@ -5,7 +5,6 @@ using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Windows.Forms;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -14,6 +13,7 @@ using ConcreteUI.Graphics.Native.Direct2D.Geometry;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
+using ConcreteUI.Window2;
 
 using InlineMethod;
 
@@ -393,12 +393,11 @@ namespace ConcreteUI.Controls
         public override void OnMouseDown(in MouseInteractEventArgs args)
         {
             base.OnMouseDown(args);
-            if (Mode != ListBoxMode.None)
-            {
-                if (_buttonState == ButtonTriState.Hovered)
-                    _buttonState = ButtonTriState.Pressed;
-                Update();
-            }
+            if (Mode == ListBoxMode.None || ((args.Keys & MouseKeys.LeftButton) != MouseKeys.LeftButton))
+                return;
+            if (_buttonState == ButtonTriState.Hovered)
+                _buttonState = ButtonTriState.Pressed;
+            Update();
         }
 
         public override void OnMouseUp(in MouseInteractEventArgs args)
@@ -411,11 +410,6 @@ namespace ConcreteUI.Controls
                 _buttonState = ButtonTriState.Hovered;
             else
                 _buttonState = ButtonTriState.None;
-            if (args.Button != MouseButtons.Left)
-            {
-                Update();
-                return;
-            }
             switch (Mode)
             {
                 case ListBoxMode.Any:

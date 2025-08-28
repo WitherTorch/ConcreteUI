@@ -2,7 +2,8 @@
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
+
+using ConcreteUI.Window2;
 
 namespace ConcreteUI.Controls
 {
@@ -39,49 +40,94 @@ namespace ConcreteUI.Controls
         public bool IsEdited { get; private set; }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     public readonly ref struct MouseInteractEventArgs
     {
         public readonly PointF Location;
         public readonly float X;
         public readonly float Y;
-        public readonly MouseButtons Button;
-        public readonly int Delta;
+        public readonly MouseKeys Keys;
+        public readonly ushort Delta;
 
         public MouseInteractEventArgs(PointF point)
         {
             Location = point;
             X = point.X;
             Y = point.Y;
-            Button = MouseButtons.None;
+            Keys = MouseKeys.None;
             Delta = 0;
         }
 
-        public MouseInteractEventArgs(PointF point, MouseButtons buttons)
+        public MouseInteractEventArgs(PointF point, MouseKeys keys)
         {
             Location = point;
             X = point.X;
             Y = point.Y;
-            Button = buttons;
+            Keys = keys;
             Delta = 0;
         }
 
-        public MouseInteractEventArgs(PointF point, int delta)
+        public MouseInteractEventArgs(PointF point, ushort delta)
         {
             Location = point;
             X = point.X;
             Y = point.Y;
-            Button = MouseButtons.None;
+            Keys = MouseKeys.None;
             Delta = delta;
         }
 
-        public MouseInteractEventArgs(PointF point, MouseButtons buttons, int delta)
+        public MouseInteractEventArgs(PointF point, MouseKeys keys, ushort delta)
         {
             Location = point;
             X = point.X;
             Y = point.Y;
-            Button = buttons;
+            Keys = keys;
             Delta = delta;
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    public readonly ref struct KeyInteractEventArgs
+    {
+        public readonly VirtualKey Key;
+        public readonly ushort RepeatCount;
+
+        public KeyInteractEventArgs(VirtualKey key)
+        {
+            Key = key;
+            RepeatCount = 1;
+        }
+
+        public KeyInteractEventArgs(VirtualKey key, ushort repeatCount)
+        {
+            Key = key;
+            RepeatCount = repeatCount;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    public ref struct CancellableKeyInteractEventArgs
+    {
+        private readonly KeyInteractEventArgs _args;
+        
+        private bool _cancelled;
+
+        public readonly VirtualKey Key => _args.Key;
+        public readonly ushort RepeatCount => _args.RepeatCount;
+        public readonly bool IsCancelled => _cancelled;
+
+        public CancellableKeyInteractEventArgs(in KeyInteractEventArgs args)
+        {
+            _args = args;
+            _cancelled = false;
+        }
+
+        public CancellableKeyInteractEventArgs(in KeyInteractEventArgs args, bool cancelled)
+        {
+            _args = args;
+            _cancelled = cancelled;
+        }
+
+        public void SetCancelled(bool cancelled) => _cancelled = cancelled;
     }
 }

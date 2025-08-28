@@ -5,13 +5,11 @@ using System.Runtime.CompilerServices;
 using ConcreteUI.Native;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
+using ConcreteUI.Window2;
 
 using Microsoft.Win32;
 
 using WitherTorch.Common.Windows.Structures;
-
-using Form = System.Windows.Forms.Form;
-using FormClosingEventArgs = System.Windows.Forms.FormClosingEventArgs;
 
 namespace ConcreteUI.Internals.NativeHelpers
 {
@@ -129,51 +127,40 @@ namespace ConcreteUI.Internals.NativeHelpers
         public static unsafe void ApplyWin11Corner(IntPtr handle)
             => DwmApi.DwmSetWindowAttribute(handle, DwmWindowAttribute.WindowCornerPreference, DwmWindowCornerPreference.Round);
 
-        public static object FixLagForAcrylic(Form form)
-            => new AcrylicLagFixFor21H2(form, isAcrylic: true);
+        public static object FixLagForAcrylic(CoreWindow window)
+            => new AcrylicLagFixFor21H2(window, isAcrylic: true);
 
-        public static object FixLagForBlur(Form form)
-            => new AcrylicLagFixFor21H2(form, isAcrylic: false);
+        public static object FixLagForBlur(CoreWindow window)
+            => new AcrylicLagFixFor21H2(window, isAcrylic: false);
 
         private sealed class AcrylicLagFixFor21H2
         {
             private readonly bool _isAcrylic;
+            private readonly WeakReference<CoreWindow> _windowReference;
 
             private bool _isResizing;
 
-            public AcrylicLagFixFor21H2(Form window, bool isAcrylic)
+            public AcrylicLagFixFor21H2(CoreWindow window, bool isAcrylic)
             {
+                _windowReference = new WeakReference<CoreWindow>(window);
                 _isResizing = false;
                 _isAcrylic = isAcrylic;
-                window.Resize += Resize;
-                window.ResizeBegin += ResizeBegin;
-                window.ResizeEnd += ResizeEnd;
-                window.FormClosing += FormClosing;
+                window.Resizing += Window_Resizing;
+                window.Resized += Window_Resized;
+                window.Closing += Window_Closing;
             }
 
-            private void FormClosing(object? sender, FormClosingEventArgs e)
+            private void Window_Resizing(object? sender, EventArgs e)
             {
-                if (sender is not CoreWindow window)
+                if (_isResizing || !_windowReference.TryGetTarget(out CoreWindow? window) || !ReferenceEquals(window, sender))
                     return;
-                window.Resize -= Resize;
-                window.ResizeBegin -= ResizeBegin;
-                window.ResizeEnd -= ResizeEnd;
-                window.FormClosing -= FormClosing;
-            }
-
-            private void Resize(object? sender, EventArgs e)
-            {
-                if (!_isResizing || sender is not CoreWindow window)
-                    return;
+                _isResizing = true;
                 DisableBlur(window.Handle, window.CurrentTheme?.IsDarkTheme ?? false);
             }
 
-            private void ResizeBegin(object? sender, EventArgs e)
-                => _isResizing = true;
-
-            private void ResizeEnd(object? sender, EventArgs e)
+            private void Window_Resized(object? sender, EventArgs e)
             {
-                if (!_isResizing || sender is not CoreWindow window)
+                if (!_isResizing || !_windowReference.TryGetTarget(out CoreWindow? window) || !ReferenceEquals(window, sender))
                     return;
                 _isResizing = false;
                 IntPtr handle = window.Handle;
@@ -181,6 +168,15 @@ namespace ConcreteUI.Internals.NativeHelpers
                     EnableAcrylicBlur(handle, window.CurrentTheme?.IsDarkTheme ?? false);
                 else
                     EnableBlur(handle);
+            }
+
+            private void Window_Closing(object? sender, ref ClosingEventArgs args)
+            {
+                if (args.Cancelled || !_windowReference.TryGetTarget(out CoreWindow? window) || !ReferenceEquals(window, sender))
+                    return;
+                window.Resizing -= Window_Resizing;
+                window.Resized -= Window_Resized;
+                window.Closing -= Window_Closing;
             }
         }
     }

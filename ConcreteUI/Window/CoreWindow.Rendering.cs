@@ -5,8 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
-using System.Windows.Forms;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
@@ -19,8 +19,10 @@ using ConcreteUI.Graphics.Native.DXGI;
 using ConcreteUI.Internals;
 using ConcreteUI.Internals.NativeHelpers;
 using ConcreteUI.Layout;
+using ConcreteUI.Native;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
+using ConcreteUI.Window2;
 
 using InlineMethod;
 
@@ -140,57 +142,60 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Remove)]
-        private void InitRenderObjects()
+        private void InitRenderObjects(IntPtr handle)
         {
             WindowMaterial material = _windowMaterial;
             CoreWindow? parent = _parent;
             SwapChainGraphicsHost host;
             if (parent is null)
-                host = GraphicsHostHelper.CreateSwapChainGraphicsHost(Handle, graphicsDeviceProviderLazy.Value,
+                host = GraphicsHostHelper.CreateSwapChainGraphicsHost(handle, graphicsDeviceProviderLazy.Value,
                     useFlipModel: material == WindowMaterial.None && SystemConstants.VersionLevel >= SystemVersionLevel.Windows_8);
             else
-                host = GraphicsHostHelper.FromAnotherSwapChainGraphicsHost(parent._host!, Handle);
+                host = GraphicsHostHelper.FromAnotherSwapChainGraphicsHost(parent._host!, handle);
             _host = host;
             _collector = DirtyAreaCollector.TryCreate(host as SwapChainGraphicsHost1);
-            D2D1DeviceContext? deviceContext = host.BeginDraw();
+            D2D1DeviceContext? deviceContext = _host!.BeginDraw();
             if (deviceContext is null)
                 return;
             int dpi = Dpi;
             if (dpi != 96)
                 deviceContext.Dpi = new PointF(dpi, dpi);
             _deviceContext = deviceContext;
+
             ChangeBackgroundElement(new ToolTip(this, element => GetRenderingElements().Contains(element)));
             isInitializingElements = true;
             InitializeElements();
             isInitializingElements = false;
-            ApplyTheme(parent is null ? ThemeResourceProvider.CreateResourceProvider(deviceContext, ThemeManager.CurrentTheme, material) : parent._resourceProvider!.Clone());
+            ApplyTheme(parent is null ?
+                ThemeResourceProvider.CreateResourceProvider(deviceContext, ThemeManager.CurrentTheme, material) :
+                parent._resourceProvider!.Clone());
             SystemEvents.DisplaySettingsChanging += SystemEvents_DisplaySettingsChanging;
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
             SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
+            ConcreteUtils.ApplyWindowStyle(this, out _fixLagObject);
         }
         #endregion
 
         #region Override Methods
-        protected override void OnShown(EventArgs e)
+        protected override void ShowCore()
         {
-            ConcreteUtils.ApplyWindowStyle(this, out _fixLagObject);
+            base.ShowCore();
             UpdateFirstTime();
-            base.OnShown(e);
-            BeginInvoke(OnShown2);
+            InvokeAsync(OnShown2);
         }
 
         private void OnShown2()
         {
-            Point point = PointToClientBase(MousePosition);
-            OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, point.X, point.Y, 0));
+            PointF point = PointToClient(MouseHelper.GetMousePosition());
+            OnMouseMove(new MouseInteractEventArgs(point));
         }
 
-        protected override void OnFormClosing(FormClosingEventArgs e)
+        protected override void OnClosing(ref ClosingEventArgs args)
         {
-            base.OnFormClosing(e);
+            base.OnClosing(ref args);
 
-            if (e.Cancel)
+            if (args.Cancelled)
                 return;
 
             SystemEvents.DisplaySettingsChanging -= SystemEvents_DisplaySettingsChanging;
@@ -272,16 +277,13 @@ namespace ConcreteUI.Window
 
         protected virtual void OnMouseMoveForElements(in MouseInteractEventArgs args)
         {
-            Cursor? predicatedCursor = null;
+            SystemCursorType? cursorType = null;
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetRenderingElements();
-            UIElementHelper.OnMouseMoveForElements(elements, args, ref predicatedCursor);
-            UIElementHelper.OnMouseMoveForElements(GetBackgroundElements(), args, ref predicatedCursor);
-            if (predicatedCursor is null)
-                Cursor = DefaultCursor;
-            else
-                Cursor = predicatedCursor;
+            UIElementHelper.OnMouseMoveForElements(elements, args, ref cursorType);
+            UIElementHelper.OnMouseMoveForElements(GetBackgroundElements(), args, ref cursorType);
+            Cursor = SystemCursors.GetSystemCursor(cursorType.GetValueOrDefault(SystemCursorType.Default));
         }
 
         protected virtual void OnMouseUpForElements(in MouseInteractEventArgs args)
@@ -302,7 +304,7 @@ namespace ConcreteUI.Window
             UIElementHelper.OnMouseScrollForElements(GetBackgroundElements(), args);
         }
 
-        protected virtual void OnKeyDownForElements(KeyEventArgs args)
+        protected virtual void OnKeyDownForElements(in KeyInteractEventArgs args)
         {
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
@@ -311,7 +313,7 @@ namespace ConcreteUI.Window
             UIElementHelper.OnKeyDownForElements(GetBackgroundElements(), args);
         }
 
-        protected virtual void OnKeyUpForElements(KeyEventArgs args)
+        protected virtual void OnKeyUpForElements(in KeyInteractEventArgs args)
         {
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
@@ -329,7 +331,7 @@ namespace ConcreteUI.Window
             UIElementHelper.OnCharacterInputForElements(GetBackgroundElements(), character);
         }
 
-        protected virtual void RecalculateLayout(in SizeF windowSize, bool callRecalculatePageLayout)
+        protected virtual unsafe void RecalculateLayout(in SizeF windowSize, bool callRecalculatePageLayout)
         {
             if (_windowMaterial == WindowMaterial.Integrated)
             {
@@ -338,22 +340,24 @@ namespace ConcreteUI.Window
             }
             else
             {
-                float windowScaleFactor = this.windowScaleFactor;
+                IntPtr handle = Handle;
+                if (handle == IntPtr.Zero)
+                    return;
+
+                float windowScaleFactor = _windowScaleFactor;
                 float drawingBorderWidth;
                 float drawingOffsetX, drawingOffsetY;
-                if (WindowState == FormWindowState.Maximized)
+                if (User32.IsZoomed(handle))
                 {
+                    Rect windowRect;
+                    if (!User32.GetWindowRect(handle, &windowRect))
+                        Marshal.ThrowExceptionForHR(User32.GetLastError());
+                    if (!Screen.TryGetScreenInfoFromHwnd(handle, out ScreenInfo screenInfo))
+                        screenInfo = default;
+                    Rect workingArea = screenInfo.WorkingArea;
+                    drawingOffsetX = (workingArea.Left - windowRect.Left) * windowScaleFactor;
+                    drawingOffsetY = (workingArea.Top - windowRect.Top) * windowScaleFactor;
                     drawingBorderWidth = _drawingBorderWidth = 0;
-                    if (windowScaleFactor != 1.0f)
-                    {
-                        drawingOffsetX = -DesktopLocation.X * windowScaleFactor;
-                        drawingOffsetY = -DesktopLocation.Y * windowScaleFactor;
-                    }
-                    else
-                    {
-                        drawingOffsetX = -DesktopLocation.X;
-                        drawingOffsetY = -DesktopLocation.Y;
-                    }
                 }
                 else
                 {
@@ -368,7 +372,7 @@ namespace ConcreteUI.Window
                 _closeRect = RectF.FromXYWH(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
                 _maxRect = RectF.FromXYWH(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
                 _minRect = RectF.FromXYWH(x - UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
-                RectF titleBarRect = _titleBarRect = RectF.FromXYWH(drawingOffsetX + 1, drawingOffsetY + 1, Width - 2, 26);
+                RectF titleBarRect = _titleBarRect = RectF.FromXYWH(drawingOffsetX + 1, drawingOffsetY + 1, Size.Width - 2, 26);
                 _pageRect = GraphicsUtils.AdjustRectangleF(new RectF(drawingOffsetX + drawingBorderWidth, titleBarRect.Bottom + 1,
                     windowSize.Width - drawingOffsetX - drawingBorderWidth, windowSize.Height - drawingBorderWidth));
             }
@@ -405,7 +409,7 @@ namespace ConcreteUI.Window
                 isSizeChanged = force = true;
                 Size size = base.ClientSize;
                 host.Resize(size);
-                RecalculateLayout(ScalingSizeF(size, windowScaleFactor), true);
+                RecalculateLayout(ScalingSizeF(size, _windowScaleFactor), true);
             }
             D2D1DeviceContext? deviceContext = host?.GetDeviceContext();
             if (deviceContext is null || deviceContext.IsDisposed)
@@ -429,10 +433,10 @@ namespace ConcreteUI.Window
             }
             if (ConcreteSettings.UseDebugMode)
             {
-                rawCollector.Present(dpiScaleFactor);
+                rawCollector.Present(_dpiScaleFactor);
                 return true;
             }
-            return rawCollector.TryPresent(dpiScaleFactor);
+            return rawCollector.TryPresent(_dpiScaleFactor);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -489,7 +493,7 @@ namespace ConcreteUI.Window
                         titleFormat = factory.CreateTextFormat(_resourceProvider!.FontName, UIConstants.TitleFontSize);
                         titleFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
                     }
-                    titleLayout = GraphicsUtils.CreateCustomTextLayout(_text, titleFormat, 26);
+                    titleLayout = GraphicsUtils.CreateCustomTextLayout(Text, titleFormat, 26);
                     titleFormat.Dispose();
                 }
                 ClearDCForTitle(deviceContext);
@@ -503,7 +507,7 @@ namespace ConcreteUI.Window
             }
             BitVector64 TitleBarButtonStatus = _titleBarButtonStatus;
             FontIconResources iconStorer = FontIconResources.Instance;
-            if (FormBorderStyle == FormBorderStyle.Sizable)
+            if (HasSizableBorder)
             {
                 if (titleBarStates[1] && (TitleBarButtonChangedStatus[0] || force))
                 {
@@ -586,10 +590,13 @@ namespace ConcreteUI.Window
 
         private void ResetBlur()
         {
-            if (InvokeRequired)
-                Invoke(ResetBlur);
-            else
-                ConcreteUtils.ResetBlur(this);
+            ConcreteUtils.ResetBlur(this);
+        }
+
+        protected override void OnResized(EventArgs args)
+        {
+            base.OnResized(args);
+            _controller?.RequestResize();
         }
 
         private void UpdateFirstTime()
@@ -624,28 +631,28 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Remove)]
-        private void OnWindowStateChangingRenderingPart(FormWindowState windowState)
+        private void OnWindowStateChangedRenderingPart(in WindowStateChangedEventArgs args)
         {
             RenderingController? controller = _controller;
             if (controller is null)
                 return;
-            switch (windowState)
+            switch (args.NewState)
             {
-                case FormWindowState.Maximized:
+                case WindowState.Maximized:
                     {
                         controller.RequestUpdate(true);
-                        if (_windowState == FormWindowState.Minimized)
+                        if (args.OldState == WindowState.Minimized)
                             controller.Unlock();
                     }
                     break;
-                case FormWindowState.Normal:
+                case WindowState.Normal:
                     {
                         controller.RequestUpdate(true);
-                        if (_windowState == FormWindowState.Minimized)
+                        if (args.OldState == WindowState.Minimized)
                             controller.Unlock();
                     }
                     break;
-                case FormWindowState.Minimized:
+                case WindowState.Minimized:
                     {
                         controller.Lock();
                     }
@@ -659,14 +666,14 @@ namespace ConcreteUI.Window
         #region Normal Methods
         protected void TriggerResize() => _controller?.RequestResize();
 
-        protected new void Update()
+        protected void Update()
         {
             if (!isShown)
                 return;
             UpdateCore(_controller);
         }
 
-        protected new void Refresh()
+        protected void Refresh()
         {
             if (!isShown)
                 return;
@@ -921,9 +928,9 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Disposing
-        protected override void Dispose(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
-            base.Dispose(disposing);
+            base.DisposeCore(disposing);
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider);

@@ -3,8 +3,8 @@
 	<PropertyGroup>
 		<TargetFrameworks>net8-windows;net472</TargetFrameworks>
 		<Nullable>enable</Nullable>
-		<UseWindowsForms>true</UseWindowsForms>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<UseWindowsForms>false</UseWindowsForms>
 		<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
 		<Deterministic>True</Deterministic>
 		<SignAssembly>True</SignAssembly>
@@ -23,6 +23,7 @@
 		<ProduceReferenceAssembly>true</ProduceReferenceAssembly>
 		<WeaverConfiguration>
 			<Weavers>
+				<InlineIL />
 			</Weavers>
 		</WeaverConfiguration>
 	</PropertyGroup>
@@ -66,6 +67,8 @@
 		<PackageReference Include="LocalsInit.Fody" Version="1.1.0">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
+		<PackageReference Include="Microsoft.Win32.SystemEvents" Version="9.0.8" />
+		<PackageReference Include="System.Drawing.Common" Version="9.0.8" />
 		<PackageReference Include="PolySharp" Version="1.15.0">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

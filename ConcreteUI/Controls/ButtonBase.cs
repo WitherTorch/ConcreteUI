@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 
 using ConcreteUI.Utils;
+using ConcreteUI.Window2;
 
 namespace ConcreteUI.Controls
 {
@@ -23,7 +24,7 @@ namespace ConcreteUI.Controls
 
         public void OnMouseDown(in MouseInteractEventArgs args)
         {
-            if (!_enabled)
+            if (!_enabled || ((args.Keys & MouseKeys.LeftButton) != MouseKeys.LeftButton))
                 return;
             _pressState = ButtonPressState.Pressed;
             Update();

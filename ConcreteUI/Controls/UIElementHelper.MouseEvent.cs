@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Windows.Forms;
 
 using ConcreteUI.Utils;
+using ConcreteUI.Window2;
 
 using InlineMethod;
 
@@ -148,27 +148,27 @@ namespace ConcreteUI.Controls
                 mouseEvents.OnMouseUp(args);
         }
 
-        public static void OnMouseMoveForElements(IEnumerable<UIElement> elements, in MouseInteractEventArgs args, ref Cursor? predicatedCursor)
+        public static void OnMouseMoveForElements(IEnumerable<UIElement> elements, in MouseInteractEventArgs args, ref SystemCursorType? cursorType)
         {
             switch (elements)
             {
                 case UIElement[] _array:
-                    OnMouseMoveForElements(_array, args, ref predicatedCursor);
+                    OnMouseMoveForElements(_array, args, ref cursorType);
                     break;
                 case UnwrappableList<UIElement> _list:
-                    OnMouseMoveForElements(_list, args, ref predicatedCursor);
+                    OnMouseMoveForElements(_list, args, ref cursorType);
                     break;
                 case ObservableList<UIElement> _list:
-                    OnMouseMoveForElements(_list.GetUnderlyingList(), args, ref predicatedCursor);
+                    OnMouseMoveForElements(_list.GetUnderlyingList(), args, ref cursorType);
                     break;
                 default:
-                    OnMouseMoveForElementsCore(elements, args, ref predicatedCursor);
+                    OnMouseMoveForElementsCore(elements, args, ref cursorType);
                     break;
             }
         }
 
         [Inline(InlineBehavior.Remove)]
-        public static void OnMouseMoveForElementsCore(IEnumerable<UIElement> elements, in MouseInteractEventArgs args, ref Cursor? predicatedCursor)
+        public static void OnMouseMoveForElementsCore(IEnumerable<UIElement> elements, in MouseInteractEventArgs args, ref SystemCursorType? cursorType)
         {
             IEnumerator<UIElement> enumerator = elements.Reverse().GetEnumerator();
             while (enumerator.MoveNext())
@@ -176,40 +176,40 @@ namespace ConcreteUI.Controls
                 UIElement element = enumerator.Current;
                 if (element is null)
                     continue;
-                OnMouseMoveForElement(element, args, ref predicatedCursor);
+                OnMouseMoveForElement(element, args, ref cursorType);
             }
             enumerator.Dispose();
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static void OnMouseMoveForElements(UIElement[] elements, in MouseInteractEventArgs args, ref Cursor? predicatedCursor)
-            => OnMouseMoveForElements(elements, elements.Length, in args, ref predicatedCursor);
+        public static void OnMouseMoveForElements(UIElement[] elements, in MouseInteractEventArgs args, ref SystemCursorType? cursorType)
+            => OnMouseMoveForElements(elements, elements.Length, in args, ref cursorType);
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static void OnMouseMoveForElements(UnwrappableList<UIElement> elements, in MouseInteractEventArgs args, ref Cursor? predicatedCursor)
-            => OnMouseMoveForElements(elements.Unwrap(), elements.Count, in args, ref predicatedCursor);
+        public static void OnMouseMoveForElements(UnwrappableList<UIElement> elements, in MouseInteractEventArgs args, ref SystemCursorType? cursorType)
+            => OnMouseMoveForElements(elements.Unwrap(), elements.Count, in args, ref cursorType);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void OnMouseMoveForElements(UIElement[] elements, int length, in MouseInteractEventArgs args, ref Cursor? predicatedCursor)
+        public static void OnMouseMoveForElements(UIElement[] elements, int length, in MouseInteractEventArgs args, ref SystemCursorType? cursorType)
         {
             for (int i = length - 1; i >= 0; i--)
             {
                 UIElement element = elements[i];
                 if (element is null)
                     continue;
-                OnMouseMoveForElement(element, args, ref predicatedCursor);
+                OnMouseMoveForElement(element, args, ref cursorType);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void OnMouseMoveForElement(UIElement element, in MouseInteractEventArgs args, ref Cursor? predicatedCursor)
+        public static void OnMouseMoveForElement(UIElement element, in MouseInteractEventArgs args, ref SystemCursorType? cursorType)
         {
             if (element is IContainerElement containerElement)
-                OnMouseMoveForElements(containerElement.Children, args, ref predicatedCursor);
+                OnMouseMoveForElements(containerElement.Children, args, ref cursorType);
             if (element is IMouseEvents mouseEvents)
                 mouseEvents.OnMouseMove(args);
-            if (predicatedCursor is null && element is ICursorPredicator predicator)
-                predicatedCursor = predicator.PredicatedCursor;
+            if (cursorType is null && element is ICursorPredicator predicator)
+                cursorType = predicator.PredicatedCursor;
         }
 
         public static void OnMouseScrollForElements(IEnumerable<UIElement> elements, in MouseInteractEventArgs args)

@@ -11,6 +11,7 @@ using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
+using ConcreteUI.Window2;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
@@ -165,7 +166,7 @@ namespace ConcreteUI.Controls
         public override void OnMouseDown(in MouseInteractEventArgs args)
         {
             base.OnMouseDown(args);
-            if (Bounds.Contains(args.X, args.Y))
+            if (Bounds.Contains(args.X, args.Y) && ((args.Keys & MouseKeys.LeftButton) == MouseKeys.LeftButton))
             {
                 _isClicking = true;
                 _isClickingClient = ContentBounds.Contains(args.X, args.Y);
@@ -195,11 +196,13 @@ namespace ConcreteUI.Controls
                 {
                     Close();
                     ItemClicked?.Invoke(this, selectedIndex);
+                    return;
                 }
             }
             else if (!bounds.Contains(args.X, args.Y))
             {
                 Close();
+                return;
             }
             Update();
         }

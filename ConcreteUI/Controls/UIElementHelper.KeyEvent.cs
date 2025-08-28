@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Windows.Forms;
 
 using InlineMethod;
 
@@ -11,7 +10,7 @@ namespace ConcreteUI.Controls
 {
     partial class UIElementHelper
     {
-        public static void OnKeyDownForElements(IEnumerable<UIElement> elements, KeyEventArgs args)
+        public static void OnKeyDownForElements(IEnumerable<UIElement> elements, in KeyInteractEventArgs args)
         {
             switch (elements)
             {
@@ -31,7 +30,7 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Remove)]
-        public static void OnKeyDownForElementsCore(IEnumerable<UIElement> elements, KeyEventArgs args)
+        public static void OnKeyDownForElementsCore(IEnumerable<UIElement> elements, in KeyInteractEventArgs args)
         {
             IEnumerator<UIElement> enumerator = elements.Reverse().GetEnumerator();
             while (enumerator.MoveNext())
@@ -45,15 +44,15 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static void OnKeyDownForElements(UIElement[] elements, KeyEventArgs args)
+        public static void OnKeyDownForElements(UIElement[] elements, in KeyInteractEventArgs args)
             => OnKeyDownForElements(elements, elements.Length, args);
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static void OnKeyDownForElements(UnwrappableList<UIElement> elements, KeyEventArgs args)
+        public static void OnKeyDownForElements(UnwrappableList<UIElement> elements, in KeyInteractEventArgs args)
             => OnKeyDownForElements(elements.Unwrap(), elements.Count, args);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void OnKeyDownForElements(UIElement[] elements, int length, KeyEventArgs args)
+        public static void OnKeyDownForElements(UIElement[] elements, int length, in KeyInteractEventArgs args)
         {
             for (int i = length - 1; i >= 0; i--)
             {
@@ -65,7 +64,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void OnKeyDownForElement(UIElement element, KeyEventArgs args)
+        public static void OnKeyDownForElement(UIElement element, in KeyInteractEventArgs args)
         {
             if (element is IContainerElement containerElement)
                 OnKeyDownForElements(containerElement.Children, args);
@@ -73,7 +72,7 @@ namespace ConcreteUI.Controls
                 keyEvents.OnKeyDown(args);
         }
 
-        public static void OnKeyUpForElements(IEnumerable<UIElement> elements, KeyEventArgs args)
+        public static void OnKeyUpForElements(IEnumerable<UIElement> elements, in KeyInteractEventArgs args)
         {
             switch (elements)
             {
@@ -93,7 +92,7 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static void OnKeyUpForElementsCore(IEnumerable<UIElement> elements, KeyEventArgs args)
+        private static void OnKeyUpForElementsCore(IEnumerable<UIElement> elements, in KeyInteractEventArgs args)
         {
             IEnumerator<UIElement> enumerator = elements.Reverse().GetEnumerator();
             while (enumerator.MoveNext())
@@ -107,15 +106,15 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static void OnKeyUpForElements(UIElement[] elements, KeyEventArgs args)
+        public static void OnKeyUpForElements(UIElement[] elements, in KeyInteractEventArgs args)
             => OnKeyUpForElements(elements, elements.Length, args);
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static void OnKeyUpForElements(UnwrappableList<UIElement> elements, KeyEventArgs args)
+        public static void OnKeyUpForElements(UnwrappableList<UIElement> elements, in KeyInteractEventArgs args)
             => OnKeyUpForElements(elements.Unwrap(), elements.Count, args);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void OnKeyUpForElements(UIElement[] elements, int length, KeyEventArgs args)
+        public static void OnKeyUpForElements(UIElement[] elements, int length, in KeyInteractEventArgs args)
         {
             for (int i = length - 1; i >= 0; i--)
             {
@@ -127,7 +126,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void OnKeyUpForElement(UIElement element, KeyEventArgs args)
+        public static void OnKeyUpForElement(UIElement element, in KeyInteractEventArgs args)
         {
             if (element is IContainerElement containerElement)
                 OnKeyUpForElements(containerElement.Children, args);

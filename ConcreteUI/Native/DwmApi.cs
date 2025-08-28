@@ -3,16 +3,12 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
-using InlineMethod;
-
-using LocalsInit;
-
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Native
 {
     [SuppressUnmanagedCodeSecurity]
-    internal static unsafe class DwmApi
+    public static unsafe class DwmApi
     {
         private const string DWMAPI_DLL = "dwmapi.dll";
 

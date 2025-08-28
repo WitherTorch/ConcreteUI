@@ -54,4 +54,56 @@ namespace ConcreteUI.Native
         public uint GradientColor;
         public uint AnimationId;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct WindowClassEx
+    {
+        public uint cbSize;
+        public ClassStyles style;
+        public void* lpfnWndProc;
+        public int cbClsExtra;
+        public int cbWndExtra;
+        public IntPtr hInstance;
+        public IntPtr hIcon;
+        public IntPtr hCursor;
+        public IntPtr hbrBackground;
+        public void* lpszMenuName;
+        public void* lpszClassName;
+        public IntPtr hIconSm;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PumpingMessage
+    {
+        public IntPtr hwnd;
+        public WindowMessage message;
+        public nint wParam;
+        public nint lParam;
+        public uint time;
+        public Point pt;
+        public uint lPrivate;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MonitorInfo
+    {
+        public uint cbSize;
+        public Rect rcMonitor;
+        public Rect rcWork;
+        public uint dwFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PaintStruct
+    {
+        public IntPtr hdc;
+        public SysBool fErase;
+        public Rect rcPaint;
+        public SysBool fRestore;
+        public SysBool fIncUpdate;
+        public int rgbReserved0;
+        public int rgbReserved1;
+        public int rgbReserved2;
+        public int rgbReserved3;
+    }
 }

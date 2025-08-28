@@ -14,6 +14,7 @@ using ConcreteUI.Internals;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
+using ConcreteUI.Window2;
 
 using InlineMethod;
 
@@ -283,11 +284,11 @@ namespace ConcreteUI.Controls
 
         public void OnMouseDown(in MouseInteractEventArgs args)
         {
-            if (_buttonState == ButtonTriState.Hovered)
-            {
-                _buttonState = ButtonTriState.Pressed;
-                Checked = !Checked;
-            }
+            if (_buttonState != ButtonTriState.Hovered || ((args.Keys & MouseKeys.LeftButton) != MouseKeys.LeftButton))
+                return;
+
+            _buttonState = ButtonTriState.Pressed;
+            Checked = !Checked;
         }
 
         public void OnMouseUp(in MouseInteractEventArgs args)

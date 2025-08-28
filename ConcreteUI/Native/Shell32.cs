@@ -5,7 +5,7 @@ using System.Security;
 namespace ConcreteUI.Native
 {
     [SuppressUnmanagedCodeSecurity]
-    internal static unsafe class Shell32
+    public static unsafe class Shell32
     {
         private const string SHELL32_DLL = "shell32.dll";
 

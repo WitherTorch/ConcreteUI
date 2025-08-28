@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Threading;
-using System.Windows.Forms;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -10,6 +9,7 @@ using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
+using ConcreteUI.Window2;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
@@ -193,13 +193,14 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public void OnKeyDown(KeyEventArgs args)
+        public void OnKeyDown(in KeyInteractEventArgs args)
         {
-            if (args.KeyCode == Keys.Escape && args.Modifiers == Keys.None)
+            if (args.Key == VirtualKey.Escape && 
+                !Keys.IsAltPressed() && !Keys.IsControlPressed() && !Keys.IsShiftPressed())
                 Close();
         }
 
-        public void OnKeyUp(KeyEventArgs args)
+        public void OnKeyUp(in KeyInteractEventArgs args)
         {
             //Do nothing
         }

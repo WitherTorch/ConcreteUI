@@ -10,6 +10,7 @@ using ConcreteUI.Internals;
 using ConcreteUI.Internals.NativeHelpers;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
+using ConcreteUI.Window2;
 
 using InlineMethod;
 
@@ -366,30 +367,30 @@ namespace ConcreteUI.Controls
 
         public virtual void OnMouseDown(in MouseInteractEventArgs args)
         {
-            if (_enabled && _hasScrollBar)
+            if (!_enabled || !_hasScrollBar || ((args.Keys & MouseKeys.LeftButton) != MouseKeys.LeftButton))
+                return;
+
+            if (_scrollBarScrollButtonBounds.Contains(args.Location))
             {
-                if (_scrollBarScrollButtonBounds.Contains(args.Location))
-                {
-                    _scrollButtonState = ButtonTriState.Pressed;
-                    _pinY = args.Y;
-                    Update(UpdateFlags.ScrollBar);
-                }
-                else if (_scrollBarUpButtonBounds.Contains(args.Location))
-                {
-                    _scrollUpButtonState = ButtonTriState.Pressed;
-                    Update(UpdateFlags.ScrollBar);
-                    OnScrollBarUpButtonClicked();
-                    _repeatingAction = OnScrollBarUpButtonClicked;
-                    _repeatingTimer.Change(SystemParameters.KeyboardDelay, SystemParameters.KeyboardSpeed);
-                }
-                else if (_scrollBarDownButtonBounds.Contains(args.Location))
-                {
-                    _scrollDownButtonState = ButtonTriState.Pressed;
-                    Update(UpdateFlags.ScrollBar);
-                    OnScrollBarDownButtonClicked();
-                    _repeatingAction = OnScrollBarDownButtonClicked;
-                    _repeatingTimer.Change(SystemParameters.KeyboardDelay, SystemParameters.KeyboardSpeed);
-                }
+                _scrollButtonState = ButtonTriState.Pressed;
+                _pinY = args.Y;
+                Update(UpdateFlags.ScrollBar);
+            }
+            else if (_scrollBarUpButtonBounds.Contains(args.Location))
+            {
+                _scrollUpButtonState = ButtonTriState.Pressed;
+                Update(UpdateFlags.ScrollBar);
+                OnScrollBarUpButtonClicked();
+                _repeatingAction = OnScrollBarUpButtonClicked;
+                _repeatingTimer.Change(SystemParameters.KeyboardDelay, SystemParameters.KeyboardSpeed);
+            }
+            else if (_scrollBarDownButtonBounds.Contains(args.Location))
+            {
+                _scrollDownButtonState = ButtonTriState.Pressed;
+                Update(UpdateFlags.ScrollBar);
+                OnScrollBarDownButtonClicked();
+                _repeatingAction = OnScrollBarDownButtonClicked;
+                _repeatingTimer.Change(SystemParameters.KeyboardDelay, SystemParameters.KeyboardSpeed);
             }
         }
 

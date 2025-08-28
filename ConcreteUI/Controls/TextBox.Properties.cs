@@ -1,30 +1,31 @@
 ﻿using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
-using System.Windows.Forms;
 
-using ConcreteUI;
 using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Internals;
 using ConcreteUI.Layout;
+using ConcreteUI.Window2;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
+    public delegate void KeyInteractEventHandler(object? sender, in KeyInteractEventArgs args);
+    public delegate void CancellableKeyInteractEventHandler(object? sender, ref CancellableKeyInteractEventArgs args);
+
     partial class TextBox
     {
         #region Events
         public event MouseInteractEventHandler? RequestContextMenu;
-        public event KeyEventHandler? KeyDown;
-        public event KeyEventHandler? KeyUp;
+        public event CancellableKeyInteractEventHandler? KeyDown;
+        public event KeyInteractEventHandler? KeyUp;
         public event TextChangingEventHandler? TextChanging;
         public event EventHandler? TextChanged;
         #endregion
 
         #region Properties
-        public Cursor? PredicatedCursor => _cursor;
+        public SystemCursorType? PredicatedCursor => _cursorType;
 
         public TextAlignment Alignment
         {

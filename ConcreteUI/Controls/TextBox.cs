@@ -16,6 +16,7 @@ using ConcreteUI.Native;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
+using ConcreteUI.Window2;
 
 using InlineMethod;
 
@@ -24,9 +25,6 @@ using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Text;
 using WitherTorch.Common.Windows.Structures;
-
-using Cursor = System.Windows.Forms.Cursor;
-using Keys = System.Windows.Forms.Keys;
 
 namespace ConcreteUI.Controls
 {
@@ -51,7 +49,7 @@ namespace ConcreteUI.Controls
         private readonly InputMethod? _ime;
         private readonly Timer _caretTimer;
 
-        private Cursor? _cursor;
+        private SystemCursorType? _cursorType;
         private DWriteTextLayout? _layout, _watermarkLayout;
         private string? _fontName;
         private string _text, _watermark;
@@ -448,66 +446,72 @@ namespace ConcreteUI.Controls
 
         #region Normal Key Controls
 
-        public void OnKeyDown(System.Windows.Forms.KeyEventArgs args)
+        public void OnKeyDown(in KeyInteractEventArgs args)
         {
-            if (!_focused || !Enabled || args.Handled)
+            if (!_focused || !Enabled)
                 return;
-            KeyDown?.Invoke(this, args);
-            if (args.Handled || args.Alt)
+            CancellableKeyInteractEventHandler? eventHandler = KeyDown;
+            if (eventHandler is not null)
+            {
+                CancellableKeyInteractEventArgs cancellableArgs = new CancellableKeyInteractEventArgs(args);
+                eventHandler.Invoke(this, ref cancellableArgs);
+                if (cancellableArgs.IsCancelled)
+                    return;
+            }
+            if (Keys.IsAltPressed())
                 return;
-            bool isCtrlPressed = args.Control;
-            bool isShiftPressed = args.Shift;
+            bool isCtrlPressed = Keys.IsControlPressed();
+            bool isShiftPressed = Keys.IsShiftPressed();
             bool justCtrlPressed = isCtrlPressed && !isShiftPressed;
-            Keys keyCode = args.KeyCode;
+            VirtualKey keyCode = args.Key;
             switch (keyCode)
             {
-                case Keys.X when justCtrlPressed: // Ctrl + X
+                case VirtualKey.X when justCtrlPressed: // Ctrl + X
                     Cut();
                     break;
-                case Keys.C when justCtrlPressed: // Ctrl + C
+                case VirtualKey.C when justCtrlPressed: // Ctrl + C
                     Copy();
                     break;
-                case Keys.V when justCtrlPressed: // Ctrl + V
+                case VirtualKey.V when justCtrlPressed: // Ctrl + V
                     Paste();
                     break;
-                case Keys.A when justCtrlPressed: // Ctrl + A
+                case VirtualKey.A when justCtrlPressed: // Ctrl + A
                     SelectAll();
                     break;
-                case Keys.Delete:
+                case VirtualKey.Delete:
                     DeleteOne();
                     break;
-                case Keys.Left when isCtrlPressed:
-                case Keys.Home:
+                case VirtualKey.LeftArrow when isCtrlPressed:
+                case VirtualKey.Home:
                     MoveToStart(isShiftPressed);
                     break;
-                case Keys.Right when isCtrlPressed:
-                case Keys.End:
+                case VirtualKey.RightArrow when isCtrlPressed:
+                case VirtualKey.End:
                     MoveToEnd(isShiftPressed);
                     break;
-                case Keys.Left:
+                case VirtualKey.LeftArrow:
                     MoveLeft(isShiftPressed);
                     break;
-                case Keys.Right:
+                case VirtualKey.RightArrow:
                     MoveRight(isShiftPressed);
                     break;
-                case Keys.Up:
+                case VirtualKey.UpArrow:
                     MoveUp();
                     break;
-                case Keys.Down:
+                case VirtualKey.DownArrow:
                     MoveDown();
                     break;
-                case Keys.Enter:
+                case VirtualKey.Enter:
                     NextLine();
                     break;
             }
         }
 
-        public void OnKeyUp(System.Windows.Forms.KeyEventArgs args)
+        public void OnKeyUp(in KeyInteractEventArgs args)
         {
-            if (_focused && Enabled)
-            {
-                KeyUp?.Invoke(this, args);
-            }
+            if (!_focused || !Enabled)
+                return;
+            KeyUp?.Invoke(this, args);
         }
         #endregion
 
@@ -659,14 +663,7 @@ namespace ConcreteUI.Controls
         {
             string text = selectionRange.Length <= 0 ? string.Empty : _text.Substring(MathHelper.MakeSigned(selectionRange.ToTextRange().StartPosition), selectionRange.Length);
             RemoveSelection();
-            if (_window.InvokeRequired)
-            {
-                _window.Invoke(new Action(() => System.Windows.Forms.Clipboard.SetText(text)));
-            }
-            else
-            {
-                System.Windows.Forms.Clipboard.SetText(text);
-            }
+            Clipboard.SetText(text);
         }
 
         public void Copy()
@@ -683,23 +680,12 @@ namespace ConcreteUI.Controls
             {
                 text = string.Empty;
             }
-            if (_window.InvokeRequired)
-            {
-                _window.Invoke(new Action(() => System.Windows.Forms.Clipboard.SetText(text)));
-            }
-            else
-            {
-                System.Windows.Forms.Clipboard.SetText(text);
-            }
+            Clipboard.SetText(text);
         }
 
         public void Paste()
         {
-            string? text = null;
-            if (_window.InvokeRequired)
-                _window.Invoke(new Action(() => text = System.Windows.Forms.Clipboard.GetText()));
-            else
-                text = System.Windows.Forms.Clipboard.GetText();
+            string? text = Clipboard.GetText();
             RemoveSelection();
             if (StringHelper.IsNullOrEmpty(text))
                 return;
@@ -1010,10 +996,10 @@ namespace ConcreteUI.Controls
         public override void OnMouseDown(in MouseInteractEventArgs args)
         {
             base.OnMouseDown(args);
-            if (args.Button.HasFlag(System.Windows.Forms.MouseButtons.Right))
+            if ((args.Keys & MouseKeys.RightButton) == MouseKeys.RightButton)
                 return;
             bool contained = ContentBounds.Contains(args.Location);
-            if (contained && Enabled && args.Button.HasFlag(System.Windows.Forms.MouseButtons.Left))
+            if (contained && Enabled && (args.Keys & MouseKeys.LeftButton) == MouseKeys.LeftButton)
             {
                 drag = true;
                 long currentClickedTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -1131,7 +1117,7 @@ namespace ConcreteUI.Controls
             {
                 if (!isEnter)
                 {
-                    _cursor = System.Windows.Forms.Cursors.IBeam;
+                    _cursorType = SystemCursorType.IBeam;
                     isEnter = true;
                 }
             }
@@ -1139,7 +1125,7 @@ namespace ConcreteUI.Controls
             {
                 if (isEnter)
                 {
-                    _cursor = null;
+                    _cursorType = null;
                     isEnter = false;
                 }
             }
@@ -1173,7 +1159,7 @@ namespace ConcreteUI.Controls
         {
             base.OnMouseUp(args);
             drag = false;
-            if (Enabled && RequestContextMenu != null && args.Button == System.Windows.Forms.MouseButtons.Right && ContentBounds.Contains(args.Location))
+            if (Enabled && RequestContextMenu != null && (args.Keys & MouseKeys.RightButton) == MouseKeys.RightButton && ContentBounds.Contains(args.Location))
             {
                 RequestContextMenu.Invoke(this, args);
             }

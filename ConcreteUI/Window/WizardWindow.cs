@@ -2,7 +2,6 @@
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Windows.Forms;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
@@ -13,6 +12,7 @@ using ConcreteUI.Internals;
 using ConcreteUI.Native;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
+using ConcreteUI.Window2;
 
 using InlineMethod;
 
@@ -62,7 +62,6 @@ namespace ConcreteUI.Window
         #region Constructor
         protected WizardWindow(CoreWindow parent) : base(parent)
         {
-            FormBorderStyle = FormBorderStyle.FixedDialog;
             MinimizeBox = false;
             MaximizeBox = false;
             ShowTitle = WindowMaterial == WindowMaterial.Integrated;
@@ -96,6 +95,13 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Override Methods
+
+        protected override CreateWindowInfo GetCreateWindowInfo()
+        {
+            CreateWindowInfo windowInfo = base.GetCreateWindowInfo();
+            windowInfo.Styles = WindowStyles.DialogFrame | WindowStyles.SizeFrame;
+            return windowInfo;
+        }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
@@ -247,9 +253,9 @@ namespace ConcreteUI.Window
 
         protected D2D1Brush GetBrush(Brush brush) => _brushes[(int)brush];
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
-            base.Dispose(disposing);
+            base.DisposeCore(disposing);
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);

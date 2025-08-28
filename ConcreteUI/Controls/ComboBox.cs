@@ -13,6 +13,7 @@ using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
+using ConcreteUI.Window2;
 
 using InlineMethod;
 
@@ -173,7 +174,7 @@ namespace ConcreteUI.Controls
 
         public void OnMouseDown(in MouseInteractEventArgs args)
         {
-            if (_enabled)
+            if (_enabled && ((args.Keys & MouseKeys.LeftButton) == MouseKeys.LeftButton))
             {
                 if (Bounds.Contains(args.Location))
                 {
@@ -274,6 +275,11 @@ namespace ConcreteUI.Controls
         {
             if (sender is not ComboBoxDropdownList dropdownList)
                 return;
+            if (_state != ButtonTriState.None)
+            {
+                _state = ButtonTriState.None;
+                Update();
+            }
             SelectedIndex = selectedIndex;
             ItemClicked?.Invoke(this, EventArgs.Empty);
         }
