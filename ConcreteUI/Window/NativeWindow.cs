@@ -86,14 +86,19 @@ namespace ConcreteUI.Window
             WindowMessageLoop.Invoke(() =>
             {
                 Lazy<IntPtr> handleLazy = _handleLazy;
+                IntPtr handle;
                 if (!handleLazy.IsValueCreated)
                 {
-                    IntPtr handle = handleLazy.Value;
+                    handle = handleLazy.Value;
                     if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
                         DebugHelper.Throw();
                     OnHandleCreated(handle);
                 }
+                else
+                    handle = handleLazy.Value;
+
                 ShowCore();
+                IntPtr parent = User32.GetWindow(handle, GetWindowCommand.Owner);
                 using CancellationTokenSource destroyTokenSource = new CancellationTokenSource();
                 void OnDestroyed(object? sender, EventArgs args)
                 {
@@ -102,7 +107,14 @@ namespace ConcreteUI.Window
                 }
 
                 Destroyed += OnDestroyed;
-                WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
+                if (parent == IntPtr.Zero)
+                    WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
+                else
+                {
+                    User32.EnableWindow(parent, false);
+                    WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
+                    User32.EnableWindow(parent, true);
+                }
                 Destroyed -= OnDestroyed;
             });
             return (DialogResult)InterlockedHelper.Read(ref _dialogResult);

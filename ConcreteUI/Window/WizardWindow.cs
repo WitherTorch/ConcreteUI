@@ -59,7 +59,7 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Constructor
-        protected WizardWindow(CoreWindow parent) : base(parent)
+        protected WizardWindow(CoreWindow parent, bool passParentToUnderlyingWindow = true) : base(parent, passParentToUnderlyingWindow)
         {
             MinimizeBox = false;
             MaximizeBox = false;

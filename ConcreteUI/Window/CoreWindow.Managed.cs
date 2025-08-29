@@ -248,8 +248,7 @@ namespace ConcreteUI.Window
             }
         }
         #endregion
-
-        protected CoreWindow(CoreWindow? parent) : base(parent)
+        protected CoreWindow(CoreWindow? parent, bool passParentToUnderlyingWindow = false) : base(passParentToUnderlyingWindow ? parent : null)
         {
             _parent = parent;
             List<WeakReference<CoreWindow>> windowList = parent is null ? _rootWindowList : parent._childrenReferenceList;

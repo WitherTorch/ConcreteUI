@@ -49,7 +49,7 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Constuctor
-        protected PagedWindow(CoreWindow? parent) : base(parent) { }
+        protected PagedWindow(CoreWindow? parent, bool passParentToUnderlyingWindow = false) : base(parent, passParentToUnderlyingWindow) { }
         #endregion
 
         #region Event Triggers

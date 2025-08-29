@@ -45,7 +45,7 @@ namespace ConcreteUI.Window
 
         #region Fields
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly string[] menuTitles;
+        private readonly string[] _menuTitles;
         private DWriteTextLayout[]? menuBarButtonLayouts;
         private float menuBarButtonLastRight;
         private RectF[]? menuBarButtonRects;
@@ -61,9 +61,9 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Constructor
-        protected TabbedWindow(CoreWindow? parent, string[] menuTitles) : base(parent)
+        protected TabbedWindow(CoreWindow? parent, string[] menuTitles, bool passParentToUnderlyingWindow = false) : base(parent, passParentToUnderlyingWindow)
         {
-            this.menuTitles = menuTitles;
+            _menuTitles = menuTitles;
         }
         #endregion
 
@@ -127,7 +127,7 @@ namespace ConcreteUI.Window
         {
             base.ApplyThemeCore(provider);
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
-            GenerateMenu(menuTitles, baseX: 0, baseY: 27, menuExtraWidth: UIConstants.ElementMarginDouble,
+            GenerateMenu(_menuTitles, baseX: 0, baseY: 27, menuExtraWidth: UIConstants.ElementMarginDouble,
                 out RectF[] menuBarButtonRects, out DWriteTextLayout[] menuBarButtonLayouts);
             this.menuBarButtonRects = menuBarButtonRects;
             DisposeHelper.SwapDispose(ref this.menuBarButtonLayouts, menuBarButtonLayouts);
