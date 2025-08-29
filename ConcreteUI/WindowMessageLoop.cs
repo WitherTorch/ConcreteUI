@@ -9,6 +9,8 @@ using ConcreteUI.Internals;
 using ConcreteUI.Native;
 using ConcreteUI.Window;
 
+using InlineMethod;
+
 using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -77,6 +79,9 @@ namespace ConcreteUI
         private static void OnWindowDestroyed(object? sender, EventArgs e)
             => Stop();
 
+        [Inline(InlineBehavior.Keep, export: true)]
+        public static object? Invoke(Delegate @delegate) => Invoke(@delegate, null);
+
         public static object? Invoke(Delegate @delegate, params object?[]? args)
         {
             uint messageLoopThreadId = InterlockedHelper.Read(ref _threadIdForMessageLoop);
@@ -87,6 +92,9 @@ namespace ConcreteUI
                 return @delegate.DynamicInvoke(args);
             return InvokeTaskCoreAsync(messageLoopThreadId, @delegate, args, CancellationToken.None).Result;
         }
+
+        [Inline(InlineBehavior.Keep, export: true)]
+        public static object? InvokeAsync(Delegate @delegate) => Invoke(@delegate, null);
 
         public static void InvokeAsync(Delegate @delegate, params object?[]? args)
         {
@@ -105,6 +113,12 @@ namespace ConcreteUI
 
             InvokeCoreAsync(messageLoopThreadId, @delegate, args, cancellationToken);
         }
+
+        [Inline(InlineBehavior.Keep, export: true)]
+        public static Task<object?> InvokeTaskAsync(Delegate @delegate) => InvokeTaskAsync(@delegate, null);
+
+        [Inline(InlineBehavior.Keep, export: true)]
+        public static Task<object?> InvokeTaskAsync(Delegate @delegate, CancellationToken cancellationToken) => InvokeTaskAsync(@delegate, null, cancellationToken);
 
         public static Task<object?> InvokeTaskAsync(Delegate @delegate, params object?[]? args)
         {
