@@ -22,8 +22,9 @@ namespace ConcreteUI
     {
         private static readonly ThreadLocal<uint> _threadIdLocal = new ThreadLocal<uint>(Kernel32.GetCurrentThreadId, trackAllValues: false);
         private static readonly ConcurrentBag<InvokeClosure> _invokeClosureBag = new ConcurrentBag<InvokeClosure>();
-        private static readonly UnwrappableList<IWindowMessageFilter> _filterList = new UnwrappableList<IWindowMessageFilter>();
+        private static readonly UnwrappableList<IWindowMessageFilter> _filterList = new UnwrappableList<IWindowMessageFilter>();]
 
+        private static NativeWindow? _mainWindow;
         private static uint _invokeBarrier, _threadIdForMessageLoop;
 
         public static event MessageLoopExceptionEventHandler? ExceptionCaught;
@@ -40,19 +41,37 @@ namespace ConcreteUI
             }
         }
 
+        public static void ChangeMainWindow(NativeWindow mainWindow)
+        {
+            uint messageLoopThreadId = InterlockedHelper.Read(ref _threadIdForMessageLoop);
+            if (messageLoopThreadId == 0)
+                throw new InvalidOperationException("The message loop is not exists!");
+            ChangeMainWindowCore(mainWindow);
+        }
+
+        private static void ChangeMainWindowCore(NativeWindow? mainWindow)
+        {
+            if (mainWindow is not null)
+                mainWindow.Destroyed += OnWindowDestroyed;
+            NativeWindow? oldWindow = InterlockedHelper.Exchange(ref _mainWindow, mainWindow);
+            if (oldWindow is not null)
+                oldWindow.Destroyed -= OnWindowDestroyed;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int Start(NativeWindow window, bool disposeAfterDestroyed = true, bool catchAllExceptionIntoEventHandler = false)
+        public static int Start(NativeWindow mainWindow, bool disposeAfterDestroyed = true, bool catchAllExceptionIntoEventHandler = false)
         {
             uint currentThreadId = _threadIdLocal.Value;
             if (InterlockedHelper.CompareExchange(ref _threadIdForMessageLoop, currentThreadId, 0) != 0)
                 throw new InvalidOperationException("Message loop is already exists!");
 
-            window.Destroyed += OnWindowDestroyed;
-            window.Show();
+            mainWindow.Show();
+            ChangeMainWindowCore(mainWindow);
             int result = catchAllExceptionIntoEventHandler ? DoMessageLoop_CatchAllException() : DoMessageLoop();
             InterlockedHelper.CompareExchange(ref _threadIdForMessageLoop, 0, currentThreadId);
+            ChangeMainWindowCore(null);
             if (disposeAfterDestroyed)
-                window.Dispose();
+                mainWindow.Dispose();
             return result;
         }
 
