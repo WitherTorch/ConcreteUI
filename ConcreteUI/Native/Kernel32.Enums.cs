@@ -3,7 +3,7 @@
 namespace ConcreteUI.Native
 {
     [Flags]
-    public enum GlobalAllocFlags : uint
+    internal enum GlobalAllocFlags : uint
     {
         Fixed = 0x0000,
         Movable = 0x0002,

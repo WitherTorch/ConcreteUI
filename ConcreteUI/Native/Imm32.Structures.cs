@@ -6,7 +6,7 @@ using WitherTorch.Common.Windows.Structures;
 namespace ConcreteUI.Native
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct CandidateForm
+    internal struct CandidateForm
     {
         public int dwIndex;
         public int dwStyle;
@@ -15,7 +15,7 @@ namespace ConcreteUI.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct CompositionForm
+    internal struct CompositionForm
     {
         public int dwStyle;
         public Point ptCurrentPos;

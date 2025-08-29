@@ -4,14 +4,12 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
-using InlineMethod;
-
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Native
 {
     [SuppressUnmanagedCodeSecurity]
-    public static unsafe class User32
+    internal static unsafe class User32
     {
         private const string USER32_DLL = "user32.dll";
 

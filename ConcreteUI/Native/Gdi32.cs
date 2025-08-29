@@ -5,7 +5,7 @@ using System.Security;
 namespace ConcreteUI.Native
 {
     [SuppressUnmanagedCodeSecurity]
-    public static class Gdi32
+    internal static class Gdi32
     {
         private const string GDI32_DLL = "Gdi32.dll";
 

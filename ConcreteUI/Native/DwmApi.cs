@@ -8,7 +8,7 @@ using WitherTorch.Common.Helpers;
 namespace ConcreteUI.Native
 {
     [SuppressUnmanagedCodeSecurity]
-    public static unsafe class DwmApi
+    internal static unsafe class DwmApi
     {
         private const string DWMAPI_DLL = "dwmapi.dll";
 

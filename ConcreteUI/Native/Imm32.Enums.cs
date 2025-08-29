@@ -3,7 +3,7 @@
 namespace ConcreteUI.Native
 {
     [Flags]
-    public enum ImmAssociateContextEx_Flags
+    internal enum ImmAssociateContextEx_Flags
     {
         Children = 0x0001,
         Default = 0x0010,

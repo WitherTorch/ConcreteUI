@@ -5,7 +5,7 @@ using System.Security;
 namespace ConcreteUI.Native
 {
     [SuppressUnmanagedCodeSecurity]
-    public static unsafe class Kernel32
+    internal static unsafe class Kernel32
     {
         private const string KERNEL32_DLL = "kernel32.dll";
 

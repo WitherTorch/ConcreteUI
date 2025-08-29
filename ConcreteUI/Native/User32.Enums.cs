@@ -23,7 +23,7 @@ namespace ConcreteUI.Native
         SwapWithChangeWindowState = 0x8000
     }
 
-    public enum ShowWindowCommands
+    internal enum ShowWindowCommands
     {
         Hide = 0,
         ShowNormal = 1,
@@ -41,7 +41,7 @@ namespace ConcreteUI.Native
         ForceMinimize = 11
     }
 
-    public enum SystemMetric
+    internal enum SystemMetric
     {
         SM_CXSCREEN = 0,  // 0x00
         SM_CYSCREEN = 1,  // 0x01
@@ -140,7 +140,7 @@ namespace ConcreteUI.Native
         SM_SYSTEMDOCKED = 0x2004,
     }
 
-    public enum WindowCompositionAttribute
+    internal enum WindowCompositionAttribute
     {
         Undefined = 0,
         NCRenderingEnabled = 1,
@@ -171,7 +171,7 @@ namespace ConcreteUI.Native
         UseDarkModeColors = 26
     }
 
-    public enum AccentState
+    internal enum AccentState
     {
         Disabled = 0,
         EnableGradient = 1,
@@ -182,7 +182,7 @@ namespace ConcreteUI.Native
     }
 
     [Flags]
-    public enum AccentFlags
+    internal enum AccentFlags
     {
         // ... 
         None = 0x0,
@@ -565,7 +565,7 @@ namespace ConcreteUI.Native
     }
 
     [Flags]
-    public enum LoadOrCopyImageOptions : uint
+    internal enum LoadOrCopyImageOptions : uint
     {
         DefaultColor = 0x00000000,
         Monochrome = 0x00000001,
@@ -741,7 +741,7 @@ namespace ConcreteUI.Native
     }
 
     [Flags]
-    public enum GetMonitorFlags : uint
+    internal enum GetMonitorFlags : uint
     {
         DefaultToNull = 0x00000000,
         DefaultToPrimary = 0x00000001,

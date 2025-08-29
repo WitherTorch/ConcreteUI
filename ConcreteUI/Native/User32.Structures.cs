@@ -7,7 +7,7 @@ using WitherTorch.Common.Windows.Structures;
 namespace ConcreteUI.Native
 {
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct NCCalcSizeParameters
+    internal unsafe struct NCCalcSizeParameters
     {
         public Rect rcNewWindow;
         public Rect rcOldWindow;
@@ -28,7 +28,7 @@ namespace ConcreteUI.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct WindowPlacement
+    internal unsafe struct WindowPlacement
     {
         public int Length;
         public int Flags;
@@ -39,7 +39,7 @@ namespace ConcreteUI.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct WindowCompositionAttributeData
+    internal unsafe struct WindowCompositionAttributeData
     {
         public WindowCompositionAttribute Attribute;
         public AccentPolicy* Data;
@@ -47,7 +47,7 @@ namespace ConcreteUI.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct AccentPolicy
+    internal struct AccentPolicy
     {
         public AccentState AccentState;
         public AccentFlags AccentFlags;
@@ -56,7 +56,7 @@ namespace ConcreteUI.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct WindowClassEx
+    internal unsafe struct WindowClassEx
     {
         public uint cbSize;
         public ClassStyles style;
@@ -73,7 +73,7 @@ namespace ConcreteUI.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct PumpingMessage
+    internal struct PumpingMessage
     {
         public IntPtr hwnd;
         public WindowMessage message;
@@ -85,7 +85,7 @@ namespace ConcreteUI.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct MonitorInfo
+    internal struct MonitorInfo
     {
         public uint cbSize;
         public Rect rcMonitor;
@@ -94,7 +94,7 @@ namespace ConcreteUI.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct PaintStruct
+    internal struct PaintStruct
     {
         public IntPtr hdc;
         public SysBool fErase;

@@ -5,7 +5,7 @@ using System.Security;
 namespace ConcreteUI.Native
 {
     [SuppressUnmanagedCodeSecurity]
-    public static unsafe class Imm32
+    internal static unsafe class Imm32
     {
         private const string IMM32_DLL = "imm32.dll";
 

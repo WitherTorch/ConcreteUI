@@ -6,7 +6,7 @@ using WitherTorch.Common.Windows.Structures;
 namespace ConcreteUI.Native
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct DWMBlurBehind
+    internal struct DWMBlurBehind
     {
         public DwmBlurBehindFlags dwFlags;
         public SysBool fEnable;
@@ -26,7 +26,7 @@ namespace ConcreteUI.Native
 
         public bool TransitionOnMaximized
         {
-            get => fTransitionOnMaximized;
+            readonly get => fTransitionOnMaximized;
             set
             {
                 fTransitionOnMaximized = value;
