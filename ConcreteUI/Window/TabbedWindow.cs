@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Threading;
 
 using ConcreteUI.Controls;
@@ -299,7 +300,7 @@ namespace ConcreteUI.Window
         #endregion
 
         #region WndProc
-        protected override bool TryProcessSystemWindowMessage(WindowMessage message, nint wParam, nint lParam, out nint result)
+        protected override bool TryProcessSystemWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
             switch (message)
             {
@@ -312,7 +313,7 @@ namespace ConcreteUI.Window
                     }
                     goto default;
                 default:
-                    return base.TryProcessSystemWindowMessage(message, wParam, lParam, out result);
+                    return base.TryProcessSystemWindowMessage(hwnd, message, wParam, lParam, out result);
             }
         }
         #endregion

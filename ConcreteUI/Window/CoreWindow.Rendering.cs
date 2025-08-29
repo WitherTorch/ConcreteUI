@@ -22,7 +22,6 @@ using ConcreteUI.Layout;
 using ConcreteUI.Native;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
-using ConcreteUI.Window2;
 
 using InlineMethod;
 

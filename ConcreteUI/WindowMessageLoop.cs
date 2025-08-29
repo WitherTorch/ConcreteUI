@@ -3,21 +3,22 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using ConcreteUI.Native;
+using ConcreteUI.Window;
 
 using LocalsInit;
 
 using WitherTorch.Common.Windows.Structures;
 
-namespace ConcreteUI.Window2
+namespace ConcreteUI
 {
-    public static class MessageLoop
+    public static class WindowMessageLoop
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int StartMessageLoop(NativeWindow window, bool disposeAfterDestroyed = true)
+        public static unsafe int Start(NativeWindow window, bool disposeAfterDestroyed = true)
         {
             window.Destroyed += OnWindowDestroyed;
             window.Show();
-            int result = StartMessageLoop();
+            int result = Start();
             if (disposeAfterDestroyed)
                 window.Dispose();
             return result;
@@ -25,7 +26,7 @@ namespace ConcreteUI.Window2
 
         [LocalsInit(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int StartMessageLoop()
+        public static unsafe int Start()
         {
             SysBool success;
             PumpingMessage msg;
@@ -44,10 +45,10 @@ namespace ConcreteUI.Window2
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StopMessageLoop(int exitCode = 0) 
+        public static void Stop(int exitCode = 0) 
             => User32.PostQuitMessage(exitCode);
 
         private static void OnWindowDestroyed(object? sender, EventArgs e)
-            => StopMessageLoop();
+            => Stop();
     }
 }

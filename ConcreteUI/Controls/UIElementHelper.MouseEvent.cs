@@ -3,7 +3,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Utils;
-using ConcreteUI.Window2;
 
 using InlineMethod;
 

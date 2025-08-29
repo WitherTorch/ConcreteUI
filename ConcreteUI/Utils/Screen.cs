@@ -5,7 +5,7 @@ using ConcreteUI.Native;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
-namespace ConcreteUI.Window2
+namespace ConcreteUI.Utils
 {
     public static class Screen
     {

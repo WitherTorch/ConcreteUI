@@ -3,8 +3,6 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using ConcreteUI.Window2;
-
 namespace ConcreteUI.Controls
 {
     public delegate void CancelableEventHandler(object sender, CancelableEventArgs e);
@@ -47,7 +45,7 @@ namespace ConcreteUI.Controls
         public readonly float X;
         public readonly float Y;
         public readonly MouseKeys Keys;
-        public readonly ushort Delta;
+        public readonly short Delta;
 
         public MouseInteractEventArgs(PointF point)
         {
@@ -67,7 +65,7 @@ namespace ConcreteUI.Controls
             Delta = 0;
         }
 
-        public MouseInteractEventArgs(PointF point, ushort delta)
+        public MouseInteractEventArgs(PointF point, short delta)
         {
             Location = point;
             X = point.X;
@@ -76,7 +74,7 @@ namespace ConcreteUI.Controls
             Delta = delta;
         }
 
-        public MouseInteractEventArgs(PointF point, MouseKeys keys, ushort delta)
+        public MouseInteractEventArgs(PointF point, MouseKeys keys, short delta)
         {
             Location = point;
             X = point.X;

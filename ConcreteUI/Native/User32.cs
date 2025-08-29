@@ -4,8 +4,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
-using ConcreteUI.Window2;
-
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Native

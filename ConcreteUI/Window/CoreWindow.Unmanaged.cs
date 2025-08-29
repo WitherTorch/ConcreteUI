@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using ConcreteUI.Controls;
 using ConcreteUI.Internals;
 using ConcreteUI.Native;
-using ConcreteUI.Window2;
 
 using InlineIL;
 
@@ -96,19 +95,19 @@ namespace ConcreteUI.Window
         #endregion
 
         #region WndProcs
-        protected override bool TryProcessWindowMessage(WindowMessage message, nint wParam, nint lParam, out nint result)
+        protected override bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
             UnwrappableList<IWindowMessageFilter> filterList = _filterList;
             IWindowMessageFilter[] filters = filterList.Unwrap();
             for (nuint i = 0, count = MathHelper.MakeUnsigned(filterList.Count); i < count; i++)
             {
-                if (UnsafeHelper.AddByteOffset(ref filters[0], i).TryProcessWindowMessage(message, wParam, lParam, out result))
+                if (UnsafeHelper.AddByteOffset(ref filters[0], i).TryProcessWindowMessage(hwnd, message, wParam, lParam, out result))
                     return true;
             }
-            return base.TryProcessWindowMessage(message, wParam, lParam, out result);
+            return base.TryProcessWindowMessage(hwnd, message, wParam, lParam, out result);
         }
 
-        protected override bool TryProcessSystemWindowMessage(WindowMessage message, nint wParam, nint lParam, out nint result)
+        protected override bool TryProcessSystemWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
             switch (message)
             {
@@ -219,7 +218,7 @@ namespace ConcreteUI.Window
                         OnMouseScroll(new MouseInteractEventArgs(
                             point: PointToClient(point),
                             keys: (MouseKeys)keys,
-                            delta: 10));
+                            delta: UnsafeHelper.As<ushort, short>(delta)));
                     }
                     break;
                 case WindowMessage.LeftButtonDown:
@@ -324,19 +323,19 @@ namespace ConcreteUI.Window
                     Update();
                     goto default;
                 case WindowMessage.DisplayChange:
-                    ChangeDpi(User32.GetDpiForWindow(Handle));
+                    ChangeDpi(User32.GetDpiForWindow(hwnd));
                     _controller?.UpdateMonitorFpsStatus();
                     Update();
                     goto default;
                 #endregion
                 default:
-                    return TryProcessUIWindowMessage(message, wParam, lParam, out result);
+                    return TryProcessUIWindowMessage(hwnd, message, wParam, lParam, out result);
             }
             result = 0;
             return true;
         }
 
-        private bool TryProcessUIWindowMessage_Default(WindowMessage message, nint wParam, nint lParam, out nint result)
+        private bool TryProcessUIWindowMessage_Default(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
             switch (message)
             {
@@ -352,7 +351,7 @@ namespace ConcreteUI.Window
                             margins = new Margins(-1);
                         else
                             margins = default;
-                        DwmApi.DwmExtendFrameIntoClientArea(Handle, &margins);
+                        DwmApi.DwmExtendFrameIntoClientArea(hwnd, &margins);
                         result = 0;
                     }
                     break;
@@ -374,7 +373,7 @@ namespace ConcreteUI.Window
                             if (((Shell32.SHAppBarMessage(0x00000004, &data).ToInt64() & 0x1) == 0x1) && HasSizableBorder)
                             {
                                 WindowPlacement windowPlacement = new WindowPlacement() { Length = sizeof(WindowPlacement) };
-                                User32.GetWindowPlacement(Handle, &windowPlacement);
+                                User32.GetWindowPlacement(hwnd, &windowPlacement);
                                 if (windowPlacement.ShowCmd == ShowWindowCommands.ShowMaximized)
                                 {
                                     NCCalcSizeParameters* lpParams = (NCCalcSizeParameters*)lParam;
@@ -402,12 +401,12 @@ namespace ConcreteUI.Window
 
             return true;
         Transfer:
-            return base.TryProcessSystemWindowMessage(message, wParam, lParam, out result);
+            return base.TryProcessSystemWindowMessage(hwnd, message, wParam, lParam, out result);
         }
 
-        private bool TryProcessUIWindowMessage_Integrated(WindowMessage message, nint wParam, nint lParam, out nint result)
+        private bool TryProcessUIWindowMessage_Integrated(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
-            if (DwmApi.DwmDefWindowProc(Handle, (int)message, wParam, lParam, UnsafeHelper.AsPointerOut(out result)))
+            if (DwmApi.DwmDefWindowProc(hwnd, (int)message, wParam, lParam, UnsafeHelper.AsPointerOut(out result)))
                 return true;
 
             switch (message)
@@ -415,7 +414,7 @@ namespace ConcreteUI.Window
                 case WindowMessage.Activate:
                 case WindowMessage.DwmCompositionChanged:
                     Margins margins = new Margins(-1);
-                    DwmApi.DwmExtendFrameIntoClientArea(Handle, &margins);
+                    DwmApi.DwmExtendFrameIntoClientArea(hwnd, &margins);
                     goto default;
                 case WindowMessage.NCHitTest:
                     {
@@ -431,10 +430,10 @@ namespace ConcreteUI.Window
 
             return true;
         Transfer:
-            return base.TryProcessSystemWindowMessage(message, wParam, lParam, out result);
+            return base.TryProcessSystemWindowMessage(hwnd, message, wParam, lParam, out result);
         }
 
-        private bool TryProcessUIWindowMessage(WindowMessage message, nint wParam, nint lParam, out nint result)
+        private bool TryProcessUIWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
             void* wndProc = UIDependentWndProc;
             if (wndProc == null)
@@ -456,10 +455,11 @@ namespace ConcreteUI.Window
             IL.Emit.Ldarg_1();
             IL.Emit.Ldarg_2();
             IL.Emit.Ldarg_3();
+            IL.Emit.Ldarg(4);
             IL.PushOutRef(out result);
             IL.Push(wndProc);
             IL.Emit.Calli(StandAloneMethodSig.ManagedMethod(System.Reflection.CallingConventions.HasThis,
-                typeof(bool), typeof(WindowMessage), typeof(nint), typeof(nint), TypeRef.Type<nint>().MakeByRefType()));
+                typeof(bool), typeof(IntPtr), typeof(WindowMessage), typeof(nint), typeof(nint), TypeRef.Type<nint>().MakeByRefType()));
             return IL.Return<bool>();
         }
         #endregion

@@ -2,7 +2,7 @@
 
 using ConcreteUI.Native;
 
-namespace ConcreteUI.Window2
+namespace ConcreteUI.Window
 {
     [StructLayout(LayoutKind.Auto)]
     public struct CreateWindowInfo

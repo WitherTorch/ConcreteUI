@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ConcreteUI.Window2
+namespace ConcreteUI
 {
     [Flags]
     public enum MouseKeys : uint

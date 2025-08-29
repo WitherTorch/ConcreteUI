@@ -1,7 +1,5 @@
 using System;
 
-using ConcreteUI.Window2;
-
 namespace ConcreteUI.Test
 {
     internal static class Program
@@ -13,12 +11,12 @@ namespace ConcreteUI.Test
         static int Main()
         {
             ConcreteSettings.WindowMaterial = WindowMaterial.Acrylic;
-            return MessageLoop.StartMessageLoop(new MainWindow(null));
+            return WindowMessageLoop.Start(new MainWindow(null));
         }
 
         private static void Window_Destroyed(object? sender, EventArgs e)
         {
-            MessageLoop.StopMessageLoop();
+            WindowMessageLoop.Stop();
         }
     }
 }

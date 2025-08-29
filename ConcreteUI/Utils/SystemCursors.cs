@@ -7,7 +7,7 @@ using ConcreteUI.Native;
 
 using WitherTorch.Common.Threading;
 
-namespace ConcreteUI.Window2
+namespace ConcreteUI.Utils
 {
     public static class SystemCursors
     {

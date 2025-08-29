@@ -4,7 +4,7 @@ using System.Threading;
 
 using ConcreteUI.Native;
 
-namespace ConcreteUI.Window2
+namespace ConcreteUI.Utils
 {
     public readonly ref struct ClipboardToken : IDisposable
     {

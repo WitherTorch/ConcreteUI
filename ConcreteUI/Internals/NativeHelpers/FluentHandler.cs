@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using ConcreteUI.Native;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
-using ConcreteUI.Window2;
 
 using Microsoft.Win32;
 

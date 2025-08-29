@@ -1,7 +1,6 @@
 ﻿using System;
 
 using ConcreteUI.Native;
-using ConcreteUI.Window2;
 
 using InlineMethod;
 

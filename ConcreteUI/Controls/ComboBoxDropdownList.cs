@@ -11,7 +11,6 @@ using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
-using ConcreteUI.Window2;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;

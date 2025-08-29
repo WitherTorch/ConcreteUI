@@ -3,11 +3,12 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using ConcreteUI.Internals;
 using ConcreteUI.Native;
 
 using WitherTorch.Common.Helpers;
 
-namespace ConcreteUI.Window2
+namespace ConcreteUI.Window
 {
     partial class NativeWindow
     {

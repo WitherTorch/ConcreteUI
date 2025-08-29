@@ -13,7 +13,6 @@ using ConcreteUI.Graphics.Native.Direct2D.Geometry;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
-using ConcreteUI.Window2;
 
 using InlineMethod;
 

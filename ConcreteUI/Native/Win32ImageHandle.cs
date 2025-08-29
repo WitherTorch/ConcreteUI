@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Runtime.ConstrainedExecution;
 
-using ConcreteUI.Native;
-
-namespace ConcreteUI.Window2
+namespace ConcreteUI.Native
 {
     public sealed class Win32ImageHandle : CriticalFinalizerObject, IDisposable
     {

@@ -1,6 +1,6 @@
 ﻿using ConcreteUI.Native;
 
-namespace ConcreteUI.Window2
+namespace ConcreteUI.Internals
 {
     internal static class CustomWindowMessages
     {

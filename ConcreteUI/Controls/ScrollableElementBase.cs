@@ -10,7 +10,6 @@ using ConcreteUI.Internals;
 using ConcreteUI.Internals.NativeHelpers;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
-using ConcreteUI.Window2;
 
 using InlineMethod;
 

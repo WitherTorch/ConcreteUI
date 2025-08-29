@@ -3,7 +3,6 @@
 using ConcreteUI.Input.NativeHelper;
 using ConcreteUI.Native;
 using ConcreteUI.Window;
-using ConcreteUI.Window2;
 
 using WitherTorch.Common.Windows.Structures;
 
@@ -79,7 +78,7 @@ namespace ConcreteUI.Input
             return _context?.GetRealKeyCode() ?? VirtualKey.None;
         }
 
-        public bool TryProcessWindowMessage(WindowMessage message, nint wParam, nint lParam, out nint result)
+        public bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
             result = 0;
 
@@ -107,7 +106,7 @@ namespace ConcreteUI.Input
                         if (wParam != 1 && wParam != 2)
                             break;
                         InputMethodContext? newContext = _context;
-                        InputMethodContext.Associate(_windowHandle, out InputMethodContext oldContext, newContext);
+                        InputMethodContext.Associate(hwnd, out InputMethodContext oldContext, newContext);
                         if (oldContext != newContext)
                             oldContext?.Dispose();
                     }
@@ -119,7 +118,7 @@ namespace ConcreteUI.Input
                         InputMethodContext? newContext = _context;
                         if (newContext is null)
                             break;
-                        InputMethodContext.Associate(_windowHandle, out InputMethodContext oldContext, newContext);
+                        InputMethodContext.Associate(hwnd, out InputMethodContext oldContext, newContext);
                         if (oldContext != newContext)
                             oldContext?.Dispose();
                         newContext.Status = _imeStatus;

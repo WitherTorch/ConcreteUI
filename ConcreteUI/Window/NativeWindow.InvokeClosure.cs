@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ConcreteUI.Window2
+namespace ConcreteUI.Window
 {
     partial class NativeWindow
     {

@@ -4,7 +4,7 @@ using ConcreteUI.Native;
 
 using InlineMethod;
 
-namespace ConcreteUI.Window2
+namespace ConcreteUI.Utils
 {
     public static class Keys
     {

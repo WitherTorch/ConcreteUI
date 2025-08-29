@@ -4,7 +4,7 @@ using ConcreteUI.Native;
 
 using WitherTorch.Common.Helpers;
 
-namespace ConcreteUI.Window2
+namespace ConcreteUI.Utils
 {
     public static class Clipboard
     {

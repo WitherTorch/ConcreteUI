@@ -1,4 +1,4 @@
-﻿namespace ConcreteUI.Window2
+﻿namespace ConcreteUI
 {
     /// <summary>
     /// Virtual Keys

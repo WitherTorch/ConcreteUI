@@ -6,14 +6,16 @@ using System.Runtime.ConstrainedExecution;
 using System.Threading;
 using System.Threading.Tasks;
 
+using ConcreteUI.Internals;
 using ConcreteUI.Native;
+using ConcreteUI.Utils;
 
 using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 
-namespace ConcreteUI.Window2
+namespace ConcreteUI.Window
 {
-    public partial class NativeWindow : CriticalFinalizerObject, IHwndOwner
+    public abstract partial class NativeWindow : CriticalFinalizerObject, IHwndOwner
     {
         private static readonly ThreadLocal<int> _threadIdLocal = new ThreadLocal<int>(Kernel32.GetCurrentThreadId, trackAllValues: false);
 
@@ -58,7 +60,7 @@ namespace ConcreteUI.Window2
                 if (!handleLazy.IsValueCreated)
                 {
                     IntPtr handle = handleLazy.Value;
-                    if (!WindowClassImpl.Instance.TryRegisterWindow(this))
+                    if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
                         DebugHelper.Throw();
                     OnHandleCreated(handle);
                 }

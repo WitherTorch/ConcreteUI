@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 
 using ConcreteUI.Native;
+using ConcreteUI.Window;
 
 using LocalsInit;
 
@@ -13,7 +14,7 @@ using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
-namespace ConcreteUI.Window2
+namespace ConcreteUI.Window
 {
     partial class NativeWindow
     {

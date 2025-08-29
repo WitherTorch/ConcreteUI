@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Layout;
-using ConcreteUI.Window2;
+using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;

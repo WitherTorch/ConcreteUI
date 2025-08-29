@@ -1,7 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
 using ConcreteUI.Utils;
-using ConcreteUI.Window2;
 
 namespace ConcreteUI.Controls
 {

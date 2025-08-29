@@ -1,6 +1,8 @@
 ﻿using System;
 
-namespace ConcreteUI.Window2
+using ConcreteUI.Window;
+
+namespace ConcreteUI.Window
 {
     public delegate void ClosingEventHandler(object? sender, ref ClosingEventArgs args);
     public delegate void WindowStateChangedEventHandler(object? sender, in WindowStateChangedEventArgs args);

@@ -1,23 +1,30 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
-
+using ConcreteUI.Internals;
 using ConcreteUI.Native;
+using ConcreteUI.Window;
+
+using InlineIL;
 
 using LocalsInit;
 
 using WitherTorch.Common.Helpers;
 
-using GdiGraphics = System.Drawing.Graphics;
 using GdiColor = System.Drawing.Color;
+using GdiGraphics = System.Drawing.Graphics;
+
+
+
 
 #if NET8_0_OR_GREATER
 using System.Collections.Frozen;
 #endif
 
-namespace ConcreteUI.Window2
+namespace ConcreteUI.Window
 {
     unsafe partial class NativeWindow
     {
@@ -31,34 +38,38 @@ namespace ConcreteUI.Window2
 
         private static Dictionary<uint, nint> CreateCustomWindowMessageProcessorDictionary()
         {
-            return new Dictionary<uint, nint>()
-            {
-                {
-                    CustomWindowMessages.ConcreteWindowInvoke,
-                    (nint)(delegate* managed<NativeWindow, nint, nint, out nint, bool>)&HandleConcreteWindowInvoke
-                },
-                {
-                    CustomWindowMessages.ConcreteDestroyWindowAsync,
-                    (nint)(delegate* managed<NativeWindow, nint, nint, out nint, bool>)&HandleConcreteDestroyWindowAsync
-                },
-            };
+            Dictionary<uint, nint> result = new Dictionary<uint, nint>(2);
+
+            IL.EnsureLocal(result);
+
+            IL.Push(result);
+            IL.Push(CustomWindowMessages.ConcreteWindowInvoke);
+            IL.Emit.Ldftn(new MethodRef(typeof(NativeWindow), nameof(HandleConcreteWindowInvoke)));
+            IL.Emit.Call(new MethodRef(typeof(Dictionary<uint, nint>), nameof(Dictionary<uint, nint>.Add)));
+
+            IL.Push(result);
+            IL.Push(CustomWindowMessages.ConcreteDestroyWindowAsync);
+            IL.Emit.Ldftn(new MethodRef(typeof(NativeWindow), nameof(HandleConcreteDestroyWindowAsync)));
+            IL.Emit.Call(new MethodRef(typeof(Dictionary<uint, nint>), nameof(Dictionary<uint, nint>.Add)));
+
+            return result;
         }
 
-        bool IWindowMessageFilter.TryProcessWindowMessage(WindowMessage message, nint wParam, nint lParam, out nint result)
-            => TryProcessWindowMessage(message, wParam, lParam, out result);
+        bool IWindowMessageFilter.TryProcessWindowMessage(IntPtr handle, WindowMessage message, nint wParam, nint lParam, out nint result)
+            => TryProcessWindowMessage(handle, message, wParam, lParam, out result);
 
-        protected virtual bool TryProcessWindowMessage(WindowMessage message, nint wParam, nint lParam, out nint result)
+        protected virtual bool TryProcessWindowMessage(IntPtr handle, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
             if (message < WindowMessage.CustomClassMessageStart)
-                return TryProcessSystemWindowMessage(message, wParam, lParam, out result);
+                return TryProcessSystemWindowMessage(handle, message, wParam, lParam, out result);
 
             if (message >= WindowMessage.RegisterWindowMessageStart && message <= WindowMessage.RegisterWindowMessageEnd)
-                return TryProcessCustomWindowMessage((uint)message, wParam, lParam, out result);
+                return TryProcessCustomWindowMessage(handle, (uint)message, wParam, lParam, out result);
 
-            return TryProcessOtherWindowMessage((uint)message, wParam, lParam, out result);
+            return TryProcessOtherWindowMessage(handle, (uint)message, wParam, lParam, out result);
         }
 
-        protected virtual bool TryProcessSystemWindowMessage(WindowMessage message, nint wParam, nint lParam, out nint result)
+        protected virtual bool TryProcessSystemWindowMessage(IntPtr handle, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
             result = 0;
             return message switch
@@ -81,24 +92,32 @@ namespace ConcreteUI.Window2
         }
 
         [LocalsInit(false)]
-        protected virtual bool TryProcessCustomWindowMessage(uint message, nint wParam, nint lParam, out nint result)
+        protected virtual bool TryProcessCustomWindowMessage(IntPtr handle, uint message, nint wParam, nint lParam, out nint result)
         {
-            if (_customWindowMessageProcessorDict.TryGetValue(message, out nint functionPointer) &&
-                ((delegate* managed<NativeWindow, nint, nint, out nint, bool>)functionPointer)(this, wParam, lParam, out result))
-                return true;
+            const string Label = "JumpLabel";
 
-            result = 0;
-            if (message == CustomWindowMessages.ConcreteWindowInvoke)
+            if (_customWindowMessageProcessorDict.TryGetValue(message, out nint functionPointer))
             {
+                IL.Emit.Ldarg_0();
+                IL.Emit.Ldarg_2();
+                IL.Emit.Ldarg_3();
+                IL.Emit.Ldarg(4);
+                IL.PushOutRef(out result);
+                IL.Push(functionPointer);
+                IL.Emit.Calli(new StandAloneMethodSig(CallingConventions.HasThis, typeof(bool),
+                    typeof(IntPtr), typeof(nint), typeof(nint), TypeRef.Type<nint>().MakeByRefType()));
 
-                DestroyHandle();
+                IL.Emit.Brfalse(Label);
                 return true;
             }
+
+            IL.MarkLabel(Label);
+            result = 0;
             return false;
         }
 
         [LocalsInit(false)]
-        protected virtual bool TryProcessOtherWindowMessage(uint message, nint wParam, nint lParam, out nint result)
+        protected virtual bool TryProcessOtherWindowMessage(IntPtr handle, uint message, nint wParam, nint lParam, out nint result)
         {
             result = 0;
             return false;
@@ -135,7 +154,10 @@ namespace ConcreteUI.Window2
         {
             if (InterlockedHelper.Exchange(ref _windowState, UnsafeHelper.GetMaxValue<nuint>()) != UnsafeHelper.GetMaxValue<nuint>())
             {
-                if (!WindowClassImpl.Instance.UnregisterWindow(_handleLazy.Value, this))
+                IntPtr handle = _handleLazy.Value;
+                if (handle == IntPtr.Zero)
+                    return true;
+                if (!WindowClassImpl.Instance.UnregisterWindowUnsafe(handle, this))
                     DebugHelper.Throw();
                 OnDestroyed(EventArgs.Empty);
             }
@@ -267,18 +289,18 @@ namespace ConcreteUI.Window2
             return true;
         }
 
-        private static bool HandleConcreteWindowInvoke(NativeWindow window, nint wParam, nint lParam, out nint result)
+        private bool HandleConcreteWindowInvoke(IntPtr hwnd, nint wParam, nint lParam, out nint result)
         {
-            ConcurrentBag<InvokeClosure> invokeClosureBag = window._invokeClosureBag;
+            ConcurrentBag<InvokeClosure> invokeClosureBag = _invokeClosureBag;
             while (invokeClosureBag.TryTake(out InvokeClosure? closure))
                 closure.Invoke();
             result = 0;
             return true;
         }
 
-        private static bool HandleConcreteDestroyWindowAsync(NativeWindow window, nint wParam, nint lParam, out nint result)
+        private bool HandleConcreteDestroyWindowAsync(IntPtr hwnd, nint wParam, nint lParam, out nint result)
         {
-            window.DestroyHandle();
+            DestroyHandle();
             result = 0;
             return true;
         }
