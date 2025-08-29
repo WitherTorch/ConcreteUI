@@ -747,4 +747,65 @@ namespace ConcreteUI.Native
         DefaultToPrimary = 0x00000001,
         DefaultToNearest = 0x00000002
     }
+
+    public enum DialogCommandId : uint
+    {
+        Invalid = 0,
+        Ok = 1,
+        Cancel = 2,
+        Abort = 3,
+        Retry = 4,
+        Ignore = 5,
+        Yes = 6,
+        No = 7,
+        Close = 8,
+        Help = 9,
+        TryAgain = 10,
+        Continue = 11,
+        Timeout = 32000
+    }
+
+    [Flags]
+    public enum MessageBoxFlags : uint
+    {
+        Ok = 0x00000000U,
+        OkCancel = 0x00000001U,
+        AbortRetryIgnore = 0x00000002U,
+        YesNoCancel = 0x00000003U,
+        YesNo = 0x00000004U,
+        RetryCancel = 0x00000005U,
+        CancelRetryContinue = 0x00000006U,
+
+        IconHand = 0x00000010U,
+        IconQuestion = 0x00000020U,
+        IconExclamation = 0x00000030U,
+        IconAsterisk = 0x00000040U,
+
+        UserIcon = 0x00000080U,
+        IconWarning = IconExclamation,
+        IconError = IconHand,
+
+        IconInformation = IconAsterisk,
+        IconStop = IconHand,
+
+        DefaultButton1 = 0x00000000U,
+        DefaultButton2 = 0x00000100U,
+        DefaultButton3 = 0x00000200U,
+        DefaultButton4 = 0x00000300U,
+        ApplicationModel = 0x00000000U,
+        SystemModel = 0x00001000U,
+        TaskModel = 0x00002000U,
+        HelpButton = 0x00004000U,
+
+        NoFocus = 0x00008000U,
+        SetForeground = 0x00010000U,
+        DefaultDesktopOnly = 0x00020000U,
+
+        TopMost = 0x00040000U,
+        Right = 0x00080000U,
+        RTLReading = 0x00100000U,
+
+        ServiceNotification = 0x00200000U,
+        ServiceNotificationNt3x = 0x00040000U
+    }
 }

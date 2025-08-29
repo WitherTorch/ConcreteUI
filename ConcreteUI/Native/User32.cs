@@ -4,6 +4,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
+using InlineMethod;
+
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Native
@@ -178,6 +180,9 @@ namespace ConcreteUI.Native
 
         [DllImport(USER32_DLL)]
         public static extern bool EndPaint(IntPtr hWnd, PaintStruct* lpPaint);
+
+        [DllImport(USER32_DLL)]
+        public static extern DialogCommandId MessageBoxW(IntPtr hWnd, char* lpText, char* lpCaption, MessageBoxFlags uType);
 
         [DllImport(USER32_DLL)]
         public static extern int GetLastError();
