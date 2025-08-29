@@ -17,9 +17,9 @@ namespace ConcreteUI.Window
 {
     partial class NativeWindow
     {
-        public DialogCommandId DialogResult
+        public DialogResult DialogResult
         {
-            get => (DialogCommandId)InterlockedHelper.Read(ref _dialogResult);
+            get => (DialogResult)InterlockedHelper.Read(ref _dialogResult);
             set => InterlockedHelper.Exchange(ref _dialogResult, (uint)value);
         }
 

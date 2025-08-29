@@ -79,10 +79,10 @@ namespace ConcreteUI.Window
             });
         }
 
-        public DialogCommandId ShowDialog()
+        public DialogResult ShowDialog()
         {
             if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) == 0b01)
-                return DialogCommandId.Invalid;
+                return DialogResult.Invalid;
             WindowMessageLoop.Invoke(() =>
             {
                 Lazy<IntPtr> handleLazy = _handleLazy;
@@ -105,13 +105,13 @@ namespace ConcreteUI.Window
                 WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
                 Destroyed -= OnDestroyed;
             });
-            return (DialogCommandId)InterlockedHelper.Read(ref _dialogResult);
+            return (DialogResult)InterlockedHelper.Read(ref _dialogResult);
         }
 
-        public async Task<DialogCommandId> ShowDialogAsync()
+        public async Task<DialogResult> ShowDialogAsync()
         {
             if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) == 0b01)
-                return DialogCommandId.Invalid;
+                return DialogResult.Invalid;
             await WindowMessageLoop.InvokeTaskAsync(() =>
             {
                 Lazy<IntPtr> handleLazy = _handleLazy;
@@ -134,7 +134,7 @@ namespace ConcreteUI.Window
                 WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
                 Destroyed -= OnDestroyed;
             });
-            return (DialogCommandId)InterlockedHelper.Read(ref _dialogResult);
+            return (DialogResult)InterlockedHelper.Read(ref _dialogResult);
         }
 
         public void Close(CloseReason reason = CloseReason.Programmically)

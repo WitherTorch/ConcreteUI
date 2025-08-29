@@ -748,23 +748,6 @@ namespace ConcreteUI.Native
         DefaultToNearest = 0x00000002
     }
 
-    public enum DialogCommandId : uint
-    {
-        Invalid = 0,
-        Ok = 1,
-        Cancel = 2,
-        Abort = 3,
-        Retry = 4,
-        Ignore = 5,
-        Yes = 6,
-        No = 7,
-        Close = 8,
-        Help = 9,
-        TryAgain = 10,
-        Continue = 11,
-        Timeout = 32000
-    }
-
     [Flags]
     public enum MessageBoxFlags : uint
     {
