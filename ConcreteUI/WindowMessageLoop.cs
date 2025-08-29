@@ -94,7 +94,7 @@ namespace ConcreteUI
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static object? InvokeAsync(Delegate @delegate) => Invoke(@delegate, null);
+        public static void InvokeAsync(Delegate @delegate) => InvokeAsync(@delegate, null);
 
         public static void InvokeAsync(Delegate @delegate, params object?[]? args)
         {
