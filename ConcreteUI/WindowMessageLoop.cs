@@ -26,6 +26,8 @@ namespace ConcreteUI
 
         private static uint _invokeBarrier, _threadIdForMessageLoop;
 
+        public static event MessageLoopExceptionEventHandler? ExceptionCaught;
+
         public static uint CurrentThreadId => _threadIdLocal.Value;
 
         public static bool IsMessageLoopThread
@@ -39,7 +41,7 @@ namespace ConcreteUI
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int Start(NativeWindow window, bool disposeAfterDestroyed = true)
+        public static unsafe int Start(NativeWindow window, bool disposeAfterDestroyed = true, bool catchAllExceptionIntoEventHandler = false)
         {
             uint currentThreadId = _threadIdLocal.Value;
             if (InterlockedHelper.CompareExchange(ref _threadIdForMessageLoop, currentThreadId, 0) != 0)
@@ -47,23 +49,67 @@ namespace ConcreteUI
 
             window.Destroyed += OnWindowDestroyed;
             window.Show();
+            int result = catchAllExceptionIntoEventHandler ? DoMessageLoop_CatchAllException() : DoMessageLoop();
+            InterlockedHelper.CompareExchange(ref _threadIdForMessageLoop, 0, currentThreadId);
+            if (disposeAfterDestroyed)
+                window.Dispose();
+            return result;
+        }
 
+        private static unsafe int DoMessageLoop()
+            => DoMessageLoop_Model(catchException: false);
+
+        private static unsafe int DoMessageLoop_CatchAllException()
+            => DoMessageLoop_Model(catchException: true);
+
+        [Inline(InlineBehavior.Remove)]
+        private static unsafe int DoMessageLoop_Model([InlineParameter] bool catchException)
+        {
             UnwrappableList<IWindowMessageFilter> filterList = _filterList;
-            SysBool success;
             PumpingMessage msg;
+            SysBool success;
 
             while (success = User32.GetMessageW(&msg, IntPtr.Zero, 0u, 0u))
             {
                 if (success.IsFailed)
                 {
-                    Marshal.ThrowExceptionForHR(User32.GetLastError());
+                    if (catchException)
+                    {
+                        MessageLoopExceptionEventHandler? eventHandler = ExceptionCaught;
+                        if (eventHandler is not null)
+                        {
+                            Exception? exception = Marshal.GetExceptionForHR(User32.GetLastError());
+                            if (exception is not null)
+                                eventHandler.Invoke(null, new MessageLoopExceptionEventArgs(exception));
+                        }
+                    }
+                    else
+                    {
+                        Marshal.ThrowExceptionForHR(User32.GetLastError());
+                    }
                     return -1;
                 }
                 if (msg.hwnd == IntPtr.Zero && (uint)msg.message == CustomWindowMessages.ConcreteWindowInvoke)
                 {
                     ConcurrentBag<InvokeClosure> invokeClosureBag = _invokeClosureBag;
                     while (invokeClosureBag.TryTake(out InvokeClosure? closure))
-                        closure.Invoke();
+                    {
+                        if (catchException)
+                        {
+                            try
+                            {
+                                closure.Invoke();
+                            }
+                            catch (Exception ex)
+                            {
+                                ExceptionCaught?.Invoke(null, new MessageLoopExceptionEventArgs(ex));
+                            }
+                        }
+                        else
+                        {
+                            closure.Invoke();
+                        }
+                    }
                     continue;
                 }
                 lock (filterList)
@@ -75,20 +121,33 @@ namespace ConcreteUI
                         for (nuint i = 0, limit = unchecked((nuint)count); i < limit; i++)
                         {
                             IWindowMessageFilter filter = UnsafeHelper.AddByteOffset(ref filterRef, i * UnsafeHelper.SizeOf<IWindowMessageFilter>());
-                            if (filter.TryProcessWindowMessage(msg.hwnd, msg.message, msg.wParam, msg.lParam, out _))
-                                continue;
+                            if (catchException)
+                            {
+                                try
+                                {
+                                    if (filter.TryProcessWindowMessage(msg.hwnd, msg.message, msg.wParam, msg.lParam, out _))
+                                        continue;
+                                }
+                                catch (Exception ex)
+                                {
+                                    ExceptionCaught?.Invoke(null, new MessageLoopExceptionEventArgs(ex));
+                                }
+                            }
+                            else
+                            {
+                                if (filter.TryProcessWindowMessage(msg.hwnd, msg.message, msg.wParam, msg.lParam, out _))
+                                    continue;
+                            }
                         }
                     }
                 }
                 User32.TranslateMessage(&msg);
                 User32.DispatchMessageW(&msg);
             }
-            InterlockedHelper.CompareExchange(ref _threadIdForMessageLoop, 0, currentThreadId);
-            int result = unchecked((int)msg.wParam);
-            if (disposeAfterDestroyed)
-                window.Dispose();
-            return result;
+
+            return unchecked((int)msg.wParam);
         }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Stop(int exitCode = 0)
