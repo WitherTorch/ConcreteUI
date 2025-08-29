@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
+using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
 using WitherTorch.Common.Windows.Structures;
@@ -119,7 +120,7 @@ namespace ConcreteUI.Native
         public static extern nint DispatchMessageW(PumpingMessage* lpMsg);
 
         [DllImport(USER32_DLL)]
-        public static extern IntPtr LoadImageW(IntPtr hInstance, char* name, ImageType type, int cx, int cy, LoadOrCopyImageOptions fuLoad);
+        public static extern IntPtr LoadImageW(IntPtr hInstance, char* name, Win32ImageType type, int cx, int cy, LoadOrCopyImageOptions fuLoad);
 
         [DllImport(USER32_DLL)]
         public static extern IntPtr CopyIcon(IntPtr hIcon);

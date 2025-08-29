@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 
 using ConcreteUI.Native;
+using ConcreteUI.Utils;
 
 using LocalsInit;
 
@@ -226,17 +227,58 @@ namespace ConcreteUI.Window
             get => (InterlockedHelper.Read(ref _windowState) & 0b10) == 0b10;
         }
 
-        public bool HasSizableBorder
+        public WindowStyles Styles
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 IntPtr handle = Handle;
-                const int GWL_EXSTYLE = -20;
-                return handle != IntPtr.Zero &&
-                    ((WindowExtendedStyles)User32.GetWindowLongPtrW(Handle, GWL_EXSTYLE) &
-                    WindowExtendedStyles.WindowEdge) == WindowExtendedStyles.WindowEdge;
+                if (handle == IntPtr.Zero)
+                    return WindowStyles.None;
+
+                const int GWL_STYLE = -16;
+                return (WindowStyles)User32.GetWindowLongPtrW(handle, GWL_STYLE);
             }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                IntPtr handle = Handle;
+                if (handle == IntPtr.Zero)
+                    return;
+
+                const int GWL_STYLE = -16;
+                User32.SetWindowLongPtrW(handle, GWL_STYLE, (nint)value);
+            }
+        }
+
+        public WindowExtendedStyles ExtendedStyles
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                IntPtr handle = Handle;
+                if (handle == IntPtr.Zero)
+                    return WindowExtendedStyles.None;
+
+                const int GWL_EXSTYLE = -20;
+                return (WindowExtendedStyles)User32.GetWindowLongPtrW(handle, GWL_EXSTYLE);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                IntPtr handle = Handle;
+                if (handle == IntPtr.Zero)
+                    return;
+
+                const int GWL_EXSTYLE = -20;
+                User32.SetWindowLongPtrW(handle, GWL_EXSTYLE, (nint)value);
+            }
+        }
+
+        public bool HasSizableBorder
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (ExtendedStyles & WindowExtendedStyles.WindowEdge) == WindowExtendedStyles.WindowEdge;
         }
 
         private static unsafe Icon? GetIconCore(IntPtr handle)

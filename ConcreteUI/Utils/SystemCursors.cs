@@ -245,20 +245,20 @@ namespace ConcreteUI.Utils
 
             public Win32ImageHandle Create()
             {
-                IntPtr handle = User32.LoadImageW(IntPtr.Zero, _ptr, ImageType.Cursor, 0, 0,
+                IntPtr handle = User32.LoadImageW(IntPtr.Zero, _ptr, Win32ImageType.Cursor, 0, 0,
                     LoadOrCopyImageOptions.DefaultSize | LoadOrCopyImageOptions.DefaultColor | LoadOrCopyImageOptions.Shared);
                 if (handle == IntPtr.Zero)
                 {
                     if (_mayFailed)
                     {
-                        handle = User32.LoadImageW(IntPtr.Zero, (char*)32512, ImageType.Cursor, 0, 0,
+                        handle = User32.LoadImageW(IntPtr.Zero, (char*)32512, Win32ImageType.Cursor, 0, 0,
                             LoadOrCopyImageOptions.DefaultSize | LoadOrCopyImageOptions.DefaultColor | LoadOrCopyImageOptions.Shared);
                         if (handle == IntPtr.Zero)
                             Marshal.ThrowExceptionForHR(User32.GetLastError());
                     }
                     Marshal.ThrowExceptionForHR(User32.GetLastError());
                 }
-                return new Win32ImageHandle(handle, ImageType.Cursor, ownsHandle: false);
+                return new Win32ImageHandle(handle, Win32ImageType.Cursor, ownsHandle: false);
             }
         }
     }

@@ -2,6 +2,8 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
 
+using ConcreteUI.Window;
+
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Native

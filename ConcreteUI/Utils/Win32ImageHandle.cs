@@ -1,20 +1,22 @@
 ﻿using System;
 using System.Runtime.ConstrainedExecution;
 
-namespace ConcreteUI.Native
+using ConcreteUI.Native;
+
+namespace ConcreteUI.Utils
 {
     public sealed class Win32ImageHandle : CriticalFinalizerObject, IDisposable
     {
         private IntPtr _handle;
-        private ImageType _type;
+        private Win32ImageType _type;
 
         public IntPtr Handle => _handle;
 
-        public Win32ImageHandle(IntPtr handle, ImageType type, bool ownsHandle)
+        public Win32ImageHandle(IntPtr handle, Win32ImageType type, bool ownsHandle)
         {
             if (ownsHandle && handle != IntPtr.Zero)
             {
-                if (type >= ImageType.EmhMetafile)
+                if (type >= Win32ImageType.EmhMetafile)
                     throw new ArgumentOutOfRangeException(nameof(type));
                 _handle = handle;
                 _type = type;
@@ -22,7 +24,7 @@ namespace ConcreteUI.Native
             }
             _handle = handle;
             GC.SuppressFinalize(this);
-            _type = (ImageType)uint.MaxValue;
+            _type = (Win32ImageType)uint.MaxValue;
         }
 
         ~Win32ImageHandle() => DisposeCore();
@@ -35,10 +37,10 @@ namespace ConcreteUI.Native
 
         private void DisposeCore()
         {
-            ImageType type = _type;
-            if (type >= ImageType.EmhMetafile)
+            Win32ImageType type = _type;
+            if (type >= Win32ImageType.EmhMetafile)
                 return;
-            _type = (ImageType)uint.MaxValue;
+            _type = (Win32ImageType)uint.MaxValue;
 
             IntPtr handle = _handle;
             _handle = IntPtr.Zero;
@@ -47,16 +49,24 @@ namespace ConcreteUI.Native
 
             switch (type)
             {
-                case ImageType.Bitmap:
+                case Win32ImageType.Bitmap:
                     Gdi32.DeleteObject(handle);
                     break;
-                case ImageType.Icon:
+                case Win32ImageType.Icon:
                     User32.DestroyIcon(handle);
                     break;
-                case ImageType.Cursor:
+                case Win32ImageType.Cursor:
                     User32.DestroyCursor(handle);
                     break;
             }
         }
+    }
+
+    public enum Win32ImageType : uint
+    {
+        Bitmap,
+        Icon,
+        Cursor,
+        EmhMetafile
     }
 }
