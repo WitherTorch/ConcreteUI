@@ -98,12 +98,17 @@ namespace ConcreteUI.Window
         protected override bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
             UnwrappableList<IWindowMessageFilter> filterList = _filterList;
-            IWindowMessageFilter[] filters = filterList.Unwrap();
-            for (nuint i = 0, count = MathHelper.MakeUnsigned(filterList.Count); i < count; i++)
+            int count = filterList.Count;
+            if (count <= 0)
+                goto Default;
+            ref IWindowMessageFilter filterRef = ref filterList.Unwrap()[0];
+            for (nuint i = 0, limit = unchecked((nuint)count); i < limit; i++)
             {
-                if (UnsafeHelper.AddByteOffset(ref filters[0], i).TryProcessWindowMessage(hwnd, message, wParam, lParam, out result))
+                if (UnsafeHelper.AddByteOffset(ref filterRef, i * UnsafeHelper.SizeOf<IWindowMessageFilter>()).TryProcessWindowMessage(hwnd, message, wParam, lParam, out result))
                     return true;
             }
+
+        Default:
             return base.TryProcessWindowMessage(hwnd, message, wParam, lParam, out result);
         }
 

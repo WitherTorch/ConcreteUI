@@ -12,6 +12,7 @@ using ConcreteUI.Window;
 using InlineMethod;
 
 using WitherTorch.Common;
+using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
@@ -19,8 +20,9 @@ namespace ConcreteUI
 {
     public static partial class WindowMessageLoop
     {
-        private static readonly ConcurrentBag<InvokeClosure> _invokeClosureBag = new ConcurrentBag<InvokeClosure>();
         private static readonly ThreadLocal<uint> _threadIdLocal = new ThreadLocal<uint>(Kernel32.GetCurrentThreadId, trackAllValues: false);
+        private static readonly ConcurrentBag<InvokeClosure> _invokeClosureBag = new ConcurrentBag<InvokeClosure>();
+        private static readonly UnwrappableList<IWindowMessageFilter> _filterList = new UnwrappableList<IWindowMessageFilter>();
 
         private static uint _invokeBarrier, _threadIdForMessageLoop;
 
@@ -45,6 +47,8 @@ namespace ConcreteUI
 
             window.Destroyed += OnWindowDestroyed;
             window.Show();
+
+            UnwrappableList<IWindowMessageFilter> filterList = _filterList;
             SysBool success;
             PumpingMessage msg;
 
@@ -62,6 +66,20 @@ namespace ConcreteUI
                         closure.Invoke();
                     continue;
                 }
+                lock (filterList)
+                {
+                    int count = filterList.Count;
+                    if (count > 0)
+                    {
+                        ref IWindowMessageFilter filterRef = ref filterList.Unwrap()[0];
+                        for (nuint i = 0, limit = unchecked((nuint)count); i < limit; i++)
+                        {
+                            IWindowMessageFilter filter = UnsafeHelper.AddByteOffset(ref filterRef, i * UnsafeHelper.SizeOf<IWindowMessageFilter>());
+                            if (filter.TryProcessWindowMessage(msg.hwnd, msg.message, msg.wParam, msg.lParam, out _))
+                                continue;
+                        }
+                    }
+                }
                 User32.TranslateMessage(&msg);
                 User32.DispatchMessageW(&msg);
             }
@@ -78,6 +96,20 @@ namespace ConcreteUI
 
         private static void OnWindowDestroyed(object? sender, EventArgs e)
             => Stop();
+
+        public static void AddMessageFilter(IWindowMessageFilter messageFilter)
+        {
+            UnwrappableList<IWindowMessageFilter> filterList = _filterList;
+            lock (filterList)
+                filterList.Add(messageFilter);
+        }
+
+        public static void RemoveMessageFilter(IWindowMessageFilter messageFilter)
+        {
+            UnwrappableList<IWindowMessageFilter> filterList = _filterList;
+            lock (filterList)
+                filterList.Remove(messageFilter);
+        }
 
         [Inline(InlineBehavior.Keep, export: true)]
         public static object? Invoke(Delegate @delegate) => Invoke(@delegate, null);

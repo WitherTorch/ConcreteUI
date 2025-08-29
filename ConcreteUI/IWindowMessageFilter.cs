@@ -6,6 +6,6 @@ namespace ConcreteUI
 {
     public interface IWindowMessageFilter
     {
-        public bool TryProcessWindowMessage(nint hwnd, WindowMessage message, nint wParam, nint lParam, out nint result);
+        public bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result);
     }
 }
