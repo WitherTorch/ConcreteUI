@@ -808,4 +808,15 @@ namespace ConcreteUI.Native
         ServiceNotification = 0x00200000U,
         ServiceNotificationNt3x = 0x00040000U
     }
+
+    public enum GetWindowCommand : uint
+    {
+        HwndFirst = 0,
+        HwndLast = 1,
+        HwndNext = 2,
+        HwndPrevious = 3,
+        Owner = 4,
+        Child = 5,
+        EnabledPopup = 6,
+    }
 }

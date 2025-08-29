@@ -17,6 +17,12 @@ namespace ConcreteUI.Window
 {
     partial class NativeWindow
     {
+        public DialogCommandId DialogResult
+        {
+            get => (DialogCommandId)InterlockedHelper.Read(ref _dialogResult);
+            set => InterlockedHelper.Exchange(ref _dialogResult, (uint)value);
+        }
+
         public unsafe Rectangle Bounds
         {
             get

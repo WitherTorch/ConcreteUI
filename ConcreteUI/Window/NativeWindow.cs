@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Drawing;
-using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,7 +27,7 @@ namespace ConcreteUI.Window
          * (all bit set) = handle is destroyed
          */
         private nuint _windowState;
-        private uint _closeReason;
+        private uint _closeReason, _dialogResult;
         private bool _disposed;
 
         public NativeWindow(IHwndOwner? parent = null)
@@ -48,36 +47,94 @@ namespace ConcreteUI.Window
         {
             if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) == 0b01)
                 return;
-            Lazy<IntPtr> handleLazy = _handleLazy;
-            if (!handleLazy.IsValueCreated)
+            WindowMessageLoop.Invoke(() =>
             {
-                WindowMessageLoop.Invoke(() =>
+                Lazy<IntPtr> handleLazy = _handleLazy;
+                if (!handleLazy.IsValueCreated)
                 {
-                    IntPtr handle = _handleLazy.Value;
+                    IntPtr handle = handleLazy.Value;
                     if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
                         DebugHelper.Throw();
                     OnHandleCreated(handle);
-                });
-            }
-            ShowCore();
+                }
+                ShowCore();
+            });
         }
 
         public async Task ShowAsync()
         {
             if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) == 0b01)
                 return;
-            Lazy<IntPtr> handleLazy = _handleLazy;
-            if (!handleLazy.IsValueCreated)
+            await WindowMessageLoop.InvokeTaskAsync(() =>
             {
-                await WindowMessageLoop.InvokeTaskAsync(() =>
+                Lazy<IntPtr> handleLazy = _handleLazy;
+                if (!handleLazy.IsValueCreated)
                 {
-                    IntPtr handle = _handleLazy.Value;
+                    IntPtr handle = handleLazy.Value;
                     if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
                         DebugHelper.Throw();
                     OnHandleCreated(handle);
-                });
-            }
-            ShowCore();
+                }
+                ShowCore();
+            });
+        }
+
+        public DialogCommandId ShowDialog()
+        {
+            if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) == 0b01)
+                return DialogCommandId.Invalid;
+            WindowMessageLoop.Invoke(() =>
+            {
+                Lazy<IntPtr> handleLazy = _handleLazy;
+                if (!handleLazy.IsValueCreated)
+                {
+                    IntPtr handle = handleLazy.Value;
+                    if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
+                        DebugHelper.Throw();
+                    OnHandleCreated(handle);
+                }
+                ShowCore();
+                using CancellationTokenSource destroyTokenSource = new CancellationTokenSource();
+                void OnDestroyed(object? sender, EventArgs args)
+                {
+                    Destroyed -= OnDestroyed;
+                    destroyTokenSource.Cancel();
+                }
+
+                Destroyed += OnDestroyed;
+                WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
+                Destroyed -= OnDestroyed;
+            });
+            return (DialogCommandId)InterlockedHelper.Read(ref _dialogResult);
+        }
+
+        public async Task<DialogCommandId> ShowDialogAsync()
+        {
+            if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) == 0b01)
+                return DialogCommandId.Invalid;
+            await WindowMessageLoop.InvokeTaskAsync(() =>
+            {
+                Lazy<IntPtr> handleLazy = _handleLazy;
+                if (!handleLazy.IsValueCreated)
+                {
+                    IntPtr handle = handleLazy.Value;
+                    if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
+                        DebugHelper.Throw();
+                    OnHandleCreated(handle);
+                }
+                ShowCore();
+                using CancellationTokenSource destroyTokenSource = new CancellationTokenSource();
+                void OnDestroyed(object? sender, EventArgs args)
+                {
+                    Destroyed -= OnDestroyed;
+                    destroyTokenSource.Cancel();
+                }
+
+                Destroyed += OnDestroyed;
+                WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
+                Destroyed -= OnDestroyed;
+            });
+            return (DialogCommandId)InterlockedHelper.Read(ref _dialogResult);
         }
 
         public void Close(CloseReason reason = CloseReason.Programmically)

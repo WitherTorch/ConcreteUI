@@ -21,7 +21,7 @@ namespace ConcreteUI
     public static partial class WindowMessageLoop
     {
         private static readonly ThreadLocal<uint> _threadIdLocal = new ThreadLocal<uint>(Kernel32.GetCurrentThreadId, trackAllValues: false);
-        private static readonly ConcurrentBag<InvokeClosure> _invokeClosureBag = new ConcurrentBag<InvokeClosure>();
+        private static readonly ConcurrentBag<IInvokeClosure> _invokeClosureBag = new ConcurrentBag<IInvokeClosure>();
         private static readonly UnwrappableList<IWindowMessageFilter> _filterList = new UnwrappableList<IWindowMessageFilter>();
 
         private static NativeWindow? _mainWindow;
@@ -110,8 +110,8 @@ namespace ConcreteUI
                 }
                 if (msg.hwnd == IntPtr.Zero && (uint)msg.message == CustomWindowMessages.ConcreteWindowInvoke)
                 {
-                    ConcurrentBag<InvokeClosure> invokeClosureBag = _invokeClosureBag;
-                    while (invokeClosureBag.TryTake(out InvokeClosure? closure))
+                    ConcurrentBag<IInvokeClosure> invokeClosureBag = _invokeClosureBag;
+                    while (invokeClosureBag.TryTake(out IInvokeClosure? closure))
                     {
                         if (catchException)
                         {
@@ -129,7 +129,7 @@ namespace ConcreteUI
                             closure.Invoke();
                         }
                     }
-                    continue;
+                    goto Tail;
                 }
                 lock (filterList)
                 {
@@ -145,7 +145,7 @@ namespace ConcreteUI
                                 try
                                 {
                                     if (filter.TryProcessWindowMessage(msg.hwnd, msg.message, msg.wParam, msg.lParam, out _))
-                                        continue;
+                                        goto Tail;
                                 }
                                 catch (Exception ex)
                                 {
@@ -155,18 +155,67 @@ namespace ConcreteUI
                             else
                             {
                                 if (filter.TryProcessWindowMessage(msg.hwnd, msg.message, msg.wParam, msg.lParam, out _))
-                                    continue;
+                                    goto Tail;
                             }
                         }
                     }
                 }
                 User32.TranslateMessage(&msg);
                 User32.DispatchMessageW(&msg);
+
+            Tail:
+                continue;
             }
 
             return unchecked((int)msg.wParam);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void StartMiniLoop(CancellationToken cancellationToken)
+        {
+            UnwrappableList<IWindowMessageFilter> filterList = _filterList;
+            PumpingMessage msg;
+            SysBool success;
+
+            while (success = User32.GetMessageW(&msg, IntPtr.Zero, 0u, 0u))
+            {
+                if (success.IsFailed)
+                {
+                    Marshal.ThrowExceptionForHR(User32.GetLastError());
+                    User32.PostQuitMessage(-1);
+                    return;
+                }
+                if (msg.hwnd == IntPtr.Zero && (uint)msg.message == CustomWindowMessages.ConcreteWindowInvoke)
+                {
+                    ConcurrentBag<IInvokeClosure> invokeClosureBag = _invokeClosureBag;
+                    while (invokeClosureBag.TryTake(out IInvokeClosure? closure))
+                        closure.Invoke();
+                    goto Tail;
+                }
+                lock (filterList)
+                {
+                    int count = filterList.Count;
+                    if (count > 0)
+                    {
+                        ref IWindowMessageFilter filterRef = ref filterList.Unwrap()[0];
+                        for (nuint i = 0, limit = unchecked((nuint)count); i < limit; i++)
+                        {
+                            IWindowMessageFilter filter = UnsafeHelper.AddByteOffset(ref filterRef, i * UnsafeHelper.SizeOf<IWindowMessageFilter>());
+                            if (filter.TryProcessWindowMessage(msg.hwnd, msg.message, msg.wParam, msg.lParam, out _))
+                                goto Tail;
+                        }
+                    }
+                }
+                User32.TranslateMessage(&msg);
+                User32.DispatchMessageW(&msg);
+
+            Tail:
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+                continue;
+            }
+            User32.PostQuitMessage((int)msg.wParam);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Stop(int exitCode = 0)
@@ -190,65 +239,85 @@ namespace ConcreteUI
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static object? Invoke(Delegate @delegate) => Invoke(@delegate, null);
+        public static object? Invoke<TDelegate>(TDelegate @delegate) where TDelegate : Delegate
+            => Invoke(@delegate, null);
 
-        public static object? Invoke(Delegate @delegate, params object?[]? args)
+        public static object? Invoke<TDelegate>(TDelegate @delegate, params object?[]? args) where TDelegate : Delegate
         {
             uint messageLoopThreadId = InterlockedHelper.Read(ref _threadIdForMessageLoop);
             if (messageLoopThreadId == 0)
                 throw new InvalidOperationException("The message loop is not exists!");
 
             if (_threadIdLocal.Value == messageLoopThreadId)
+            {
+                if (typeof(TDelegate) == typeof(Action))
+                {
+                    UnsafeHelper.As<Delegate, Action>(@delegate).Invoke();
+                    return null;
+                }
                 return @delegate.DynamicInvoke(args);
+            }
+            if (typeof(TDelegate) == typeof(Action))
+            {
+                InvokeTaskCoreAsync(messageLoopThreadId, UnsafeHelper.As<Delegate, Action>(@delegate), CancellationToken.None).Wait();
+                return null;
+            }
             return InvokeTaskCoreAsync(messageLoopThreadId, @delegate, args, CancellationToken.None).Result;
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static void InvokeAsync(Delegate @delegate) => InvokeAsync(@delegate, null);
-       
+        public static void InvokeAsync<TDelegate>(TDelegate @delegate) where TDelegate : Delegate
+            => InvokeAsync(@delegate, null, CancellationToken.None);
+
         [Inline(InlineBehavior.Keep, export: true)]
-        public static void InvokeAsync(Delegate @delegate, CancellationToken cancellationToken) => InvokeAsync(@delegate, null, cancellationToken);
+        public static void InvokeAsync<TDelegate>(TDelegate @delegate, CancellationToken cancellationToken) where TDelegate : Delegate
+            => InvokeAsync(@delegate, null, cancellationToken);
 
-        public static void InvokeAsync(Delegate @delegate, params object?[]? args)
+        [Inline(InlineBehavior.Keep, export: true)]
+        public static void InvokeAsync<TDelegate>(TDelegate @delegate, params object?[]? args) where TDelegate : Delegate
+            => InvokeAsync(@delegate, args, CancellationToken.None);
+
+        public static void InvokeAsync<TDelegate>(TDelegate @delegate, object?[]? args, CancellationToken cancellationToken) where TDelegate : Delegate
         {
             uint messageLoopThreadId = InterlockedHelper.Read(ref _threadIdForMessageLoop);
             if (messageLoopThreadId == 0)
                 throw new InvalidOperationException("The message loop is not exists!");
 
-            InvokeCoreAsync(messageLoopThreadId, @delegate, args, CancellationToken.None);
-        }
-
-        public static void InvokeAsync(Delegate @delegate, object?[]? args, CancellationToken cancellationToken)
-        {
-            uint messageLoopThreadId = InterlockedHelper.Read(ref _threadIdForMessageLoop);
-            if (messageLoopThreadId == 0)
-                throw new InvalidOperationException("The message loop is not exists!");
-
+            if (typeof(TDelegate) == typeof(Action))
+                InvokeCoreAsync(messageLoopThreadId, UnsafeHelper.As<Delegate, Action>(@delegate), cancellationToken);
             InvokeCoreAsync(messageLoopThreadId, @delegate, args, cancellationToken);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static Task<object?> InvokeTaskAsync(Delegate @delegate) => InvokeTaskAsync(@delegate, null);
+        public static Task<object?> InvokeTaskAsync<TDelegate>(TDelegate @delegate) where TDelegate : Delegate
+            => InvokeTaskAsync(@delegate, null);
 
         [Inline(InlineBehavior.Keep, export: true)]
-        public static Task<object?> InvokeTaskAsync(Delegate @delegate, CancellationToken cancellationToken) => InvokeTaskAsync(@delegate, null, cancellationToken);
+        public static Task<object?> InvokeTaskAsync<TDelegate>(TDelegate @delegate, CancellationToken cancellationToken) where TDelegate : Delegate
+            => InvokeTaskAsync(@delegate, null, cancellationToken);
 
-        public static Task<object?> InvokeTaskAsync(Delegate @delegate, params object?[]? args)
+        [Inline(InlineBehavior.Keep, export: true)]
+        public static Task<object?> InvokeTaskAsync<TDelegate>(TDelegate @delegate, params object?[]? args) where TDelegate : Delegate
+            => InvokeTaskAsync(@delegate, args, CancellationToken.None);
+
+        public static async Task<object?> InvokeTaskAsync<TDelegate>(TDelegate @delegate, object?[]? args, CancellationToken cancellationToken) where TDelegate : Delegate
         {
             uint messageLoopThreadId = InterlockedHelper.Read(ref _threadIdForMessageLoop);
             if (messageLoopThreadId == 0)
                 throw new InvalidOperationException("The message loop is not exists!");
 
-            return InvokeTaskCoreAsync(messageLoopThreadId, @delegate, args, CancellationToken.None);
+            if (typeof(TDelegate) == typeof(Action))
+            {
+                await InvokeTaskCoreAsync(messageLoopThreadId, UnsafeHelper.As<Delegate, Action>(@delegate), cancellationToken);
+                return null;
+            }
+            return await InvokeTaskCoreAsync(messageLoopThreadId, @delegate, args, cancellationToken);
         }
 
-        public static Task<object?> InvokeTaskAsync(Delegate @delegate, object?[]? args, CancellationToken cancellationToken)
+        private static void InvokeCoreAsync(uint threadId, Action action, CancellationToken cancellationToken)
         {
-            uint messageLoopThreadId = InterlockedHelper.Read(ref _threadIdForMessageLoop);
-            if (messageLoopThreadId == 0)
-                throw new InvalidOperationException("The message loop is not exists!");
-
-            return InvokeTaskCoreAsync(messageLoopThreadId, @delegate, args, cancellationToken);
+            _invokeClosureBag.Add(new SimpleInvokeClosure(action, null, cancellationToken));
+            PostInvokeMessage(threadId);
         }
 
         private static void InvokeCoreAsync(uint threadId, Delegate @delegate, object?[]? args, CancellationToken cancellationToken)
@@ -257,12 +326,20 @@ namespace ConcreteUI
             PostInvokeMessage(threadId);
         }
 
-        private static async Task<object?> InvokeTaskCoreAsync(uint threadId, Delegate @delegate, object?[]? args, CancellationToken cancellationToken)
+        private static Task InvokeTaskCoreAsync(uint threadId, Action action, CancellationToken cancellationToken)
+        {
+            TaskCompletionSource<bool> completionSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _invokeClosureBag.Add(new SimpleInvokeClosure(action, completionSource, cancellationToken));
+            PostInvokeMessage(threadId);
+            return completionSource.Task;
+        }
+
+        private static Task<object?> InvokeTaskCoreAsync(uint threadId, Delegate @delegate, object?[]? args, CancellationToken cancellationToken)
         {
             TaskCompletionSource<object?> completionSource = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
             _invokeClosureBag.Add(new InvokeClosure(@delegate, args, completionSource, cancellationToken));
             PostInvokeMessage(threadId);
-            return await completionSource.Task;
+            return completionSource.Task;
         }
 
         private static void PostInvokeMessage(uint threadId)

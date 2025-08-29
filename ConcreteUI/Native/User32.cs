@@ -81,6 +81,12 @@ namespace ConcreteUI.Native
         public static extern bool ShowWindow(IntPtr hWnd, ShowWindowCommands nCmdShow);
 
         [DllImport(USER32_DLL)]
+        public static extern bool EnableWindow(IntPtr hWnd, bool bEnable);
+
+        [DllImport(USER32_DLL)]
+        public static extern IntPtr GetWindow(IntPtr hWnd, GetWindowCommand uCmd);
+
+        [DllImport(USER32_DLL)]
         public static extern bool DestroyWindow(IntPtr hwnd);
 
         [DllImport(USER32_DLL)]

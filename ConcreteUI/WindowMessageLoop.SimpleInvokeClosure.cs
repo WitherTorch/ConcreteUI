@@ -6,20 +6,19 @@ namespace ConcreteUI
 {
     partial class WindowMessageLoop
     {
-        private record class InvokeClosure(
-            Delegate Delegate,
-            object?[]? Arguments,
-            TaskCompletionSource<object?>? CompletionSource,
+        private record class SimpleInvokeClosure(
+            Action Action,
+            TaskCompletionSource<bool>? CompletionSource,
             CancellationToken CancellationToken) : IInvokeClosure
         {
             public void Invoke()
             {
-                TaskCompletionSource<object?>? completionSource = CompletionSource;
+                TaskCompletionSource<bool>? completionSource = CompletionSource;
                 if (completionSource is null)
                 {
                     if (CancellationToken.IsCancellationRequested)
                         return;
-                    Delegate.DynamicInvoke(Arguments);
+                    Action.Invoke();
                     return;
                 }
                 if (CancellationToken.IsCancellationRequested)
@@ -27,17 +26,16 @@ namespace ConcreteUI
                     completionSource.TrySetCanceled();
                     return;
                 }
-                object? result;
                 try
                 {
-                    result = Delegate.DynamicInvoke(Arguments);
+                    Action.Invoke();
                 }
                 catch (Exception ex)
                 {
                     completionSource.TrySetException(ex);
                     return;
                 }
-                completionSource.TrySetResult(result);
+                completionSource.TrySetResult(true);
             }
         }
     }
