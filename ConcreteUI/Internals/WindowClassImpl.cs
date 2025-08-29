@@ -7,6 +7,8 @@ using System.Threading;
 using ConcreteUI.Native;
 using ConcreteUI.Window;
 
+using InlineIL;
+
 using InlineMethod;
 
 using WitherTorch.Common.Helpers;
@@ -44,11 +46,13 @@ namespace ConcreteUI.Internals
                 {
                     cbSize = UnsafeHelper.SizeOf<WindowClassEx>(),
                     style = ClassStyles.ClassDC,
-                    lpfnWndProc = (delegate*<nint, WindowMessage, nint, nint, nint>)&ProcessWindowMessage,
                     hInstance = hInstance,
                     lpszClassName = className,
                     hbrBackground = Gdi32.CreateSolidBrush(0x00000000)
                 };
+                IL.PushInRef(in clazz);
+                IL.Emit.Ldftn(new MethodRef(typeof(WindowClassImpl), nameof(ProcessWindowMessage)));
+                IL.Emit.Stfld(new FieldRef(typeof(WindowClassEx), nameof(WindowClassEx.lpfnWndProc)));
 
                 ushort atom = User32.RegisterClassExW(&clazz);
                 if (atom == 0)
@@ -57,6 +61,9 @@ namespace ConcreteUI.Internals
             }
         }
 
+#if NET8_0_OR_GREATER
+        [UnmanagedCallersOnly]
+#endif
         private static unsafe nint ProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam)
         {
             WindowClassImpl? instance = _instanceLazy.GetValueDirectly();
