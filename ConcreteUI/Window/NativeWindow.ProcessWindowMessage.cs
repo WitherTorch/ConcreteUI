@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
+
 using ConcreteUI.Internals;
 using ConcreteUI.Native;
-using ConcreteUI.Window;
 
 using InlineIL;
 
@@ -16,9 +15,6 @@ using WitherTorch.Common.Helpers;
 
 using GdiColor = System.Drawing.Color;
 using GdiGraphics = System.Drawing.Graphics;
-
-
-
 
 #if NET8_0_OR_GREATER
 using System.Collections.Frozen;
@@ -38,14 +34,9 @@ namespace ConcreteUI.Window
 
         private static Dictionary<uint, nint> CreateCustomWindowMessageProcessorDictionary()
         {
-            Dictionary<uint, nint> result = new Dictionary<uint, nint>(2);
+            Dictionary<uint, nint> result = new Dictionary<uint, nint>(1);
 
             IL.EnsureLocal(result);
-
-            IL.Push(result);
-            IL.Push(CustomWindowMessages.ConcreteWindowInvoke);
-            IL.Emit.Ldftn(new MethodRef(typeof(NativeWindow), nameof(HandleConcreteWindowInvoke)));
-            IL.Emit.Call(new MethodRef(typeof(Dictionary<uint, nint>), nameof(Dictionary<uint, nint>.Add)));
 
             IL.Push(result);
             IL.Push(CustomWindowMessages.ConcreteDestroyWindowAsync);
@@ -286,15 +277,6 @@ namespace ConcreteUI.Window
         private static bool HandleEraseBackground(out nint result)
         {
             result = 1;
-            return true;
-        }
-
-        private bool HandleConcreteWindowInvoke(IntPtr hwnd, nint wParam, nint lParam, out nint result)
-        {
-            ConcurrentBag<InvokeClosure> invokeClosureBag = _invokeClosureBag;
-            while (invokeClosureBag.TryTake(out InvokeClosure? closure))
-                closure.Invoke();
-            result = 0;
             return true;
         }
 

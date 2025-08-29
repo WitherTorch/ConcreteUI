@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 
 using ConcreteUI.Native;
-using ConcreteUI.Window;
 
 using LocalsInit;
 
@@ -139,7 +138,7 @@ namespace ConcreteUI.Window
                     return;
                 }
                 IntPtr iconHandle = value is null ? IntPtr.Zero : User32.CopyIcon(value.Handle);
-                InvokeAsync(() => SetIconCore(handle, iconHandle));
+                WindowMessageLoop.InvokeAsync(() => SetIconCore(handle, iconHandle));
             }
         }
 
@@ -219,16 +218,6 @@ namespace ConcreteUI.Window
         public bool Focused
         {
             get => (InterlockedHelper.Read(ref _windowState) & 0b10) == 0b10;
-        }
-
-        public unsafe bool IsWindowThread
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                IntPtr handle = Handle;
-                return handle != IntPtr.Zero && IsWindowThreadCore(handle);
-            }
         }
 
         public bool HasSizableBorder

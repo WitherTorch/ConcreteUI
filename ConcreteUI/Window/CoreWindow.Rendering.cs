@@ -181,7 +181,7 @@ namespace ConcreteUI.Window
         {
             base.ShowCore();
             UpdateFirstTime();
-            InvokeAsync(OnShown2);
+            WindowMessageLoop.InvokeAsync(OnShown2);
         }
 
         private void OnShown2()

@@ -1,25 +1,19 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Threading;
-using System.Threading.Tasks;
 
 using ConcreteUI.Internals;
 using ConcreteUI.Native;
 using ConcreteUI.Utils;
 
-using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Window
 {
     public abstract partial class NativeWindow : CriticalFinalizerObject, IHwndOwner
     {
-        private static readonly ThreadLocal<int> _threadIdLocal = new ThreadLocal<int>(Kernel32.GetCurrentThreadId, trackAllValues: false);
-
-        private readonly ConcurrentBag<InvokeClosure> _invokeClosureBag = new ConcurrentBag<InvokeClosure>();
         private readonly WeakReference<IHwndOwner>? _parentReference;
         private readonly Lazy<IntPtr> _handleLazy;
 
@@ -34,7 +28,6 @@ namespace ConcreteUI.Window
          */
         private nuint _windowState;
         private uint _closeReason;
-        private int  _invokeBarrier;
         private bool _disposed;
 
         public NativeWindow(IHwndOwner? parent = null)
@@ -59,10 +52,13 @@ namespace ConcreteUI.Window
             {
                 if (!handleLazy.IsValueCreated)
                 {
-                    IntPtr handle = handleLazy.Value;
-                    if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
-                        DebugHelper.Throw();
-                    OnHandleCreated(handle);
+                    WindowMessageLoop.Invoke(() =>
+                    {
+                        IntPtr handle = _handleLazy.Value;
+                        if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
+                            DebugHelper.Throw();
+                        OnHandleCreated(handle);
+                    });
                 }
             }
             ShowCore();
@@ -77,75 +73,6 @@ namespace ConcreteUI.Window
             User32.PostMessageW(handle, WindowMessage.Close, 0, 0);
         }
 
-        public object? Invoke(Delegate @delegate, params object?[]? args)
-        {
-            IntPtr handle = Handle;
-            if (handle == IntPtr.Zero)
-                throw new InvalidOperationException("The window is destroyed!");
-
-            if (IsWindowThreadCore(handle))
-                return @delegate.DynamicInvoke(this, args);
-            return InvokeTaskCoreAsync(handle, @delegate, args, CancellationToken.None).Result;
-        }
-
-        public void InvokeAsync(Delegate @delegate, params object?[]? args)
-        {
-            IntPtr handle = Handle;
-            if (handle == IntPtr.Zero)
-                throw new InvalidOperationException("The window is destroyed!");
-
-            InvokeCoreAsync(handle, @delegate, args, CancellationToken.None);
-        }
-
-        public void InvokeAsync(Delegate @delegate, object?[]? args, CancellationToken cancellationToken)
-        {
-            IntPtr handle = Handle;
-            if (handle == IntPtr.Zero)
-                throw new InvalidOperationException("The window is destroyed!");
-
-            InvokeCoreAsync(handle, @delegate, args, cancellationToken);
-        }
-
-        public Task<object?> InvokeTaskAsync(Delegate @delegate, params object?[]? args)
-        {
-            IntPtr handle = Handle;
-            if (handle == IntPtr.Zero)
-                throw new InvalidOperationException("The window is destroyed!");
-
-            return InvokeTaskCoreAsync(handle, @delegate, args, CancellationToken.None);
-        }
-
-        public Task<object?> InvokeTaskAsync(Delegate @delegate, object?[]? args, CancellationToken cancellationToken)
-        {
-            IntPtr handle = Handle;
-            if (handle == IntPtr.Zero)
-                throw new InvalidOperationException("The window is destroyed!");
-
-            return InvokeTaskCoreAsync(handle, @delegate, args, cancellationToken);
-        }
-
-        private void InvokeCoreAsync(IntPtr handle, Delegate @delegate, object?[]? args, CancellationToken cancellationToken)
-        {
-            _invokeClosureBag.Add(new InvokeClosure(@delegate, args, null, cancellationToken));
-            PostInvokeMessage(handle);
-        }
-
-        private async Task<object?> InvokeTaskCoreAsync(IntPtr handle, Delegate @delegate, object?[]? args, CancellationToken cancellationToken)
-        {
-            TaskCompletionSource<object?> completionSource = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-            _invokeClosureBag.Add(new InvokeClosure(@delegate, args, completionSource, cancellationToken));
-            PostInvokeMessage(handle);
-            return await completionSource.Task;
-        }
-
-        private void PostInvokeMessage(IntPtr handle)
-        {
-            if (MathHelper.ToBoolean(InterlockedHelper.CompareExchange(ref _invokeBarrier, Booleans.TrueInt, Booleans.FalseInt), true))
-                return;
-            User32.PostMessageW(handle, CustomWindowMessages.ConcreteWindowInvoke, 0, 0);
-            InterlockedHelper.Exchange(ref _invokeBarrier, Booleans.FalseInt);
-        }
-
         protected virtual void ShowCore()
         {
             IntPtr handle = Handle;
@@ -158,9 +85,5 @@ namespace ConcreteUI.Window
             }
             ShowCore(handle, WindowState.Normal);
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe bool IsWindowThreadCore(IntPtr handle)
-            => _threadIdLocal.Value == User32.GetWindowThreadProcessId(handle, null);
     }
 }

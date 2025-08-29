@@ -183,6 +183,12 @@ namespace ConcreteUI.Native
         public static extern DialogCommandId MessageBoxW(IntPtr hWnd, char* lpText, char* lpCaption, MessageBoxFlags uType);
 
         [DllImport(USER32_DLL)]
+        public static extern bool PostThreadMessageW(uint idThread, WindowMessage msg, nint wParam, nint lParam);
+
+        [DllImport(USER32_DLL)]
+        public static extern bool PostThreadMessageW(uint idThread, uint msg, nint wParam, nint lParam);
+
+        [DllImport(USER32_DLL)]
         public static extern int GetLastError();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

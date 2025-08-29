@@ -10,7 +10,7 @@ namespace ConcreteUI.Native
         private const string KERNEL32_DLL = "kernel32.dll";
 
         [DllImport(KERNEL32_DLL)]
-        public static extern int GetCurrentThreadId();
+        public static extern uint GetCurrentThreadId();
 
         [DllImport(KERNEL32_DLL)]
         public static extern IntPtr GetModuleHandleW(char* lpModuleName);

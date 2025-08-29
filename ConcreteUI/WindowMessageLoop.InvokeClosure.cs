@@ -2,9 +2,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ConcreteUI.Window
+namespace ConcreteUI
 {
-    partial class NativeWindow
+    partial class WindowMessageLoop
     {
         private record class InvokeClosure(
             Delegate Delegate,
