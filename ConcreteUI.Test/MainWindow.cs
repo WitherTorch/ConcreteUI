@@ -12,7 +12,6 @@ using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
 using WitherTorch.Common.Collections;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Test
 {
