@@ -38,15 +38,9 @@ namespace ConcreteUI.Test
         protected override void OnHandleCreated(nint handle)
         {
             base.OnHandleCreated(handle);
-            if (!Screen.TryGetScreenInfoFromHwnd(handle, out ScreenInfo info))
+            if (!Screen.TryGetBoundsCenteredScreen(handle, out Rectangle bounds))
                 return;
-            Rect bounds = RawBounds;
-            Rect screenBounds = info.Bounds;
-            RawBounds = new Rectangle(
-                x: screenBounds.X + ((screenBounds.Width - bounds.Width) / 2),
-                y: screenBounds.Y + ((screenBounds.Height - bounds.Height) / 2),
-                height: bounds.Height,
-                width: bounds.Width);
+            RawBounds = bounds;
         }
 
         private void InitializeBaseInformation()
