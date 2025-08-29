@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Threading;
+using System.Threading.Tasks;
 
 using ConcreteUI.Internals;
 using ConcreteUI.Native;
@@ -48,18 +49,33 @@ namespace ConcreteUI.Window
             if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) == 0b01)
                 return;
             Lazy<IntPtr> handleLazy = _handleLazy;
-            lock (handleLazy)
+            if (!handleLazy.IsValueCreated)
             {
-                if (!handleLazy.IsValueCreated)
+                WindowMessageLoop.Invoke(() =>
                 {
-                    WindowMessageLoop.Invoke(() =>
-                    {
-                        IntPtr handle = _handleLazy.Value;
-                        if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
-                            DebugHelper.Throw();
-                        OnHandleCreated(handle);
-                    });
-                }
+                    IntPtr handle = _handleLazy.Value;
+                    if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
+                        DebugHelper.Throw();
+                    OnHandleCreated(handle);
+                });
+            }
+            ShowCore();
+        }
+
+        public async Task ShowAsync()
+        {
+            if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) == 0b01)
+                return;
+            Lazy<IntPtr> handleLazy = _handleLazy;
+            if (!handleLazy.IsValueCreated)
+            {
+                await WindowMessageLoop.InvokeTaskAsync(() =>
+                {
+                    IntPtr handle = _handleLazy.Value;
+                    if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
+                        DebugHelper.Throw();
+                    OnHandleCreated(handle);
+                });
             }
             ShowCore();
         }
