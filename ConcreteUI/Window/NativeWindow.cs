@@ -129,7 +129,8 @@ namespace ConcreteUI.Window
             User32.EnableWindow(parent, false);
             WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
             User32.EnableWindow(parent, true);
-            User32.SetActiveWindow(parent);
+            if (User32.IsWindowVisible(parent))
+                User32.SetActiveWindow(parent);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]

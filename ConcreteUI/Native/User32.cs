@@ -17,16 +17,16 @@ namespace ConcreteUI.Native
         private const string USER32_DLL = "user32.dll";
 
         [DllImport(USER32_DLL)]
-        public static extern int GetDpiForWindow(IntPtr hwnd);
+        public static extern int GetDpiForWindow(IntPtr hWnd);
 
         [DllImport(USER32_DLL)]
         public static extern int GetSystemMetrics(SystemMetric smIndex);
 
         [DllImport(USER32_DLL)]
-        public static extern bool GetWindowRect(IntPtr hwnd, Rect* lpRect);
+        public static extern bool GetWindowRect(IntPtr hWnd, Rect* lpRect);
 
         [DllImport(USER32_DLL)]
-        public static extern bool GetClientRect(IntPtr hwnd, Rect* lpRect);
+        public static extern bool GetClientRect(IntPtr hWnd, Rect* lpRect);
 
         [DllImport(USER32_DLL)]
         public static extern bool SetWindowTextW(IntPtr hWnd, char* lpString);
@@ -35,7 +35,7 @@ namespace ConcreteUI.Native
         public static extern int SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int Width, int Height, WindowPositionFlags flags);
 
         [DllImport(USER32_DLL)]
-        public static extern int GetWindowThreadProcessId(IntPtr hwnd, int* lpdwProcessId);
+        public static extern int GetWindowThreadProcessId(IntPtr hWnd, int* lpdwProcessId);
 
         [DllImport(USER32_DLL)]
         public static extern bool GetWindowPlacement(IntPtr hWnd, WindowPlacement* lpwndpl);
@@ -62,10 +62,10 @@ namespace ConcreteUI.Native
         public static extern bool SetCaretPos(int x, int y);
 
         [DllImport(USER32_DLL)]
-        public static extern int GetWindowCompositionAttribute(IntPtr hwnd, WindowCompositionAttributeData* data);
+        public static extern int GetWindowCompositionAttribute(IntPtr hWnd, WindowCompositionAttributeData* data);
 
         [DllImport(USER32_DLL)]
-        public static extern int SetWindowCompositionAttribute(IntPtr hwnd, WindowCompositionAttributeData* data);
+        public static extern int SetWindowCompositionAttribute(IntPtr hWnd, WindowCompositionAttributeData* data);
 
         [DllImport(USER32_DLL)]
         public static extern bool SystemParametersInfoW(uint uiAction, uint uiParam, void* pvParam, uint fWinIni);
@@ -78,7 +78,7 @@ namespace ConcreteUI.Native
         public static extern ushort RegisterClassExW(WindowClassEx* windowClass);
 
         [DllImport(USER32_DLL)]
-        public static extern nint DefWindowProcW(IntPtr hwnd, WindowMessage msg, nint wParam, nint lParam);
+        public static extern nint DefWindowProcW(IntPtr hWnd, WindowMessage msg, nint wParam, nint lParam);
 
         [DllImport(USER32_DLL)]
         public static extern bool ShowWindow(IntPtr hWnd, ShowWindowCommands nCmdShow);
@@ -93,10 +93,13 @@ namespace ConcreteUI.Native
         public static extern IntPtr GetActiveWindow();
 
         [DllImport(USER32_DLL)]
-        public static extern IntPtr SetActiveWindow(IntPtr hwnd);
+        public static extern IntPtr SetActiveWindow(IntPtr hWnd);
 
         [DllImport(USER32_DLL)]
-        public static extern bool DestroyWindow(IntPtr hwnd);
+        public static extern bool IsWindowVisible(IntPtr hWnd);
+
+        [DllImport(USER32_DLL)]
+        public static extern bool DestroyWindow(IntPtr hWnd);
 
         [DllImport(USER32_DLL)]
         public static extern uint RegisterWindowMessageW(char* lpString);
@@ -180,7 +183,7 @@ namespace ConcreteUI.Native
         public static extern bool GetCursorPos(Point* lpPoint);
 
         [DllImport(USER32_DLL)]
-        public static extern IntPtr MonitorFromWindow(IntPtr hwnd, GetMonitorFlags dwFlags);
+        public static extern IntPtr MonitorFromWindow(IntPtr hWnd, GetMonitorFlags dwFlags);
 
         [DllImport(USER32_DLL)]
         public static extern bool GetMonitorInfoW(IntPtr hMonitor, MonitorInfo* lpmi);
