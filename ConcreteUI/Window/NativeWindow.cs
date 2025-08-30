@@ -101,6 +101,8 @@ namespace ConcreteUI.Window
 
                 ShowCore();
                 IntPtr parent = User32.GetWindow(handle, GetWindowCommand.Owner);
+                if (parent == IntPtr.Zero)
+                    parent = User32.GetActiveWindow();
                 using CancellationTokenSource destroyTokenSource = new CancellationTokenSource();
                 void OnDestroyed(object? sender, EventArgs args)
                 {
@@ -109,14 +111,9 @@ namespace ConcreteUI.Window
                 }
 
                 Destroyed += OnDestroyed;
-                if (parent == IntPtr.Zero)
-                    WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
-                else
-                {
-                    User32.EnableWindow(parent, false);
-                    WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
-                    User32.EnableWindow(parent, true);
-                }
+                User32.EnableWindow(parent, false);
+                WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
+                User32.EnableWindow(parent, true);
                 Destroyed -= OnDestroyed;
             });
             return (DialogResult)InterlockedHelper.Read(ref _dialogResult);
