@@ -14,5 +14,14 @@ namespace ConcreteUI.Native
 
         [DllImport(GDI32_DLL)]
         public static extern bool DeleteObject(IntPtr handle);
+
+        [DllImport(GDI32_DLL)]
+        public static extern IntPtr GetDC(IntPtr hWnd);
+
+        [DllImport(GDI32_DLL)]
+        public static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+        [DllImport(GDI32_DLL)]
+        public static extern int GetDeviceCaps(IntPtr hdc, int index);
     }
 }

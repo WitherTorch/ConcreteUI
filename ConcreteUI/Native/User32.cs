@@ -4,9 +4,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
+using ConcreteUI.Graphics;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
+using InlineMethod;
+
+using WitherTorch.Common.Windows.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Native
@@ -15,9 +19,39 @@ namespace ConcreteUI.Native
     internal static unsafe class User32
     {
         private const string USER32_DLL = "user32.dll";
+        private static readonly void*[] _pointers = MethodImportHelper.GetImportedMethodPointers(USER32_DLL,
+            nameof(GetDpiForWindow));
 
-        [DllImport(USER32_DLL)]
-        public static extern int GetDpiForWindow(IntPtr hWnd);
+        public static uint GetDpiForWindow(IntPtr hWnd)
+        {
+            void* pointer = _pointers[0];
+            if (pointer == null)
+            {
+                IntPtr hMonitor = MonitorFromWindow(hWnd, GetMonitorFlags.DefaultToNearest);
+                if (hMonitor == IntPtr.Zero)
+                    return 0;
+                int hr = ShCore.GetDpiForMonitor(hMonitor, MonitorDpiType.EffectiveDpi, out uint dpi, out _); // Fallback 1 : GetDpiForMonitor (Windows 8.1 or greater)
+                if (hr >= 0)
+                    return dpi;
+                if (hr == Constants.E_NOTIMPL)
+                {
+                    IntPtr hdc = Gdi32.GetDC(hWnd);
+                    if (hdc == IntPtr.Zero)
+                        return 0;
+                    try
+                    {
+                        const int LOGPIXELSX = 88;
+                        return (uint)Gdi32.GetDeviceCaps(hdc, LOGPIXELSX); // Fallback 2 : GetDeviceCaps (Vista or greater)
+                    }
+                    finally
+                    {
+                        Gdi32.ReleaseDC(hWnd, hdc);
+                    }
+                }
+                return 0;
+            }
+            return ((delegate* unmanaged[Stdcall]<IntPtr, uint>)pointer)(hWnd);
+        }
 
         [DllImport(USER32_DLL)]
         public static extern int GetSystemMetrics(SystemMetric smIndex);
@@ -231,5 +265,17 @@ namespace ConcreteUI.Native
             fixed (char* ptr = str)
                 return RegisterWindowMessageW(ptr);
         }
+
+        [Inline(InlineBehavior.Remove)]
+        public static int SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, WindowPositionFlags flags)
+            => SetWindowPos(hWnd, hWndInsertAfter, 0, 0, 0, 0, flags | WindowPositionFlags.SwapWithNoSize | WindowPositionFlags.SwapWithNoMove);
+
+        [Inline(InlineBehavior.Remove)]
+        public static int SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, Point location, Size size, WindowPositionFlags flags)
+            => SetWindowPos(hWnd, hWndInsertAfter, location.X, location.Y, size.Width, size.Height, flags);
+
+        [Inline(InlineBehavior.Remove)]
+        public static int SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, in Rectangle bounds, WindowPositionFlags flags)
+            => SetWindowPos(hWnd, hWndInsertAfter, bounds.X, bounds.Y, bounds.Width, bounds.Height, flags);
     }
 }

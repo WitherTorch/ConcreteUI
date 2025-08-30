@@ -156,7 +156,7 @@ namespace ConcreteUI.Window
             D2D1DeviceContext? deviceContext = _host!.BeginDraw();
             if (deviceContext is null)
                 return;
-            int dpi = Dpi;
+            uint dpi = Dpi;
             if (dpi != 96)
                 deviceContext.Dpi = new PointF(dpi, dpi);
             _deviceContext = deviceContext;
@@ -624,7 +624,7 @@ namespace ConcreteUI.Window
             if (host is null || host.IsDisposed)
                 return;
             D2D1DeviceContext context = host.GetDeviceContext();
-            int dpi = Dpi;
+            uint dpi = Dpi;
             context.Dpi = new PointF(dpi, dpi);
             UpdateCore(_controller);
         }

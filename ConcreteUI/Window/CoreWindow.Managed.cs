@@ -25,7 +25,7 @@ namespace ConcreteUI.Window
         #region Fields
         private readonly List<WeakReference<CoreWindow>> _childrenReferenceList = new List<WeakReference<CoreWindow>>();
         private readonly CoreWindow? _parent;
-        private int dpi = 96;
+        private uint _dpi = 96;
         private float _dpiScaleFactor = 1.0f; // 螢幕DPI / 96
         private float _windowScaleFactor = 1.0f; //  96 / 螢幕DPI
         private BitVector64 titleBarStates = ulong.MaxValue;
@@ -70,7 +70,7 @@ namespace ConcreteUI.Window
         #region Properties
         public CoreWindow? Parent => _parent;
         public IThemeContext? CurrentTheme => _resourceProvider?.ThemeContext;
-        public int Dpi => dpi;
+        public uint Dpi => _dpi;
         public float DpiScaleFactor => _dpiScaleFactor;
         public float WindowScaleFactor => _windowScaleFactor;
 

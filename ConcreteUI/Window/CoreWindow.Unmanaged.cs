@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Internals;
@@ -55,14 +54,16 @@ namespace ConcreteUI.Window
                     value.Height = 0;
                 _minimumSize = value;
                 SizeF maximumSize = _maximumSize;
-                _maximumSize = new SizeF(MathHelper.Max(value.Width, maximumSize.Width),
-                    MathHelper.Max(value.Height, maximumSize.Height));
+                if (maximumSize != SizeF.Empty)
+                {
+                    _maximumSize = new SizeF(MathHelper.Max(value.Width, maximumSize.Width),
+                        MathHelper.Max(value.Height, maximumSize.Height));
+                }
 
                 IntPtr handle = Handle;
                 if (handle == IntPtr.Zero)
                     return;
-                User32.SetWindowPos(handle, IntPtr.Zero, 0, 0, 0, 0,
-                    WindowPositionFlags.SwapWithNoMove | WindowPositionFlags.SwapWithNoSize |
+                User32.SetWindowPos(handle, IntPtr.Zero,
                     WindowPositionFlags.SwapWithNoZOrder | WindowPositionFlags.SwapWithNoActivate);
             }
         }
@@ -74,15 +75,19 @@ namespace ConcreteUI.Window
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                SizeF minimumSize = _minimumSize;
-                _maximumSize = new SizeF(MathHelper.Max(value.Width, minimumSize.Width),
-                    MathHelper.Max(value.Height, minimumSize.Height));
+                if (value == SizeF.Empty)
+                    _maximumSize = SizeF.Empty;
+                else
+                {
+                    SizeF minimumSize = _minimumSize;
+                    _maximumSize = new SizeF(MathHelper.Max(value.Width, minimumSize.Width),
+                        MathHelper.Max(value.Height, minimumSize.Height));
+                }
 
                 IntPtr handle = Handle;
                 if (handle == IntPtr.Zero)
                     return;
-                User32.SetWindowPos(handle, IntPtr.Zero, 0, 0, 0, 0,
-                    WindowPositionFlags.SwapWithNoMove | WindowPositionFlags.SwapWithNoSize |
+                User32.SetWindowPos(handle, IntPtr.Zero,
                     WindowPositionFlags.SwapWithNoZOrder | WindowPositionFlags.SwapWithNoActivate);
             }
         }
@@ -140,34 +145,31 @@ namespace ConcreteUI.Window
                         if (minimumSize == SizeF.Empty && maximumSize == SizeF.Empty)
                             goto default;
 
-                        float dpiScaleFactor = _dpiScaleFactor;
                         Rect rect = UnsafeHelper.ReadUnaligned<Rect>((void*)lParam);
                         Size oldSize = rect.Size;
-                        Size newSize = Clamp(oldSize, ScalingSize(minimumSize, dpiScaleFactor), ScalingSize(maximumSize, dpiScaleFactor));
+                        Size newSize = AdjustSize(oldSize, minimumSize, maximumSize, _dpiScaleFactor);
                         if (newSize == oldSize)
                             goto default;
 
-#if false
                         switch (wParam)
                         {
                             case 1: // WMSZ_LEFT
-                            case 4: // WMSZ_TOPLEFT
+                            case 7: // WMSZ_BOTTOMLEFT
                                 UnsafeHelper.WriteUnaligned((void*)lParam, new Rect(rect.Right - newSize.Width, rect.Top, rect.Right, rect.Top + newSize.Height));
                                 break;
                             case 2: // WMSZ_RIGHT
-                            case 3: // WMSZ_TOP
-                            case 5: // WMSZ_TOPRIGHT
-                                UnsafeHelper.WriteUnaligned((void*)lParam, Rect.FromXYWH(rect.Location, newSize));
-                                break;
                             case 6: // WMSZ_BOTTOM
                             case 8: // WMSZ_BOTTOMRIGHT
+                                UnsafeHelper.WriteUnaligned((void*)lParam, Rect.FromXYWH(rect.Location, newSize));
+                                break;
+                            case 3: // WMSZ_TOP
+                            case 5: // WMSZ_TOPRIGHT
                                 UnsafeHelper.WriteUnaligned((void*)lParam, new Rect(rect.Left, rect.Bottom - newSize.Height, rect.Left + newSize.Width, rect.Bottom));
                                 break;
-                            case 7: // WMSZ_BOTTOMLEFT
+                            case 4: // WMSZ_TOPLEFT
                                 UnsafeHelper.WriteUnaligned((void*)lParam, new Rect(rect.Right - newSize.Width, rect.Bottom - newSize.Height, rect.Right, rect.Bottom));
                                 break;
                         }
-#endif
                     }
                     goto default;
                 case WindowMessage.Size:
@@ -184,7 +186,6 @@ namespace ConcreteUI.Window
                             default:
                                 break;
                         }
-
                         SizeF minimumSize = _minimumSize;
                         SizeF maximumSize = _maximumSize;
                         if (minimumSize == SizeF.Empty && maximumSize == SizeF.Empty)
@@ -195,17 +196,15 @@ namespace ConcreteUI.Window
                             goto default;
 
                         (ushort width, ushort height) = lParam.GetWords();
-                        float dpiScaleFactor = _dpiScaleFactor;
                         Size oldSize = new Size(width, height);
-                        Size newSize = Clamp(oldSize, ScalingSize(minimumSize, dpiScaleFactor), ScalingSize(maximumSize, dpiScaleFactor));
+                        Size newSize = AdjustSize(oldSize, minimumSize, maximumSize, _dpiScaleFactor);
+
                         if (oldSize == newSize)
                             goto default;
 
-#if false
-                        User32.SetWindowPos(handle, IntPtr.Zero, 0, 0, newSize.Width, newSize.Height,
+                        User32.SetWindowPos(handle, IntPtr.Zero, Point.Empty, newSize,
                             WindowPositionFlags.SwapWithNoMove | WindowPositionFlags.SwapWithNoZOrder | WindowPositionFlags.SwapWithNoActivate);
-#endif
-                        goto default;
+                        break;
                     }
                 #region Normal input events
                 case WindowMessage.Char:
@@ -550,29 +549,38 @@ namespace ConcreteUI.Window
 
         #region Normal Methods
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ChangeDpi(int newDpi)
+        private void ChangeDpi(uint newDpi)
         {
             _borderWidth = User32.GetSystemMetrics(SystemMetric.SM_CXBORDER) + User32.GetSystemMetrics(SystemMetric.SM_CXPADDEDBORDER);
-            SizeF minimumSize = _minimumSize, maximumSize = _maximumSize;
-            if (newDpi == 96)
+
+            switch (newDpi)
             {
-                baseLineWidth = _windowScaleFactor = _dpiScaleFactor = 1.0f;
+                case 0:
+                    newDpi = 96;
+                    goto Normal;
+                case 96:
+                    goto Normal;
+                default:
+                    goto NeedAmplified;
+            }
+
+        Normal:
+            baseLineWidth = _windowScaleFactor = _dpiScaleFactor = 1.0f;
+
+        NeedAmplified:
+            float dpiScaleFactor = newDpi / 96.0f;
+            float windowScaleFactor = 96.0f / newDpi;
+            _dpiScaleFactor = dpiScaleFactor;
+            _windowScaleFactor = windowScaleFactor;
+            if (dpiScaleFactor > 1f)
+            {
+                float factor = MathF.Round(dpiScaleFactor - float.Epsilon);
+                baseLineWidth = windowScaleFactor * factor;
             }
             else
-            {
-                float dpiScaleFactor = newDpi / 96.0f;
-                float windowScaleFactor = 96.0f / newDpi;
-                _dpiScaleFactor = dpiScaleFactor;
-                _windowScaleFactor = windowScaleFactor;
-                if (dpiScaleFactor > 1f)
-                {
-                    float factor = MathF.Round(dpiScaleFactor - float.Epsilon);
-                    baseLineWidth = windowScaleFactor * factor;
-                }
-                else
-                    baseLineWidth = windowScaleFactor;
-            }
-            dpi = newDpi;
+                baseLineWidth = windowScaleFactor;
+
+            _dpi = newDpi;
             OnDpiChanged();
         }
 
@@ -665,38 +673,31 @@ namespace ConcreteUI.Window
         {
             base.OnHandleCreated(handle);
 
-            User32.SetWindowPos(handle, IntPtr.Zero, 0, 0, 0, 0,
-                            WindowPositionFlags.SwapWithFrameChanged | WindowPositionFlags.SwapWithNoSize |
-                            WindowPositionFlags.SwapWithNoMove | WindowPositionFlags.SwapWithNoZOrder);
+            User32.SetWindowPos(handle, IntPtr.Zero,
+                            WindowPositionFlags.SwapWithFrameChanged | WindowPositionFlags.SwapWithNoZOrder);
 
-            SystemVersionLevel versionLevel = SystemConstants.VersionLevel;
-            if (versionLevel > SystemVersionLevel.Windows_10 || (versionLevel == SystemVersionLevel.Windows_10 && Environment.OSVersion.Version.Build >= 14393))
-                ChangeDpi(User32.GetDpiForWindow(handle));
+            ChangeDpi(User32.GetDpiForWindow(handle));
             float dpiScaleFactor = _dpiScaleFactor;
-            if (dpiScaleFactor != 1.0f)
-            {
-                Rect rect;
-                if (!User32.GetWindowRect(handle, &rect))
-                    Marshal.ThrowExceptionForHR(User32.GetLastError());
-                bool isDefaultX = _isCreateByDefaultX, isDefaultY = _isCreateByDefaultY;
-                if ((isDefaultX | isDefaultY) && !rect.IsEmptySize)
-                {
-                    if (!isDefaultX)
-                    {
-                        int newWidth = MathI.Ceiling(rect.Width * dpiScaleFactor);
-                        rect.X -= (newWidth - rect.Width) / 2;
-                        rect.Width = newWidth;
-                    }
-                    if (!isDefaultY)
-                    {
-                        int newHeight = MathI.Ceiling(rect.Width * dpiScaleFactor);
-                        rect.Y -= (newHeight - rect.Height) / 2;
-                        rect.Height = newHeight;
-                    }
-                    User32.SetWindowPos(handle, IntPtr.Zero, rect.X, rect.Y, rect.Width, rect.Height,
-                        WindowPositionFlags.SwapWithNoRedraw | WindowPositionFlags.SwapWithNoActivate);
-                }
-            }
+            if (dpiScaleFactor == 1.0f)
+                goto InitRenderObj;
+
+            Rectangle bounds = RawBounds;
+            Size size = bounds.Size;
+            if (size.IsEmpty)
+                goto InitRenderObj;
+
+            Point location = bounds.Location;
+            size.Width = MathI.Ceiling(size.Width * dpiScaleFactor);
+            size.Height = MathI.Ceiling(size.Height * dpiScaleFactor);
+
+            if (_isCreateByDefaultX)
+                location.X -= (bounds.Width - size.Width) / 2;
+            if (_isCreateByDefaultY)
+                location.Y -= (bounds.Height - size.Height) / 2;
+            User32.SetWindowPos(handle, IntPtr.Zero, location, size,
+                WindowPositionFlags.SwapWithNoActivate | WindowPositionFlags.SwapWithNoZOrder);
+
+        InitRenderObj:
             InitRenderObjects(handle);
         }
 
@@ -833,9 +834,31 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static SizeF Clamp(Size original, SizeF min, SizeF max)
-            => new SizeF(width: MathHelper.Clamp(original.Width, min.Width, max.Width),
-                height: MathHelper.Clamp(original.Height, min.Height, max.Height));
+        private static Size AdjustSize(Size original, SizeF min, SizeF max, float dpiScaleFactor)
+        {
+            if (max == SizeF.Empty)
+            {
+                if (min == SizeF.Empty)
+                    return original;
+                return Max(original, ScalingSize(min, dpiScaleFactor));
+            }
+            else
+            {
+                if (min == SizeF.Empty)
+                    return Min(original, ScalingSize(min, dpiScaleFactor));
+                return Clamp(original, ScalingSize(min, dpiScaleFactor), ScalingSize(min, dpiScaleFactor));
+            }
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static Size Min(Size original, Size min)
+            => new Size(width: MathHelper.Min(original.Width, min.Width),
+                height: MathHelper.Min(original.Height, min.Height));
+
+        [Inline(InlineBehavior.Remove)]
+        private static Size Max(Size original, Size max)
+            => new Size(width: MathHelper.Max(original.Width, max.Width),
+                height: MathHelper.Max(original.Height, max.Height));
 
         [Inline(InlineBehavior.Remove)]
         private static Size Clamp(Size original, Size min, Size max)

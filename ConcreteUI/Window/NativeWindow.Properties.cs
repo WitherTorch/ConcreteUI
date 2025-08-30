@@ -50,7 +50,7 @@ namespace ConcreteUI.Window
                     return;
                 _cachedBounds = value;
                 Thread.MemoryBarrier();
-                User32.SetWindowPos(handle, IntPtr.Zero, value.X, value.Y, value.Width, value.Height,
+                User32.SetWindowPos(handle, IntPtr.Zero, value,
                     WindowPositionFlags.SwapWithNoZOrder | WindowPositionFlags.SwapWithNoActivate);
             }
         }
