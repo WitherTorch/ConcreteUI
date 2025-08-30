@@ -8,6 +8,8 @@ using ConcreteUI.Internals;
 using ConcreteUI.Native;
 using ConcreteUI.Utils;
 
+using InlineMethod;
+
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Window
@@ -149,7 +151,10 @@ namespace ConcreteUI.Window
             return (DialogResult)InterlockedHelper.Read(ref _dialogResult);
         }
 
-        public void Close(CloseReason reason = CloseReason.Programmically)
+        [Inline(InlineBehavior.Keep, export: true)]
+        public void Close() => Close(CloseReason.Programmically);
+
+        public void Close(CloseReason reason)
         {
             IntPtr handle = Handle;
             if (handle == IntPtr.Zero)
