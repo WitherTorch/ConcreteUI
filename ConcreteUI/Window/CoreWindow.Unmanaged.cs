@@ -29,11 +29,12 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Fields
-        private bool _isMaximized, _isCreateByDefaultX, _isCreateByDefaultY;
-        private int _borderWidth;
-        private nint _beforeHitTest;
-        private SizeF _minimumSize, _maximumSize;
         private UnwrappableList<IWindowMessageFilter> _filterList = new UnwrappableList<IWindowMessageFilter>(1);
+        private SizeF _minimumSize, _maximumSize;
+        private nint _beforeHitTest;
+        private MouseKeys _lastMouseDownKeys;
+        private int _borderWidth;
+        private bool _isMaximized, _isCreateByDefaultX, _isCreateByDefaultY;
         #endregion
 
         #region Special Fields
@@ -222,7 +223,6 @@ namespace ConcreteUI.Window
                         (ushort keys, ushort delta) = wParam.GetWords();
                         OnMouseScroll(new MouseInteractEventArgs(
                             point: PointToClient(point),
-                            keys: (MouseKeys)keys,
                             delta: UnsafeHelper.As<ushort, short>(delta)));
                     }
                     break;
@@ -231,9 +231,12 @@ namespace ConcreteUI.Window
                 case WindowMessage.RightButtonDown:
                     {
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
+                        MouseKeys keys = ((MouseKeys)wParam) & MouseKeys._Mask;
+                        MouseKeys oldKeys = _lastMouseDownKeys;
+                        _lastMouseDownKeys = keys;
                         OnMouseDown(new MouseInteractEventArgs(
                             point: ScalingPointF(point, _windowScaleFactor),
-                            keys: (MouseKeys)wParam));
+                            keys: keys & ~oldKeys));
                     }
                     break;
                 case WindowMessage.LeftButtonUp:
@@ -241,9 +244,12 @@ namespace ConcreteUI.Window
                 case WindowMessage.RightButtonUp:
                     {
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
+                        MouseKeys keys = ((MouseKeys)wParam) & MouseKeys._Mask;
+                        MouseKeys oldKeys = _lastMouseDownKeys;
+                        _lastMouseDownKeys = keys;
                         OnMouseUp(new MouseInteractEventArgs(
                             point: ScalingPointF(point, _windowScaleFactor),
-                            keys: (MouseKeys)wParam));
+                            keys: oldKeys & ~keys));
                     }
                     break;
                 #endregion
@@ -286,6 +292,9 @@ namespace ConcreteUI.Window
                                 _titleBarButtonChangedStatus[0] = true;
                                 break;
                         }
+                        Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
+                        OnMouseMove(new MouseInteractEventArgs(
+                            point: ScalingPointF(PointToLocalCore(hwnd, point), _windowScaleFactor)));
                         _controller?.RequestUpdate(false);
                     }
                     goto default;
@@ -293,8 +302,7 @@ namespace ConcreteUI.Window
                     {
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
                         OnMouseMove(new MouseInteractEventArgs(
-                            point: ScalingPointF(point, _windowScaleFactor),
-                            keys: (MouseKeys)wParam));
+                            point: ScalingPointF(point, _windowScaleFactor)));
                         if (_beforeHitTest != (nint)HitTestValue.Client)
                         {
                             switch ((HitTestValue)_beforeHitTest)

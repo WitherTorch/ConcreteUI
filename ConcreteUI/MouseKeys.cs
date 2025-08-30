@@ -12,6 +12,7 @@ namespace ConcreteUI
         RightButton = 0x0002,
         ShiftKey = 0x0004,
         XButton1 = 0x0020,
-        XButton2 = 0x0040
+        XButton2 = 0x0040,
+        _Mask = 0x007F
     }
 }
