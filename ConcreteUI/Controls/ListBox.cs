@@ -281,6 +281,7 @@ namespace ConcreteUI.Controls
                 return;
             RectF renderingBounds = RectF.FromXYWH(bounds.X + gap, bounds.Y + gap, itemHeight - gap, itemHeight - gap);
             context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
+            RenderBackground(context);
             if (isChecked)
             {
                 RenderBackground(context, backBrush);

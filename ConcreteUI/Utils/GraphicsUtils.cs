@@ -47,14 +47,14 @@ namespace ConcreteUI.Utils
         public static RectF AdjustRectangleFAsBorderBounds(in RectF rawRect, float lineWidth)
         {
             float gap = lineWidth * 0.5f;
-            return new RectF(MathF.Floor(rawRect.Left) + gap, MathF.Floor(rawRect.Top) + gap, MathF.Ceiling(rawRect.Right) - gap, MathF.Ceiling(rawRect.Bottom) - gap);
+            return new RectF(rawRect.Left + gap, rawRect.Top + gap, rawRect.Right - gap, rawRect.Bottom - gap);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF AdjustRectangleFAsBorderBounds(in RectangleF rawRect, float lineWidth)
         {
             float gap = lineWidth * 0.5f;
-            return new RectF(MathF.Floor(rawRect.Left) + gap, MathF.Floor(rawRect.Top) + gap, MathF.Ceiling(rawRect.Right) - gap, MathF.Ceiling(rawRect.Bottom) - gap);
+            return new RectF(rawRect.Left + gap, rawRect.Top + gap, rawRect.Right - gap, rawRect.Bottom - gap);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

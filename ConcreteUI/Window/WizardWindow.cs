@@ -175,7 +175,6 @@ namespace ConcreteUI.Window
                 RectF pageRect = _pageRect;
                 rect = new RectF(titleBarRect.Left, titleBarRect.Bottom, titleBarRect.Right, pageRect.Top);
             }
-            rect = GraphicsUtils.AdjustRectangleF(rect);
             deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
             ClearDC(deviceContext);
             if (titleLayout is not null)

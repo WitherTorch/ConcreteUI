@@ -82,7 +82,7 @@ namespace ConcreteUI.Controls
         {
             D2D1DeviceContext context = Renderer.GetDeviceContext();
             float lineWidth = Renderer.GetBaseLineWidth();
-            RectF bounds = GraphicsUtils.AdjustRectangleF(Bounds);
+            RectF bounds = (RectF)Bounds;
             RectF borderBounds = GraphicsUtils.AdjustRectangleFAsBorderBounds(bounds, lineWidth);
             RectF itemBounds = RectF.FromXYWH(borderBounds.X, borderBounds.Y - lineWidth * 0.5f, borderBounds.Width, _itemHeight);
             context.PushAxisAlignedClip(bounds, D2D1AntialiasMode.Aliased);

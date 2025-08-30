@@ -401,7 +401,7 @@ namespace ConcreteUI.Controls
                     for (int i = 0; i < length; i++)
                     {
                         DWriteHitTestMetrics rangeMetrics = metricsArray![i];
-                        RectF selectionBounds = GraphicsUtils.AdjustRectangleF(new RectangleF(layoutPoint.X + rangeMetrics.Left, layoutPoint.Y + rangeMetrics.Top, rangeMetrics.Width, rangeMetrics.Height));
+                        RectF selectionBounds = new RectangleF(layoutPoint.X + rangeMetrics.Left, layoutPoint.Y + rangeMetrics.Top, rangeMetrics.Width, rangeMetrics.Height);
                         context.FillRectangle(selectionBounds, selectionBackBrush);
                     }
                 }
