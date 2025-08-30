@@ -52,7 +52,10 @@ namespace ConcreteUI
         private static void ChangeMainWindowCore(NativeWindow? mainWindow)
         {
             if (mainWindow is not null)
+            {
                 mainWindow.Destroyed += OnWindowDestroyed;
+                mainWindow.Show();
+            }
             NativeWindow? oldWindow = InterlockedHelper.Exchange(ref _mainWindow, mainWindow);
             if (oldWindow is not null)
                 oldWindow.Destroyed -= OnWindowDestroyed;
@@ -65,7 +68,6 @@ namespace ConcreteUI
             if (InterlockedHelper.CompareExchange(ref _threadIdForMessageLoop, currentThreadId, 0) != 0)
                 throw new InvalidOperationException("Message loop is already exists!");
 
-            mainWindow.Show();
             ChangeMainWindowCore(mainWindow);
             int result = catchAllExceptionIntoEventHandler ? DoMessageLoop_CatchAllException() : DoMessageLoop();
             InterlockedHelper.CompareExchange(ref _threadIdForMessageLoop, 0, currentThreadId);
@@ -246,7 +248,7 @@ namespace ConcreteUI
         {
             uint messageLoopThreadId = InterlockedHelper.Read(ref _threadIdForMessageLoop);
             if (messageLoopThreadId == 0)
-                throw new InvalidOperationException("The message loop is not exists!");
+                return null;
 
             if (_threadIdLocal.Value == messageLoopThreadId)
             {
@@ -281,7 +283,7 @@ namespace ConcreteUI
         {
             uint messageLoopThreadId = InterlockedHelper.Read(ref _threadIdForMessageLoop);
             if (messageLoopThreadId == 0)
-                throw new InvalidOperationException("The message loop is not exists!");
+                return;
 
             if (typeof(TDelegate) == typeof(Action))
                 InvokeCoreAsync(messageLoopThreadId, UnsafeHelper.As<Delegate, Action>(@delegate), cancellationToken);
@@ -304,7 +306,7 @@ namespace ConcreteUI
         {
             uint messageLoopThreadId = InterlockedHelper.Read(ref _threadIdForMessageLoop);
             if (messageLoopThreadId == 0)
-                throw new InvalidOperationException("The message loop is not exists!");
+                return null;
 
             if (typeof(TDelegate) == typeof(Action))
             {
@@ -326,7 +328,7 @@ namespace ConcreteUI
             PostInvokeMessage(threadId);
         }
 
-        private static Task InvokeTaskCoreAsync(uint threadId, Action action, CancellationToken cancellationToken)
+        private static Task<bool> InvokeTaskCoreAsync(uint threadId, Action action, CancellationToken cancellationToken)
         {
             TaskCompletionSource<bool> completionSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             _invokeClosureBag.Add(new SimpleInvokeClosure(action, completionSource, cancellationToken));
