@@ -127,8 +127,11 @@ namespace ConcreteUI.Window
                 destroyTokenSource.Cancel();
             }
             User32.EnableWindow(parent, false);
+            Destroyed += OnDestroyed;
             WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
+            Destroyed -= OnDestroyed;
             User32.EnableWindow(parent, true);
+
             if (User32.IsWindowVisible(parent))
                 User32.SetActiveWindow(parent);
         }
