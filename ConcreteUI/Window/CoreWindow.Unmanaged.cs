@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using ConcreteUI.Controls;
 using ConcreteUI.Internals;
 using ConcreteUI.Native;
+using ConcreteUI.Utils;
 
 using InlineIL;
 
@@ -326,10 +327,21 @@ namespace ConcreteUI.Window
                     goto default;
                 case WindowMessage.MouseLeave:
                 case WindowMessage.NCMouseLeave:
-                    _beforeHitTest = (nint)HitTestValue.NoWhere;
-                    _titleBarButtonStatus.Reset();
-                    _titleBarButtonChangedStatus.Set();
-                    _controller?.RequestUpdate(false);
+                    {
+                        MouseKeys lastKeys = _lastMouseDownKeys;
+                        if (lastKeys != MouseKeys.None)
+                        {
+                            _lastMouseDownKeys = MouseKeys.None;
+                            // 模擬一次 MouseUp
+                            OnMouseUp(new MouseInteractEventArgs(
+                                point: PointToClient(MouseHelper.GetMousePosition()),
+                                keys: lastKeys));
+                        }
+                        _beforeHitTest = (nint)HitTestValue.NoWhere;
+                        _titleBarButtonStatus.Reset();
+                        _titleBarButtonChangedStatus.Set();
+                        _controller?.RequestUpdate(false);
+                    }
                     goto default;
                 case WindowMessage.Paint:
                     Update();
