@@ -64,10 +64,10 @@ namespace ConcreteUI.Internals
 #if NET8_0_OR_GREATER
         [UnmanagedCallersOnly]
 #endif
-        private static unsafe nint ProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam)
+        private static unsafe nint ProcessWindowMessage(IntPtr hwnd, uint message, nint wParam, nint lParam)
         {
             WindowClassImpl? instance = _instanceLazy.GetValueDirectly();
-            if (instance is not null && instance.TryProcessWindowMessage(hwnd, message, wParam, lParam, out nint result))
+            if (instance is not null && instance.TryProcessWindowMessage(hwnd, (WindowMessage)message, wParam, lParam, out nint result))
                 return result;
             return User32.DefWindowProcW(hwnd, message, wParam, lParam);
         }

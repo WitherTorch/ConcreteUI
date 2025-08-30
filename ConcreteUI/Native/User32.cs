@@ -81,6 +81,9 @@ namespace ConcreteUI.Native
         public static extern nint DefWindowProcW(IntPtr hWnd, WindowMessage msg, nint wParam, nint lParam);
 
         [DllImport(USER32_DLL)]
+        public static extern nint DefWindowProcW(IntPtr hWnd, uint msg, nint wParam, nint lParam);
+
+        [DllImport(USER32_DLL)]
         public static extern bool ShowWindow(IntPtr hWnd, ShowWindowCommands nCmdShow);
 
         [DllImport(USER32_DLL)]
@@ -205,6 +208,12 @@ namespace ConcreteUI.Native
 
         [DllImport(USER32_DLL)]
         public static extern bool PostThreadMessageW(uint idThread, uint msg, nint wParam, nint lParam);
+
+        [DllImport(USER32_DLL)]
+        public static extern bool InSendMessage();
+
+        [DllImport(USER32_DLL)]
+        public static extern bool ReplyMessage(nint lResult);
 
         [DllImport(USER32_DLL)]
         public static extern int GetLastError();

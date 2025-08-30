@@ -475,6 +475,6 @@ namespace ConcreteUI.Controls
             => stateVectorList[index] = !stateVectorList[index];
 
         [Inline(InlineBehavior.Remove)]
-        private void ClearCheckStateCore() => _stateVectorList.Clear();
+        private void ClearCheckStateCore() => _stateVectorList.SetAllBitsAsFalse();
     }
 }
