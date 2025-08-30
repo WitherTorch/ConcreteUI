@@ -78,6 +78,7 @@ namespace ConcreteUI.Window
                 WindowMessage.Size => HandleSize(wParam),
                 WindowMessage.Paint => HandlePaint(),
                 WindowMessage.EraseBackground => HandleEraseBackground(out result),
+                WindowMessage.ShowWindow => HandleShowWindow(wParam: wParam, lParam: lParam),
                 _ => false,
             };
         }
@@ -120,12 +121,12 @@ namespace ConcreteUI.Window
             switch (wParam)
             {
                 case 0: // WA_INACTIVE
-                    if ((InterlockedHelper.And(ref _windowState, ~(nuint)0b01) & 0b01) == 0b01)
+                    if ((InterlockedHelper.And(ref _windowFlags, ~(nuint)0b100) & 0b100) == 0b100)
                         OnFocusedChanged(EventArgs.Empty);
                     break;
                 case 1: // WA_ACTIVE
                 case 2: // WA_CLICKACTIVE
-                    if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) != 0b01)
+                    if ((InterlockedHelper.Or(ref _windowFlags, 0b100) & 0b100) != 0b100)
                         OnFocusedChanged(EventArgs.Empty);
                     break;
             }
@@ -143,7 +144,7 @@ namespace ConcreteUI.Window
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool HandleDestroyed()
         {
-            if (InterlockedHelper.Exchange(ref _windowState, UnsafeHelper.GetMaxValue<nuint>()) != UnsafeHelper.GetMaxValue<nuint>())
+            if (InterlockedHelper.Exchange(ref _windowFlags, UnsafeHelper.GetMaxValue<nuint>()) != UnsafeHelper.GetMaxValue<nuint>())
             {
                 IntPtr handle = _handleLazy.Value;
                 if (handle == IntPtr.Zero)
@@ -232,21 +233,21 @@ namespace ConcreteUI.Window
             {
                 case 2: // SIZE_MAXIMIZED
                     {
-                        WindowState oldState = (WindowState)InterlockedHelper.Exchange(ref _windowState, (nuint)WindowState.Maximized);
+                        WindowState oldState = (WindowState)InterlockedHelper.Exchange(ref _windowState, (uint)WindowState.Maximized);
                         if (oldState != WindowState.Maximized)
                             OnWindowStateChanged(new WindowStateChangedEventArgs(oldState, WindowState.Maximized));
                     }
                     break;
                 case 1: // SIZE_MINIMIZED
                     {
-                        WindowState oldState = (WindowState)InterlockedHelper.Exchange(ref _windowState, (nuint)WindowState.Minimized);
+                        WindowState oldState = (WindowState)InterlockedHelper.Exchange(ref _windowState, (uint)WindowState.Minimized);
                         if (oldState != WindowState.Minimized)
                             OnWindowStateChanged(new WindowStateChangedEventArgs(oldState, WindowState.Minimized));
                     }
                     break;
                 case 0: // SIZE_RESTORED
                     {
-                        WindowState oldState = (WindowState)InterlockedHelper.Exchange(ref _windowState, (nuint)WindowState.Normal);
+                        WindowState oldState = (WindowState)InterlockedHelper.Exchange(ref _windowState, (uint)WindowState.Normal);
                         if (oldState != WindowState.Normal)
                             OnWindowStateChanged(new WindowStateChangedEventArgs(oldState, WindowState.Normal));
                     }
@@ -272,6 +273,13 @@ namespace ConcreteUI.Window
             graphics.Clear(GdiColor.Black);
             User32.EndPaint(handle, &paintStruct);
             return true;
+        }
+
+        private bool HandleShowWindow(nint wParam, nint lParam)
+        {
+            if (wParam != 0 && lParam == 0 && (InterlockedHelper.Or(ref _windowFlags, 0b10) & 0b10) != 0b10)
+                WindowMessageLoop.InvokeAsync(() => OnShown(EventArgs.Empty));
+            return false;
         }
 
         private static bool HandleEraseBackground(out nint result)

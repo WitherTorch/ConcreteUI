@@ -177,9 +177,9 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Override Methods
-        protected override void ShowCore()
+        protected override void OnShown(EventArgs args)
         {
-            base.ShowCore();
+            base.OnShown(args);
             UpdateFirstTime();
             WindowMessageLoop.InvokeAsync(OnShown2);
         }

@@ -9,6 +9,7 @@ namespace ConcreteUI.Window
 
     partial class NativeWindow
     {
+        public event EventHandler? Shown;
         public event EventHandler? Destroyed;
         public event EventHandler? FocusedChanged;
         public event EventHandler? Resizing;
@@ -16,6 +17,7 @@ namespace ConcreteUI.Window
         public event WindowStateChangedEventHandler? WindowStateChanged;
         public event ClosingEventHandler? Closing;
 
+        protected virtual void OnShown(EventArgs args) => Shown?.Invoke(this, args);
         protected virtual void OnDestroyed(EventArgs args) => Destroyed?.Invoke(this, args);
         protected virtual void OnFocusedChanged(EventArgs args) => FocusedChanged?.Invoke(this, args);
         protected virtual void OnResizing(EventArgs args) => Resizing?.Invoke(this, args);

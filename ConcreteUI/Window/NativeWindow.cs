@@ -23,13 +23,14 @@ namespace ConcreteUI.Window
         private Icon? _cachedIcon;
         private string? _cachedText;
         private Rectangle _cachedBounds;
-        /* Window state
-         * bit[0] = already shown or not
-         * bit[1] = focused or not
+        /* Window flags
+         * bit[0] = show() called or not
+         * bit[1] = already shown or not
+         * bit[2] = focused or not
          * (all bit set) = handle is destroyed
          */
-        private nuint _windowState;
-        private uint _closeReason, _dialogResult;
+        private nuint _windowFlags;
+        private uint _windowState, _closeReason, _dialogResult;
         private bool _disposed;
 
         public NativeWindow(IHwndOwner? parent = null)
@@ -47,43 +48,21 @@ namespace ConcreteUI.Window
 
         public void Show()
         {
-            if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) == 0b01)
+            if ((InterlockedHelper.Or(ref _windowFlags, 0b01) & 0b01) == 0b01)
                 return;
-            WindowMessageLoop.Invoke(() =>
-            {
-                Lazy<IntPtr> handleLazy = _handleLazy;
-                if (!handleLazy.IsValueCreated)
-                {
-                    IntPtr handle = handleLazy.Value;
-                    if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
-                        DebugHelper.Throw();
-                    OnHandleCreated(handle);
-                }
-                ShowCore();
-            });
+            WindowMessageLoop.Invoke(ShowCore);
         }
 
         public async Task ShowAsync()
         {
-            if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) == 0b01)
+            if ((InterlockedHelper.Or(ref _windowFlags, 0b01) & 0b01) == 0b01)
                 return;
-            await WindowMessageLoop.InvokeTaskAsync(() =>
-            {
-                Lazy<IntPtr> handleLazy = _handleLazy;
-                if (!handleLazy.IsValueCreated)
-                {
-                    IntPtr handle = handleLazy.Value;
-                    if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
-                        DebugHelper.Throw();
-                    OnHandleCreated(handle);
-                }
-                ShowCore();
-            });
+            await WindowMessageLoop.InvokeTaskAsync(ShowCore);
         }
 
         public DialogResult ShowDialog()
         {
-            if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) == 0b01)
+            if ((InterlockedHelper.Or(ref _windowFlags, 0b01) & 0b01) == 0b01)
                 return DialogResult.Invalid;
             WindowMessageLoop.Invoke(ShowDialogCore);
             return (DialogResult)InterlockedHelper.Read(ref _dialogResult);
@@ -91,13 +70,15 @@ namespace ConcreteUI.Window
 
         public async Task<DialogResult> ShowDialogAsync()
         {
-            if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) == 0b01)
+            if ((InterlockedHelper.Or(ref _windowFlags, 0b01) & 0b01) == 0b01)
                 return DialogResult.Invalid;
             await WindowMessageLoop.InvokeTaskAsync(ShowDialogCore);
             return (DialogResult)InterlockedHelper.Read(ref _dialogResult);
         }
 
-        private void ShowDialogCore()
+        private void ShowCore() => ShowCoreWithReturn();
+
+        private IntPtr ShowCoreWithReturn()
         {
             Lazy<IntPtr> handleLazy = _handleLazy;
             IntPtr handle;
@@ -111,7 +92,13 @@ namespace ConcreteUI.Window
             else
                 handle = handleLazy.Value;
 
-            ShowCore();
+            ShowWindow(handle, WindowState.Normal);
+            return handle;
+        }
+
+        private void ShowDialogCore()
+        {
+            IntPtr handle = ShowCoreWithReturn();
             IntPtr parent = User32.GetWindow(handle, GetWindowCommand.Owner);
             if (parent == IntPtr.Zero)
             {
@@ -146,19 +133,6 @@ namespace ConcreteUI.Window
                 return;
             InterlockedHelper.Exchange(ref _closeReason, (uint)reason);
             User32.PostMessageW(handle, WindowMessage.Close, 0, 0);
-        }
-
-        protected virtual void ShowCore()
-        {
-            IntPtr handle = Handle;
-            if (handle == IntPtr.Zero)
-            {
-                Thread.MemoryBarrier();
-                handle = Handle;
-                if (handle == IntPtr.Zero)
-                    return;
-            }
-            ShowCore(handle, WindowState.Normal);
         }
     }
 }

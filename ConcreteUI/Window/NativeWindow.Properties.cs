@@ -218,13 +218,13 @@ namespace ConcreteUI.Window
                 if (handle == IntPtr.Zero)
                     return;
 
-                ShowCore(handle, value);
+                ShowWindow(handle, value);
             }
         }
 
         public bool Focused
         {
-            get => (InterlockedHelper.Read(ref _windowState) & 0b10) == 0b10;
+            get => (InterlockedHelper.Read(ref _windowFlags) & 0b100) == 0b100;
         }
 
         public WindowStyles Styles

@@ -13,7 +13,7 @@ namespace ConcreteUI.Window
     partial class NativeWindow
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void ShowCore(IntPtr handle, WindowState showState)
+        private static void ShowWindow(IntPtr handle, WindowState showState)
             => User32.ShowWindow(handle, showState switch
             {
                 WindowState.Normal => ShowWindowCommands.ShowNormal,
@@ -66,7 +66,7 @@ namespace ConcreteUI.Window
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool IsWindowDestroyed()
-            => InterlockedHelper.Read(ref _windowState) == UnsafeHelper.GetMaxValue<nuint>();
+            => InterlockedHelper.Read(ref _windowFlags) == UnsafeHelper.GetMaxValue<nuint>();
 
         ~NativeWindow() => Dispose(disposing: false);
 
