@@ -93,6 +93,9 @@ namespace ConcreteUI.Native
         public static extern IntPtr GetActiveWindow();
 
         [DllImport(USER32_DLL)]
+        public static extern IntPtr SetActiveWindow(IntPtr hwnd);
+
+        [DllImport(USER32_DLL)]
         public static extern bool DestroyWindow(IntPtr hwnd);
 
         [DllImport(USER32_DLL)]

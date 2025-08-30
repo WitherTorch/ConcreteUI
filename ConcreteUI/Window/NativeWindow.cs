@@ -85,37 +85,7 @@ namespace ConcreteUI.Window
         {
             if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) == 0b01)
                 return DialogResult.Invalid;
-            WindowMessageLoop.Invoke(() =>
-            {
-                Lazy<IntPtr> handleLazy = _handleLazy;
-                IntPtr handle;
-                if (!handleLazy.IsValueCreated)
-                {
-                    handle = handleLazy.Value;
-                    if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
-                        DebugHelper.Throw();
-                    OnHandleCreated(handle);
-                }
-                else
-                    handle = handleLazy.Value;
-
-                ShowCore();
-                IntPtr parent = User32.GetWindow(handle, GetWindowCommand.Owner);
-                if (parent == IntPtr.Zero)
-                    parent = User32.GetActiveWindow();
-                using CancellationTokenSource destroyTokenSource = new CancellationTokenSource();
-                void OnDestroyed(object? sender, EventArgs args)
-                {
-                    Destroyed -= OnDestroyed;
-                    destroyTokenSource.Cancel();
-                }
-
-                Destroyed += OnDestroyed;
-                User32.EnableWindow(parent, false);
-                WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
-                User32.EnableWindow(parent, true);
-                Destroyed -= OnDestroyed;
-            });
+            WindowMessageLoop.Invoke(ShowDialogCore);
             return (DialogResult)InterlockedHelper.Read(ref _dialogResult);
         }
 
@@ -123,35 +93,43 @@ namespace ConcreteUI.Window
         {
             if ((InterlockedHelper.Or(ref _windowState, 0b01) & 0b01) == 0b01)
                 return DialogResult.Invalid;
-            await WindowMessageLoop.InvokeTaskAsync(() =>
-            {
-                Lazy<IntPtr> handleLazy = _handleLazy;
-                IntPtr handle;
-                if (!handleLazy.IsValueCreated)
-                {
-                    handle = handleLazy.Value;
-                    if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
-                        DebugHelper.Throw();
-                    OnHandleCreated(handle);
-                }
-                else
-                    handle = handleLazy.Value;
-
-                ShowCore();
-                IntPtr parent = User32.GetWindow(handle, GetWindowCommand.Owner);
-                if (parent == IntPtr.Zero)
-                    parent = User32.GetActiveWindow();
-                using CancellationTokenSource destroyTokenSource = new CancellationTokenSource();
-                void OnDestroyed(object? sender, EventArgs args)
-                {
-                    Destroyed -= OnDestroyed;
-                    destroyTokenSource.Cancel();
-                }
-                User32.EnableWindow(parent, false);
-                WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
-                User32.EnableWindow(parent, true);
-            });
+            await WindowMessageLoop.InvokeTaskAsync(ShowDialogCore);
             return (DialogResult)InterlockedHelper.Read(ref _dialogResult);
+        }
+
+        private void ShowDialogCore()
+        {
+            Lazy<IntPtr> handleLazy = _handleLazy;
+            IntPtr handle;
+            if (!handleLazy.IsValueCreated)
+            {
+                handle = handleLazy.Value;
+                if (!WindowClassImpl.Instance.TryRegisterWindowUnsafe(handle, this))
+                    DebugHelper.Throw();
+                OnHandleCreated(handle);
+            }
+            else
+                handle = handleLazy.Value;
+
+            ShowCore();
+            IntPtr parent = User32.GetWindow(handle, GetWindowCommand.Owner);
+            if (parent == IntPtr.Zero)
+            {
+                const int GWLP_HWNDPARENT = -8;
+
+                parent = User32.GetActiveWindow();
+                User32.SetWindowLongPtrW(handle, GWLP_HWNDPARENT, parent);
+            }
+            using CancellationTokenSource destroyTokenSource = new CancellationTokenSource();
+            void OnDestroyed(object? sender, EventArgs args)
+            {
+                Destroyed -= OnDestroyed;
+                destroyTokenSource.Cancel();
+            }
+            User32.EnableWindow(parent, false);
+            WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
+            User32.EnableWindow(parent, true);
+            User32.SetActiveWindow(parent);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
