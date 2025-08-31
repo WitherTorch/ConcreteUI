@@ -100,27 +100,27 @@ namespace ConcreteUI
         [Inline(InlineBehavior.Remove)]
         private static unsafe int DoMessageLoop_Model([InlineParameter] bool catchException)
         {
-            while (User32.MsgWaitForMultipleObjects(0, null, true, uint.MaxValue, StatusFlags) == 0)
+            PumpingMessage msg;
+            SysBool status;
+            while (status = User32.GetMessageW(&msg, IntPtr.Zero, 0u, 0u))
             {
-                PumpingMessage msg;
-                while (User32.PeekMessageW(&msg, IntPtr.Zero, 0u, 0u, PeekMessageOptions.Remove))
-                {
-                    if (msg.message == WindowMessage.Quit)
-                        return unchecked((int)msg.wParam);
+                if (status.IsFailed)
+                    goto Failed;
 
-                    if (TryFilterMessage(ref msg, catchException: false, out nint result))
-                    {
-                        if (User32.InSendMessage())
-                            User32.ReplyMessage(result);
-                    }
-                    else
-                    {
-                        User32.TranslateMessage(&msg);
-                        User32.DispatchMessageW(&msg);
-                    }
+                if (TryFilterMessage(ref msg, catchException: false, out nint result))
+                {
+                    if (User32.InSendMessage())
+                        User32.ReplyMessage(result);
+                }
+                else
+                {
+                    User32.TranslateMessage(&msg);
+                    User32.DispatchMessageW(&msg);
                 }
             }
+            return unchecked((int)msg.wParam);
 
+        Failed:
             if (catchException)
             {
                 MessageLoopExceptionEventHandler? eventHandler = ExceptionCaught;
