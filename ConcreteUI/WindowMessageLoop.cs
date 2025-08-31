@@ -68,8 +68,8 @@ namespace ConcreteUI
             uint currentThreadId = _threadIdLocal.Value;
             if (InterlockedHelper.CompareExchange(ref _threadIdForMessageLoop, currentThreadId, 0) != 0)
                 throw new InvalidOperationException("Message loop is already exists!");
-            InvokeMessageFilter invokeMessageFilter = new InvokeMessageFilter(catchAllExceptionIntoEventHandler);
-            invokeMessageFilter.ExceptionCaught += static (sender, args) => ExceptionCaught?.Invoke(sender, args);
+            InvokeMessageFilter invokeMessageFilter = 
+                catchAllExceptionIntoEventHandler ? new InvokeMessageFilterSafe() : new InvokeMessageFilter();
             AddMessageFilter(invokeMessageFilter);
             InterlockedHelper.Exchange(ref _invokeMessageFilter, invokeMessageFilter)?.ProcessAllInvoke();
 
@@ -475,7 +475,7 @@ namespace ConcreteUI
                 return Task.FromResult<object?>(null);
 
             if (typeof(TDelegate) == typeof(Action<TArg1, TArg2>))
-                return InvokeTaskCoreAsync(messageLoopThreadId, 
+                return InvokeTaskCoreAsync(messageLoopThreadId,
                     UnsafeHelper.As<Delegate, Action<TArg1, TArg2, TArg3>>(@delegate), arg1, arg2, arg3, CancellationToken.None);
             return InvokeTaskCoreAsync(messageLoopThreadId, @delegate, [arg1, arg2, arg3], CancellationToken.None);
         }
@@ -617,75 +617,6 @@ namespace ConcreteUI
                 return;
             User32.PostThreadMessageW(threadId, CustomWindowMessages.ConcreteWindowInvoke, 0, 0);
             InterlockedHelper.Exchange(ref _invokeBarrier, Booleans.FalseInt);
-        }
-
-        private sealed class InvokeMessageFilter : IWindowMessageFilter
-        {
-            public event MessageLoopExceptionEventHandler? ExceptionCaught;
-
-            private readonly ConcurrentBag<IInvokeClosure> _invokeClosureBag = new ConcurrentBag<IInvokeClosure>();
-            private readonly bool _catchExceptions;
-
-            private int _readBarrier;
-
-            public InvokeMessageFilter(bool catchExceptions)
-            {
-                _readBarrier = 0;
-                _catchExceptions = catchExceptions;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void AddInvoke(IInvokeClosure closure) => _invokeClosureBag.Add(closure);
-
-            public bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
-            {
-                result = 0;
-                if (hwnd != IntPtr.Zero || (uint)message != CustomWindowMessages.ConcreteWindowInvoke)
-                    return false;
-
-                ProcessAllInvoke();
-                return true;
-            }
-
-            public void ProcessAllInvoke()
-            {
-                ConcurrentBag<IInvokeClosure> invokeClosureBag = _invokeClosureBag;
-
-                if (InterlockedHelper.CompareExchange(ref _readBarrier, Booleans.TrueInt, Booleans.FalseInt) != Booleans.FalseInt)
-                    return;
-
-                try
-                {
-                    if (!invokeClosureBag.TryTake(out IInvokeClosure? closure))
-                        return;
-
-                    if (_catchExceptions)
-                    {
-                        do
-                        {
-                            try
-                            {
-                                closure.Invoke();
-                            }
-                            catch (Exception ex)
-                            {
-                                ExceptionCaught?.Invoke(this, new MessageLoopExceptionEventArgs(ex));
-                            }
-                        } while (invokeClosureBag.TryTake(out closure));
-                    }
-                    else
-                    {
-                        do
-                        {
-                            closure.Invoke();
-                        } while (invokeClosureBag.TryTake(out closure));
-                    }
-                }
-                finally
-                {
-                    Interlocked.Exchange(ref _readBarrier, Booleans.FalseInt);
-                }
-            }
         }
     }
 }
