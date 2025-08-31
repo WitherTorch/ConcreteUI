@@ -159,42 +159,48 @@ namespace ConcreteUI
                 Kernel32.SetWaitableTimer(timerHandle, &time, 0, null, null, false);
             }, timerHandleBox, useSynchronizationContext: true);
 
-            while (true)
+            try
             {
-                uint handleIndex = User32.MsgWaitForMultipleObjects(1, &timerHandle, false, uint.MaxValue, StatusFlags);
-                switch (handleIndex)
+                while (true)
                 {
-                    case 0:
-                        {
-                            PumpingMessage msg;
-                            while (User32.PeekMessageW(&msg, IntPtr.Zero, 0u, 0u, PeekMessageOptions.Remove))
+                    uint handleIndex = User32.MsgWaitForMultipleObjects(1, &timerHandle, false, uint.MaxValue, StatusFlags);
+                    switch (handleIndex)
+                    {
+                        case 0:
+                            return;
+                        case 1:
                             {
-                                if (msg.message == WindowMessage.Quit)
-                                    User32.PostQuitMessage(unchecked((int)msg.wParam));
+                                PumpingMessage msg;
+                                while (User32.PeekMessageW(&msg, IntPtr.Zero, 0u, 0u, PeekMessageOptions.Remove))
+                                {
+                                    if (msg.message == WindowMessage.Quit)
+                                        User32.PostQuitMessage(unchecked((int)msg.wParam));
 
-                                if (TryFilterMessage(ref msg, catchException: false, out nint result))
-                                {
-                                    if (User32.InSendMessage())
-                                        User32.ReplyMessage(result);
-                                }
-                                else
-                                {
-                                    User32.TranslateMessage(&msg);
-                                    User32.DispatchMessageW(&msg);
+                                    if (TryFilterMessage(ref msg, catchException: false, out nint result))
+                                    {
+                                        if (User32.InSendMessage())
+                                            User32.ReplyMessage(result);
+                                    }
+                                    else
+                                    {
+                                        User32.TranslateMessage(&msg);
+                                        User32.DispatchMessageW(&msg);
+                                    }
                                 }
                             }
-                        }
-                        break;
-                    case 1:
-                        InterlockedHelper.Exchange(ref timerHandleBox.Value, IntPtr.Zero);
-                        Kernel32.CloseHandle(timerHandle);
-                        return;
-                    case uint.MaxValue:
-                        Marshal.ThrowExceptionForHR(User32.GetLastError());
-                        return;
-                    default:
-                        throw new InvalidOperationException("Invalid state!");
+                            break;
+                        case uint.MaxValue:
+                            Marshal.ThrowExceptionForHR(User32.GetLastError());
+                            return;
+                        default:
+                            throw new InvalidOperationException("Invalid state!");
+                    }
                 }
+            }
+            finally
+            {
+                InterlockedHelper.Exchange(ref timerHandleBox.Value, IntPtr.Zero);
+                Kernel32.CloseHandle(timerHandle);
             }
         }
 
