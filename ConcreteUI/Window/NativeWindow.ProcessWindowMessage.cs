@@ -152,6 +152,7 @@ namespace ConcreteUI.Window
                 if (!WindowClassImpl.Instance.UnregisterWindowUnsafe(handle, this))
                     DebugHelper.Throw();
                 OnDestroyed(EventArgs.Empty);
+                Dispose();
             }
             return true;
         }

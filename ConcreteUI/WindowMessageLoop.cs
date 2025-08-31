@@ -63,7 +63,7 @@ namespace ConcreteUI
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int Start(NativeWindow mainWindow, bool disposeAfterDestroyed = true, bool catchAllExceptionIntoEventHandler = false)
+        public static int Start(NativeWindow mainWindow, bool catchAllExceptionIntoEventHandler = false)
         {
             uint currentThreadId = _threadIdLocal.Value;
             if (InterlockedHelper.CompareExchange(ref _threadIdForMessageLoop, currentThreadId, 0) != 0)
@@ -84,8 +84,6 @@ namespace ConcreteUI
                 invokeMessageFilter.ProcessAllInvoke();
             }
             ChangeMainWindowCore(null);
-            if (disposeAfterDestroyed)
-                mainWindow.Dispose();
             return result;
         }
 

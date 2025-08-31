@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 using ConcreteUI.Internals;
 using ConcreteUI.Native;
@@ -72,6 +73,7 @@ namespace ConcreteUI.Window
 
         public void Dispose()
         {
+            Thread.MemoryBarrier();
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
@@ -81,6 +83,8 @@ namespace ConcreteUI.Window
             if (_disposed)
                 return;
             _disposed = true;
+            if (disposing)
+                Thread.MemoryBarrier();
 
             DisposeCore(disposing);
         }
