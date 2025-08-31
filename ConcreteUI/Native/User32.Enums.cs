@@ -248,4 +248,46 @@ namespace ConcreteUI.Native
         Child = 5,
         EnabledPopup = 6,
     }
+
+    /// <summary>
+    /// Queue status flags for GetQueueStatus() and MsgWaitForMultipleObjects()
+    /// </summary>
+    [Flags]
+    internal enum QueueStatusFlags : uint
+    {
+        Key = 0x0001,
+        MouseMove = 0x0002,
+        MouseButton = 0x0004,
+        PostMessage = 0x0008,
+        Timer = 0x0010,
+        Paint = 0x0020,
+        SendMessage = 0x0040,
+        HotKey = 0x0080,
+        AllPostMessage = 0x0100,
+        RawInput = 0x0400,
+        Touch = 0x0800,
+        Pointer = 0x1000,
+        Mouse = MouseMove | MouseButton,
+        Input = Mouse | Key | RawInput | Touch | Pointer,
+        InputOld = Mouse | Key | RawInput,
+        AllEvents = Input | PostMessage | Timer | Paint | HotKey,
+        AllEventsOld = InputOld | PostMessage | Timer | Paint | HotKey,
+        AllInput = Input | PostMessage | Timer | Paint | HotKey | SendMessage,
+        AllInputOld = InputOld | PostMessage | Timer | Paint | HotKey | SendMessage
+    }
+
+    /// <summary>
+    /// PeekMessage() Options
+    /// </summary>
+    [Flags]
+    internal enum PeekMessageOptions : uint
+    {
+        NoRemove = 0x0000,
+        Remove = 0x0001,
+        NoYield = 0x0002,
+        QueuedInput = QueueStatusFlags.Input << 16,
+        QueuedPostMessage = (QueueStatusFlags.PostMessage | QueueStatusFlags.HotKey | QueueStatusFlags.Timer) << 16,
+        QueuedPaint = QueueStatusFlags.Paint << 16,
+        QueuedSendMessage = QueueStatusFlags.SendMessage << 16
+    }
 }

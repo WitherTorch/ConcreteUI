@@ -559,7 +559,7 @@ namespace ConcreteUI.Window
             IL.Emit.Ldarg_1();
             IL.Push(hitTest);
             IL.Emit.Calli(StandAloneMethodSig.ManagedMethod(System.Reflection.CallingConventions.HasThis,
-                typeof(HitTestValue), TypeRef.Type<PointF>().MakeByRefType()));
+                typeof(HitTestValue), typeof(PointF)));
             return IL.Return<HitTestValue>();
         }
         #endregion

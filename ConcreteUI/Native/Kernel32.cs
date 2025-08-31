@@ -26,5 +26,14 @@ namespace ConcreteUI.Native
 
         [DllImport(KERNEL32_DLL)]
         public static extern bool GlobalUnlock(IntPtr hMem);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern IntPtr CreateWaitableTimerW(void* lpTimerAttributes, bool bManualReset, char* lpTimerName);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern bool SetWaitableTimer(IntPtr hTimer, long* lpDueTime, nint lPeriod, void* pfnCompletionRoutine, void* lpArgToCompletionRoutine, bool fResume);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern bool CloseHandle(IntPtr hObject);
     }
 }

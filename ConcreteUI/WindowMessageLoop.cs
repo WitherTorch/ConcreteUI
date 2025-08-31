@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 using ConcreteUI.Internals;
 using ConcreteUI.Native;
+using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
 using InlineMethod;
@@ -22,6 +23,8 @@ namespace ConcreteUI
 {
     public static partial class WindowMessageLoop
     {
+        private static readonly QueueStatusFlags StatusFlags = SystemHelper.IsWindows8OrHigher() ? QueueStatusFlags.AllInput : QueueStatusFlags.AllInputOld;
+
         private static readonly ThreadLocal<uint> _threadIdLocal = new ThreadLocal<uint>(Kernel32.GetCurrentThreadId, trackAllValues: false);
         private static readonly List<IWindowMessageFilter> _filterList = new List<IWindowMessageFilter>();
 
@@ -97,73 +100,102 @@ namespace ConcreteUI
         [Inline(InlineBehavior.Remove)]
         private static unsafe int DoMessageLoop_Model([InlineParameter] bool catchException)
         {
-            PumpingMessage msg;
-            SysBool success;
-
-            while (success = User32.GetMessageW(&msg, IntPtr.Zero, 0u, 0u))
+            while (User32.MsgWaitForMultipleObjects(0, null, true, uint.MaxValue, StatusFlags) == 0)
             {
-                if (success.IsFailed)
+                PumpingMessage msg;
+                while (User32.PeekMessageW(&msg, IntPtr.Zero, 0u, 0u, PeekMessageOptions.Remove))
                 {
-                    if (catchException)
+                    if (msg.message == WindowMessage.Quit)
+                        return unchecked((int)msg.wParam);
+
+                    if (TryFilterMessage(ref msg, catchException: false, out nint result))
                     {
-                        MessageLoopExceptionEventHandler? eventHandler = ExceptionCaught;
-                        if (eventHandler is not null)
-                        {
-                            Exception? exception = Marshal.GetExceptionForHR(User32.GetLastError());
-                            if (exception is not null)
-                                eventHandler.Invoke(null, new MessageLoopExceptionEventArgs(exception));
-                        }
+                        if (User32.InSendMessage())
+                            User32.ReplyMessage(result);
                     }
                     else
                     {
-                        Marshal.ThrowExceptionForHR(User32.GetLastError());
+                        User32.TranslateMessage(&msg);
+                        User32.DispatchMessageW(&msg);
                     }
-                    return -1;
-                }
-                if (TryFilterMessage(ref msg, catchException: false, out nint result))
-                {
-                    if (User32.InSendMessage())
-                        User32.ReplyMessage(result);
-                }
-                else
-                {
-                    User32.TranslateMessage(&msg);
-                    User32.DispatchMessageW(&msg);
                 }
             }
 
-            return unchecked((int)msg.wParam);
+            if (catchException)
+            {
+                MessageLoopExceptionEventHandler? eventHandler = ExceptionCaught;
+                if (eventHandler is not null)
+                {
+                    Exception? exception = Marshal.GetExceptionForHR(User32.GetLastError());
+                    if (exception is not null)
+                        eventHandler.Invoke(null, new MessageLoopExceptionEventArgs(exception));
+                }
+            }
+            else
+            {
+                Marshal.ThrowExceptionForHR(User32.GetLastError());
+            }
+            return -1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void StartMiniLoop(CancellationToken cancellationToken)
         {
-            PumpingMessage msg;
-            SysBool success;
+            if (cancellationToken.IsCancellationRequested)
+                return;
 
-            while (success = User32.GetMessageW(&msg, IntPtr.Zero, 0u, 0u))
+            IntPtr timerHandle = Kernel32.CreateWaitableTimerW(null, true, null);
+            StrongBox<IntPtr> timerHandleBox = new StrongBox<IntPtr>(timerHandle);
+
+            using CancellationTokenRegistration registration = cancellationToken.Register(static (state) =>
             {
-                if (success.IsFailed)
-                {
-                    Marshal.ThrowExceptionForHR(User32.GetLastError());
-                    User32.PostQuitMessage(-1);
+                if (state is not StrongBox<IntPtr> timerHandleBox)
                     return;
-                }
-                if (TryFilterMessage(ref msg, catchException: false, out nint result))
-                {
-                    if (User32.InSendMessage())
-                        User32.ReplyMessage(result);
-                }
-                else
-                {
-                    User32.TranslateMessage(&msg);
-                    User32.DispatchMessageW(&msg);
-                }
-                if (cancellationToken.IsCancellationRequested)
+                IntPtr timerHandle = InterlockedHelper.Read(ref timerHandleBox.Value);
+                if (timerHandle == IntPtr.Zero)
                     return;
-                continue;
+
+                long time = -1;
+                Kernel32.SetWaitableTimer(timerHandle, &time, 0, null, null, false);
+            }, timerHandleBox, useSynchronizationContext: true);
+
+            while (true)
+            {
+                uint handleIndex = User32.MsgWaitForMultipleObjects(1, &timerHandle, false, uint.MaxValue, StatusFlags);
+                switch (handleIndex)
+                {
+                    case 0:
+                        {
+                            PumpingMessage msg;
+                            while (User32.PeekMessageW(&msg, IntPtr.Zero, 0u, 0u, PeekMessageOptions.Remove))
+                            {
+                                if (msg.message == WindowMessage.Quit)
+                                    User32.PostQuitMessage(unchecked((int)msg.wParam));
+
+                                if (TryFilterMessage(ref msg, catchException: false, out nint result))
+                                {
+                                    if (User32.InSendMessage())
+                                        User32.ReplyMessage(result);
+                                }
+                                else
+                                {
+                                    User32.TranslateMessage(&msg);
+                                    User32.DispatchMessageW(&msg);
+                                }
+                            }
+                        }
+                        break;
+                    case 1:
+                        InterlockedHelper.Exchange(ref timerHandleBox.Value, IntPtr.Zero);
+                        Kernel32.CloseHandle(timerHandle);
+                        return;
+                    case uint.MaxValue:
+                        Marshal.ThrowExceptionForHR(User32.GetLastError());
+                        return;
+                    default:
+                        throw new InvalidOperationException("Invalid state!");
+                }
             }
-            User32.PostQuitMessage((int)msg.wParam);
         }
 
         [Inline(InlineBehavior.Remove)]

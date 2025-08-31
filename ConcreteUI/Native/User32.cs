@@ -10,6 +10,8 @@ using ConcreteUI.Window;
 
 using InlineMethod;
 
+using WitherTorch.Common.Buffers;
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Windows.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
@@ -63,7 +65,7 @@ namespace ConcreteUI.Native
         public static extern bool GetClientRect(IntPtr hWnd, Rect* lpRect);
 
         [DllImport(USER32_DLL)]
-        public static extern bool ScreenToClient(IntPtr hWnd, Point* lpPoint);  
+        public static extern bool ScreenToClient(IntPtr hWnd, Point* lpPoint);
 
         [DllImport(USER32_DLL)]
         public static extern bool SetWindowTextW(IntPtr hWnd, char* lpString);
@@ -163,6 +165,9 @@ namespace ConcreteUI.Native
         public static extern SysBool GetMessageW(PumpingMessage* lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
 
         [DllImport(USER32_DLL)]
+        public static extern bool PeekMessageW(PumpingMessage* lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax, PeekMessageOptions wRemoveMsg);
+
+        [DllImport(USER32_DLL)]
         public static extern SysBool TranslateMessage(PumpingMessage* lpMsg);
 
         [DllImport(USER32_DLL)]
@@ -242,6 +247,9 @@ namespace ConcreteUI.Native
 
         [DllImport(USER32_DLL)]
         public static extern bool PostThreadMessageW(uint idThread, WindowMessage msg, nint wParam, nint lParam);
+
+        [DllImport(USER32_DLL)]
+        public static extern uint MsgWaitForMultipleObjects(uint nCount, IntPtr* pHandles, bool fWaitAll, uint dwMilliseconds, QueueStatusFlags dwWakeMask);
 
         [DllImport(USER32_DLL)]
         public static extern bool PostThreadMessageW(uint idThread, uint msg, nint wParam, nint lParam);
