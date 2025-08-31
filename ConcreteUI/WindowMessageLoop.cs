@@ -1,5 +1,6 @@
 ﻿using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -13,7 +14,7 @@ using ConcreteUI.Window;
 using InlineMethod;
 
 using WitherTorch.Common;
-using WitherTorch.Common.Collections;
+using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
@@ -22,7 +23,7 @@ namespace ConcreteUI
     public static partial class WindowMessageLoop
     {
         private static readonly ThreadLocal<uint> _threadIdLocal = new ThreadLocal<uint>(Kernel32.GetCurrentThreadId, trackAllValues: false);
-        private static readonly UnwrappableList<IWindowMessageFilter> _filterList = new UnwrappableList<IWindowMessageFilter>();
+        private static readonly List<IWindowMessageFilter> _filterList = new List<IWindowMessageFilter>();
 
         private static NativeWindow? _mainWindow;
         private static InvokeMessageFilter? _invokeMessageFilter;
@@ -68,7 +69,7 @@ namespace ConcreteUI
             uint currentThreadId = _threadIdLocal.Value;
             if (InterlockedHelper.CompareExchange(ref _threadIdForMessageLoop, currentThreadId, 0) != 0)
                 throw new InvalidOperationException("Message loop is already exists!");
-            InvokeMessageFilter invokeMessageFilter = 
+            InvokeMessageFilter invokeMessageFilter =
                 catchAllExceptionIntoEventHandler ? new InvokeMessageFilterSafe() : new InvokeMessageFilter();
             AddMessageFilter(invokeMessageFilter);
             InterlockedHelper.Exchange(ref _invokeMessageFilter, invokeMessageFilter)?.ProcessAllInvoke();
@@ -168,18 +169,16 @@ namespace ConcreteUI
         [Inline(InlineBehavior.Remove)]
         private static bool TryFilterMessage(ref PumpingMessage msg, [InlineParameter] bool catchException, out nint result)
         {
-            UnwrappableList<IWindowMessageFilter> filterList = _filterList;
-            lock (filterList)
-            {
-                int count = filterList.Count;
-                if (count <= 0)
-                    goto Failed;
+            if (!TryGetFiltersSnapshot(_filterList, out ArrayPool<IWindowMessageFilter>? pool, out IWindowMessageFilter[]? buffer, out int count))
+                goto Failed;
 
+            try
+            {
                 IntPtr hwnd = msg.hwnd;
                 WindowMessage message = msg.message;
                 nint wParam = msg.wParam;
                 nint lParam = msg.lParam;
-                ref IWindowMessageFilter filterRef = ref filterList.Unwrap()[0];
+                ref IWindowMessageFilter filterRef = ref buffer[0];
                 for (nuint i = 0, limit = unchecked((nuint)count); i < limit; i++)
                 {
                     IWindowMessageFilter filter = UnsafeHelper.AddByteOffset(ref filterRef, i * UnsafeHelper.SizeOf<IWindowMessageFilter>());
@@ -202,9 +201,43 @@ namespace ConcreteUI
                     }
                 }
             }
+            finally
+            {
+                pool.Return(buffer);
+            }
 
         Failed:
             result = 0;
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryGetFiltersSnapshot(List<IWindowMessageFilter> filterList,
+            [NotNullWhen(true)] out ArrayPool<IWindowMessageFilter>? pool, [NotNullWhen(true)] out IWindowMessageFilter[]? buffer, out int count)
+        {
+            lock (filterList)
+            {
+                count = filterList.Count;
+                if (count <= 0)
+                    goto Failed;
+                pool = ArrayPool<IWindowMessageFilter>.Shared;
+                buffer = pool.Rent(count);
+                try
+                {
+                    filterList.CopyTo(buffer, 0);
+                }
+                catch (Exception)
+                {
+                    pool.Return(buffer);
+                    goto Failed;
+                }
+            }
+
+            return true;
+
+        Failed:
+            pool = null;
+            buffer = null;
             return false;
         }
 
@@ -217,14 +250,14 @@ namespace ConcreteUI
 
         public static void AddMessageFilter(IWindowMessageFilter messageFilter)
         {
-            UnwrappableList<IWindowMessageFilter> filterList = _filterList;
+            List<IWindowMessageFilter> filterList = _filterList;
             lock (filterList)
                 filterList.Add(messageFilter);
         }
 
         public static void RemoveMessageFilter(IWindowMessageFilter messageFilter)
         {
-            UnwrappableList<IWindowMessageFilter> filterList = _filterList;
+            List<IWindowMessageFilter> filterList = _filterList;
             lock (filterList)
                 filterList.Remove(messageFilter);
         }

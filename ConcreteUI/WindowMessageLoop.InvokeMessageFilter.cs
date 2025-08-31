@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -43,7 +42,7 @@ namespace ConcreteUI
 
             public void ProcessAllInvoke()
             {
-                ArrayPool<IInvokeClosure> pool = ArrayPool<IInvokeClosure>.Shared;
+                ArrayPool<IInvokeClosure> pool;
                 Queue<IInvokeClosure> queue = _invokeClosureQueue;
 
                 if (InterlockedHelper.CompareExchange(ref _readBarrier, Booleans.TrueInt, Booleans.FalseInt) != Booleans.FalseInt)
@@ -59,6 +58,7 @@ namespace ConcreteUI
                         count = queue.Count;
                         if (count <= 0)
                             return;
+                        pool = ArrayPool<IInvokeClosure>.Shared;
                         buffer = pool.Rent(count);
                         try
                         {
