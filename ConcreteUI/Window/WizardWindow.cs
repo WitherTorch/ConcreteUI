@@ -98,7 +98,7 @@ namespace ConcreteUI.Window
         protected override CreateWindowInfo GetCreateWindowInfo()
         {
             CreateWindowInfo windowInfo = base.GetCreateWindowInfo();
-            windowInfo.Styles = WindowStyles.DialogFrame | WindowStyles.SizeFrame;
+            windowInfo.Styles = (windowInfo.Styles & WindowStyles.SystemMenu) | WindowStyles.DialogFrame;
             return windowInfo;
         }
 
@@ -224,7 +224,7 @@ namespace ConcreteUI.Window
             }
         }
 
-        protected override HitTestValue CustomHitTest(in PointF clientPoint)
+        protected override HitTestValue CustomHitTest(PointF clientPoint)
         {
             HitTestValue result = base.CustomHitTest(clientPoint);
             if (result == HitTestValue.NoWhere)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
@@ -294,7 +295,7 @@ namespace ConcreteUI.Window
                         }
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
                         OnMouseMove(new MouseInteractEventArgs(
-                            point: ScalingPointF(PointToLocalCore(hwnd, point), _windowScaleFactor)));
+                            point: PointToClientCore(hwnd, point)));
                         _controller?.RequestUpdate(false);
                     }
                     goto default;
@@ -430,7 +431,7 @@ namespace ConcreteUI.Window
 
         private bool TryProcessUIWindowMessage_Integrated(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
-            if (DwmApi.DwmDefWindowProc(hwnd, (int)message, wParam, lParam, UnsafeHelper.AsPointerOut(out result)))
+            if (DwmApi.DwmDefWindowProc(hwnd, (uint)message, wParam, lParam, UnsafeHelper.AsPointerOut(out result)))
                 return true;
 
             switch (message)
@@ -439,7 +440,7 @@ namespace ConcreteUI.Window
                 case WindowMessage.DwmCompositionChanged:
                     Margins margins = new Margins(-1);
                     DwmApi.DwmExtendFrameIntoClientArea(hwnd, &margins);
-                    goto default;
+                    goto Transfer;
                 case WindowMessage.NCHitTest:
                     {
                         HitTestValue hitTest = DoHitTestForIntergratedUI(lParam);
@@ -451,8 +452,8 @@ namespace ConcreteUI.Window
                 default:
                     goto Transfer;
             }
-
             return true;
+
         Transfer:
             return base.TryProcessSystemWindowMessage(hwnd, message, wParam, lParam, out result);
         }
@@ -491,13 +492,17 @@ namespace ConcreteUI.Window
         #region HitTests
         private HitTestValue DoHitTestForIntergratedUI(IntPtr lParam)
         {
-            return CustomHitTest(ScalingPointF(PointToClientRaw(UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32()), _windowScaleFactor));
+            PointF point = PointToClient(UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32());
+            return CustomHitTest(point);
         }
 
         private HitTestValue DoHitTestConcreteUI(IntPtr lParam)
         {
-            Rectangle bounds = base.Bounds;
+            Rectangle bounds = RawBounds;
             Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
+            point.X -= bounds.Left;
+            point.Y -= bounds.Top;
+
             if (!_isMaximized) // Disable border hit testing to maximized window
             {
                 if (HasSizableBorder)
@@ -505,10 +510,10 @@ namespace ConcreteUI.Window
                     int borderWidth = _borderWidth;
                     int x = point.X;
                     int y = point.Y;
-                    int topBorder = bounds.Top + borderWidth;
-                    int leftBorder = bounds.Left + borderWidth;
-                    int rightBorder = bounds.Right - borderWidth;
-                    int bottomBorder = bounds.Bottom - borderWidth;
+                    int topBorder = borderWidth;
+                    int leftBorder = borderWidth;
+                    int rightBorder = bounds.Width - borderWidth;
+                    int bottomBorder = bounds.Height - borderWidth;
                     if (y < topBorder)
                     {
                         if (x < leftBorder) return HitTestValue.TopLeftBorder;
@@ -528,11 +533,11 @@ namespace ConcreteUI.Window
                     }
                 }
             }
-            return CustomHitTest(ScalingPointFInRect(point, bounds, _windowScaleFactor));
+            return CustomHitTest(ScalingPointF(point, _windowScaleFactor));
         }
 
         [Inline(InlineBehavior.Remove)]
-        private HitTestValue InvokeUIDependentCustomHitTest(in PointF point)
+        private HitTestValue InvokeUIDependentCustomHitTest(PointF point)
         {
             void* hitTest = UIDependentCustomHitTest;
             if (hitTest == null)
@@ -610,7 +615,7 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Hit Test
-        private HitTestValue CustomHitTestForConcreteUI(in PointF clientPoint)
+        private HitTestValue CustomHitTestForConcreteUI(PointF clientPoint)
         {
             BitVector64 titleBarStates = this.titleBarStates;
             bool hasMinimum = titleBarStates[1];
@@ -647,14 +652,14 @@ namespace ConcreteUI.Window
             return HitTestValue.NoWhere;
         }
 
-        private HitTestValue CustomHitTestForIntegratedUI(in PointF clientPoint)
+        private HitTestValue CustomHitTestForIntegratedUI(PointF clientPoint)
         {
             return HitTestValue.NoWhere;
         }
         #endregion
 
         #region Virtual Methods
-        protected virtual HitTestValue CustomHitTest(in PointF clientPoint)
+        protected virtual HitTestValue CustomHitTest(PointF clientPoint)
         {
             return InvokeUIDependentCustomHitTest(clientPoint);
         }
@@ -767,11 +772,10 @@ namespace ConcreteUI.Window
         [LocalsInit(false)]
         private static Point PointToClientCore(IntPtr handle, Point point)
         {
-            Rect windowRect, clientRect;
-            if (!User32.GetWindowRect(handle, &windowRect) || !User32.GetClientRect(handle, &clientRect))
+            if (!User32.ScreenToClient(handle, &point))
                 return Point.Empty;
 
-            return new Point(point.X - windowRect.X - clientRect.X, point.Y - windowRect.Y - clientRect.Y);
+            return point;
         }
 
         #endregion
@@ -812,15 +816,6 @@ namespace ConcreteUI.Window
                 return original;
             else
                 return new PointF(original.X * windowScaleFactor, original.Y * windowScaleFactor);
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private static PointF ScalingPointFInRect(Point original, Rect rect, float windowScaleFactor)
-        {
-            if (windowScaleFactor == 1.0f)
-                return new PointF(original.X - rect.Left, original.Y - rect.Top);
-            else
-                return new PointF((original.X - rect.Left) * windowScaleFactor, (original.Y - rect.Top) * windowScaleFactor);
         }
 
         [Inline(InlineBehavior.Remove)]

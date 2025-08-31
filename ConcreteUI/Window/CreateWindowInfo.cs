@@ -1,7 +1,5 @@
 ﻿using System.Runtime.InteropServices;
 
-using ConcreteUI.Native;
-
 namespace ConcreteUI.Window
 {
     [StructLayout(LayoutKind.Auto)]

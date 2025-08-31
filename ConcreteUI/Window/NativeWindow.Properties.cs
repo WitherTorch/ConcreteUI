@@ -278,7 +278,7 @@ namespace ConcreteUI.Window
         public bool HasSizableBorder
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (ExtendedStyles & WindowExtendedStyles.WindowEdge) == WindowExtendedStyles.WindowEdge;
+            get => (Styles & WindowStyles.SizeFrame) == WindowStyles.SizeFrame;
         }
 
         private static unsafe Icon? GetIconCore(IntPtr handle)

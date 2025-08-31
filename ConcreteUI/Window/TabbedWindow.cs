@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
 
@@ -68,12 +69,20 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Override Methods
-        protected override HitTestValue CustomHitTest(in PointF clientPoint)
+        protected override HitTestValue CustomHitTest(PointF clientPoint)
         {
-            HitTestValue result = base.CustomHitTest(in clientPoint);
+            HitTestValue result = base.CustomHitTest(clientPoint);
             if (result != HitTestValue.NoWhere && result != HitTestValue.Client)
+            {
+                ulong val = MenuBarButtonStatus.Exchange(0UL);
+                if (val > 0UL)
+                {
+                    MenuBarButtonChangedStatus |= val;
+                    Update();
+                }
                 return result;
-            if (MousePositionChangedForMenuBar(in clientPoint, false))
+            }
+            if (MousePositionChangedForMenuBar(clientPoint, false))
                 return HitTestValue.Client;
             float clientY = clientPoint.Y;
             RectF[]? menuBarButtonRects = InterlockedHelper.Read(ref this.menuBarButtonRects);
@@ -209,7 +218,7 @@ namespace ConcreteUI.Window
             #endregion
         }
 
-        protected override void OnMouseDownForElements(in MouseInteractEventArgs args)
+        protected override void OnMouseDown(in MouseInteractEventArgs args)
         {
             RectF[]? menuBarButtonRects = InterlockedHelper.Read(ref this.menuBarButtonRects);
             if (menuBarButtonRects is null)
@@ -222,10 +231,10 @@ namespace ConcreteUI.Window
                     return;
                 }
             }
-            base.OnMouseDownForElements(args);
+            base.OnMouseDown(args);
         }
 
-        protected virtual bool MousePositionChangedForMenuBar(in PointF point, bool requireUpdate)
+        protected virtual bool MousePositionChangedForMenuBar(PointF point, bool requireUpdate)
         {
             RectF[]? menuBarButtonRects = InterlockedHelper.Read(ref this.menuBarButtonRects);
             if (menuBarButtonRects is null)
@@ -304,6 +313,8 @@ namespace ConcreteUI.Window
         {
             switch (message)
             {
+                case WindowMessage.NCMouseMove:
+                case WindowMessage.NCMouseLeave:
                 case WindowMessage.MouseLeave:
                     ulong val = MenuBarButtonStatus.Exchange(0UL);
                     if (val > 0UL)

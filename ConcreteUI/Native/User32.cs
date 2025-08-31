@@ -63,6 +63,9 @@ namespace ConcreteUI.Native
         public static extern bool GetClientRect(IntPtr hWnd, Rect* lpRect);
 
         [DllImport(USER32_DLL)]
+        public static extern bool ScreenToClient(IntPtr hWnd, Point* lpPoint);  
+
+        [DllImport(USER32_DLL)]
         public static extern bool SetWindowTextW(IntPtr hWnd, char* lpString);
 
         [DllImport(USER32_DLL)]
