@@ -8,7 +8,14 @@ using ConcreteUI.Window;
 
 using WitherTorch.Common;
 using WitherTorch.Common.Buffers;
+using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Threading;
+
+
+#if NET472_OR_GREATER
+using WitherTorch.Common.Extensions;
+#endif
 
 namespace ConcreteUI
 {
@@ -16,18 +23,20 @@ namespace ConcreteUI
     {
         private class InvokeMessageFilter : IWindowMessageFilter
         {
-            private readonly Queue<IInvokeClosure> _invokeClosureQueue = new Queue<IInvokeClosure>();
+            private readonly SwapQueue<IInvokeClosure> _invokeClosureQueue = new SwapQueue<IInvokeClosure>();
 
-            private int _readBarrier;
+            private int _readBarrier, _writeBarrier;
 
             public InvokeMessageFilter() => _readBarrier = 0;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void AddInvoke(IInvokeClosure closure)
             {
-                Queue<IInvokeClosure> queue = _invokeClosureQueue;
-                lock (queue)
-                    queue.Enqueue(closure);
+                Queue<IInvokeClosure> queue = _invokeClosureQueue.Value;
+                OptimisticLock.Enter(ref _writeBarrier);
+                Thread.BeginCriticalRegion();
+                queue.Enqueue(closure);
+                Thread.EndCriticalRegion();
             }
 
             public bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
@@ -42,48 +51,19 @@ namespace ConcreteUI
 
             public void ProcessAllInvoke()
             {
-                ArrayPool<IInvokeClosure> pool;
-                Queue<IInvokeClosure> queue = _invokeClosureQueue;
-
                 if (InterlockedHelper.CompareExchange(ref _readBarrier, Booleans.TrueInt, Booleans.FalseInt) != Booleans.FalseInt)
                     return;
 
+                Queue<IInvokeClosure> queue = _invokeClosureQueue.Swap();
                 try
                 {
-                    IInvokeClosure[] buffer;
-                    int count;
-
                     lock (queue)
                     {
-                        count = queue.Count;
-                        if (count <= 0)
-                            return;
-                        pool = ArrayPool<IInvokeClosure>.Shared;
-                        buffer = pool.Rent(count);
-                        try
+                        while (queue.TryDequeue(out IInvokeClosure? closure))
                         {
-                            queue.CopyTo(buffer, 0); // 建立快照並快速清空佇列
-                            queue.Clear();
+                            if (closure is not null)
+                                DoInvoke(closure);
                         }
-                        catch (Exception)
-                        {
-                            pool.Return(buffer);
-                            throw;
-                        }
-                    }
-
-                    ref IInvokeClosure bufferRef = ref buffer[0];
-                    try
-                    {
-                        for (nuint i = 0, limit = (nuint)count; i < limit; i++)
-                        {
-                            IInvokeClosure closure = UnsafeHelper.AddByteOffset(ref bufferRef, i * UnsafeHelper.SizeOf<IInvokeClosure>());
-                            DoInvoke(closure);
-                        }
-                    }
-                    finally
-                    {
-                        pool.Return(buffer);
                     }
                 }
                 finally

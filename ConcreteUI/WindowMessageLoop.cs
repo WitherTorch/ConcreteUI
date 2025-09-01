@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -15,7 +13,7 @@ using ConcreteUI.Window;
 using InlineMethod;
 
 using WitherTorch.Common;
-using WitherTorch.Common.Buffers;
+using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
@@ -26,7 +24,8 @@ namespace ConcreteUI
         private static readonly QueueStatusFlags StatusFlags = SystemHelper.IsWindows8OrHigher() ? QueueStatusFlags.AllInput : QueueStatusFlags.AllInputOld;
 
         private static readonly ThreadLocal<uint> _threadIdLocal = new ThreadLocal<uint>(Kernel32.GetCurrentThreadId, trackAllValues: false);
-        private static readonly List<IWindowMessageFilter> _filterList = new List<IWindowMessageFilter>();
+        private static readonly UpdatableCollection<IWindowMessageFilter, UnwrappableList<IWindowMessageFilter>> _filters =
+            UpdatableCollection.CreateUnwrapped<IWindowMessageFilter>();
 
         private static NativeWindow? _mainWindow;
         private static InvokeMessageFilter? _invokeMessageFilter;
@@ -207,75 +206,40 @@ namespace ConcreteUI
         [Inline(InlineBehavior.Remove)]
         private static bool TryFilterMessage(ref PumpingMessage msg, [InlineParameter] bool catchException, out nint result)
         {
-            if (!TryGetFiltersSnapshot(_filterList, out ArrayPool<IWindowMessageFilter>? pool, out IWindowMessageFilter[]? buffer, out int count))
+            UnwrappableList<IWindowMessageFilter> filters = _filters.Update();
+            int count = filters.Count;
+            if (count <= 0)
                 goto Failed;
 
-            try
+            IntPtr hwnd = msg.hwnd;
+            WindowMessage message = msg.message;
+            nint wParam = msg.wParam;
+            nint lParam = msg.lParam;
+            ref IWindowMessageFilter filterRef = ref filters.Unwrap()[0];
+            for (nuint i = 0, limit = unchecked((nuint)count); i < limit; i++)
             {
-                IntPtr hwnd = msg.hwnd;
-                WindowMessage message = msg.message;
-                nint wParam = msg.wParam;
-                nint lParam = msg.lParam;
-                ref IWindowMessageFilter filterRef = ref buffer[0];
-                for (nuint i = 0, limit = unchecked((nuint)count); i < limit; i++)
+                IWindowMessageFilter filter = UnsafeHelper.AddByteOffset(ref filterRef, i * UnsafeHelper.SizeOf<IWindowMessageFilter>());
+                if (catchException)
                 {
-                    IWindowMessageFilter filter = UnsafeHelper.AddByteOffset(ref filterRef, i * UnsafeHelper.SizeOf<IWindowMessageFilter>());
-                    if (catchException)
-                    {
-                        try
-                        {
-                            if (filter.TryProcessWindowMessage(msg.hwnd, msg.message, msg.wParam, msg.lParam, out result))
-                                return true;
-                        }
-                        catch (Exception ex)
-                        {
-                            ExceptionCaught?.Invoke(null, new MessageLoopExceptionEventArgs(ex));
-                        }
-                    }
-                    else
+                    try
                     {
                         if (filter.TryProcessWindowMessage(msg.hwnd, msg.message, msg.wParam, msg.lParam, out result))
                             return true;
                     }
+                    catch (Exception ex)
+                    {
+                        ExceptionCaught?.Invoke(null, new MessageLoopExceptionEventArgs(ex));
+                    }
                 }
-            }
-            finally
-            {
-                pool.Return(buffer);
+                else
+                {
+                    if (filter.TryProcessWindowMessage(msg.hwnd, msg.message, msg.wParam, msg.lParam, out result))
+                        return true;
+                }
             }
 
         Failed:
             result = 0;
-            return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryGetFiltersSnapshot(List<IWindowMessageFilter> filterList,
-            [NotNullWhen(true)] out ArrayPool<IWindowMessageFilter>? pool, [NotNullWhen(true)] out IWindowMessageFilter[]? buffer, out int count)
-        {
-            lock (filterList)
-            {
-                count = filterList.Count;
-                if (count <= 0)
-                    goto Failed;
-                pool = ArrayPool<IWindowMessageFilter>.Shared;
-                buffer = pool.Rent(count);
-                try
-                {
-                    filterList.CopyTo(buffer, 0);
-                }
-                catch (Exception)
-                {
-                    pool.Return(buffer);
-                    goto Failed;
-                }
-            }
-
-            return true;
-
-        Failed:
-            pool = null;
-            buffer = null;
             return false;
         }
 
@@ -286,19 +250,9 @@ namespace ConcreteUI
         private static void OnWindowDestroyed(object? sender, EventArgs e)
             => Stop();
 
-        public static void AddMessageFilter(IWindowMessageFilter messageFilter)
-        {
-            List<IWindowMessageFilter> filterList = _filterList;
-            lock (filterList)
-                filterList.Add(messageFilter);
-        }
+        public static void AddMessageFilter(IWindowMessageFilter messageFilter) => _filters.Add(messageFilter);
 
-        public static void RemoveMessageFilter(IWindowMessageFilter messageFilter)
-        {
-            List<IWindowMessageFilter> filterList = _filterList;
-            lock (filterList)
-                filterList.Remove(messageFilter);
-        }
+        public static void RemoveMessageFilter(IWindowMessageFilter messageFilter) => _filters.Remove(messageFilter);
 
         public static object? Invoke<TDelegate>(TDelegate @delegate) where TDelegate : Delegate
         {
