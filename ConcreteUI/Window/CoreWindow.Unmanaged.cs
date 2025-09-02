@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
@@ -14,6 +13,7 @@ using InlineMethod;
 
 using LocalsInit;
 
+using WitherTorch.Common;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
@@ -32,8 +32,9 @@ namespace ConcreteUI.Window
         #region Fields
         private UnwrappableList<IWindowMessageFilter> _filterList = new UnwrappableList<IWindowMessageFilter>(1);
         private SizeF _minimumSize, _maximumSize;
+        private IntPtr _menuHandle;
         private nint _beforeHitTest;
-        private MouseKeys _lastMouseDownKeys;
+        private MouseButtons _lastMouseDownButtons;
         private int _borderWidth;
         private bool _isMaximized, _isCreateByDefaultX, _isCreateByDefaultY;
         #endregion
@@ -122,6 +123,8 @@ namespace ConcreteUI.Window
 
         protected override bool TryProcessSystemWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
+            result = 0;
+
             switch (message)
             {
                 case WindowMessage.DpiChanged:
@@ -210,49 +213,78 @@ namespace ConcreteUI.Window
                     }
                 #region Normal input events
                 case WindowMessage.Char:
-                    OnCharacterInputForElements((char)wParam);
-                    break;
+                    {
+                        CharacterInteractEventArgs args = new CharacterInteractEventArgs((char)wParam);
+                        OnCharacterInputForElements(ref args);
+                        if (args.Handled)
+                            break;
+                        goto default;
+                    }
                 case WindowMessage.KeyDown:
-                    OnKeyDown(new KeyInteractEventArgs((VirtualKey)wParam, (ushort)lParam));
-                    break;
+                    {
+                        KeyInteractEventArgs args = new KeyInteractEventArgs((VirtualKey)wParam, (ushort)lParam);
+                        OnKeyDown(ref args);
+                        if (args.Handled)
+                            break;
+                        goto default;
+                    }
                 case WindowMessage.KeyUp:
-                    OnKeyUp(new KeyInteractEventArgs((VirtualKey)wParam, (ushort)lParam));
-                    break;
+                    {
+                        KeyInteractEventArgs args = new KeyInteractEventArgs((VirtualKey)wParam, (ushort)lParam);
+                        OnKeyDown(ref args);
+                        if (args.Handled)
+                            break;
+                        goto default;
+                    }
                 case WindowMessage.MouseWheel:
                     {
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
-                        (ushort keys, ushort delta) = wParam.GetWords();
-                        OnMouseScroll(new MouseInteractEventArgs(
+                        (ushort buttons, ushort delta) = wParam.GetWords();
+                        MouseInteractEventArgs args = new MouseInteractEventArgs(
                             point: PointToClient(point),
-                            delta: UnsafeHelper.As<ushort, short>(delta)));
+                            buttons: (MouseButtons)buttons,
+                            delta: UnsafeHelper.As<ushort, short>(delta));
+                        OnMouseScroll(ref args);
+                        if (args.Handled)
+                            break;
+                        goto default;
                     }
-                    break;
+                case WindowMessage.XButtonDown:
+                    result = Booleans.TrueNative;
+                    goto case WindowMessage.LeftButtonDown;
                 case WindowMessage.LeftButtonDown:
                 case WindowMessage.MiddleButtonDown:
                 case WindowMessage.RightButtonDown:
                     {
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
-                        MouseKeys keys = ((MouseKeys)wParam) & MouseKeys._Mask;
-                        MouseKeys oldKeys = _lastMouseDownKeys;
-                        _lastMouseDownKeys = keys;
-                        OnMouseDown(new MouseInteractEventArgs(
+                        MouseButtons buttons = ((MouseButtons)wParam) & MouseButtons._Mask;
+                        MouseButtons oldButtons = _lastMouseDownButtons;
+                        _lastMouseDownButtons = buttons;
+                        MouseInteractEventArgs args = new MouseInteractEventArgs(
                             point: ScalingPointF(point, _windowScaleFactor),
-                            keys: keys & ~oldKeys));
+                            buttons: buttons & ~oldButtons);
+                        OnMouseDown(ref args);
+                        if (args.Handled)
+                            break;
+                        goto default;
                     }
-                    break;
+                case WindowMessage.XButtonUp:
+                    result = Booleans.TrueNative;
+                    goto case WindowMessage.LeftButtonUp;
                 case WindowMessage.LeftButtonUp:
                 case WindowMessage.MiddleButtonUp:
                 case WindowMessage.RightButtonUp:
                     {
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
-                        MouseKeys keys = ((MouseKeys)wParam) & MouseKeys._Mask;
-                        MouseKeys oldKeys = _lastMouseDownKeys;
-                        _lastMouseDownKeys = keys;
-                        OnMouseUp(new MouseInteractEventArgs(
+                        MouseButtons buttons = ((MouseButtons)wParam) & MouseButtons._Mask;
+                        MouseButtons oldButtons = _lastMouseDownButtons;
+                        _lastMouseDownButtons = buttons;
+                        MouseNotifyEventArgs args = new MouseNotifyEventArgs(
                             point: ScalingPointF(point, _windowScaleFactor),
-                            keys: oldKeys & ~keys));
+                            buttons: oldButtons & ~buttons);
+                        OnMouseUp(in args);
+                        goto default;
                     }
-                    break;
                 #endregion
                 #region Rendering
                 case WindowMessage.NCMouseMove:
@@ -329,14 +361,14 @@ namespace ConcreteUI.Window
                 case WindowMessage.MouseLeave:
                 case WindowMessage.NCMouseLeave:
                     {
-                        MouseKeys lastKeys = _lastMouseDownKeys;
-                        if (lastKeys != MouseKeys.None)
+                        MouseButtons lastButtons = _lastMouseDownButtons;
+                        if (lastButtons != MouseButtons.None)
                         {
-                            _lastMouseDownKeys = MouseKeys.None;
+                            _lastMouseDownButtons = MouseButtons.None;
                             // 模擬一次 MouseUp
                             OnMouseUp(new MouseInteractEventArgs(
                                 point: PointToClient(MouseHelper.GetMousePosition()),
-                                keys: lastKeys));
+                                buttons: lastButtons));
                         }
                         _beforeHitTest = (nint)HitTestValue.NoWhere;
                         _titleBarButtonStatus.Reset();
@@ -356,7 +388,6 @@ namespace ConcreteUI.Window
                 default:
                     return TryProcessUIWindowMessage(hwnd, message, wParam, lParam, out result);
             }
-            result = 0;
             return true;
         }
 
@@ -379,7 +410,7 @@ namespace ConcreteUI.Window
                         DwmApi.DwmExtendFrameIntoClientArea(hwnd, &margins);
                         result = 0;
                     }
-                    break;
+                    goto default;
                 case WindowMessage.NCCalcSize:
                     {
                         if (wParam == default)

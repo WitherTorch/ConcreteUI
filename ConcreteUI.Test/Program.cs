@@ -10,7 +10,7 @@ namespace ConcreteUI.Test
         [STAThread]
         static int Main()
         {
-            ConcreteSettings.WindowMaterial = WindowMaterial.Acrylic;
+            ConcreteSettings.WindowMaterial = WindowMaterial.Integrated;
             return WindowMessageLoop.Start(new MainWindow(null));
         }
 

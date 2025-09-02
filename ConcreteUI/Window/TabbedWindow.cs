@@ -218,20 +218,47 @@ namespace ConcreteUI.Window
             #endregion
         }
 
-        protected override void OnMouseDown(in MouseInteractEventArgs args)
+        protected override void OnMouseDown(ref MouseInteractEventArgs args)
         {
-            RectF[]? menuBarButtonRects = InterlockedHelper.Read(ref this.menuBarButtonRects);
-            if (menuBarButtonRects is null)
-                return;
-            for (int i = 0, count = menuBarButtonRects.Length; i < count; i++)
+            MouseButtons buttons = args.Buttons;
+            if (buttons.HasFlagOptimized(MouseButtons.LeftButton))
             {
-                if (menuBarButtonRects[i].Contains(args.Location))
+                RectF[]? menuBarButtonRects = InterlockedHelper.Read(ref this.menuBarButtonRects);
+                if (menuBarButtonRects is null)
+                    return;
+                for (int i = 0, count = menuBarButtonRects.Length; i < count; i++)
                 {
-                    CurrentPage = i;
+                    if (menuBarButtonRects[i].Contains(args.Location))
+                    {
+                        CurrentPage = i;
+                        return;
+                    }
+                }
+            }
+            base.OnMouseDown(ref args);
+            if (args.Handled)
+                return;
+            if (buttons.HasFlagOptimized(MouseButtons.XButton2))
+            {
+                if (!buttons.HasFlagOptimized(MouseButtons.XButton1))
+                {
+                    args.Handle();
+                    int page = CurrentPage - 1;
+                    CurrentPage = (page < 0) ? _menuTitles.Length - 1 : page;
                     return;
                 }
             }
-            base.OnMouseDown(args);
+            if (buttons.HasFlagOptimized(MouseButtons.XButton1))
+            {
+                if (!buttons.HasFlagOptimized(MouseButtons.XButton2))
+                {
+                    args.Handle();
+                    int page = CurrentPage + 1;
+                    int length = _menuTitles.Length;
+                    CurrentPage = (page >= length) ? 0 : page;
+                    return;
+                }
+            }
         }
 
         protected virtual bool MousePositionChangedForMenuBar(PointF point, bool requireUpdate)

@@ -97,10 +97,8 @@ namespace ConcreteUI.Controls
 
         protected override bool RenderCore(DirtyAreaCollector collector) => true;
 
-        public void OnMouseDown(in MouseInteractEventArgs args) { }
-
         PointF lastPoint;
-        public void OnMouseMove(in MouseInteractEventArgs args)
+        public void OnMouseMove(in MouseNotifyEventArgs args)
         {
             PointF point = args.Location;
             if (lastPoint == point)
@@ -116,7 +114,7 @@ namespace ConcreteUI.Controls
             CheckToolTip(point);
         }
 
-        public void OnMouseUp(in MouseInteractEventArgs args) { }
+        public void OnMouseUp(in MouseNotifyEventArgs args) { }
 
     }
 }

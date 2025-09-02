@@ -201,6 +201,9 @@ namespace ConcreteUI.Native
         public static extern nint SetWindowLongPtrW(IntPtr hWnd, int nIndex, nint dwNewLong);
 
         [DllImport(USER32_DLL)]
+        public static extern IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
+
+        [DllImport(USER32_DLL)]
         public static extern bool OpenClipboard(IntPtr hWndNewOwner);
 
         [DllImport(USER32_DLL)]

@@ -20,8 +20,6 @@ namespace ConcreteUI.Controls
 {
     public abstract partial class UIElement
     {
-        public delegate void MouseInteractEventHandler(UIElement sender, in MouseInteractEventArgs args);
-
         private static int _identifierGenerator = 0;
 
         private readonly LayoutVariable?[] _layoutReferences = new LayoutVariable?[(int)LayoutProperty._Last];

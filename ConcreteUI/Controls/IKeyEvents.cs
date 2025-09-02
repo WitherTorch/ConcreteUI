@@ -2,7 +2,7 @@
 {
     public interface IKeyEvents
     {
-        void OnKeyDown(in KeyInteractEventArgs args);
-        void OnKeyUp(in KeyInteractEventArgs args);
+        void OnKeyDown(ref KeyInteractEventArgs args);
+        void OnKeyUp(ref KeyInteractEventArgs args);
     }
 }

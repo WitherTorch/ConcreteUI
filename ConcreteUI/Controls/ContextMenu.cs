@@ -132,39 +132,40 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        public override void OnMouseDown(in MouseInteractEventArgs args)
+        public override void OnMouseDown(in MouseNotifyEventArgs args)
         {
             base.OnMouseDown(args);
-            RectangleF bounds = Bounds;
-            if (bounds.Contains(args.Location))
+            if (!args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+                return;
+
+            if (!Bounds.Contains(args.Location))
             {
-                _isPressed = true;
-                Update();
+                Close();
                 return;
             }
-            Close();
+
+            _isPressed = true;
+            Update();
         }
 
-        public override void OnMouseUp(in MouseInteractEventArgs args)
+        public override void OnMouseUp(in MouseNotifyEventArgs args)
         {
             base.OnMouseUp(args);
-            if (Bounds.Contains(args.Location))
-            {
-                _isPressed = false;
-                int hoveredIndex = _hoveredIndex;
-                ContextMenuItem[] items = MenuItems;
-                if (items.Length > hoveredIndex && hoveredIndex != -1)
-                {
-                    ContextMenuItem item = items[hoveredIndex];
-                    ItemClicked?.Invoke(this, EventArgs.Empty);
-                    item.OnClick();
-                    Close();
-                }
+            if (!args.Buttons.HasFlagOptimized(MouseButtons.LeftButton) || !Bounds.Contains(args.Location))
                 return;
+            _isPressed = false;
+            int hoveredIndex = _hoveredIndex;
+            ContextMenuItem[] items = MenuItems;
+            if (items.Length > hoveredIndex && hoveredIndex != -1)
+            {
+                ContextMenuItem item = items[hoveredIndex];
+                ItemClicked?.Invoke(this, EventArgs.Empty);
+                item.OnClick();
+                Close();
             }
         }
 
-        public override void OnMouseMove(in MouseInteractEventArgs args)
+        public override void OnMouseMove(in MouseNotifyEventArgs args)
         {
             base.OnMouseMove(args);
             RectangleF bound = Bounds;
@@ -192,14 +193,16 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public void OnKeyDown(in KeyInteractEventArgs args)
+        public void OnKeyDown(ref KeyInteractEventArgs args)
         {
-            if (args.Key == VirtualKey.Escape && 
-                !Keys.IsAltPressed() && !Keys.IsControlPressed() && !Keys.IsShiftPressed())
-                Close();
+            if (args.Key != VirtualKey.Escape ||
+                Keys.IsAltPressed() || Keys.IsControlPressed() || Keys.IsShiftPressed())
+                return;
+            args.Handle();
+            Close();
         }
 
-        public void OnKeyUp(in KeyInteractEventArgs args)
+        public void OnKeyUp(ref KeyInteractEventArgs args)
         {
             //Do nothing
         }

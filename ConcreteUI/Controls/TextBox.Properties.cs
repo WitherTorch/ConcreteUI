@@ -11,14 +11,11 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public delegate void KeyInteractEventHandler(object? sender, in KeyInteractEventArgs args);
-    public delegate void CancellableKeyInteractEventHandler(object? sender, ref CancellableKeyInteractEventArgs args);
-
     partial class TextBox
     {
         #region Events
-        public event MouseInteractEventHandler? RequestContextMenu;
-        public event CancellableKeyInteractEventHandler? KeyDown;
+        public event MouseNotifyEventHandler? RequestContextMenu;
+        public event KeyInteractEventHandler? KeyDown;
         public event KeyInteractEventHandler? KeyUp;
         public event TextChangingEventHandler? TextChanging;
         public event EventHandler? TextChanged;

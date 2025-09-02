@@ -2,6 +2,6 @@
 {
     public interface ICharacterEvents
     {
-        void OnCharacterInput(char character);
+        void OnCharacterInput(ref CharacterInteractEventArgs args);
     }
 }

@@ -23,10 +23,8 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class CheckBox : UIElement, IDisposable, IMouseEvents
+    public sealed partial class CheckBox : UIElement, IDisposable, IMouseInteractEvents
     {
-        public event EventHandler? CheckedChanged;
-
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
             "border",
@@ -51,7 +49,7 @@ namespace ConcreteUI.Controls
         private ButtonTriState _buttonState;
         private long _redrawTypeRaw, _rawUpdateFlags;
         private float _fontSize;
-        private bool _checkState, _disposed;
+        private bool _checkState, _isPressed, _disposed;
 
         public CheckBox(IRenderer renderer) : base(renderer, "app.checkBox")
         {
@@ -266,44 +264,41 @@ namespace ConcreteUI.Controls
             collector?.MarkAsDirty(renderingBounds);
         }
 
-        public void OnMouseMove(in MouseInteractEventArgs args)
+        public void OnMouseMove(in MouseNotifyEventArgs args)
         {
             ButtonTriState oldButtonState = _buttonState;
-            ButtonTriState newButtonState = ButtonTriState.None;
+            ButtonTriState newButtonState;
             if (Bounds.Contains(args.Location))
-                newButtonState = ButtonTriState.Hovered;
+                newButtonState = _isPressed ? ButtonTriState.Pressed : ButtonTriState.Hovered;
+            else
+                newButtonState = ButtonTriState.None;
             if (oldButtonState == newButtonState)
                 return;
-            if (oldButtonState != ButtonTriState.Pressed)
-            {
-                _buttonState = newButtonState;
-                Update(RedrawType.RedrawCheckBox);
-            }
+            _buttonState = newButtonState;
+            Update(RedrawType.RedrawCheckBox);
         }
 
-        public void OnMouseDown(in MouseInteractEventArgs args)
+        public void OnMouseDown(ref MouseInteractEventArgs args)
         {
-            if (_buttonState != ButtonTriState.Hovered || ((args.Keys & MouseKeys.LeftButton) != MouseKeys.LeftButton))
+            if (_buttonState != ButtonTriState.Hovered || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
 
+            args.Handle();
+            _isPressed = true;
             _buttonState = ButtonTriState.Pressed;
             Checked = !Checked;
         }
 
-        public void OnMouseUp(in MouseInteractEventArgs args)
+        public void OnMouseUp(in MouseNotifyEventArgs args)
         {
-            if (_buttonState == ButtonTriState.Pressed)
-            {
-                if (Bounds.Contains(args.Location))
-                {
-                    _buttonState = ButtonTriState.Hovered;
-                }
-                else
-                {
-                    _buttonState = ButtonTriState.None;
-                }
-                Update(RedrawType.RedrawCheckBox);
-            }
+            if (!args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+                return;
+            _isPressed = false;
+
+            if (_buttonState != ButtonTriState.Pressed)
+                return;
+            _buttonState = ButtonTriState.Hovered;
+            Update(RedrawType.RedrawCheckBox);
         }
 
         private void Dispose(bool disposing)

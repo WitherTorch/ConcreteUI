@@ -180,7 +180,7 @@ namespace ConcreteUI.Test
             ChangeOverlayElement(e.DropdownList);
         }
 
-        private void Button_Click(UIElement sender, in MouseInteractEventArgs args)
+        private void Button_Click(UIElement sender, in MouseNotifyEventArgs args)
         {
             if (CurrentTheme?.IsDarkTheme ?? false)
             {
@@ -196,12 +196,12 @@ namespace ConcreteUI.Test
             }
         }
 
-        private void LeftButton_Click(UIElement sender, in MouseInteractEventArgs args)
+        private void LeftButton_Click(UIElement sender, in MouseNotifyEventArgs args)
         {
             _progressBar!.Value -= 1.0f;
         }
 
-        private void RightButton_Click(UIElement sender, in MouseInteractEventArgs args)
+        private void RightButton_Click(UIElement sender, in MouseNotifyEventArgs args)
         {
             _progressBar!.Value += 1.0f;
         }

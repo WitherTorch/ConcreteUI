@@ -1,10 +1,13 @@
 ﻿using System;
-using System.Drawing;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace ConcreteUI.Controls
 {
+    public delegate void MouseInteractEventHandler(UIElement sender, ref MouseInteractEventArgs args);
+    public delegate void MouseNotifyEventHandler(UIElement sender, in MouseNotifyEventArgs args);
+    public delegate void KeyInteractEventHandler(UIElement sender, ref KeyInteractEventArgs args);
+    public delegate void CharacterInteractEventHandler(UIElement sender, ref KeyInteractEventArgs args);
+
     public delegate void CancelableEventHandler(object sender, CancelableEventArgs e);
     public delegate void TextChangingEventHandler(object sender, TextChangingEventArgs e);
 
@@ -38,94 +41,10 @@ namespace ConcreteUI.Controls
         public bool IsEdited { get; private set; }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    public readonly ref struct MouseInteractEventArgs
+    public interface IInteractEventArgs
     {
-        public readonly PointF Location;
-        public readonly float X;
-        public readonly float Y;
-        public readonly MouseKeys Keys;
-        public readonly short Delta;
+        bool Handled { get; }
 
-        public MouseInteractEventArgs(PointF point)
-        {
-            Location = point;
-            X = point.X;
-            Y = point.Y;
-            Keys = MouseKeys.None;
-            Delta = 0;
-        }
-
-        public MouseInteractEventArgs(PointF point, MouseKeys keys)
-        {
-            Location = point;
-            X = point.X;
-            Y = point.Y;
-            Keys = keys;
-            Delta = 0;
-        }
-
-        public MouseInteractEventArgs(PointF point, short delta)
-        {
-            Location = point;
-            X = point.X;
-            Y = point.Y;
-            Keys = MouseKeys.None;
-            Delta = delta;
-        }
-
-        public MouseInteractEventArgs(PointF point, MouseKeys keys, short delta)
-        {
-            Location = point;
-            X = point.X;
-            Y = point.Y;
-            Keys = keys;
-            Delta = delta;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    public readonly ref struct KeyInteractEventArgs
-    {
-        public readonly VirtualKey Key;
-        public readonly ushort RepeatCount;
-
-        public KeyInteractEventArgs(VirtualKey key)
-        {
-            Key = key;
-            RepeatCount = 1;
-        }
-
-        public KeyInteractEventArgs(VirtualKey key, ushort repeatCount)
-        {
-            Key = key;
-            RepeatCount = repeatCount;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    public ref struct CancellableKeyInteractEventArgs
-    {
-        private readonly KeyInteractEventArgs _args;
-        
-        private bool _cancelled;
-
-        public readonly VirtualKey Key => _args.Key;
-        public readonly ushort RepeatCount => _args.RepeatCount;
-        public readonly bool IsCancelled => _cancelled;
-
-        public CancellableKeyInteractEventArgs(in KeyInteractEventArgs args)
-        {
-            _args = args;
-            _cancelled = false;
-        }
-
-        public CancellableKeyInteractEventArgs(in KeyInteractEventArgs args, bool cancelled)
-        {
-            _args = args;
-            _cancelled = cancelled;
-        }
-
-        public void SetCancelled(bool cancelled) => _cancelled = cancelled;
+        void Handle();
     }
 }

@@ -3,7 +3,7 @@ using ConcreteUI.Window;
 
 namespace ConcreteUI.Controls
 {
-    public abstract class PopupElementBase : UIElement, IGlobalMouseEvents
+    public abstract class PopupElementBase : UIElement, IMouseNotifyEvents
     {
         private readonly CoreWindow _window;
 
@@ -14,14 +14,14 @@ namespace ConcreteUI.Controls
 
         public void Close() => _window.CloseOverlayElement(this);
 
-        public virtual void OnMouseDown(in MouseInteractEventArgs args) { }
+        public virtual void OnMouseDown(in MouseNotifyEventArgs args) { }
 
-        public virtual void OnMouseUp(in MouseInteractEventArgs args)
+        public virtual void OnMouseUp(in MouseNotifyEventArgs args)
         {
             if (!Bounds.Contains(args.Location))
                 Close();
         }
 
-        public virtual void OnMouseMove(in MouseInteractEventArgs args) { }
+        public virtual void OnMouseMove(in MouseNotifyEventArgs args) { }
     }
 }

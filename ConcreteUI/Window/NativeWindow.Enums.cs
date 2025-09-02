@@ -273,8 +273,8 @@ namespace ConcreteUI.Window
         MiddleButtonUp = 0x0208,
         MiddleButtonDoubleClick = 0x0209,
         MouseWheel = 0x020A,
-        ExtraButtonDown = 0x020B,
-        ExtraButtonUp = 0x020C,
+        XButtonDown = 0x020B,
+        XButtonUp = 0x020C,
         ExtraButtonDoubleClick = 0x020D,
         MouseHWheel = 0x020E,
 

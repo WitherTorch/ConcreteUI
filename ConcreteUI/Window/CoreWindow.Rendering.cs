@@ -264,17 +264,16 @@ namespace ConcreteUI.Window
                 FluentHandler.SetTitleBarColor(Handle, (Color)backBrush.Color);
         }
 
-        protected virtual void OnMouseDownForElements(in MouseInteractEventArgs args)
+        protected virtual void OnMouseDownForElements(ref MouseInteractEventArgs args)
         {
-            bool allowRegionalMouseEvent = true;
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetRenderingElements();
-            UIElementHelper.OnMouseDownForElements(elements, args, ref allowRegionalMouseEvent);
-            UIElementHelper.OnMouseDownForElements(GetBackgroundElements(), args, ref allowRegionalMouseEvent);
+            UIElementHelper.OnMouseDownForElements(elements, ref args);
+            UIElementHelper.OnMouseDownForElements(GetBackgroundElements(), ref args);
         }
 
-        protected virtual void OnMouseMoveForElements(in MouseInteractEventArgs args)
+        protected virtual void OnMouseMoveForElements(in MouseNotifyEventArgs args)
         {
             SystemCursorType? cursorType = null;
             IEnumerable<UIElement> elements = GetOverlayElements();
@@ -285,7 +284,7 @@ namespace ConcreteUI.Window
             Cursor = SystemCursors.GetSystemCursor(cursorType.GetValueOrDefault(SystemCursorType.Default));
         }
 
-        protected virtual void OnMouseUpForElements(in MouseInteractEventArgs args)
+        protected virtual void OnMouseUpForElements(in MouseNotifyEventArgs args)
         {
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
@@ -294,40 +293,48 @@ namespace ConcreteUI.Window
             UIElementHelper.OnMouseUpForElements(GetBackgroundElements(), args);
         }
 
-        protected virtual void OnMouseScrollForElements(in MouseInteractEventArgs args)
+        protected virtual void OnMouseScrollForElements(ref MouseInteractEventArgs args)
         {
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetRenderingElements();
-            UIElementHelper.OnMouseScrollForElements(elements, args);
-            UIElementHelper.OnMouseScrollForElements(GetBackgroundElements(), args);
+            UIElementHelper.OnMouseScrollForElements(elements, ref args);
+            if (args.Handled)
+                return;
+            UIElementHelper.OnMouseScrollForElements(GetBackgroundElements(), ref args);
         }
 
-        protected virtual void OnKeyDownForElements(in KeyInteractEventArgs args)
+        protected virtual void OnKeyDownForElements(ref KeyInteractEventArgs args)
         {
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetRenderingElements();
-            UIElementHelper.OnKeyDownForElements(elements, args);
-            UIElementHelper.OnKeyDownForElements(GetBackgroundElements(), args);
+            UIElementHelper.OnKeyDownForElements(elements, ref args);
+            if (args.Handled)
+                return;
+            UIElementHelper.OnKeyDownForElements(GetBackgroundElements(), ref args);
         }
 
-        protected virtual void OnKeyUpForElements(in KeyInteractEventArgs args)
+        protected virtual void OnKeyUpForElements(ref KeyInteractEventArgs args)
         {
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetRenderingElements();
-            UIElementHelper.OnKeyUpForElements(elements, args);
-            UIElementHelper.OnKeyUpForElements(GetBackgroundElements(), args);
+            UIElementHelper.OnKeyUpForElements(elements, ref args);
+            if (args.Handled)
+                return;
+            UIElementHelper.OnKeyUpForElements(GetBackgroundElements(), ref args);
         }
 
-        protected virtual void OnCharacterInputForElements(char character)
+        protected virtual void OnCharacterInputForElements(ref CharacterInteractEventArgs args)
         {
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetRenderingElements();
-            UIElementHelper.OnCharacterInputForElements(elements, character);
-            UIElementHelper.OnCharacterInputForElements(GetBackgroundElements(), character);
+            UIElementHelper.OnCharacterInputForElements(elements, ref args);
+            if (args.Handled)
+                return;
+            UIElementHelper.OnCharacterInputForElements(GetBackgroundElements(), ref args);
         }
 
         protected virtual unsafe void RecalculateLayout(in SizeF windowSize, bool callRecalculatePageLayout)

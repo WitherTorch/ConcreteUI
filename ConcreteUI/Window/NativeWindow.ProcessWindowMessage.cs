@@ -116,7 +116,7 @@ namespace ConcreteUI.Window
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool HandleActivate(nint wParam)
+        protected bool HandleActivate(nint wParam)
         {
             switch (wParam)
             {

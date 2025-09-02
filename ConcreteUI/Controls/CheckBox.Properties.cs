@@ -7,6 +7,8 @@ namespace ConcreteUI.Controls
 {
     partial class CheckBox
     {
+        public event EventHandler? CheckedChanged;
+
         public bool Checked
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
