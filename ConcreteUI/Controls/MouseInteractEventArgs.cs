@@ -24,13 +24,13 @@ namespace ConcreteUI.Controls
         public readonly float X
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _data._x;
+            get => _data._location.X;
         }
 
         public readonly float Y
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _data._y;
+            get => _data._location.Y;
         }
 
         public readonly MouseButtons Buttons

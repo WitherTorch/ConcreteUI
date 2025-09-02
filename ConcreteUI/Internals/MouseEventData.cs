@@ -4,18 +4,11 @@ using System.Runtime.InteropServices;
 
 namespace ConcreteUI.Internals
 {
-    [StructLayout(LayoutKind.Explicit, Pack = 4)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     internal readonly struct MouseEventData
     {
-        [FieldOffset(0)]
         public readonly PointF _location;
-        [FieldOffset(0)]
-        public readonly float _x;
-        [FieldOffset(sizeof(float))]
-        public readonly float _y;
-        [FieldOffset(sizeof(float) * 2)]
         public readonly MouseButtons _buttons;
-        [FieldOffset(sizeof(float) * 2 + sizeof(MouseButtons))]
         public readonly short _delta;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

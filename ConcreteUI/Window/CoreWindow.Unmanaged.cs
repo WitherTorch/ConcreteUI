@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
@@ -32,7 +33,6 @@ namespace ConcreteUI.Window
         #region Fields
         private UnwrappableList<IWindowMessageFilter> _filterList = new UnwrappableList<IWindowMessageFilter>(1);
         private SizeF _minimumSize, _maximumSize;
-        private IntPtr _menuHandle;
         private nint _beforeHitTest;
         private MouseButtons _lastMouseDownButtons;
         private int _borderWidth;

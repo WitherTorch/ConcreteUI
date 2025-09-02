@@ -243,9 +243,7 @@ namespace ConcreteUI.Window
                 if (!buttons.HasFlagOptimized(MouseButtons.XButton1))
                 {
                     args.Handle();
-                    int page = CurrentPage - 1;
-                    CurrentPage = (page < 0) ? _menuTitles.Length - 1 : page;
-                    return;
+                    NavigateBackPage(args.Location);
                 }
             }
             if (buttons.HasFlagOptimized(MouseButtons.XButton1))
@@ -253,12 +251,24 @@ namespace ConcreteUI.Window
                 if (!buttons.HasFlagOptimized(MouseButtons.XButton2))
                 {
                     args.Handle();
-                    int page = CurrentPage + 1;
-                    int length = _menuTitles.Length;
-                    CurrentPage = (page >= length) ? 0 : page;
-                    return;
+                    NavigateForwardPage(args.Location);
                 }
             }
+        }
+
+        protected virtual void NavigateBackPage(PointF location)
+        {
+            int page = CurrentPage - 1;
+            CurrentPage = (page < 0) ? _menuTitles.Length - 1 : page;
+            return;
+        }
+
+        protected virtual void NavigateForwardPage(PointF location)
+        {
+            int page = CurrentPage + 1;
+            int length = _menuTitles.Length;
+            CurrentPage = (page >= length) ? 0 : page;
+            return;
         }
 
         protected virtual bool MousePositionChangedForMenuBar(PointF point, bool requireUpdate)
