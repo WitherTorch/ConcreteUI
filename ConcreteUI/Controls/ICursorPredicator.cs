@@ -1,9 +1,9 @@
-﻿using System.Windows.Forms;
+﻿using ConcreteUI.Utils;
 
 namespace ConcreteUI.Controls
 {
     public interface ICursorPredicator
     {
-        Cursor? PredicatedCursor { get; }
+        SystemCursorType? PredicatedCursor { get; }
     }
 }

@@ -23,7 +23,7 @@ namespace ConcreteUI.Native
         SwapWithChangeWindowState = 0x8000
     }
 
-    public enum ShowWindowCommands
+    internal enum ShowWindowCommands
     {
         Hide = 0,
         ShowNormal = 1,
@@ -41,7 +41,7 @@ namespace ConcreteUI.Native
         ForceMinimize = 11
     }
 
-    public enum SystemMetric
+    internal enum SystemMetric
     {
         SM_CXSCREEN = 0,  // 0x00
         SM_CYSCREEN = 1,  // 0x01
@@ -140,7 +140,7 @@ namespace ConcreteUI.Native
         SM_SYSTEMDOCKED = 0x2004,
     }
 
-    public enum WindowCompositionAttribute
+    internal enum WindowCompositionAttribute
     {
         Undefined = 0,
         NCRenderingEnabled = 1,
@@ -171,7 +171,7 @@ namespace ConcreteUI.Native
         UseDarkModeColors = 26
     }
 
-    public enum AccentState
+    internal enum AccentState
     {
         Disabled = 0,
         EnableGradient = 1,
@@ -182,7 +182,7 @@ namespace ConcreteUI.Native
     }
 
     [Flags]
-    public enum AccentFlags
+    internal enum AccentFlags
     {
         // ... 
         None = 0x0,
@@ -195,34 +195,7 @@ namespace ConcreteUI.Native
     }
 
     [Flags]
-    public enum WindowStyles : uint
-    {
-        Border = 0x800000,
-        Caption = 0xc00000,
-        Child = 0x40000000,
-        ClipChildren = 0x2000000,
-        ClipSiblings = 0x4000000,
-        Disabled = 0x8000000,
-        DialogFrame = 0x400000,
-        Group = 0x20000,
-        HScroll = 0x100000,
-        Maximize = 0x1000000,
-        MaximizeBox = 0x10000,
-        Minimize = 0x20000000,
-        MinimizeBox = 0x20000,
-        Overlapped = 0x0,
-        OverlappedWindow = Overlapped | Caption | SystemMenu | SizeFrame | MinimizeBox | MaximizeBox,
-        Popup = 0x80000000,
-        PopupWindow = Popup | Border | SystemMenu,
-        SizeFrame = 0x40000,
-        SystemMenu = 0x80000,
-        TabStop = 0x10000,
-        Visible = 0x10000000,
-        VScroll = 0x200000
-    }
-
-    [Flags]
-    public enum ClassStyles : int
+    internal enum ClassStyles : int
     {
         None = 0,
         ByteAlignClient = 0x1000,
@@ -239,286 +212,82 @@ namespace ConcreteUI.Native
         VRedraw = 0x0001
     }
 
-    public enum HitTestValue : int
+    [Flags]
+    internal enum LoadOrCopyImageOptions : uint
     {
-        Error = -2,
-        Transparent = -1,
-        NoWhere = 0,
-        Client = 1,
-        Caption = 2,
-        SysMenu = 3,
-        Growbox = 4,
-        Menu = 5,
-        HScroll = 6,
-        VScroll = 7,
-        MinimizeButton = 8,
-        MaximizeButton = 9,
-        LeftBorder = 10,
-        RightBorder = 11,
-        TopBorder = 12,
-        TopLeftBorder = 13,
-        TopRightBorder = 14,
-        BottomBorder = 15,
-        BottomLeftBorder = 16,
-        BottomRightBorder = 17,
-        NormalBorder = 18,
-        Object = 19,
-        CloseButton = 20,
-        Help = 21
+        DefaultColor = 0x00000000,
+        Monochrome = 0x00000001,
+        Color = 0x00000002,
+        CopyReturnOrginal = 0x00000004,
+        CopyDeleteOriginal = 0x00000008,
+        LoadFromFile = 0x00000010,
+        LoadTransparent = 0x00000020,
+        DefaultSize = 0x00000040,
+        VgaColor = 0x00000080,
+        LoadMap3dColors = 0x00001000,
+        CreateDibSection = 0x00002000,
+        CopyFromResource = 0x00004000,
+        Shared = 0x00008000
     }
 
-    public enum WindowMessage : int
+    [Flags]
+    internal enum GetMonitorFlags : uint
     {
-        Null = 0x0000,
-        Create = 0x0001,
-        Destroy = 0x0002,
-        Move = 0x0003,
-        Size = 0x0005,
-        Activate = 0x0006,
-        SetFocus = 0x0007,
-        KillFocus = 0x0008,
-        Enable = 0x000A,
-        SetRedraw = 0x000B,
-        SetText = 0x000C,
-        GetText = 0x000D,
-        GetTextLength = 0x000E,
-        Paint = 0x000F,
-        Close = 0x0010,
-        QueryEndSession = 0x0011,
-        QueryOpen = 0x0013,
-        EndSession = 0x0016,
-        Quit = 0x0012,
-        EraseBackground = 0x0014,
-        SystemColorChange = 0x0015,
-        ShowWindow = 0x0018,
-        WinIniChange = 0x001A,
-        SettingChange = WinIniChange,
-        DeviceModeChange = 0x001B,
-        ActivateApp = 0x001C,
-        FontChange = 0x001D,
-        TimeChange = 0x001E,
-        CancelMode = 0x001F,
-        SetCursor = 0x0020,
-        MouseActivate = 0x0021,
-        ChildActivate = 0x0022,
-        QueueSync = 0x0023,
-        GetMinMaxInfo = 0x0024,
-        PaintIcon = 0x0026,
-        IconEraseBackground = 0x0027,
-        NextDialogControl = 0x0028,
-        SpoolerStatus = 0x002A,
-        DrawItem = 0x002B,
-        MeasureItem = 0x002C,
-        DeleteItem = 0x002D,
-        VKeyToItem = 0x002E,
-        CharToItem = 0x002F,
-        SetFont = 0x0030,
-        GetFont = 0x0031,
-        SetHotKey = 0x0032,
-        GetHotKey = 0x0033,
-        QueryDragIcon = 0x0037,
-        CompareItem = 0x0039,
-        GetObject = 0x003D,
-        Compacting = 0x0041,
-        WindowPositionChanging = 0x0046,
-        WindowPositionChanged = 0x0047,
-        Power = 0x0048,
-        CopyData = 0x004A,
-        CancelJournal = 0x004B,
-        Notify = 0x004E,
-        InputLanguageChangeRequest = 0x0050,
-        InputLanguageChange = 0x0051,
-        TCard = 0x0052,
-        Help = 0x0053,
-        UserChanged = 0x0054,
-        NotifyFormat = 0x0055,
-        ContextMenu = 0x007B,
-        StyleChanging = 0x007C,
-        StyleChanged = 0x007D,
-        DisplayChange = 0x007E,
-        GetIcon = 0x007F,
-        SetIcon = 0x0080,
-        NCCreate = 0x0081,
-        NCDestroy = 0x0082,
-        NCCalcSize = 0x0083,
-        NCHitTest = 0x0084,
-        NCPaint = 0x0085,
-        NCActivate = 0x0086,
-        GetDialogCode = 0x0087,
-        SyncPaint = 0x0088,
+        DefaultToNull = 0x00000000,
+        DefaultToPrimary = 0x00000001,
+        DefaultToNearest = 0x00000002
+    }
 
-        NCMouseMove = 0x00A0,
-        NCLeftButtonDown = 0x00A1,
-        NCLeftButtonUp = 0x00A2,
-        NCLeftButtonDoubleClick = 0x00A3,
-        NCRightButtonDown = 0x00A4,
-        NCRightButtonUp = 0x00A5,
-        NCRightButtonDoubleClick = 0x00A6,
-        NCMiddleButtonDown = 0x00A7,
-        NCMiddleButtonUp = 0x00A8,
-        NCMiddleButtonDoubleClick = 0x00A9,
-        NCExtraButtonDown = 0x00AB,
-        NCExtraButtonUp = 0x00AC,
-        NCExtraButtonDoubleClick = 0x00AD,
+    internal enum GetWindowCommand : uint
+    {
+        HwndFirst = 0,
+        HwndLast = 1,
+        HwndNext = 2,
+        HwndPrevious = 3,
+        Owner = 4,
+        Child = 5,
+        EnabledPopup = 6,
+    }
 
-        InputDeviceChange = 0x00FE,
-        Input = 0x00FF,
+    /// <summary>
+    /// Queue status flags for GetQueueStatus() and MsgWaitForMultipleObjects()
+    /// </summary>
+    [Flags]
+    internal enum QueueStatusFlags : uint
+    {
+        Key = 0x0001,
+        MouseMove = 0x0002,
+        MouseButton = 0x0004,
+        PostMessage = 0x0008,
+        Timer = 0x0010,
+        Paint = 0x0020,
+        SendMessage = 0x0040,
+        HotKey = 0x0080,
+        AllPostMessage = 0x0100,
+        RawInput = 0x0400,
+        Touch = 0x0800,
+        Pointer = 0x1000,
+        Mouse = MouseMove | MouseButton,
+        Input = Mouse | Key | RawInput | Touch | Pointer,
+        InputOld = Mouse | Key | RawInput,
+        AllEvents = Input | PostMessage | Timer | Paint | HotKey,
+        AllEventsOld = InputOld | PostMessage | Timer | Paint | HotKey,
+        AllInput = Input | PostMessage | Timer | Paint | HotKey | SendMessage,
+        AllInputOld = InputOld | PostMessage | Timer | Paint | HotKey | SendMessage
+    }
 
-        KeyDown = 0x0100,
-        KeyUp = 0x0101,
-        Char = 0x0102,
-        DeadChar = 0x0103,
-        SystemKeyDown = 0x0104,
-        SystemKeyUp = 0x0105,
-        SystemChar = 0x0106,
-        SystemDeadChar = 0x0107,
-        UniChar = 0x0109,
-
-        ImeStartComposition = 0x010D,
-        ImeEndComposition = 0x010E,
-        ImeComposition = 0x010F,
-        InitDialog = 0x0110,
-        Command = 0x0111,
-        SystemCommand = 0x0112,
-        Timer = 0x0113,
-        HScroll = 0x0114,
-        VScroll = 0x0115,
-        InitializeMenu = 0x0116,
-        InitMenuPopup = 0x0117,
-        MenuSelect = 0x011F,
-        MenuChar = 0x0120,
-        EnterIdle = 0x0121,
-        MenuRightButtonUp = 0x0122,
-        MenuDrag = 0x0123,
-        MenuGetObject = 0x0124,
-        UnInitMenuPopup = 0x0125,
-        MenuCommand = 0x0126,
-
-        ChangeUIState = 0x0127,
-        UpdateUIState = 0x0128,
-        QueryUIState = 0x0129,
-
-        ControlColorForMessageBox = 0x0132,
-        ControlColorForEdit = 0x0133,
-        ControlColorForListBox = 0x0134,
-        ControlColorFoRightButton = 0x0135,
-        ControlColorForDialog = 0x0136,
-        ControlColorForScrollBar = 0x0137,
-        ControlColorForStatic = 0x0138,
-        GetHandleOfMenu = 0x01E1,
-
-        MouseMove = 0x0200,
-        LeftButtonDown = 0x0201,
-        LeftButtonUp = 0x0202,
-        LeftButtonDoubleClick = 0x0203,
-        RightButtonDown = 0x0204,
-        RightButtonUp = 0x0205,
-        RightButtonDoubleClick = 0x0206,
-        MiddleButtonDown = 0x0207,
-        MiddleButtonUp = 0x0208,
-        MiddleButtonDoubleClick = 0x0209,
-        MouseWheel = 0x020A,
-        ExtraButtonDown = 0x020B,
-        ExtraButtonUp = 0x020C,
-        ExtraButtonDoubleClick = 0x020D,
-        MouseHWheel = 0x020E,
-
-        ParentNotify = 0x0210,
-        EnterMenuLoop = 0x0211,
-        ExitMenuLoop = 0x0212,
-
-        NextMenu = 0x0213,
-        Sizing = 0x0214,
-        CaptureChanged = 0x0215,
-        Moving = 0x0216,
-
-        PowerBroadcast = 0x0218,
-
-        DeviceChange = 0x0219,
-
-        MdiCreate = 0x0220,
-        MdiDestroy = 0x0221,
-        MdiActivate = 0x0222,
-        MdiRestore = 0x0223,
-        MdiNext = 0x0224,
-        MdiMaximize = 0x0225,
-        MdiTile = 0x0226,
-        MdiCascade = 0x0227,
-        MdiIconArrange = 0x0228,
-        MdiGetActive = 0x0229,
-        MdiSetmenu = 0x0230,
-
-        EnterSizeMove = 0x0231,
-        ExitSizeMove = 0x0232,
-        Dropfiles = 0x0233,
-        MdiRefreshMenu = 0x0234,
-
-        ImeSetContext = 0x0281,
-        ImeNotify = 0x0282,
-        ImeControl = 0x0283,
-        ImeCompositionFull = 0x0284,
-        ImeSelect = 0x0285,
-        ImeChar = 0x0286,
-        ImeRequest = 0x0288,
-        ImeKeyDown = 0x0290,
-        ImeKeyUp = 0x0291,
-
-        MouseHover = 0x02A1,
-        MouseLeave = 0x02A3,
-        NCMouseHover = 0x02A0,
-        NCMouseLeave = 0x02A2,
-
-        WTSSessionChange = 0x02B1,
-
-        TabletFirst = 0x02c0,
-        TabletAdded = TabletFirst + 8,
-        TabletDeleted = TabletFirst + 9,
-        TabletFlick = TabletFirst + 11,
-        TabletQuerySystemGestureStatus = TabletFirst + 12,
-        TabletLast = TabletFirst + 20,
-
-        DpiChanged = 0x02E0,
-
-        Cut = 0x0300,
-        Copy = 0x0301,
-        Paste = 0x0302,
-        Clear = 0x0303,
-        Undo = 0x0304,
-        RenderFormat = 0x0305,
-        RenderAllFormats = 0x0306,
-        DestroyClipboard = 0x0307,
-        DrawClipboard = 0x0308,
-        PaintClipboard = 0x0309,
-        VScrollClipboard = 0x030A,
-        SizeClipboard = 0x030B,
-        AskClipBoardFormatName = 0x030C,
-        ChangeClipBoardChain = 0x030D,
-        HScrollClipboard = 0x030E,
-        QueryNewPalette = 0x030F,
-        PaletteIsChanging = 0x0310,
-        PaletteChanged = 0x0311,
-        Hotkey = 0x0312,
-
-        Print = 0x0317,
-        PrintClient = 0x0318,
-
-        AppCommand = 0x0319,
-
-        ThemeChanged = 0x031A,
-
-        ClipboardUpdate = 0x031D,
-
-        DwmCompositionChanged = 0x031E,
-        DwmNCRenderingChanged = 0x031F,
-        DwmColorizationColorChanged = 0x0320,
-        DwmWindowMaximizedChange = 0x0321,
-
-        GetTitleBarInfoEx = 0x033F,
-
-        CustomClassMessageStart = 0x0400,
-        MFCReflect = CustomClassMessageStart + 0x1C00,
-
-        AppDefinedMessageStart = 0x8000,
-        RegisterWindowMessageStart = 0xC000,
+    /// <summary>
+    /// PeekMessage() Options
+    /// </summary>
+    [Flags]
+    internal enum PeekMessageOptions : uint
+    {
+        NoRemove = 0x0000,
+        Remove = 0x0001,
+        NoYield = 0x0002,
+        QueuedInput = QueueStatusFlags.Input << 16,
+        QueuedPostMessage = (QueueStatusFlags.PostMessage | QueueStatusFlags.HotKey | QueueStatusFlags.Timer) << 16,
+        QueuedPaint = QueueStatusFlags.Paint << 16,
+        QueuedSendMessage = QueueStatusFlags.SendMessage << 16
     }
 }

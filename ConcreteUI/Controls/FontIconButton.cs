@@ -44,13 +44,13 @@ namespace ConcreteUI.Controls
             D2D1Brush brush;
             switch (PressState)
             {
-                case ButtonPressState.Default:
+                case ButtonTriState.None:
                     brush = _brushes[(int)Brush.ButtonBrush];
                     break;
-                case ButtonPressState.Hovered:
+                case ButtonTriState.Hovered:
                     brush = _brushes[(int)Brush.ButtonHoveredBrush];
                     break;
-                case ButtonPressState.Pressed:
+                case ButtonTriState.Pressed:
                     brush = _brushes[(int)Brush.ButtonPressedBrush];
                     break;
                 default:

@@ -40,7 +40,6 @@ namespace ConcreteUI.Internals
                                 else
                                     FluentHandler.EnableMicaBackdrop(handle);
                             }
-                            window.BackColor = Color.Black;
                             break;
                     }
                     FluentHandler.ApplyWin11Corner(handle);
@@ -59,7 +58,6 @@ namespace ConcreteUI.Internals
                             fixLagObject = FluentHandler.FixLagForBlur(window);
                             break;
                         case WindowMaterial.Integrated:
-                            window.BackColor = Color.Black;
                             break;
                     }
                     FluentHandler.ApplyWin11Corner(handle);
@@ -77,7 +75,6 @@ namespace ConcreteUI.Internals
                             FluentHandler.EnableBlur(handle);
                             goto default;
                         default:
-                            window.BackColor = Color.Black;
                             break;
                     }
                     FluentHandler.SetDarkThemeInWin10_19H1(isDarkTheme);
@@ -93,7 +90,6 @@ namespace ConcreteUI.Internals
                             FluentHandler.EnableBlur(handle);
                             goto default;
                         default:
-                            window.BackColor = Color.Black;
                             break;
                     }
                     break;
@@ -104,7 +100,6 @@ namespace ConcreteUI.Internals
                             FluentHandler.EnableBlur(handle);
                             goto default;
                         default:
-                            window.BackColor = Color.Black;
                             break;
                     }
                     break;
@@ -115,7 +110,6 @@ namespace ConcreteUI.Internals
                         case WindowMaterial.Integrated:
                             if (AeroHandler.HasBlur())
                                 AeroHandler.EnableBlur(handle);
-                            window.BackColor = Color.Black;
                             break;
                         default:
                             break;

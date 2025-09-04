@@ -1,10 +1,8 @@
-﻿using System.Windows.Forms;
-
-namespace ConcreteUI.Controls
+﻿namespace ConcreteUI.Controls
 {
     public interface IKeyEvents
     {
-        void OnKeyDown(KeyEventArgs args);
-        void OnKeyUp(KeyEventArgs args);
+        void OnKeyDown(ref KeyInteractEventArgs args);
+        void OnKeyUp(ref KeyInteractEventArgs args);
     }
 }

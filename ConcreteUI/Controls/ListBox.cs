@@ -5,7 +5,6 @@ using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Windows.Forms;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -282,6 +281,7 @@ namespace ConcreteUI.Controls
                 return;
             RectF renderingBounds = RectF.FromXYWH(bounds.X + gap, bounds.Y + gap, itemHeight - gap, itemHeight - gap);
             context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
+            RenderBackground(context);
             if (isChecked)
             {
                 RenderBackground(context, backBrush);
@@ -356,7 +356,7 @@ namespace ConcreteUI.Controls
             base.OnSizeChanged();
         }
 
-        public override void OnMouseMove(in MouseInteractEventArgs args)
+        public override void OnMouseMove(in MouseNotifyEventArgs args)
         {
             base.OnMouseMove(args);
             if (!ContentBounds.Contains(args.Location))
@@ -390,18 +390,18 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        public override void OnMouseDown(in MouseInteractEventArgs args)
+        public override void OnMouseDown(ref MouseInteractEventArgs args)
         {
-            base.OnMouseDown(args);
-            if (Mode != ListBoxMode.None)
-            {
-                if (_buttonState == ButtonTriState.Hovered)
-                    _buttonState = ButtonTriState.Pressed;
-                Update();
-            }
+            base.OnMouseDown(ref args);
+            if (args.Handled || Mode == ListBoxMode.None || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+                return;
+            args.Handle();
+            if (_buttonState == ButtonTriState.Hovered)
+                _buttonState = ButtonTriState.Pressed;
+            Update();
         }
 
-        public override void OnMouseUp(in MouseInteractEventArgs args)
+        public override void OnMouseUp(in MouseNotifyEventArgs args)
         {
             base.OnMouseUp(args);
             ListBoxMode mode = Mode;
@@ -411,11 +411,6 @@ namespace ConcreteUI.Controls
                 _buttonState = ButtonTriState.Hovered;
             else
                 _buttonState = ButtonTriState.None;
-            if (args.Button != MouseButtons.Left)
-            {
-                Update();
-                return;
-            }
             switch (Mode)
             {
                 case ListBoxMode.Any:
@@ -482,6 +477,6 @@ namespace ConcreteUI.Controls
             => stateVectorList[index] = !stateVectorList[index];
 
         [Inline(InlineBehavior.Remove)]
-        private void ClearCheckStateCore() => _stateVectorList.Clear();
+        private void ClearCheckStateCore() => _stateVectorList.SetAllBitsAsFalse();
     }
 }

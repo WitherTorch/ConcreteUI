@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 using System.Security;
 
 namespace ConcreteUI.Native
@@ -9,6 +10,30 @@ namespace ConcreteUI.Native
         private const string KERNEL32_DLL = "kernel32.dll";
 
         [DllImport(KERNEL32_DLL)]
-        public static extern int GetCurrentThreadId();
+        public static extern uint GetCurrentThreadId();
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern IntPtr GetModuleHandleW(char* lpModuleName);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern IntPtr GlobalAlloc(GlobalAllocFlags uFlags, nuint dwBytes);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern IntPtr GlobalFree(IntPtr hMem);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern void* GlobalLock(IntPtr hMem);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern bool GlobalUnlock(IntPtr hMem);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern IntPtr CreateWaitableTimerW(void* lpTimerAttributes, bool bManualReset, char* lpTimerName);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern bool SetWaitableTimer(IntPtr hTimer, long* lpDueTime, nint lPeriod, void* pfnCompletionRoutine, void* lpArgToCompletionRoutine, bool fResume);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern bool CloseHandle(IntPtr hObject);
     }
 }

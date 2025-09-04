@@ -23,7 +23,7 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class ComboBox : UIElement, IDisposable, IMouseEvents
+    public sealed partial class ComboBox : UIElement, IDisposable, IMouseInteractEvents
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -49,7 +49,7 @@ namespace ConcreteUI.Controls
         private long _rawUpdateFlags;
         private float _fontSize;
         private int _selectedIndex, _dropDownListVisibleCount;
-        private bool _hovered, _enabled, _disposed;
+        private bool _isPressed, _hovered, _enabled, _disposed;
 
         public ComboBox(CoreWindow window) : base(window, "app.comboBox")
         {
@@ -171,109 +171,84 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        public void OnMouseDown(in MouseInteractEventArgs args)
+        public void OnMouseDown(ref MouseInteractEventArgs args)
         {
-            if (_enabled)
+            if (!_enabled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+                return;
+
+            _isPressed = true;
+            _state = ButtonTriState.Pressed;
+            Update();
+
+            if (_items.Count <= 0)
+                return;
+            WindowMessageLoop.InvokeAsync(() =>
             {
-                if (Bounds.Contains(args.Location))
-                {
-                    _state = ButtonTriState.Pressed;
-                    Update();
-                    if (_items.Count > 0)
-                    {
-                        ComboBoxDropdownList dropdownList = new ComboBoxDropdownList(this, _window);
-                        dropdownList.ItemClicked += ListControl_ItemClicked;
-                        RequestDropdownListOpening?.Invoke(this, new DropdownListEventArgs(dropdownList));
-                    }
-                }
+                EventHandler<DropdownListEventArgs>? eventHandler = RequestDropdownListOpening;
+                if (eventHandler is null)
+                    return;
+                ComboBoxDropdownList dropdownList = new ComboBoxDropdownList(this, _window);
+                dropdownList.ItemClicked += ListControl_ItemClicked;
+                eventHandler.Invoke(this, new DropdownListEventArgs(dropdownList));
+            });
+        }
+
+        public void OnMouseUp(in MouseNotifyEventArgs args)
+        {
+            if (!_enabled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
-            }
-            if (_state == ButtonTriState.None)
+
+            _isPressed = false;
+            if (_state != ButtonTriState.Pressed)
                 return;
-            _state = ButtonTriState.None;
+            Rectangle bounds = Bounds;
+            RectangleF buttonRect = new RectangleF(bounds.Right - bounds.Height + 1, bounds.Top + 1, bounds.Height - 2, bounds.Height - 2);
+            _state = buttonRect.Contains(args.Location) ? ButtonTriState.Hovered : ButtonTriState.None;
             Update();
         }
 
-        public void OnMouseUp(in MouseInteractEventArgs args)
+        public void OnMouseMove(in MouseNotifyEventArgs args)
         {
-            if (_enabled)
-            {
-                if (Bounds.Contains(args.Location))
-                {
-                    _state = ButtonTriState.Hovered;
-                }
-                else
-                {
-                    _state = ButtonTriState.None;
-                }
-                Update();
+            if (!_enabled)
                 return;
-            }
-            if (_state == ButtonTriState.None)
-                return;
-            _state = ButtonTriState.None;
-            Update();
-        }
+            Rectangle bounds = Bounds;
 
-        public void OnMouseMove(in MouseInteractEventArgs args)
-        {
-            if (Enabled)
+            bool newHovered;
+            ButtonTriState newButtonState;
+            if (!bounds.Contains(args.Location))
             {
-                Rectangle bounds = Bounds;
-                RectangleF buttonRect = new RectangleF(bounds.Right - bounds.Height + 1, bounds.Top + 1, bounds.Height - 2, bounds.Height - 2);
-                if (bounds.Contains(args.Location))
-                {
-                    if (!_hovered)
-                    {
-                        _hovered = true;
-                        Update();
-                    }
-                    if (buttonRect.Contains(args.Location))
-                    {
-                        if (_state != ButtonTriState.Hovered)
-                        {
-                            _state = ButtonTriState.Hovered;
-                            if (_hovered) Update();
-                        }
-                    }
-                    else
-                    {
-                        if (_state == ButtonTriState.Hovered)
-                        {
-                            _state = ButtonTriState.None;
-                            if (_hovered) Update();
-                        }
-                    }
-                }
-                else
-                {
-                    if (_hovered)
-                    {
-                        _hovered = false;
-                        _state = ButtonTriState.None;
-                        Update();
-                    }
-                    else if (_state != ButtonTriState.None)
-                    {
-                        _state = ButtonTriState.None;
-                        Update();
-                    }
-                }
+                newButtonState = ButtonTriState.None;
+                newHovered = false;
+                goto Update;
             }
-            else
+
+            newHovered = true;
+            if (_isPressed)
             {
-                if (_state != ButtonTriState.None)
-                {
-                    _state = ButtonTriState.None;
-                    Update();
-                }
+                newButtonState = ButtonTriState.Pressed;
+                goto Update;
             }
+
+            RectangleF buttonRect = new RectangleF(bounds.Right - bounds.Height + 1, bounds.Top + 1, bounds.Height - 2, bounds.Height - 2);
+            newButtonState = buttonRect.Contains(args.Location) ? ButtonTriState.Hovered : ButtonTriState.None;
+
+        Update:
+            if (_state == newButtonState && _hovered == newHovered)
+                return;
+            _state = newButtonState;
+            _hovered = newHovered;
+            Update();
         }
 
         private void ListControl_ItemClicked(object? sender, int selectedIndex)
         {
             if (sender is not ComboBoxDropdownList dropdownList)
                 return;
+            if (_state != ButtonTriState.None)
+            {
+                _state = ButtonTriState.None;
+                Update();
+            }
             SelectedIndex = selectedIndex;
             ItemClicked?.Invoke(this, EventArgs.Empty);
         }

@@ -2,8 +2,7 @@
 {
     public interface IMouseEvents
     {
-        void OnMouseMove(in MouseInteractEventArgs args);
-        void OnMouseDown(in MouseInteractEventArgs args);
-        void OnMouseUp(in MouseInteractEventArgs args);
+        void OnMouseUp(in MouseNotifyEventArgs args);
+        void OnMouseMove(in MouseNotifyEventArgs args);
     }
 }

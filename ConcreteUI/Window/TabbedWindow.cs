@@ -1,6 +1,7 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Diagnostics;
+using System.Drawing;
 using System.Threading;
-using System.Windows.Forms;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
@@ -45,7 +46,7 @@ namespace ConcreteUI.Window
 
         #region Fields
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly string[] menuTitles;
+        private readonly string[] _menuTitles;
         private DWriteTextLayout[]? menuBarButtonLayouts;
         private float menuBarButtonLastRight;
         private RectF[]? menuBarButtonRects;
@@ -61,20 +62,27 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Constructor
-        protected TabbedWindow(CoreWindow? parent, string[] menuTitles) : base(parent)
+        protected TabbedWindow(CoreWindow? parent, string[] menuTitles, bool passParentToUnderlyingWindow = false) : base(parent, passParentToUnderlyingWindow)
         {
-            FormBorderStyle = FormBorderStyle.Sizable;
-            this.menuTitles = menuTitles;
+            _menuTitles = menuTitles;
         }
         #endregion
 
         #region Override Methods
-        protected override HitTestValue CustomHitTest(in PointF clientPoint)
+        protected override HitTestValue CustomHitTest(PointF clientPoint)
         {
-            HitTestValue result = base.CustomHitTest(in clientPoint);
+            HitTestValue result = base.CustomHitTest(clientPoint);
             if (result != HitTestValue.NoWhere && result != HitTestValue.Client)
+            {
+                ulong val = MenuBarButtonStatus.Exchange(0UL);
+                if (val > 0UL)
+                {
+                    MenuBarButtonChangedStatus |= val;
+                    Update();
+                }
                 return result;
-            if (MousePositionChangedForMenuBar(in clientPoint, false))
+            }
+            if (MousePositionChangedForMenuBar(clientPoint, false))
                 return HitTestValue.Client;
             float clientY = clientPoint.Y;
             RectF[]? menuBarButtonRects = InterlockedHelper.Read(ref this.menuBarButtonRects);
@@ -128,7 +136,7 @@ namespace ConcreteUI.Window
         {
             base.ApplyThemeCore(provider);
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
-            GenerateMenu(menuTitles, baseX: 0, baseY: 27, menuExtraWidth: UIConstants.ElementMarginDouble,
+            GenerateMenu(_menuTitles, baseX: 0, baseY: 27, menuExtraWidth: UIConstants.ElementMarginDouble,
                 out RectF[] menuBarButtonRects, out DWriteTextLayout[] menuBarButtonLayouts);
             this.menuBarButtonRects = menuBarButtonRects;
             DisposeHelper.SwapDispose(ref this.menuBarButtonLayouts, menuBarButtonLayouts);
@@ -210,23 +218,60 @@ namespace ConcreteUI.Window
             #endregion
         }
 
-        protected override void OnMouseDownForElements(in MouseInteractEventArgs args)
+        protected override void OnMouseDown(ref MouseInteractEventArgs args)
         {
-            RectF[]? menuBarButtonRects = InterlockedHelper.Read(ref this.menuBarButtonRects);
-            if (menuBarButtonRects is null)
-                return;
-            for (int i = 0, count = menuBarButtonRects.Length; i < count; i++)
+            MouseButtons buttons = args.Buttons;
+            if (buttons.HasFlagOptimized(MouseButtons.LeftButton))
             {
-                if (menuBarButtonRects[i].Contains(args.Location))
-                {
-                    CurrentPage = i;
+                RectF[]? menuBarButtonRects = InterlockedHelper.Read(ref this.menuBarButtonRects);
+                if (menuBarButtonRects is null)
                     return;
+                for (int i = 0, count = menuBarButtonRects.Length; i < count; i++)
+                {
+                    if (menuBarButtonRects[i].Contains(args.Location))
+                    {
+                        CurrentPage = i;
+                        return;
+                    }
                 }
             }
-            base.OnMouseDownForElements(args);
+            base.OnMouseDown(ref args);
+            if (args.Handled)
+                return;
+            if (buttons.HasFlagOptimized(MouseButtons.XButton2))
+            {
+                if (!buttons.HasFlagOptimized(MouseButtons.XButton1))
+                {
+                    args.Handle();
+                    NavigateBackPage(args.Location);
+                }
+            }
+            if (buttons.HasFlagOptimized(MouseButtons.XButton1))
+            {
+                if (!buttons.HasFlagOptimized(MouseButtons.XButton2))
+                {
+                    args.Handle();
+                    NavigateForwardPage(args.Location);
+                }
+            }
         }
 
-        protected virtual bool MousePositionChangedForMenuBar(in PointF point, bool requireUpdate)
+        protected virtual void NavigateBackPage(PointF location)
+        {
+            int page = CurrentPage - 1;
+            CurrentPage = (page < 0) ? _menuTitles.Length - 1 : page;
+            return;
+        }
+
+        protected virtual void NavigateForwardPage(PointF location)
+        {
+            int page = CurrentPage + 1;
+            int length = _menuTitles.Length;
+            CurrentPage = (page >= length) ? 0 : page;
+            return;
+        }
+
+        protected virtual bool MousePositionChangedForMenuBar(PointF point, bool requireUpdate)
         {
             RectF[]? menuBarButtonRects = InterlockedHelper.Read(ref this.menuBarButtonRects);
             if (menuBarButtonRects is null)
@@ -301,10 +346,12 @@ namespace ConcreteUI.Window
         #endregion
 
         #region WndProc
-        protected override void WndProc(ref Message m)
+        protected override bool TryProcessSystemWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
-            switch ((WindowMessage)m.Msg)
+            switch (message)
             {
+                case WindowMessage.NCMouseMove:
+                case WindowMessage.NCMouseLeave:
                 case WindowMessage.MouseLeave:
                     ulong val = MenuBarButtonStatus.Exchange(0UL);
                     if (val > 0UL)
@@ -314,15 +361,14 @@ namespace ConcreteUI.Window
                     }
                     goto default;
                 default:
-                    base.WndProc(ref m);
-                    break;
+                    return base.TryProcessSystemWindowMessage(hwnd, message, wParam, lParam, out result);
             }
         }
         #endregion
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
-            base.Dispose(disposing);
+            base.DisposeCore(disposing);
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref menuBarButtonLayouts);

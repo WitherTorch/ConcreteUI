@@ -8,11 +8,10 @@ using ConcreteUI.Controls;
 using ConcreteUI.Input;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
+using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
 using WitherTorch.Common.Collections;
-
-using FormStartPosition = System.Windows.Forms.FormStartPosition;
 
 namespace ConcreteUI.Test
 {
@@ -27,18 +26,30 @@ namespace ConcreteUI.Test
             InitializeBaseInformation();
         }
 
+        protected override CreateWindowInfo GetCreateWindowInfo()
+        {
+            CreateWindowInfo windowInfo = base.GetCreateWindowInfo();
+            windowInfo.Width = 950;
+            windowInfo.Height = 700;
+            return windowInfo;
+        }
+
+        protected override void OnHandleCreated(nint handle)
+        {
+            base.OnHandleCreated(handle);
+            if (!Screen.TryGetBoundsCenteredScreen(handle, out Rectangle bounds))
+                return;
+            RawBounds = bounds;
+        }
+
         private void InitializeBaseInformation()
         {
-            ClientSize = new Size(950, 700);
             MinimumSize = new Size(640, 560);
             Text = nameof(MainWindow);
-            StartPosition = FormStartPosition.CenterScreen;
-            Stream? stream = Assembly.GetEntryAssembly()?.GetManifestResourceStream("ConcreteUI.Test.app-icon.ico");
-            if (stream is not null)
-            {
-                Icon = new Icon(stream);
-                stream.Dispose();
-            }
+            using Stream? stream = Assembly.GetEntryAssembly()?.GetManifestResourceStream("ConcreteUI.Test.app-icon.ico");
+            if (stream is null)
+                return;
+            Icon = new Icon(stream);
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
@@ -169,7 +180,7 @@ namespace ConcreteUI.Test
             ChangeOverlayElement(e.DropdownList);
         }
 
-        private void Button_Click(UIElement sender, in MouseInteractEventArgs args)
+        private void Button_Click(UIElement sender, in MouseNotifyEventArgs args)
         {
             if (CurrentTheme?.IsDarkTheme ?? false)
             {
@@ -185,19 +196,19 @@ namespace ConcreteUI.Test
             }
         }
 
-        private void LeftButton_Click(UIElement sender, in MouseInteractEventArgs args)
+        private void LeftButton_Click(UIElement sender, in MouseNotifyEventArgs args)
         {
             _progressBar!.Value -= 1.0f;
         }
 
-        private void RightButton_Click(UIElement sender, in MouseInteractEventArgs args)
+        private void RightButton_Click(UIElement sender, in MouseNotifyEventArgs args)
         {
             _progressBar!.Value += 1.0f;
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
-            base.Dispose(disposing);
+            base.DisposeCore(disposing);
             if (disposing)
             {
                 foreach (UnwrappableList<UIElement> elementList in _elementLists)

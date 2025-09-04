@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Windows.Forms;
 
 using ConcreteUI.Native;
 
@@ -175,12 +174,12 @@ namespace ConcreteUI.Input.NativeHelper
             Imm32.ImmSetCompositionWindow(himc, pForm);
         }
 
-        public Keys GetRealKeyCode()
+        public VirtualKey GetRealKeyCode()
         {
             IntPtr handle = himc;
             if (handle == IntPtr.Zero)
-                return Keys.None;
-            return (Keys)Imm32.ImmGetVirtualKey(handle) & Keys.KeyCode;
+                return VirtualKey.None;
+            return (VirtualKey)Imm32.ImmGetVirtualKey(handle);
         }
 
         protected virtual void DisposeHIMC()

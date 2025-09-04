@@ -16,7 +16,6 @@ namespace ConcreteUI.Controls
         private readonly CoreWindow window;
         private readonly Func<UIElement, bool>? checkingFunc;
         private readonly ConcurrentDictionary<UIElement, string> toolTipTextDict;
-        private readonly System.Windows.Forms.ToolTip toolTip;
 
         private UIElement? _currentElement;
         private bool isPopup = false;
@@ -27,19 +26,9 @@ namespace ConcreteUI.Controls
             this.checkingFunc = checkingFunc;
             toolTipTextDict = new ConcurrentDictionary<UIElement, string>();
             _currentElement = this;
-            toolTip = new System.Windows.Forms.ToolTip()
-            {
-                ShowAlways = false,
-            };
-            toolTip.Popup += ToolTip_Popup;
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider) { }
-
-        private void ToolTip_Popup(object? sender, System.Windows.Forms.PopupEventArgs e)
-        {
-            isPopup = true;
-        }
 
         public void SetToolTip(string text)
         {
@@ -70,7 +59,7 @@ namespace ConcreteUI.Controls
             }
             if (_currentElement == element)
             {
-                toolTip.SetToolTip(window, text);
+                //toolTip.SetToolTip(window, text);
             }
         }
 
@@ -93,14 +82,14 @@ namespace ConcreteUI.Controls
                 {
                     if (Interlocked.Exchange(ref _currentElement, element) != element)
                     {
-                        toolTip.SetToolTip(window, text);
+                        //toolTip.SetToolTip(window, text);
                     }
                     return;
                 }
             }
             if (Interlocked.Exchange(ref _currentElement, this) != this)
             {
-                toolTip.SetToolTip(window, fallbackText);
+                //toolTip.SetToolTip(window, fallbackText);
             }
         }
 
@@ -108,30 +97,24 @@ namespace ConcreteUI.Controls
 
         protected override bool RenderCore(DirtyAreaCollector collector) => true;
 
-        public void OnMouseDown(in MouseInteractEventArgs args)
-        {
-        }
-
         PointF lastPoint;
-        public void OnMouseMove(in MouseInteractEventArgs args)
+        public void OnMouseMove(in MouseNotifyEventArgs args)
         {
-            if (lastPoint != args.Location)
+            PointF point = args.Location;
+            if (lastPoint == point)
+                return;
+            lastPoint = point;
+
+            if (isPopup)
             {
-                lastPoint = args.Location;
-
-                if (isPopup)
-                {
-                    isPopup = false;
-                    toolTip.SetToolTip(window, null);
-                    Interlocked.Exchange(ref _currentElement, null);
-                }
-                CheckToolTip(args.Location);
+                isPopup = false;
+               // toolTip.SetToolTip(window, null);
+                Interlocked.Exchange(ref _currentElement, null);
             }
+            CheckToolTip(point);
         }
 
-        public void OnMouseUp(in MouseInteractEventArgs args)
-        {
-        }
+        public void OnMouseUp(in MouseNotifyEventArgs args) { }
 
     }
 }

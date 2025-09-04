@@ -4,7 +4,9 @@ namespace ConcreteUI.Controls
 {
     partial class ButtonBase
     {
-        protected ButtonPressState PressState
+        public event MouseNotifyEventHandler? Click;
+
+        protected ButtonTriState PressState
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _pressState;

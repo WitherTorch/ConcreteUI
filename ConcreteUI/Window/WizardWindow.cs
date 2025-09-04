@@ -2,7 +2,6 @@
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Windows.Forms;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
@@ -60,9 +59,8 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Constructor
-        protected WizardWindow(CoreWindow parent) : base(parent)
+        protected WizardWindow(CoreWindow parent, bool passParentToUnderlyingWindow = true) : base(parent, passParentToUnderlyingWindow)
         {
-            FormBorderStyle = FormBorderStyle.FixedDialog;
             MinimizeBox = false;
             MaximizeBox = false;
             ShowTitle = WindowMaterial == WindowMaterial.Integrated;
@@ -96,6 +94,13 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Override Methods
+
+        protected override CreateWindowInfo GetCreateWindowInfo()
+        {
+            CreateWindowInfo windowInfo = base.GetCreateWindowInfo();
+            windowInfo.Styles = (windowInfo.Styles & WindowStyles.SystemMenu) | WindowStyles.DialogFrame;
+            return windowInfo;
+        }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
@@ -170,7 +175,6 @@ namespace ConcreteUI.Window
                 RectF pageRect = _pageRect;
                 rect = new RectF(titleBarRect.Left, titleBarRect.Bottom, titleBarRect.Right, pageRect.Top);
             }
-            rect = GraphicsUtils.AdjustRectangleF(rect);
             deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
             ClearDC(deviceContext);
             if (titleLayout is not null)
@@ -220,7 +224,7 @@ namespace ConcreteUI.Window
             }
         }
 
-        protected override HitTestValue CustomHitTest(in PointF clientPoint)
+        protected override HitTestValue CustomHitTest(PointF clientPoint)
         {
             HitTestValue result = base.CustomHitTest(clientPoint);
             if (result == HitTestValue.NoWhere)
@@ -247,9 +251,9 @@ namespace ConcreteUI.Window
 
         protected D2D1Brush GetBrush(Brush brush) => _brushes[(int)brush];
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
-            base.Dispose(disposing);
+            base.DisposeCore(disposing);
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);

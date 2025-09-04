@@ -6,7 +6,6 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
-using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 

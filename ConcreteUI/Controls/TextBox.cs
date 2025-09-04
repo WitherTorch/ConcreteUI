@@ -25,12 +25,9 @@ using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Text;
 using WitherTorch.Common.Windows.Structures;
 
-using Cursor = System.Windows.Forms.Cursor;
-using Keys = System.Windows.Forms.Keys;
-
 namespace ConcreteUI.Controls
 {
-    public sealed partial class TextBox : ScrollableElementBase, IIMEControl, IGlobalMouseEvents, IKeyEvents, ICharacterEvents, ICursorPredicator
+    public sealed partial class TextBox : ScrollableElementBase, IIMEControl, IMouseInteractEvents, IMouseNotifyEvents, IKeyEvents, ICharacterEvents, ICursorPredicator
     {
         private static readonly char[] LineSeparators = ['\r', '\n'];
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
@@ -51,7 +48,7 @@ namespace ConcreteUI.Controls
         private readonly InputMethod? _ime;
         private readonly Timer _caretTimer;
 
-        private Cursor? _cursor;
+        private SystemCursorType? _cursorType;
         private DWriteTextLayout? _layout, _watermarkLayout;
         private string? _fontName;
         private string _text, _watermark;
@@ -404,7 +401,7 @@ namespace ConcreteUI.Controls
                     for (int i = 0; i < length; i++)
                     {
                         DWriteHitTestMetrics rangeMetrics = metricsArray![i];
-                        RectF selectionBounds = GraphicsUtils.AdjustRectangleF(new RectangleF(layoutPoint.X + rangeMetrics.Left, layoutPoint.Y + rangeMetrics.Top, rangeMetrics.Width, rangeMetrics.Height));
+                        RectF selectionBounds = new RectangleF(layoutPoint.X + rangeMetrics.Left, layoutPoint.Y + rangeMetrics.Top, rangeMetrics.Width, rangeMetrics.Height);
                         context.FillRectangle(selectionBounds, selectionBackBrush);
                     }
                 }
@@ -448,66 +445,71 @@ namespace ConcreteUI.Controls
 
         #region Normal Key Controls
 
-        public void OnKeyDown(System.Windows.Forms.KeyEventArgs args)
+        public void OnKeyDown(ref KeyInteractEventArgs args)
         {
-            if (!_focused || !Enabled || args.Handled)
+            if (!_focused || !Enabled)
                 return;
-            KeyDown?.Invoke(this, args);
-            if (args.Handled || args.Alt)
+            KeyInteractEventHandler? eventHandler = KeyDown;
+            if (eventHandler is not null)
+            {
+                eventHandler.Invoke(this, ref args);
+                if (args.Handled)
+                    return;
+            }
+            if (Keys.IsAltPressed())
                 return;
-            bool isCtrlPressed = args.Control;
-            bool isShiftPressed = args.Shift;
+            bool isCtrlPressed = Keys.IsControlPressed();
+            bool isShiftPressed = Keys.IsShiftPressed();
             bool justCtrlPressed = isCtrlPressed && !isShiftPressed;
-            Keys keyCode = args.KeyCode;
+            VirtualKey keyCode = args.Key;
             switch (keyCode)
             {
-                case Keys.X when justCtrlPressed: // Ctrl + X
+                case VirtualKey.X when justCtrlPressed: // Ctrl + X
                     Cut();
                     break;
-                case Keys.C when justCtrlPressed: // Ctrl + C
+                case VirtualKey.C when justCtrlPressed: // Ctrl + C
                     Copy();
                     break;
-                case Keys.V when justCtrlPressed: // Ctrl + V
+                case VirtualKey.V when justCtrlPressed: // Ctrl + V
                     Paste();
                     break;
-                case Keys.A when justCtrlPressed: // Ctrl + A
+                case VirtualKey.A when justCtrlPressed: // Ctrl + A
                     SelectAll();
                     break;
-                case Keys.Delete:
+                case VirtualKey.Delete:
                     DeleteOne();
                     break;
-                case Keys.Left when isCtrlPressed:
-                case Keys.Home:
+                case VirtualKey.LeftArrow when isCtrlPressed:
+                case VirtualKey.Home:
                     MoveToStart(isShiftPressed);
                     break;
-                case Keys.Right when isCtrlPressed:
-                case Keys.End:
+                case VirtualKey.RightArrow when isCtrlPressed:
+                case VirtualKey.End:
                     MoveToEnd(isShiftPressed);
                     break;
-                case Keys.Left:
+                case VirtualKey.LeftArrow:
                     MoveLeft(isShiftPressed);
                     break;
-                case Keys.Right:
+                case VirtualKey.RightArrow:
                     MoveRight(isShiftPressed);
                     break;
-                case Keys.Up:
+                case VirtualKey.UpArrow:
                     MoveUp();
                     break;
-                case Keys.Down:
+                case VirtualKey.DownArrow:
                     MoveDown();
                     break;
-                case Keys.Enter:
+                case VirtualKey.Enter:
                     NextLine();
                     break;
             }
         }
 
-        public void OnKeyUp(System.Windows.Forms.KeyEventArgs args)
+        public void OnKeyUp(ref KeyInteractEventArgs args)
         {
-            if (_focused && Enabled)
-            {
-                KeyUp?.Invoke(this, args);
-            }
+            if (!_focused || !Enabled)
+                return;
+            KeyUp?.Invoke(this, ref args);
         }
         #endregion
 
@@ -590,10 +592,12 @@ namespace ConcreteUI.Controls
             }
         }
 
-        void ICharacterEvents.OnCharacterInput(char character)
+        void ICharacterEvents.OnCharacterInput(ref CharacterInteractEventArgs args)
         {
             if (!_focused || !Enabled)
-                return;
+                return; 
+            args.Handle();
+            char character = args.Character;
             if (character < '\u0020')
             {
                 switch (character)
@@ -659,14 +663,7 @@ namespace ConcreteUI.Controls
         {
             string text = selectionRange.Length <= 0 ? string.Empty : _text.Substring(MathHelper.MakeSigned(selectionRange.ToTextRange().StartPosition), selectionRange.Length);
             RemoveSelection();
-            if (_window.InvokeRequired)
-            {
-                _window.Invoke(new Action(() => System.Windows.Forms.Clipboard.SetText(text)));
-            }
-            else
-            {
-                System.Windows.Forms.Clipboard.SetText(text);
-            }
+            Clipboard.SetText(text);
         }
 
         public void Copy()
@@ -683,23 +680,12 @@ namespace ConcreteUI.Controls
             {
                 text = string.Empty;
             }
-            if (_window.InvokeRequired)
-            {
-                _window.Invoke(new Action(() => System.Windows.Forms.Clipboard.SetText(text)));
-            }
-            else
-            {
-                System.Windows.Forms.Clipboard.SetText(text);
-            }
+            Clipboard.SetText(text);
         }
 
         public void Paste()
         {
-            string? text = null;
-            if (_window.InvokeRequired)
-                _window.Invoke(new Action(() => text = System.Windows.Forms.Clipboard.GetText()));
-            else
-                text = System.Windows.Forms.Clipboard.GetText();
+            string? text = Clipboard.GetText();
             RemoveSelection();
             if (StringHelper.IsNullOrEmpty(text))
                 return;
@@ -1005,133 +991,129 @@ namespace ConcreteUI.Controls
 
         int clicks = 0;
         long lastClickedTime = long.MinValue;
-        bool drag = false;
+        bool _drag = false;
         SelectionRange previousSelectionRange;
-        public override void OnMouseDown(in MouseInteractEventArgs args)
+
+        public void OnMouseDown(in MouseNotifyEventArgs args)
         {
-            base.OnMouseDown(args);
-            if (args.Button.HasFlag(System.Windows.Forms.MouseButtons.Right))
-                return;
-            bool contained = ContentBounds.Contains(args.Location);
-            if (contained && Enabled && args.Button.HasFlag(System.Windows.Forms.MouseButtons.Left))
+            _window.ClearFocusElement(this);
+        }
+
+        public override void OnMouseDown(ref MouseInteractEventArgs args)
+        {
+            base.OnMouseDown(ref args);
+            if (args.Handled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton) || !Enabled)
             {
-                drag = true;
-                long currentClickedTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                long lastClickedTime = Interlocked.Exchange(ref this.lastClickedTime, currentClickedTime);
-                int clicks;
-                if (lastClickedTime > long.MinValue && currentClickedTime - lastClickedTime <= SystemParameters.DoubleClickTime)
-                {
-                    clicks = ++this.clicks;
-                    if (clicks < 2)
-                        this.clicks = clicks = 2;
-                }
-                else
-                {
-                    this.clicks = clicks = 1;
-                }
-                int caretIndex = GetCaretIndexFromPoint(args.Location, out bool isInside);
-                switch (clicks)
-                {
-                    case 1:
-                        previousSelectionRange = selectionRange = new SelectionRange(caretIndex, caretIndex);
-                        break;
-                    default:
-                        string text = Text;
-                        int textLength = text.Length;
-                        if (textLength > 0)
-                        {
-                            switch ((clicks - 1) % 2)
-                            {
-                                case 0:
-                                    previousSelectionRange = selectionRange = new SelectionRange(0, textLength);
-                                    break;
-                                case 1:
-                                    {
-                                        if (caretIndex >= textLength)
-                                            caretIndex = textLength - 1;
-                                        if (text[caretIndex] == ' ')
-                                        {
-                                            int selectionStart = -1, selectionEnd = -1;
-                                            int index = caretIndex - 1;
-                                            do
-                                            {
-                                                int searchingIndex = text.LastIndexOf(' ', index);
-                                                if (searchingIndex < index)
-                                                {
-                                                    selectionStart = index + 1;
-                                                    break;
-                                                }
-                                                else
-                                                    index--;
-                                            } while (index >= 0);
-                                            index = caretIndex + 1;
-                                            do
-                                            {
-                                                int searchingIndex = StringHelper.IndexOf(text, ' ', index);
-                                                if (searchingIndex > index || searchingIndex == -1)
-                                                {
-                                                    selectionEnd = index;
-                                                    break;
-                                                }
-                                                else
-                                                    index++;
-                                            } while (index < textLength);
-                                            if (selectionStart < 0) selectionStart = 0;
-                                            if (selectionEnd < 0) selectionEnd = textLength;
-                                            previousSelectionRange = selectionRange = new SelectionRange(selectionStart, selectionEnd);
-                                            caretIndex = selectionEnd;
-                                        }
-                                        else
-                                        {
-                                            int selectionStart = text.LastIndexOf(' ', caretIndex) + 1;
-                                            int selectionEnd = StringHelper.IndexOf(text, ' ', caretIndex);
-                                            if (selectionStart < 0) selectionStart = 0;
-                                            if (selectionEnd < 0) selectionEnd = text.Length;
-                                            previousSelectionRange = selectionRange = new SelectionRange(selectionStart, selectionEnd);
-                                            caretIndex = selectionEnd;
-                                        }
-                                    }
-                                    break;
-                            }
-                        }
-                        break;
-                }
-                if (CaretIndex != caretIndex || !isInside)
-                {
-                    CaretIndex = caretIndex;
-                }
-            }
-            else
-            {
-                if (!contained)
-                {
-                    drag = false;
-                }
+                _drag = false;
                 if (selectionRange.Length > 0)
                 {
                     selectionRange.Length = 0;
                     Update();
                 }
+                return;
             }
-            bool focused = _focused;
-            if (contained != focused)
+            _window.ChangeFocusElement(this);
+            if (!ContentBounds.Contains(args.Location))
             {
-                if (contained)
-                    _window.ChangeFocusElement(this);
-                else
-                    _window.ClearFocusElement(this);
+                _drag = false;
+                return;
+            }
+            _drag = true;
+            long currentClickedTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            long lastClickedTime = Interlocked.Exchange(ref this.lastClickedTime, currentClickedTime);
+            int clicks;
+            if (lastClickedTime > long.MinValue && currentClickedTime - lastClickedTime <= SystemParameters.DoubleClickTime)
+            {
+                clicks = ++this.clicks;
+                if (clicks < 2)
+                    this.clicks = clicks = 2;
+            }
+            else
+            {
+                this.clicks = clicks = 1;
+            }
+            int caretIndex = GetCaretIndexFromPoint(args.Location, out bool isInside);
+            switch (clicks)
+            {
+                case 1:
+                    previousSelectionRange = selectionRange = new SelectionRange(caretIndex, caretIndex);
+                    break;
+                default:
+                    string text = Text;
+                    int textLength = text.Length;
+                    if (textLength > 0)
+                    {
+                        switch ((clicks - 1) % 2)
+                        {
+                            case 0:
+                                previousSelectionRange = selectionRange = new SelectionRange(0, textLength);
+                                break;
+                            case 1:
+                                {
+                                    if (caretIndex >= textLength)
+                                        caretIndex = textLength - 1;
+                                    if (text[caretIndex] == ' ')
+                                    {
+                                        int selectionStart = -1, selectionEnd = -1;
+                                        int index = caretIndex - 1;
+                                        do
+                                        {
+                                            int searchingIndex = text.LastIndexOf(' ', index);
+                                            if (searchingIndex < index)
+                                            {
+                                                selectionStart = index + 1;
+                                                break;
+                                            }
+                                            else
+                                                index--;
+                                        } while (index >= 0);
+                                        index = caretIndex + 1;
+                                        do
+                                        {
+                                            int searchingIndex = StringHelper.IndexOf(text, ' ', index);
+                                            if (searchingIndex > index || searchingIndex == -1)
+                                            {
+                                                selectionEnd = index;
+                                                break;
+                                            }
+                                            else
+                                                index++;
+                                        } while (index < textLength);
+                                        if (selectionStart < 0) selectionStart = 0;
+                                        if (selectionEnd < 0) selectionEnd = textLength;
+                                        previousSelectionRange = selectionRange = new SelectionRange(selectionStart, selectionEnd);
+                                        caretIndex = selectionEnd;
+                                    }
+                                    else
+                                    {
+                                        int selectionStart = text.LastIndexOf(' ', caretIndex) + 1;
+                                        int selectionEnd = StringHelper.IndexOf(text, ' ', caretIndex);
+                                        if (selectionStart < 0) selectionStart = 0;
+                                        if (selectionEnd < 0) selectionEnd = text.Length;
+                                        previousSelectionRange = selectionRange = new SelectionRange(selectionStart, selectionEnd);
+                                        caretIndex = selectionEnd;
+                                    }
+                                }
+                                break;
+                        }
+                    }
+                    break;
+            }
+            if (CaretIndex != caretIndex || !isInside)
+            {
+                CaretIndex = caretIndex;
             }
         }
 
         bool isEnter = false;
-        public override void OnMouseMove(in MouseInteractEventArgs args)
+        public override void OnMouseMove(in MouseNotifyEventArgs args)
         {
             base.OnMouseMove(args);
             if (ContentBounds.Contains(args.Location))
             {
                 if (!isEnter)
                 {
-                    _cursor = System.Windows.Forms.Cursors.IBeam;
+                    _cursorType = SystemCursorType.IBeam;
                     isEnter = true;
                 }
             }
@@ -1139,11 +1121,11 @@ namespace ConcreteUI.Controls
             {
                 if (isEnter)
                 {
-                    _cursor = null;
+                    _cursorType = null;
                     isEnter = false;
                 }
             }
-            if (drag)
+            if (_drag)
             {
                 string text = _text;
                 if (StringHelper.IsNullOrEmpty(text))
@@ -1169,14 +1151,16 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public override void OnMouseUp(in MouseInteractEventArgs args)
+        public override void OnMouseUp(in MouseNotifyEventArgs args)
         {
             base.OnMouseUp(args);
-            drag = false;
-            if (Enabled && RequestContextMenu != null && args.Button == System.Windows.Forms.MouseButtons.Right && ContentBounds.Contains(args.Location))
-            {
-                RequestContextMenu.Invoke(this, args);
-            }
+            _drag = false;
+            if (!Enabled || !args.Buttons.HasFlagOptimized(MouseButtons.RightButton))
+                return;
+            MouseNotifyEventHandler? eventHandler = RequestContextMenu;
+            if (eventHandler is null || !ContentBounds.Contains(args.Location))
+                return;
+            eventHandler.Invoke(this, in args);
         }
         #endregion
 

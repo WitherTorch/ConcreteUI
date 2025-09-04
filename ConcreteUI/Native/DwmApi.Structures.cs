@@ -6,7 +6,7 @@ using WitherTorch.Common.Windows.Structures;
 namespace ConcreteUI.Native
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct DWMBlurBehind
+    internal struct DWMBlurBehind
     {
         public DwmBlurBehindFlags dwFlags;
         public SysBool fEnable;
@@ -21,14 +21,12 @@ namespace ConcreteUI.Native
             dwFlags = DwmBlurBehindFlags.Enable;
         }
 
-        public System.Drawing.Region Region
-        {
-            get { return System.Drawing.Region.FromHrgn(hRgnBlur); }
-        }
+        public readonly System.Drawing.Region Region 
+            => System.Drawing.Region.FromHrgn(hRgnBlur);
 
         public bool TransitionOnMaximized
         {
-            get => fTransitionOnMaximized;
+            readonly get => fTransitionOnMaximized;
             set
             {
                 fTransitionOnMaximized = value;

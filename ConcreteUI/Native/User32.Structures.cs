@@ -2,12 +2,14 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
 
+using ConcreteUI.Window;
+
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Native
 {
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct NCCalcSizeParameters
+    internal unsafe struct NCCalcSizeParameters
     {
         public Rect rcNewWindow;
         public Rect rcOldWindow;
@@ -28,7 +30,7 @@ namespace ConcreteUI.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct WindowPlacement
+    internal unsafe struct WindowPlacement
     {
         public int Length;
         public int Flags;
@@ -39,7 +41,7 @@ namespace ConcreteUI.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct WindowCompositionAttributeData
+    internal unsafe struct WindowCompositionAttributeData
     {
         public WindowCompositionAttribute Attribute;
         public AccentPolicy* Data;
@@ -47,11 +49,63 @@ namespace ConcreteUI.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct AccentPolicy
+    internal struct AccentPolicy
     {
         public AccentState AccentState;
         public AccentFlags AccentFlags;
         public uint GradientColor;
         public uint AnimationId;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct WindowClassEx
+    {
+        public uint cbSize;
+        public ClassStyles style;
+        public void* lpfnWndProc;
+        public int cbClsExtra;
+        public int cbWndExtra;
+        public IntPtr hInstance;
+        public IntPtr hIcon;
+        public IntPtr hCursor;
+        public IntPtr hbrBackground;
+        public void* lpszMenuName;
+        public void* lpszClassName;
+        public IntPtr hIconSm;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PumpingMessage
+    {
+        public IntPtr hwnd;
+        public WindowMessage message;
+        public nint wParam;
+        public nint lParam;
+        public uint time;
+        public Point pt;
+        public uint lPrivate;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MonitorInfo
+    {
+        public uint cbSize;
+        public Rect rcMonitor;
+        public Rect rcWork;
+        public uint dwFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PaintStruct
+    {
+        public IntPtr hdc;
+        public SysBool fErase;
+        public Rect rcPaint;
+        public SysBool fRestore;
+        public SysBool fIncUpdate;
+        public int rgbReserved0;
+        public int rgbReserved1;
+        public int rgbReserved2;
+        public int rgbReserved3;
     }
 }

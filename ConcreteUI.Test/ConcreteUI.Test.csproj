@@ -2,10 +2,9 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFrameworks>net8-windows;net472</TargetFrameworks>
+		<TargetFrameworks>net8;net472</TargetFrameworks>
 		<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
 		<Nullable>enable</Nullable>
-		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<Platforms>AnyCPU;x64;ARM64;x86</Platforms>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -66,11 +65,11 @@
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody" Version="6.0.0">
 		  <PrivateAssets>all</PrivateAssets>
-		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		  <IncludeAssets>compile; runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Fody" Version="6.9.2">
 			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+			<IncludeAssets>compile; runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Absence.Fody" Version="2.0.10">
 			<PrivateAssets>all</PrivateAssets>

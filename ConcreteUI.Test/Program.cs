@@ -1,5 +1,4 @@
 using System;
-using System.Windows.Forms;
 
 namespace ConcreteUI.Test
 {
@@ -9,10 +8,15 @@ namespace ConcreteUI.Test
         ///  The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static int Main()
         {
-            ConcreteSettings.WindowMaterial = WindowMaterial.Acrylic;
-            Application.Run(new MainWindow(null));
+            ConcreteSettings.WindowMaterial = WindowMaterial.Integrated;
+            return WindowMessageLoop.Start(new MainWindow(null));
+        }
+
+        private static void Window_Destroyed(object? sender, EventArgs e)
+        {
+            WindowMessageLoop.Stop();
         }
     }
 }

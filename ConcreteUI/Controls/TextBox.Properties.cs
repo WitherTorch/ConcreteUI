@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
-using System.Windows.Forms;
 
-using ConcreteUI;
 using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Internals;
 using ConcreteUI.Layout;
+using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -16,15 +14,15 @@ namespace ConcreteUI.Controls
     partial class TextBox
     {
         #region Events
-        public event MouseInteractEventHandler? RequestContextMenu;
-        public event KeyEventHandler? KeyDown;
-        public event KeyEventHandler? KeyUp;
+        public event MouseNotifyEventHandler? RequestContextMenu;
+        public event KeyInteractEventHandler? KeyDown;
+        public event KeyInteractEventHandler? KeyUp;
         public event TextChangingEventHandler? TextChanging;
         public event EventHandler? TextChanged;
         #endregion
 
         #region Properties
-        public Cursor? PredicatedCursor => _cursor;
+        public SystemCursorType? PredicatedCursor => _cursorType;
 
         public TextAlignment Alignment
         {

@@ -3,10 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
-using InlineMethod;
-
-using LocalsInit;
-
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Native
@@ -35,7 +31,7 @@ namespace ConcreteUI.Native
         public static extern int DwmIsCompositionEnabled(bool* enabled);
 
         [DllImport(DWMAPI_DLL)]
-        public static extern bool DwmDefWindowProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam, IntPtr* plResult);
+        public static extern bool DwmDefWindowProc(IntPtr hWnd, uint msg, nint wParam, nint lParam, nint* plResult);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool DwmGetWindowAttribute<T>(IntPtr hwnd, DwmWindowAttribute attr, out T value) where T : unmanaged

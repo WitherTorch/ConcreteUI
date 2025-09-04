@@ -19,7 +19,7 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public abstract partial class ScrollableElementBase : UIElement, IDisposable, IMouseEvents, IMouseScrollEvent
+    public abstract partial class ScrollableElementBase : UIElement, IDisposable, IMouseInteractEvents, IMouseScrollEvent
     {
         protected const string DefaultPrefixForScrollBar = "app.scrollBar";
 
@@ -353,47 +353,58 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public virtual void OnMouseScroll(in MouseInteractEventArgs args)
+        public virtual void OnMouseScroll(ref MouseInteractEventArgs args)
         {
-            if (_enabled && _hasScrollBar && _scrollButtonState != ButtonTriState.Pressed && Bounds.Contains(args.Location))
-            {
-                Scrolling(-args.Delta);
-                OnMouseMove(args);
-            }
+            if (!_enabled || !_hasScrollBar || _scrollButtonState == ButtonTriState.Pressed)
+                return;
+            args.Handle();
+            Scrolling(-args.Delta);
+            OnMouseMove(args);
         }
 
         private void RepeatingTimer_Tick(object? state) => _repeatingAction?.Invoke();
 
-        public virtual void OnMouseDown(in MouseInteractEventArgs args)
+        public virtual void OnMouseDown(ref MouseInteractEventArgs args)
         {
-            if (_enabled && _hasScrollBar)
+            if (!_enabled || !_hasScrollBar || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+                return;
+
+            if (_scrollBarScrollButtonBounds.Contains(args.Location))
             {
-                if (_scrollBarScrollButtonBounds.Contains(args.Location))
-                {
-                    _scrollButtonState = ButtonTriState.Pressed;
-                    _pinY = args.Y;
-                    Update(UpdateFlags.ScrollBar);
-                }
-                else if (_scrollBarUpButtonBounds.Contains(args.Location))
-                {
-                    _scrollUpButtonState = ButtonTriState.Pressed;
-                    Update(UpdateFlags.ScrollBar);
-                    OnScrollBarUpButtonClicked();
-                    _repeatingAction = OnScrollBarUpButtonClicked;
-                    _repeatingTimer.Change(SystemParameters.KeyboardDelay, SystemParameters.KeyboardSpeed);
-                }
-                else if (_scrollBarDownButtonBounds.Contains(args.Location))
-                {
-                    _scrollDownButtonState = ButtonTriState.Pressed;
-                    Update(UpdateFlags.ScrollBar);
-                    OnScrollBarDownButtonClicked();
-                    _repeatingAction = OnScrollBarDownButtonClicked;
-                    _repeatingTimer.Change(SystemParameters.KeyboardDelay, SystemParameters.KeyboardSpeed);
-                }
+                args.Handle();
+
+                _scrollButtonState = ButtonTriState.Pressed;
+                _pinY = args.Y;
+                Update(UpdateFlags.ScrollBar);
+                return;
+            }
+
+            if (_scrollBarUpButtonBounds.Contains(args.Location))
+            {
+                args.Handle();
+
+                _scrollUpButtonState = ButtonTriState.Pressed;
+                Update(UpdateFlags.ScrollBar);
+                OnScrollBarUpButtonClicked();
+                _repeatingAction = OnScrollBarUpButtonClicked;
+                _repeatingTimer.Change(SystemParameters.KeyboardDelay, SystemParameters.KeyboardSpeed);
+                return;
+            }
+
+            if (_scrollBarDownButtonBounds.Contains(args.Location))
+            {
+                args.Handle();
+
+                _scrollDownButtonState = ButtonTriState.Pressed;
+                Update(UpdateFlags.ScrollBar);
+                OnScrollBarDownButtonClicked();
+                _repeatingAction = OnScrollBarDownButtonClicked;
+                _repeatingTimer.Change(SystemParameters.KeyboardDelay, SystemParameters.KeyboardSpeed);
+                return;
             }
         }
 
-        public virtual void OnMouseUp(in MouseInteractEventArgs args)
+        public virtual void OnMouseUp(in MouseNotifyEventArgs args)
         {
             if (_enabled && _hasScrollBar)
             {
@@ -423,7 +434,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public virtual void OnMouseMove(in MouseInteractEventArgs args)
+        public virtual void OnMouseMove(in MouseNotifyEventArgs args)
         {
             if (!_enabled) return;
             if (_hasScrollBar)

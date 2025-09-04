@@ -129,15 +129,15 @@ namespace ConcreteUI.Controls
             deviceContext.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
             switch (PressState)
             {
-                case ButtonPressState.Default:
+                case ButtonTriState.None:
                     RenderBackground(deviceContext, brushes[(int)Brush.FaceBrush]);
                     deviceContext.DrawRectangle(buttonBounds, brushes[(int)Brush.BorderBrush], lineWidth);
                     break;
-                case ButtonPressState.Hovered:
+                case ButtonTriState.Hovered:
                     RenderBackground(deviceContext, brushes[(int)Brush.FaceHoveredBrush]);
                     deviceContext.DrawRectangle(buttonBounds, brushes[(int)Brush.BorderHoveredBrush], lineWidth);
                     break;
-                case ButtonPressState.Pressed:
+                case ButtonTriState.Pressed:
                     RenderBackground(deviceContext, brushes[(int)Brush.FacePressedBrush]);
                     deviceContext.DrawRectangle(buttonBounds, brushes[(int)Brush.BorderHoveredBrush], lineWidth);
                     break;

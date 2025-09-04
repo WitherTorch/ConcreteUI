@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Windows.Forms;
+using System.Runtime.CompilerServices;
 
 using ConcreteUI.Controls;
+using ConcreteUI.Native;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
@@ -11,10 +12,11 @@ using InlineMethod;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
+using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Window
 {
-    public abstract partial class CoreWindow : Form
+    public abstract partial class CoreWindow : NativeWindow
     {
         #region Static Fields
         private static readonly List<WeakReference<CoreWindow>> _rootWindowList = new List<WeakReference<CoreWindow>>();
@@ -23,28 +25,21 @@ namespace ConcreteUI.Window
         #region Fields
         private readonly List<WeakReference<CoreWindow>> _childrenReferenceList = new List<WeakReference<CoreWindow>>();
         private readonly CoreWindow? _parent;
-        private int dpi = 96;
-        private float dpiScaleFactor = 1.0f; // 螢幕DPI / 96
-        private float windowScaleFactor = 1.0f; //  96 / 螢幕DPI
+        private uint _dpi = 96;
+        private float _dpiScaleFactor = 1.0f; // 螢幕DPI / 96
+        private float _windowScaleFactor = 1.0f; //  96 / 螢幕DPI
         private BitVector64 titleBarStates = ulong.MaxValue;
         #endregion
 
         #region Events
-        public event EventHandler<FormWindowState>? WindowStateChanging;
-        public event EventHandler? WindowStateChanged;
-        public new event EventHandler? DpiChanged;
+        public event EventHandler? DpiChanged;
         #endregion
 
         #region Event Triggers
-        protected virtual void OnWindowStateChanging(FormWindowState windowState)
+        protected override void OnWindowStateChanged(in WindowStateChangedEventArgs args)
         {
-            WindowStateChanging?.Invoke(this, windowState);
-            OnWindowStateChangingRenderingPart(windowState);
-        }
-
-        protected virtual void OnWindowStateChanged()
-        {
-            WindowStateChanged?.Invoke(this, EventArgs.Empty);
+            base.OnWindowStateChanged(args);
+            OnWindowStateChangedRenderingPart(args);
         }
 
         protected virtual void OnDpiChanged()
@@ -53,78 +48,154 @@ namespace ConcreteUI.Window
             OnDpiChangedRenderingPart();
         }
 
-        protected override void OnMouseDown(MouseEventArgs e)
-        {
-            base.OnMouseDown(e);
-            float windowScaleFactor = this.windowScaleFactor;
-            OnMouseDownForElements(new MouseInteractEventArgs(ScalingPointF(e.Location, windowScaleFactor), e.Button));
-        }
+        protected virtual void OnMouseDown(ref MouseInteractEventArgs args)
+            => OnMouseDownForElements(ref args);
 
-        protected override void OnMouseUp(MouseEventArgs e)
-        {
-            base.OnMouseUp(e);
-            float windowScaleFactor = this.windowScaleFactor;
-            OnMouseUpForElements(new MouseInteractEventArgs(ScalingPointF(e.Location, windowScaleFactor), e.Button));
-        }
+        protected virtual void OnMouseUp(in MouseNotifyEventArgs args)
+            => OnMouseUpForElements(in args);
 
-        protected override void OnMouseMove(MouseEventArgs e)
-        {
-            base.OnMouseMove(e);
-            float windowScaleFactor = this.windowScaleFactor;
-            OnMouseMoveForElements(new MouseInteractEventArgs(ScalingPointF(e.Location, windowScaleFactor)));
-        }
+        protected virtual void OnMouseMove(in MouseNotifyEventArgs args)
+            => OnMouseMoveForElements(in args);
 
-        protected override void OnMouseWheel(MouseEventArgs e)
-        {
-            base.OnMouseWheel(e);
-            float windowScaleFactor = this.windowScaleFactor;
-            OnMouseScrollForElements(new MouseInteractEventArgs(ScalingPointF(e.Location, windowScaleFactor), e.Delta));
-        }
+        protected virtual void OnMouseScroll(ref MouseInteractEventArgs args)
+            => OnMouseScrollForElements(ref args);
 
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            base.OnKeyDown(e);
-            OnKeyDownForElements(e);
-        }
+        protected virtual void OnKeyDown(ref KeyInteractEventArgs args)
+            => OnKeyDownForElements(ref args);
 
-        protected override void OnKeyUp(KeyEventArgs e)
-        {
-            base.OnKeyUp(e);
-            OnKeyUpForElements(e);
-        }
+        protected virtual void OnKeyUp(ref KeyInteractEventArgs args)
+            => OnKeyUpForElements(ref args);
         #endregion
 
         #region Properties
-        public new CoreWindow? Parent => _parent;
+        public CoreWindow? Parent => _parent;
         public IThemeContext? CurrentTheme => _resourceProvider?.ThemeContext;
-        public int Dpi => dpi;
-        public float DpiScaleFactor => dpiScaleFactor;
-        public float WindowScaleFactor => windowScaleFactor;
-        public new bool MaximizeBox
+        public uint Dpi => _dpi;
+        public float DpiScaleFactor => _dpiScaleFactor;
+        public float WindowScaleFactor => _windowScaleFactor;
+
+        public new RectangleF Bounds
         {
-            get => titleBarStates[2];
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (RectangleF)ScalingRectF((Rect)base.Bounds, _windowScaleFactor);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => base.Bounds = (Rectangle)ScalingRect((RectF)value, _dpiScaleFactor);
+        }
+
+        public new RectangleF ClientBounds => (RectangleF)ScalingRectF((Rect)base.ClientBounds, _windowScaleFactor);
+        public new PointF Location => Bounds.Location;
+        public new SizeF Size => Bounds.Size;
+        public new SizeF ClientSize => ClientBounds.Size;
+        public new float X => Bounds.X;
+        public new float Y => Bounds.Y;
+        public new float Width => Bounds.Width;
+        public new float Height => Bounds.Height;
+
+        public Rectangle RawBounds
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => base.Bounds;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => base.Bounds = value;
+        }
+
+        public Rectangle RawClientBounds => base.ClientBounds;
+        public Point RawLocation => base.Location;
+        public Size RawSize => base.Size;
+        public Size RawClientSize => base.ClientSize;
+        public int RawX => base.X;
+        public int RawY => base.Y;
+        public int RawWidth => base.Width;
+        public int RawHeight => base.Height;
+        public bool MaximizeBox
+        {
+            get
+            {
+                if (_windowMaterial == WindowMaterial.Integrated)
+                {
+                    IntPtr handle = Handle;
+                    if (handle == IntPtr.Zero)
+                        return false;
+
+                    const int GWL_STYLE = -16;
+                    WindowStyles styles = (WindowStyles)User32.GetWindowLongPtrW(handle, GWL_STYLE);
+                    return (styles & WindowStyles.MaximizeBox) == WindowStyles.MaximizeBox;
+                }
+                else
+                {
+                    return _titleBarButtonStatus[2];
+                }
+            }
             set
             {
-                bool state = titleBarStates[2];
-                if (state != value)
+                if (_windowMaterial == WindowMaterial.Integrated)
                 {
+                    IntPtr handle = Handle;
+                    if (handle == IntPtr.Zero)
+                        return;
+                    const int GWL_STYLE = -16;
+
+                    WindowStyles styles = (WindowStyles)User32.GetWindowLongPtrW(handle, GWL_STYLE);
+                    if (value)
+                        styles |= WindowStyles.MaximizeBox;
+                    else
+                        styles &= ~WindowStyles.MaximizeBox;
+                    User32.SetWindowLongPtrW(handle, GWL_STYLE, (nint)styles);
+                }
+                else
+                {
+                    bool state = titleBarStates[2];
+                    if (state == value)
+                        return;
                     titleBarStates[2] = value;
-                    base.MaximizeBox = value;
+
                     Update();
                 }
             }
         }
 
-        public new bool MinimizeBox
+        public bool MinimizeBox
         {
-            get => titleBarStates[1];
+            get
+            {
+                if (_windowMaterial == WindowMaterial.Integrated)
+                {
+                    IntPtr handle = Handle;
+                    if (handle == IntPtr.Zero)
+                        return false;
+
+                    const int GWL_STYLE = -16;
+                    WindowStyles styles = (WindowStyles)User32.GetWindowLongPtrW(handle, GWL_STYLE);
+                    return (styles & WindowStyles.MinimizeBox) == WindowStyles.MinimizeBox;
+                }
+                else
+                {
+                    return _titleBarButtonStatus[1];
+                }
+            }
             set
             {
-                bool state = titleBarStates[1];
-                if (state != value)
+                if (_windowMaterial == WindowMaterial.Integrated)
                 {
+                    IntPtr handle = Handle;
+                    if (handle == IntPtr.Zero)
+                        return;
+                    const int GWL_STYLE = -16;
+
+                    WindowStyles styles = (WindowStyles)User32.GetWindowLongPtrW(handle, GWL_STYLE);
+                    if (value)
+                        styles |= WindowStyles.MinimizeBox;
+                    else
+                        styles &= ~WindowStyles.MinimizeBox;
+                    User32.SetWindowLongPtrW(handle, GWL_STYLE, (nint)styles);
+                }
+                else
+                {
+                    bool state = titleBarStates[1];
+                    if (state == value)
+                        return;
                     titleBarStates[1] = value;
-                    base.MinimizeBox = value;
+
                     Update();
                 }
             }
@@ -132,28 +203,58 @@ namespace ConcreteUI.Window
 
         public bool ShowTitle
         {
-            get => titleBarStates[0];
+            get
+            {
+                if (_windowMaterial == WindowMaterial.Integrated)
+                {
+                    IntPtr handle = Handle;
+                    if (handle == IntPtr.Zero)
+                        return false;
+
+                    const int GWL_STYLE = -16;
+                    WindowStyles styles = (WindowStyles)User32.GetWindowLongPtrW(handle, GWL_STYLE);
+                    return (styles & WindowStyles.Caption) == WindowStyles.Caption;
+                }
+                else
+                {
+                    return _titleBarButtonStatus[0];
+                }
+            }
             set
             {
-                bool state = titleBarStates[0];
-                if (state != value)
+                if (_windowMaterial == WindowMaterial.Integrated)
                 {
+                    IntPtr handle = Handle;
+                    if (handle == IntPtr.Zero)
+                        return;
+                    const int GWL_STYLE = -16;
+
+                    WindowStyles styles = (WindowStyles)User32.GetWindowLongPtrW(handle, GWL_STYLE);
+                    if (value)
+                        styles |= WindowStyles.Caption;
+                    else
+                        styles &= ~WindowStyles.Caption;
+                    User32.SetWindowLongPtrW(handle, GWL_STYLE, (nint)styles);
+                }
+                else
+                {
+                    bool state = titleBarStates[0];
+                    if (state == value)
+                        return;
                     titleBarStates[0] = value;
+
                     Update();
                 }
             }
         }
         #endregion
-
-        protected CoreWindow(CoreWindow? parent)
+        protected CoreWindow(CoreWindow? parent, bool passParentToUnderlyingWindow = false) : base(passParentToUnderlyingWindow ? parent : null)
         {
             _parent = parent;
             List<WeakReference<CoreWindow>> windowList = parent is null ? _rootWindowList : parent._childrenReferenceList;
             lock (windowList)
                 windowList.Add(new WeakReference<CoreWindow>(this));
             _windowMaterial = parent is null ? GetRealWindowMaterial(ConcreteSettings.WindowMaterial) : parent.WindowMaterial;
-            AutoScaleDimensions = SizeF.Empty;
-            AutoScaleMode = AutoScaleMode.None;
             InitUnmanagedPart();
         }
 
@@ -163,33 +264,7 @@ namespace ConcreteUI.Window
             SystemHelper.GetDefaultMaterial() : material;
 
         #region Overrides Methods
-        protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
-        {
-            if (specified != BoundsSpecified.All)
-            {
-                base.SetBoundsCore(x, y, width, height, specified);
-            }
-        }
-
-        protected override void OnClientSizeChanged(EventArgs e)
-        {
-            base.OnClientSizeChanged(e);
-            TriggerResize();
-        }
-
-        PointF IRenderer.GetMousePosition()
-        {
-            return ScalingPointF(MousePosition, WindowScaleFactor);
-        }
-        #endregion
-
-        #region Inline Macros
-        [Inline(InlineBehavior.Remove)]
-        private static MouseEventArgs Scale(MouseEventArgs e, float windowScaleFactor)
-        {
-            if (windowScaleFactor == 1f) return e;
-            else return new MouseEventArgs(e.Button, e.Clicks, MathI.Floor(e.X * windowScaleFactor), MathI.Floor(e.Y * windowScaleFactor), e.Delta);
-        }
+        PointF IRenderer.GetMousePosition() => PointToClient(MouseHelper.GetMousePosition());
         #endregion
     }
 }

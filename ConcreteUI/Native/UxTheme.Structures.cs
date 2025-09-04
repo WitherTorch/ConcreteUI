@@ -3,7 +3,7 @@
 namespace ConcreteUI.Native
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct Margins
+    internal struct Margins
     {
         public int Left;
         public int Right;

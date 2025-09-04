@@ -1,11 +1,13 @@
 ﻿using System;
-using System.Drawing;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
 
 namespace ConcreteUI.Controls
 {
+    public delegate void MouseInteractEventHandler(UIElement sender, ref MouseInteractEventArgs args);
+    public delegate void MouseNotifyEventHandler(UIElement sender, in MouseNotifyEventArgs args);
+    public delegate void KeyInteractEventHandler(UIElement sender, ref KeyInteractEventArgs args);
+    public delegate void CharacterInteractEventHandler(UIElement sender, ref KeyInteractEventArgs args);
+
     public delegate void CancelableEventHandler(object sender, CancelableEventArgs e);
     public delegate void TextChangingEventHandler(object sender, TextChangingEventArgs e);
 
@@ -39,49 +41,10 @@ namespace ConcreteUI.Controls
         public bool IsEdited { get; private set; }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
-    public readonly ref struct MouseInteractEventArgs
+    public interface IInteractEventArgs
     {
-        public readonly PointF Location;
-        public readonly float X;
-        public readonly float Y;
-        public readonly MouseButtons Button;
-        public readonly int Delta;
+        bool Handled { get; }
 
-        public MouseInteractEventArgs(PointF point)
-        {
-            Location = point;
-            X = point.X;
-            Y = point.Y;
-            Button = MouseButtons.None;
-            Delta = 0;
-        }
-
-        public MouseInteractEventArgs(PointF point, MouseButtons buttons)
-        {
-            Location = point;
-            X = point.X;
-            Y = point.Y;
-            Button = buttons;
-            Delta = 0;
-        }
-
-        public MouseInteractEventArgs(PointF point, int delta)
-        {
-            Location = point;
-            X = point.X;
-            Y = point.Y;
-            Button = MouseButtons.None;
-            Delta = delta;
-        }
-
-        public MouseInteractEventArgs(PointF point, MouseButtons buttons, int delta)
-        {
-            Location = point;
-            X = point.X;
-            Y = point.Y;
-            Button = buttons;
-            Delta = delta;
-        }
+        void Handle();
     }
 }

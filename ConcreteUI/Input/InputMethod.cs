@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Windows.Forms;
 
 using ConcreteUI.Input.NativeHelper;
 using ConcreteUI.Native;
@@ -9,7 +8,7 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Input
 {
-    public sealed class InputMethod : IMessageFilter, IDisposable
+    public sealed class InputMethod : IWindowMessageFilter, IDisposable
     {
         private readonly CoreWindow _owner;
 
@@ -74,20 +73,17 @@ namespace ConcreteUI.Input
             _attachedControl = null;
         }
 
-        public Keys GetRealKeyCode()
+        public VirtualKey GetRealKeyCode()
         {
-            return _context?.GetRealKeyCode() ?? Keys.None;
+            return _context?.GetRealKeyCode() ?? VirtualKey.None;
         }
 
-        private const long ISC_SHOWUICOMPOSITIONWINDOW = 0x80000000;
-        public bool PreFilterMessage(ref Message m)
+        public bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
-            IntPtr handle = _windowHandle;
-            if (m.HWnd != handle)
-                return false;
+            result = 0;
+
             IIMEControl? attachedControl = _attachedControl;
-            WindowMessage msg = (WindowMessage)m.Msg;
-            switch (msg)
+            switch (message)
             {
                 case WindowMessage.InputLanguageChange:
                     _langId = User32Utils.GetCurrentInputLanguage();
@@ -103,33 +99,29 @@ namespace ConcreteUI.Input
             }
             if (attachedControl is null)
                 return false;
-            switch (msg)
+            switch (message)
             {
                 case WindowMessage.Activate:
                     {
-                        long wParam = m.WParam.ToInt64();
-                        if (wParam != 1L && wParam != 2L)
+                        if (wParam != 1 && wParam != 2)
                             break;
                         InputMethodContext? newContext = _context;
-                        InputMethodContext.Associate(handle, out InputMethodContext oldContext, newContext);
+                        InputMethodContext.Associate(hwnd, out InputMethodContext oldContext, newContext);
                         if (oldContext != newContext)
                             oldContext?.Dispose();
                     }
                     break;
                 case WindowMessage.ImeSetContext:
                     {
-                        if (m.WParam.ToInt64() != 1L)
+                        if (wParam != 1)
                             break;
                         InputMethodContext? newContext = _context;
                         if (newContext is null)
                             break;
-                        InputMethodContext.Associate(handle, out InputMethodContext oldContext, newContext);
+                        InputMethodContext.Associate(hwnd, out InputMethodContext oldContext, newContext);
                         if (oldContext != newContext)
                             oldContext?.Dispose();
                         newContext.Status = _imeStatus;
-                        long lParam = m.LParam.ToInt64();
-                        lParam &= ~ISC_SHOWUICOMPOSITIONWINDOW;
-                        m.LParam = (IntPtr)lParam;
                     }
                     break;
                 case WindowMessage.ImeStartComposition:
@@ -144,7 +136,7 @@ namespace ConcreteUI.Input
                         if (context is null)
                             break;
 
-                        IMECompositionFlags flags = (IMECompositionFlags)m.LParam.ToInt64();
+                        IMECompositionFlags flags = (IMECompositionFlags)lParam;
                         if ((flags & IMECompositionFlags.CompositionString) > 0)
                         {
                             int cursorPos;
@@ -166,7 +158,7 @@ namespace ConcreteUI.Input
             return false;
         }
 
-        ushort getPrimaryLangID()
+        private ushort GetPrimaryLangID()
         {
             return (ushort)(_langId & 0x3ff);
         }
@@ -187,7 +179,7 @@ namespace ConcreteUI.Input
             int x = caretRect.Left;
             int y = caretRect.Top;
 
-            ushort primaryLangID = getPrimaryLangID();
+            ushort primaryLangID = GetPrimaryLangID();
             if (primaryLangID == LANG_CHINESE)
             {
                 // Chinese IMEs ignore function calls to ::ImmSetCandidateWindow()

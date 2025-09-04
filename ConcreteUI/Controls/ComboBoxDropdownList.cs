@@ -18,7 +18,7 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGlobalMouseEvents
+    public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IMouseNotifyEvents
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -162,24 +162,28 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        public override void OnMouseDown(in MouseInteractEventArgs args)
+        public void OnMouseDown(in MouseNotifyEventArgs args)
         {
-            base.OnMouseDown(args);
-            if (Bounds.Contains(args.X, args.Y))
-            {
-                _isClicking = true;
-                _isClickingClient = ContentBounds.Contains(args.X, args.Y);
-            }
-            else
-            {
-                _isClicking = false;
-                _isClickingClient = false;
-            }
+            _isClicking = false;
+            _isClickingClient = false;
         }
 
-        public override void OnMouseUp(in MouseInteractEventArgs args)
+        public override void OnMouseDown(ref MouseInteractEventArgs args)
         {
-            base.OnMouseUp(args);
+            base.OnMouseDown(ref args);
+            if (args.Handled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+                return;
+            args.Handle();
+            _isClicking = true;
+            _isClickingClient = ContentBounds.Contains(args.Location);
+        }
+
+        public override void OnMouseUp(in MouseNotifyEventArgs args)
+        {
+            base.OnMouseUp(in args);
+            if (!args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+                return;
+            _isClickingClient = false;
             if (_isFirstTimeClick)
             {
                 _isFirstTimeClick = false;
@@ -195,16 +199,18 @@ namespace ConcreteUI.Controls
                 {
                     Close();
                     ItemClicked?.Invoke(this, selectedIndex);
+                    return;
                 }
             }
             else if (!bounds.Contains(args.X, args.Y))
             {
                 Close();
+                return;
             }
             Update();
         }
 
-        public override void OnMouseMove(in MouseInteractEventArgs args)
+        public override void OnMouseMove(in MouseNotifyEventArgs args)
         {
             base.OnMouseMove(args);
             Rect bounds = ContentBounds;

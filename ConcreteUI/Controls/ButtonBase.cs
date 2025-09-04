@@ -2,79 +2,61 @@
 
 using ConcreteUI.Utils;
 
+using WitherTorch.Common.Extensions;
+
 namespace ConcreteUI.Controls
 {
-    public abstract partial class ButtonBase : UIElement, IMouseEvents
+    public abstract partial class ButtonBase : UIElement, IMouseInteractEvents
     {
-        public event MouseInteractEventHandler? Click;
-
-        private bool _enabled;
-        private ButtonPressState _pressState;
-        private bool previousMouseEnterState;
+        private ButtonTriState _pressState;
+        private bool _enabled, _isPressed;
 
         public ButtonBase(IRenderer renderer, string themePrefix) : base(renderer, themePrefix)
         {
             _enabled = true;
-            _pressState = ButtonPressState.Default;
-            previousMouseEnterState = false;
+            _pressState = ButtonTriState.None;
         }
 
         public override void OnSizeChanged() => Update();
 
-        public void OnMouseDown(in MouseInteractEventArgs args)
+        public void OnMouseDown(ref MouseInteractEventArgs args)
         {
-            if (!_enabled)
+            if (!_enabled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
-            _pressState = ButtonPressState.Pressed;
+            args.Handle();
+            _pressState = ButtonTriState.Pressed;
+            _isPressed = true;
             Update();
         }
 
-        public void OnMouseMove(in MouseInteractEventArgs args)
+        public void OnMouseMove(in MouseNotifyEventArgs args)
         {
-            bool mouseEnterState = _enabled && Bounds.Contains(args.Location);
-            if (mouseEnterState)
-            {
-                if (_pressState == ButtonPressState.Default)
-                    _pressState = ButtonPressState.Hovered;
-            }
+            ButtonTriState pressState;
+            if (_enabled && Bounds.Contains(args.Location))
+                pressState = _isPressed ? ButtonTriState.Pressed : ButtonTriState.Hovered;
             else
-            {
-                _pressState = ButtonPressState.Default;
-            }
-            if (previousMouseEnterState ^ mouseEnterState)
-            {
-                previousMouseEnterState = mouseEnterState;
-                Update();
-            }
+                pressState = ButtonTriState.None;
+            if (_pressState == pressState)
+                return;
+            _pressState = pressState;
+            Update();
         }
 
-        public void OnMouseUp(in MouseInteractEventArgs args)
+        public void OnMouseUp(in MouseNotifyEventArgs args)
         {
-            if (_enabled)
-            {
-                ButtonPressState previousButtonType = _pressState;
-                if (Bounds.Contains(args.Location))
-                {
-                    _pressState = ButtonPressState.Hovered;
-                }
-                else
-                {
-                    _pressState = ButtonPressState.Default;
-                }
-                Update();
-                if (previousButtonType == ButtonPressState.Pressed) OnClick(args);
-            }
-            else
-            {
-                if (_pressState != ButtonPressState.Default)
-                {
-                    _pressState = ButtonPressState.Default;
-                    Update();
-                }
-            }
+            if (!_enabled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+                return;
+
+            _isPressed = false;
+            if (_pressState != ButtonTriState.Pressed)
+                return;
+
+            OnClick(in args);
+            _pressState = ButtonTriState.Hovered;
+            Update();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void OnClick(in MouseInteractEventArgs args) => Click?.Invoke(this, args);
+        protected void OnClick(in MouseNotifyEventArgs args) => Click?.Invoke(this, args);
     }
 }
