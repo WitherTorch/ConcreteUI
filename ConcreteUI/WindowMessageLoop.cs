@@ -23,6 +23,7 @@ namespace ConcreteUI
     {
         private static readonly QueueStatusFlags StatusFlags = SystemHelper.IsWindows8OrHigher() ? QueueStatusFlags.AllInput : QueueStatusFlags.AllInputOld;
 
+        private static readonly Action<NativeWindow> _windowShowAction = window => window.Show();
         private static readonly ThreadLocal<uint> _threadIdLocal = new ThreadLocal<uint>(Kernel32.GetCurrentThreadId, trackAllValues: false);
         private static readonly UpdatableCollection<IWindowMessageFilter, UnwrappableList<IWindowMessageFilter>> _filters =
             UpdatableCollection.CreateUnwrapped<IWindowMessageFilter>();
@@ -50,15 +51,18 @@ namespace ConcreteUI
             uint messageLoopThreadId = InterlockedHelper.Read(ref _threadIdForMessageLoop);
             if (messageLoopThreadId == 0)
                 throw new InvalidOperationException("The message loop is not exists!");
-            ChangeMainWindowCore(mainWindow);
+            ChangeMainWindowCore(mainWindow, IsMessageLoopThread);
         }
 
-        private static void ChangeMainWindowCore(NativeWindow? mainWindow)
+        private static void ChangeMainWindowCore(NativeWindow? mainWindow, bool isMessageLoopThread)
         {
             if (mainWindow is not null)
             {
                 mainWindow.Destroyed += OnWindowDestroyed;
-                mainWindow.Show();
+                if (isMessageLoopThread)
+                    mainWindow.Show();
+                else
+                    InvokeAsync(_windowShowAction, mainWindow);
             }
             NativeWindow? oldWindow = InterlockedHelper.Exchange(ref _mainWindow, mainWindow);
             if (oldWindow is not null)
@@ -76,7 +80,7 @@ namespace ConcreteUI
             AddMessageFilter(invokeMessageFilter);
             InterlockedHelper.Exchange(ref _invokeMessageFilter, invokeMessageFilter)?.ProcessAllInvoke();
 
-            ChangeMainWindowCore(mainWindow);
+            ChangeMainWindowCore(mainWindow, isMessageLoopThread: true);
             int result = catchAllExceptionIntoEventHandler ? DoMessageLoop_CatchAllException() : DoMessageLoop();
             InterlockedHelper.CompareExchange(ref _threadIdForMessageLoop, 0, currentThreadId);
 
@@ -86,7 +90,7 @@ namespace ConcreteUI
                 RemoveMessageFilter(invokeMessageFilter);
                 invokeMessageFilter.ProcessAllInvoke();
             }
-            ChangeMainWindowCore(null);
+            ChangeMainWindowCore(null, isMessageLoopThread: false);
             return result;
         }
 
