@@ -44,13 +44,13 @@ namespace ConcreteUI.Controls
             goto ArrayLike;
 
         ObservableList:
-            ObservableList<UIElement> observableList = UnsafeHelper.As<TEnumerable, ObservableList<UIElement>>(elements);
-            elements = UnsafeHelper.As<IList<UIElement>, TEnumerable>(observableList.GetUnderlyingList());
-            if (elements is UIElement[])
+            IList<UIElement> underlyingList = UnsafeHelper.As<TEnumerable, ObservableList<UIElement>>(elements).GetUnderlyingList();
+            elements = UnsafeHelper.As<IList<UIElement>, TEnumerable>(underlyingList);
+            if (underlyingList is UIElement[])
                 goto Array;
-            if (elements is UnwrappableList<UIElement>)
+            if (underlyingList is UnwrappableList<UIElement>)
                 goto UnwrappableList;
-            if (elements is ObservableList<UIElement>)
+            if (underlyingList is ObservableList<UIElement>)
                 goto ObservableList;
             goto List;
 
@@ -128,13 +128,13 @@ namespace ConcreteUI.Controls
             goto ArrayLike;
 
         ObservableList:
-            ObservableList<UIElement> observableList = UnsafeHelper.As<TEnumerable, ObservableList<UIElement>>(elements);
-            elements = UnsafeHelper.As<IList<UIElement>, TEnumerable>(observableList.GetUnderlyingList());
-            if (elements is UIElement[])
+            IList<UIElement> underlyingList = UnsafeHelper.As<TEnumerable, ObservableList<UIElement>>(elements).GetUnderlyingList();
+            elements = UnsafeHelper.As<IList<UIElement>, TEnumerable>(underlyingList);
+            if (underlyingList is UIElement[])
                 goto Array;
-            if (elements is UnwrappableList<UIElement>)
+            if (underlyingList is UnwrappableList<UIElement>)
                 goto UnwrappableList;
-            if (elements is ObservableList<UIElement>)
+            if (underlyingList is ObservableList<UIElement>)
                 goto ObservableList;
             goto List;
 
@@ -206,13 +206,13 @@ namespace ConcreteUI.Controls
             goto ArrayLike;
 
         ObservableList:
-            ObservableList<UIElement> observableList = UnsafeHelper.As<TEnumerable, ObservableList<UIElement>>(elements);
-            elements = UnsafeHelper.As<IList<UIElement>, TEnumerable>(observableList.GetUnderlyingList());
-            if (elements is UIElement[])
+            IList<UIElement> underlyingList = UnsafeHelper.As<TEnumerable, ObservableList<UIElement>>(elements).GetUnderlyingList();
+            elements = UnsafeHelper.As<IList<UIElement>, TEnumerable>(underlyingList);
+            if (underlyingList is UIElement[])
                 goto Array;
-            if (elements is UnwrappableList<UIElement>)
+            if (underlyingList is UnwrappableList<UIElement>)
                 goto UnwrappableList;
-            if (elements is ObservableList<UIElement>)
+            if (underlyingList is ObservableList<UIElement>)
                 goto ObservableList;
             goto List;
 
