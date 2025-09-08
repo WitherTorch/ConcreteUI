@@ -829,22 +829,17 @@ namespace ConcreteUI.Window
 
         public void OpenContextMenu(ContextMenu.ContextMenuItem[] items, Point location)
         {
-            if (items.HasAnyItem())
-            {
-                ContextMenu contextMenu = new ContextMenu(this, items)
-                {
-                    Location = location
-                };
-                if (location.X + contextMenu.Width >= Width + _drawingOffsetX * 2)
-                {
-                    contextMenu.X = location.X - contextMenu.Width + 1;
-                }
-                if (location.Y + contextMenu.Height >= Height + _drawingOffsetY * 2)
-                {
-                    contextMenu.Y = location.Y - contextMenu.Height + 1;
-                }
-                ChangeOverlayElement(contextMenu)?.Dispose();
-            }
+            if (!items.HasAnyItem())
+                return;
+            
+            ContextMenu contextMenu = new ContextMenu(this, items);
+            ChangeOverlayElement(contextMenu)?.Dispose();
+            RectF pageRect = _pageRect;
+            if (location.X + contextMenu.Width >= pageRect.Right)
+                location.X = location.X - contextMenu.Width + 1;
+            if (location.Y + contextMenu.Height >= pageRect.Bottom)
+                location.Y = location.Y - contextMenu.Height + 1;
+            contextMenu.Location = location;
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
