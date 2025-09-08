@@ -231,7 +231,7 @@ namespace ConcreteUI.Window
                 case WindowMessage.KeyUp:
                     {
                         KeyInteractEventArgs args = new KeyInteractEventArgs((VirtualKey)wParam, (ushort)lParam);
-                        OnKeyDown(ref args);
+                        OnKeyUp(ref args);
                         if (args.Handled)
                             break;
                         goto default;
