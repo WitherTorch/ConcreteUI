@@ -97,10 +97,10 @@ namespace ConcreteUI.Controls
 
         protected override bool RenderCore(DirtyAreaCollector collector) => true;
 
-        PointF lastPoint;
+        Point lastPoint;
         public void OnMouseMove(in MouseNotifyEventArgs args)
         {
-            PointF point = args.Location;
+            Point point = args.Location;
             if (lastPoint == point)
                 return;
             lastPoint = point;

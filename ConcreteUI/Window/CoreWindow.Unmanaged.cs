@@ -261,7 +261,7 @@ namespace ConcreteUI.Window
                         MouseButtons oldButtons = _lastMouseDownButtons;
                         _lastMouseDownButtons = buttons;
                         MouseInteractEventArgs args = new MouseInteractEventArgs(
-                            point: ScalingPointF(point, _windowScaleFactor),
+                            point: ScalingPixelToLogical(point, _windowScaleFactor),
                             buttons: buttons & ~oldButtons);
                         OnMouseDown(ref args);
                         if (args.Handled)
@@ -280,7 +280,7 @@ namespace ConcreteUI.Window
                         MouseButtons oldButtons = _lastMouseDownButtons;
                         _lastMouseDownButtons = buttons;
                         MouseNotifyEventArgs args = new MouseNotifyEventArgs(
-                            point: ScalingPointF(point, _windowScaleFactor),
+                            point: ScalingPixelToLogical(point, _windowScaleFactor),
                             buttons: oldButtons & ~buttons);
                         OnMouseUp(in args);
                         goto default;
@@ -335,7 +335,7 @@ namespace ConcreteUI.Window
                     {
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
                         OnMouseMove(new MouseInteractEventArgs(
-                            point: ScalingPointF(point, _windowScaleFactor)));
+                            point: ScalingPixelToLogical(point, _windowScaleFactor)));
                         if (_beforeHitTest != (nint)HitTestValue.Client)
                         {
                             switch ((HitTestValue)_beforeHitTest)
@@ -564,7 +564,7 @@ namespace ConcreteUI.Window
                     }
                 }
             }
-            return CustomHitTest(ScalingPointF(point, _windowScaleFactor));
+            return CustomHitTest(ScalingPixelToLogical(point, _windowScaleFactor));
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -751,13 +751,13 @@ namespace ConcreteUI.Window
 
         #region Thread-Safe Function Overwrite
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PointF PointToLocal(Point point)
+        public Point PointToLocal(Point point)
         {
             IntPtr handle = Handle;
             if (handle == IntPtr.Zero)
                 return Point.Empty;
 
-            return ScalingPointF(PointToLocalCore(handle, point), _windowScaleFactor);
+            return ScalingPixelToLogical(PointToLocalCore(handle, point), _windowScaleFactor);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -781,13 +781,13 @@ namespace ConcreteUI.Window
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PointF PointToClient(Point point)
+        public Point PointToClient(Point point)
         {
             IntPtr handle = Handle;
             if (handle == IntPtr.Zero)
                 return Point.Empty;
 
-            return ScalingPointF(PointToClientCore(handle, point), _windowScaleFactor);
+            return ScalingPixelToLogical(PointToClientCore(handle, point), _windowScaleFactor);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -814,7 +814,7 @@ namespace ConcreteUI.Window
 
         #region Inline Macros
         [Inline(InlineBehavior.Remove)]
-        private static Size ScalingSize(SizeF original, float dpiScaleFactor)
+        private static Size ScalingLogicalToPixel(SizeF original, float dpiScaleFactor)
         {
             if (dpiScaleFactor == 1.0f)
                 return new Size(MathI.Floor(original.Width), MathI.Floor(original.Height));
@@ -823,7 +823,7 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static SizeF ScalingSizeF(Size original, float windowScaleFactor)
+        private static SizeF ScalingPixelToLogical(Size original, float windowScaleFactor)
         {
             if (windowScaleFactor == 1.0f)
                 return original;
@@ -832,7 +832,16 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static PointF ScalingPointF(Point original, float windowScaleFactor)
+        private static Point ScalingPixelToLogical(Point original, float windowScaleFactor)
+        {
+            if (windowScaleFactor == 1.0f)
+                return original;
+            else
+                return new Point(MathI.Floor(original.X * windowScaleFactor), MathI.Floor(original.Y * windowScaleFactor));
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static PointF ScalingPixelToLogical(PointF original, float windowScaleFactor)
         {
             if (windowScaleFactor == 1.0f)
                 return original;
@@ -841,16 +850,7 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static PointF ScalingPointF(PointF original, float windowScaleFactor)
-        {
-            if (windowScaleFactor == 1.0f)
-                return original;
-            else
-                return new PointF(original.X * windowScaleFactor, original.Y * windowScaleFactor);
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private static Rect ScalingRect(RectF original, float dpiScaleFactor)
+        private static Rect ScalingLogicalToPixel(RectF original, float dpiScaleFactor)
         {
             if (dpiScaleFactor == 1.0f)
                 return (Rect)original;
@@ -861,7 +861,7 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static RectF ScalingRectF(Rect original, float windowScaleFactor)
+        private static RectF ScalingPixelToLogical(Rect original, float windowScaleFactor)
         {
             if (windowScaleFactor == 1.0f)
                 return (RectF)original;
@@ -878,13 +878,13 @@ namespace ConcreteUI.Window
             {
                 if (min == SizeF.Empty)
                     return original;
-                return Max(original, ScalingSize(min, dpiScaleFactor));
+                return Max(original, ScalingLogicalToPixel(min, dpiScaleFactor));
             }
             else
             {
                 if (min == SizeF.Empty)
-                    return Min(original, ScalingSize(min, dpiScaleFactor));
-                return Clamp(original, ScalingSize(min, dpiScaleFactor), ScalingSize(min, dpiScaleFactor));
+                    return Min(original, ScalingLogicalToPixel(min, dpiScaleFactor));
+                return Clamp(original, ScalingLogicalToPixel(min, dpiScaleFactor), ScalingLogicalToPixel(min, dpiScaleFactor));
             }
         }
 

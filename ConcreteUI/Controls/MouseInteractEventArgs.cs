@@ -15,19 +15,19 @@ namespace ConcreteUI.Controls
 
         private bool _handled;
 
-        public readonly PointF Location
+        public readonly Point Location
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _data._location;
         }
 
-        public readonly float X
+        public readonly int X
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _data._location.X;
         }
 
-        public readonly float Y
+        public readonly int Y
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _data._location.Y;
@@ -52,16 +52,16 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MouseInteractEventArgs(PointF point) : this(point, MouseButtons.None, 0) { }
+        public MouseInteractEventArgs(Point point) : this(point, MouseButtons.None, 0) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MouseInteractEventArgs(PointF point, MouseButtons buttons) : this(point, buttons, 0) { }
+        public MouseInteractEventArgs(Point point, MouseButtons buttons) : this(point, buttons, 0) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MouseInteractEventArgs(PointF point, short delta) : this(point, MouseButtons.None, delta) { }
+        public MouseInteractEventArgs(Point point, short delta) : this(point, MouseButtons.None, delta) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MouseInteractEventArgs(PointF point, MouseButtons buttons, short delta) : this(new MouseEventData(point, buttons, delta)) { }
+        public MouseInteractEventArgs(Point point, MouseButtons buttons, short delta) : this(new MouseEventData(point, buttons, delta)) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal MouseInteractEventArgs(in MouseEventData data)

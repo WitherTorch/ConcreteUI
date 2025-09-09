@@ -186,7 +186,7 @@ namespace ConcreteUI.Window
 
         private void OnShown2()
         {
-            PointF point = PointToClient(MouseHelper.GetMousePosition());
+            Point point = PointToClient(MouseHelper.GetMousePosition());
             OnMouseMove(new MouseInteractEventArgs(point));
         }
 
@@ -415,7 +415,7 @@ namespace ConcreteUI.Window
                 isSizeChanged = force = true;
                 Size size = base.ClientSize;
                 host.Resize(size);
-                RecalculateLayout(ScalingSizeF(size, _windowScaleFactor), true);
+                RecalculateLayout(ScalingPixelToLogical(size, _windowScaleFactor), true);
             }
             D2D1DeviceContext? deviceContext = host?.GetDeviceContext();
             if (deviceContext is null || deviceContext.IsDisposed)
