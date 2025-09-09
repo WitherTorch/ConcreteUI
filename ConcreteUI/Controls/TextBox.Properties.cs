@@ -66,27 +66,10 @@ namespace ConcreteUI.Controls
                 int oldCaretIndex = _caretIndex;
                 if (oldCaretIndex == value)
                     return;
-                string text = _text;
-                int length = text.Length;
-                value = MathHelper.Max(MathHelper.Min(value, length), 0);
+                value = AdjustCaretIndex(value, takeGreaterIfNotExists: false);
                 if (oldCaretIndex == value)
                     return;
-                if (value > 1 && value < length)
-                {
-                    char c = text[value];
-                    if (char.IsLowSurrogate(c))
-                    {
-                        int newValue = value - 1;
-                        if (char.IsHighSurrogate(text[newValue]))
-                            value = newValue;
-                    }
-                }
-                _caretIndex = value;
-                _caretState = true;
-                if (Enabled)
-                    _caretTimer.Change(500, 500);
-                CalculateCurrentViewportPoint();
-                Update();
+                UpdateCaretIndex(value);
             }
         }
 
@@ -95,58 +78,7 @@ namespace ConcreteUI.Controls
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _text;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                value = FixString(value);
-
-                if (Renderer.IsInitializingElements())
-                {
-                    _text = value;
-                    return;
-                }
-
-                TextChangingEventHandler? changingHandler = TextChanging;
-                if (changingHandler is not null)
-                {
-                    TextChangingEventArgs args = new TextChangingEventArgs(value);
-                    changingHandler.Invoke(this, args);
-                    if (args is not null)
-                    {
-                        if (args.IsCanceled)
-                            return;
-                        if (args.IsEdited)
-                            value = FixString(args.Text);
-                    }
-                }
-
-                int oldTextLength = _text.Length;
-                _text = value;
-
-                int length = value.Length;
-
-                selectionRange.Length = 0;
-                _caretIndex = MathHelper.Clamp(_caretIndex, 0, length);
-
-                TextChanged?.Invoke(this, EventArgs.Empty);
-
-                if (_multiLine)
-                {
-                    float contentWidth = ContentBounds.Width;
-                    if (contentWidth > 0f)
-                    {
-                        using DWriteTextLayout layout = CreateVirtualTextLayout();
-                        layout.MaxWidth = contentWidth;
-                        SurfaceSize = new Size(0, MathI.Ceiling(layout.GetMetrics().Height));
-                    }
-                    else
-                    {
-                        SurfaceSize = Size.Empty;
-                    }
-                }
-                if (oldTextLength > length)
-                    CalculateCurrentViewportPoint();
-                Update(RenderObjectUpdateFlags.Layout);
-            }
+            set => UpdateTextAndCaretIndex(value, _caretIndex);
         }
 
         public string Watermark
@@ -175,6 +107,7 @@ namespace ConcreteUI.Controls
                     return;
                 _multiLine = value;
 
+                string text = _text;
                 if (value)
                 {
                     Rect bounds = ContentBounds;
@@ -182,7 +115,7 @@ namespace ConcreteUI.Controls
                         SurfaceSize = Size.Empty;
                     else
                     {
-                        using DWriteTextLayout layout = CreateVirtualTextLayout();
+                        using DWriteTextLayout layout = CreateVirtualTextLayout(text);
                         layout.MaxWidth = bounds.Width;
 
                         SurfaceSize = new Size(0, MathI.Ceiling(layout.GetMetrics().Height) + UIConstants.ElementMargin);
@@ -190,8 +123,8 @@ namespace ConcreteUI.Controls
                 }
                 else
                 {
-                    Text = FixString(_text);
                     SurfaceSize = new Size(int.MaxValue, 0);
+                    Text = FixString(text);
                 }
                 Update();
             }
@@ -228,7 +161,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public bool HasSelection => selectionRange.Length > 0;
+        public bool HasSelection => _selectionRange.Length > 0;
 
         public LayoutVariable AutoHeightReference
         {

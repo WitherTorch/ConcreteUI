@@ -71,10 +71,8 @@ namespace ConcreteUI.Controls
         protected override void Update() => Update(UpdateFlags.All);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Update(UpdateFlags flags)
+        protected void Update(UpdateFlags flags)
         {
-            if (flags == UpdateFlags.None)
-                return;
             InterlockedHelper.Or(ref _updateFlagsRaw, (ulong)flags);
             UpdateCore();
         }

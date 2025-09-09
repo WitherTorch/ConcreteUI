@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -19,6 +20,8 @@ using ConcreteUI.Window;
 
 using InlineMethod;
 
+using LocalsInit;
+
 using WitherTorch.Common;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
@@ -29,7 +32,8 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class TextBox : ScrollableElementBase, IIMEControl, IMouseInteractEvents, IMouseNotifyEvents, IKeyEvents, ICharacterEvents, ICursorPredicator
     {
-        private static readonly char[] LineSeparators = ['\r', '\n'];
+        private static readonly char[] LineSeparators = Environment.NewLine.ToCharArray();
+        private static readonly GraphemeInfo EmptyGraphemeInfo = new GraphemeInfo(string.Empty, Array.Empty<int>());
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
             "back",
@@ -48,12 +52,13 @@ namespace ConcreteUI.Controls
         private readonly InputMethod? _ime;
         private readonly Timer _caretTimer;
 
-        private SystemCursorType? _cursorType;
+        private GraphemeInfo _textGraphemeInfo;
         private DWriteTextLayout? _layout, _watermarkLayout;
         private string? _fontName;
         private string _text, _watermark;
-        private DWriteTextRange compositionRange;
-        private SelectionRange selectionRange;
+        private DWriteTextRange _compositionRange;
+        private SelectionRange _selectionRange;
+        private SystemCursorType? _cursorType;
         private TextAlignment _alignment;
         private long _rawUpdateFlags;
         private float _fontSize;
@@ -71,6 +76,7 @@ namespace ConcreteUI.Controls
             _compositionCaretIndex = 0;
             _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
             _text = string.Empty;
+            _textGraphemeInfo = EmptyGraphemeInfo;
             _watermark = string.Empty;
             _fontSize = UIConstants.BoxFontSize;
             _passwordChar = '\0';
@@ -131,6 +137,12 @@ namespace ConcreteUI.Controls
                 bounds.Right - UIConstants.ElementMarginHalf, bounds.Bottom - UIConstants.ElementMarginHalf);
         }
 
+        private static GraphemeInfo CreateGraphemeInfoForString(string str)
+        {
+            int[] indices = str.Length <= 0 ? Array.Empty<int>() : StringInfo.ParseCombiningCharacters(str);
+            return new GraphemeInfo(str, indices);
+        }
+
         private void Window_FocusElementChanged(object? sender, UIElement? element)
         {
             bool newFocus = this == element;
@@ -151,8 +163,8 @@ namespace ConcreteUI.Controls
             {
                 _caretTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 _ime?.Detach(this);
-                compositionRange.Length = 0;
-                selectionRange.Length = 0;
+                _compositionRange.Length = 0;
+                _selectionRange.Length = 0;
                 if (!_multiLine)
                     ViewportPoint = Point.Empty;
             }
@@ -167,16 +179,23 @@ namespace ConcreteUI.Controls
             if (_multiLine)
                 return value;
             char[] separators = LineSeparators;
-            if (!value.Contains(separators))
+            if (!value.ContainsAny(separators))
                 return value;
             return value.Split(separators, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
         }
 
-        [Inline(InlineBehavior.Remove)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected override void Update()
+        {
+            InterlockedHelper.Exchange(ref _rawUpdateFlags, (long)RenderObjectUpdateFlags.FlagsAllTrue);
+            Update(UpdateFlags.Content);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Update(RenderObjectUpdateFlags flags)
         {
             InterlockedHelper.Or(ref _rawUpdateFlags, (long)flags);
-            Update();
+            Update(UpdateFlags.Content);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -202,7 +221,7 @@ namespace ConcreteUI.Controls
                     char passwordChar = PasswordChar;
                     if (passwordChar != '\0') //has password char
                     {
-                        DWriteTextRange compositionRange = this.compositionRange;
+                        DWriteTextRange compositionRange = _compositionRange;
                         if (compositionRange.Length > 0) //has ime composition
                         {
                             if (compositionRange.StartPosition > 0)
@@ -245,9 +264,12 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Remove)]
-        private DWriteTextLayout CreateVirtualTextLayout()
+        private DWriteTextLayout CreateVirtualTextLayout() => CreateVirtualTextLayout(_text);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private DWriteTextLayout CreateVirtualTextLayout(string text)
         {
-            DWriteTextLayout result = TextFormatHelper.CreateTextLayout(_text ?? string.Empty, NullSafetyHelper.ThrowIfNull(_fontName), _alignment, _fontSize);
+            DWriteTextLayout result = TextFormatHelper.CreateTextLayout(text, NullSafetyHelper.ThrowIfNull(_fontName), _alignment, _fontSize);
             SetRenderingProperties(result);
             return result;
         }
@@ -284,7 +306,7 @@ namespace ConcreteUI.Controls
         {
             using DWriteTextLayout layout = CreateVirtualTextLayout();
             Rect bounds = ContentBounds;
-            DWriteTextRange compositionRange = this.compositionRange;
+            DWriteTextRange compositionRange = _compositionRange;
             bool inComposition = compositionRange.Length > 0;
             int visualCaretIndex = _caretIndex;
             if (inComposition)
@@ -301,31 +323,19 @@ namespace ConcreteUI.Controls
             float edgeY = bounds.Height;
             #region X方向伸縮
             if (viewportX < 0)
-            {
                 viewportPoint.X += viewportX;
-            }
             else if (viewportX > edgeX)
-            {
                 viewportPoint.X += viewportX - edgeX;
-            }
-            else if (viewportX < edgeX && viewportPoint.X > 0 && visualCaretIndex == Text.Length)
-            {
+            else if (viewportX < edgeX && viewportPoint.X > 0 && visualCaretIndex == _text.Length)
                 viewportPoint.X = MathHelper.Max(viewportPoint.X + viewportX - edgeX, 0);
-            }
             #endregion
             #region Y方向伸縮
             if (viewportY < 0)
-            {
                 viewportPoint.Y += viewportY;
-            }
             else if (viewportY + metrics.Height > edgeY)
-            {
                 viewportPoint.Y += viewportY - edgeY + metrics.Height;
-            }
             else if (viewportY < edgeY && viewportPoint.Y < 0)
-            {
                 viewportPoint.Y = MathHelper.Min(viewportPoint.Y - viewportY + edgeY, 0);
-            }
             #endregion
             #endregion
             ViewportPoint = new Point(MathI.Round(viewportPoint.X), MathI.Round(viewportPoint.Y));
@@ -378,7 +388,7 @@ namespace ConcreteUI.Controls
             D2D1Brush[] brushes = _brushes;
             PointF viewportPoint = ViewportPoint;
             //輸出處理 (IME 作用中範圍提示、選取範圍提示、取得視角點等等)
-            DWriteTextRange compositionRange = this.compositionRange;
+            DWriteTextRange compositionRange = _compositionRange;
             bool inComposition = compositionRange.Length > 0;
             //取得視角點
             PointF layoutPoint = new PointF(layoutRect.Left - viewportPoint.X, layoutRect.Top - viewportPoint.Y);
@@ -386,7 +396,7 @@ namespace ConcreteUI.Controls
             if (inComposition)
                 layout.SetUnderline(true, compositionRange);
             //選取範圍提示
-            SelectionRange selectionRange = this.selectionRange;
+            SelectionRange selectionRange = _selectionRange;
             if (selectionRange.Length > 0)
             {
                 DWriteTextRange textRange = selectionRange.ToTextRange();
@@ -441,6 +451,64 @@ namespace ConcreteUI.Controls
             PointF startPoint = new PointF(visualCaretX1, MathF.Floor(visualCaretY1));
             PointF endPoint = new PointF(visualCaretX1, MathF.Floor(visualCaretY2));
             context.DrawLine(startPoint, endPoint, _brushes[(int)Brush.ForeBrush], Renderer.GetBaseLineWidth());
+        }
+
+        private void UpdateTextAndCaretIndex(string text, int caretIndex, bool checkCaretIndex = true)
+        {
+            text = FixString(text);
+
+            if (Renderer.IsInitializingElements())
+            {
+                _text = text;
+                return;
+            }
+
+            TextChangingEventHandler? changingHandler = TextChanging;
+            if (changingHandler is not null)
+            {
+                TextChangingEventArgs args = new TextChangingEventArgs(text);
+                changingHandler.Invoke(this, args);
+                if (args is not null)
+                {
+                    if (args.IsCanceled)
+                        return;
+                    if (args.IsEdited)
+                        text = FixString(args.Text);
+                }
+            }
+
+            int length = text.Length;
+            GraphemeInfo graphemeInfo = CreateGraphemeInfoForString(text);
+            _text = text;
+            InterlockedHelper.Exchange(ref _textGraphemeInfo, graphemeInfo);
+            if (checkCaretIndex)
+            {
+                if (caretIndex <= 0)
+                    caretIndex = 0;
+                else if (caretIndex >= length)
+                    caretIndex = length;
+                else
+                    caretIndex = AdjustCaretIndexCore(caretIndex, length, graphemeInfo.GraphemeIndices, takeGreaterIfNotExists: false);
+            }
+
+            if (_multiLine)
+            {
+                float contentWidth = ContentBounds.Width;
+                if (contentWidth > 0f)
+                {
+                    using DWriteTextLayout layout = CreateVirtualTextLayout(text);
+                    layout.MaxWidth = contentWidth;
+                    SurfaceSize = new Size(0, MathI.Ceiling(layout.GetMetrics().Height));
+                }
+                else
+                {
+                    SurfaceSize = Size.Empty;
+                }
+            }
+            _selectionRange.Length = 0;
+
+            UpdateCaretIndex(caretIndex, RenderObjectUpdateFlags.Layout);
+            TextChanged?.Invoke(this, EventArgs.Empty);
         }
 
         #region Normal Key Controls
@@ -517,159 +585,198 @@ namespace ConcreteUI.Controls
         void IIMEControl.StartIMEComposition()
         { }
 
-        void IIMEControl.OnIMEComposition(string str, IMECompositionFlags flags, int cursorPosition)
+        [LocalsInit(false)]
+        unsafe void IIMEControl.OnIMEComposition(string str, IMECompositionFlags flags, int cursorPosition)
         {
-            RemoveSelection();
+            string text = _text;
+            int caretIndex = _caretIndex;
+            RemoveSelectionCore(ref text, ref caretIndex, ReferenceHelper.Exchange(ref _selectionRange, default));
+
             if (cursorPosition < 0)
                 cursorPosition = str.Length;
-            DWriteTextRange range = compositionRange;
-            if (range.Length <= 0)
-            {
-                range.StartPosition = MathHelper.MakeUnsigned(CaretIndex);
-                range.Length = MathHelper.MakeUnsigned(str.Length);
-                _compositionCaretIndex = cursorPosition;
-                compositionRange = range;
-                Text = Text.Insert(MathHelper.MakeSigned(range.StartPosition), str);
-                return;
-            }
-            using StringBuilderTiny builder = new StringBuilderTiny();
-            if (Limits.UseStackallocStringBuilder)
-            {
-                unsafe
-                {
-                    char* buffer = stackalloc char[Limits.MaxStackallocChars];
-                    builder.SetStartPointer(buffer, Limits.MaxStackallocChars);
-                }
-            }
-            builder.Append(Text);
-            builder.Remove(MathHelper.MakeSigned(compositionRange.StartPosition), MathHelper.MakeSigned(range.Length));
-            builder.Insert(MathHelper.MakeSigned(range.StartPosition), str);
-            range.Length = MathHelper.MakeUnsigned(str.Length);
-            _compositionCaretIndex = cursorPosition;
-            compositionRange = range;
-            Text = builder.ToString();
-        }
 
-        void IIMEControl.OnIMECompositionResult(string str, IMECompositionFlags flags)
-        {
-            if (compositionRange.Length > 0)
+            DWriteTextRange compositionRange = _compositionRange;
+            if (compositionRange.Length <= 0)
             {
-                using StringBuilderTiny builder = new StringBuilderTiny();
-                if (Limits.UseStackallocStringBuilder)
-                {
-                    unsafe
-                    {
-                        char* buffer = stackalloc char[Limits.MaxStackallocChars];
-                        builder.SetStartPointer(buffer, Limits.MaxStackallocChars);
-                    }
-                }
-                builder.Append(Text);
-                builder.Remove(MathHelper.MakeSigned(compositionRange.StartPosition), MathHelper.MakeSigned(compositionRange.Length));
-                builder.Insert(MathHelper.MakeSigned(compositionRange.StartPosition), str);
-                Text = builder.ToString();
-                CaretIndex += MathHelper.MakeSigned(compositionRange.Length);
-                _compositionCaretIndex = 0;
-                compositionRange.Length = 0;
-                Update();
+                compositionRange.StartPosition = MathHelper.MakeUnsigned(caretIndex);
+                compositionRange.Length = MathHelper.MakeUnsigned(str.Length);
+                _compositionCaretIndex = cursorPosition;
+                _compositionRange = compositionRange;
+                text = text.Insert(MathHelper.MakeSigned(compositionRange.StartPosition), str);
             }
             else
             {
-                int length = str.Length;
-                RemoveSelection();
-                string newText = Text.Insert(CaretIndex, str);
-                Text = newText;
-                CaretIndex += length;
+                int startPos = MathHelper.MakeSigned(compositionRange.StartPosition);
+                int length = MathHelper.MakeSigned(compositionRange.Length);
+                compositionRange.Length = MathHelper.MakeUnsigned(str.Length);
+                _compositionCaretIndex = cursorPosition;
+                _compositionRange = compositionRange;
+
+                int requiredCapacity = text.Length - length + str.Length;
+                using StringBuilderTiny builder = new StringBuilderTiny();
+                if (Limits.UseStackallocStringBuilder && requiredCapacity <= Limits.MaxStackallocChars)
+                {
+                    char* buffer = stackalloc char[requiredCapacity];
+                    builder.SetStartPointer(buffer, requiredCapacity);
+                }
+                else
+                {
+                    builder.EnsureCapacity(requiredCapacity);
+                }
+                builder.Append(text);
+                builder.Remove(startPos, length);
+                builder.Insert(startPos, str);
+                text = builder.ToString();
             }
+            UpdateTextAndCaretIndex(text, caretIndex);
+        }
+
+        [LocalsInit(false)]
+        unsafe void IIMEControl.OnIMECompositionResult(string str, IMECompositionFlags flags)
+        {
+            string text = _text;
+            int caretIndex = _caretIndex;
+
+            DWriteTextRange compositionRange = _compositionRange;
+            if (compositionRange.Length == 0)
+            {
+                int length = str.Length;
+                RemoveSelectionCore(ref text, ref caretIndex, ReferenceHelper.Exchange(ref _selectionRange, default));
+                text = text.Insert(caretIndex, str);
+                caretIndex += length;
+            }
+            else
+            {
+                _compositionRange = default;
+                _compositionCaretIndex = 0;
+                int startPos = MathHelper.MakeSigned(compositionRange.StartPosition);
+                int length = MathHelper.MakeSigned(compositionRange.Length);
+
+                int requiredCapacity = text.Length - length + str.Length;
+                using StringBuilderTiny builder = new StringBuilderTiny();
+                if (Limits.UseStackallocStringBuilder && requiredCapacity <= Limits.MaxStackallocChars)
+                {
+                    char* buffer = stackalloc char[requiredCapacity];
+                    builder.SetStartPointer(buffer, requiredCapacity);
+                }
+                else
+                {
+                    builder.EnsureCapacity(requiredCapacity);
+                }
+                builder.Append(text);
+                builder.Remove(startPos, length);
+                builder.Insert(startPos, str);
+                text = builder.ToString();
+                caretIndex += length;
+            }
+            UpdateTextAndCaretIndex(text, caretIndex);
         }
 
         void IIMEControl.EndIMEComposition()
         {
-            if (compositionRange.Length > 0)
-            {
-                CaretIndex += MathHelper.MakeSigned(compositionRange.Length);
-                compositionRange.Length = 0;
-                Update();
-            }
+            uint length = ReferenceHelper.Exchange(ref _compositionRange, default).Length;
+            if (length <= 0)
+                return;
+            UpdateCaretIndex(_caretIndex + MathHelper.MakeSigned(length));
         }
 
-        void ICharacterEvents.OnCharacterInput(ref CharacterInteractEventArgs args)
+        [LocalsInit(false)]
+        unsafe void ICharacterEvents.OnCharacterInput(ref CharacterInteractEventArgs args)
         {
             if (!_focused || !Enabled)
                 return;
-            args.Handle();
             char character = args.Character;
-            if (character < '\u0020')
-            {
-                switch (character)
-                {
-                    case '\b': // Backspace
-                        if (selectionRange.Length > 0)
-                        {
-                            RemoveSelection();
-                            break;
-                        }
-
-                        int caretIndex = CaretIndex;
-                        if (caretIndex > 0)
-                        {
-                            caretIndex--;
-                            Text = SafeRemove(Text, ref caretIndex, 1);
-                            CaretIndex = caretIndex;
-                        }
-                        break;
-                }
+            if (character < '\u0020' && character != '\b')
                 return;
-            }
+            args.Handle();
+            string text = _text;
+            int caretIndex = _caretIndex;
             switch (character)
             {
-                case '\u007f': //DEL (Ctrl + Backspace)
-                    if (selectionRange.Length > 0)
+                case '\b': // Backspace
                     {
-                        RemoveSelection();
-                        break;
-                    }
-                    int caretIndex = _caretIndex;
-                    if (caretIndex > 0)
-                    {
-                        string text = Text;
-                        int lastIndex = text.Length - 1;
-                        int index;
-                        int startIndex = MathHelper.Min(caretIndex, lastIndex);
-                        caretIndex = startIndex + 1;
-                        do
+                        SelectionRange selectionRange = ReferenceHelper.Exchange(ref _selectionRange, default);
+                        if (selectionRange.Length > 0)
+                            RemoveSelectionCore(ref text, ref caretIndex, selectionRange);
+                        else
                         {
-                            index = text.LastIndexOf(' ', startIndex);
-                            if (index >= startIndex)
-                                startIndex = index - 1;
+                            if (caretIndex <= 0)
+                                return;
+                            int newCaretIndex = AdjustCaretIndex(text, caretIndex - 1, takeGreaterIfNotExists: false);
+                            text = text.Remove(newCaretIndex, caretIndex - newCaretIndex);
+                            caretIndex = newCaretIndex;
+                        }
+                    }
+                    break;
+                case '\u007f': //DEL (Ctrl + Backspace)
+                    {
+                        SelectionRange selectionRange = ReferenceHelper.Exchange(ref _selectionRange, default);
+                        if (selectionRange.Length > 0)
+                            RemoveSelectionCore(ref text, ref caretIndex, selectionRange);
+                        else
+                        {
+                            if (caretIndex <= 0)
+                                return;
+                            int newCaretIndex = MathHelper.Min(caretIndex, text.Length) - 1;
+                            for (; newCaretIndex >= 0; newCaretIndex--)
+                            {
+                                if (!char.IsLetterOrDigit(text[newCaretIndex]))
+                                    break;
+                            }
+                            if (newCaretIndex < 0)
+                            {
+                                caretIndex = 0;
+                                text = string.Empty;
+                            }
                             else
-                                break;
-                        } while (index > 0);
-                        index = index < 0 ? 0 : index + 1;
-                        Text = SafeRemove(text, ref index, caretIndex - index);
-                        CaretIndex = index;
+                            {
+                                newCaretIndex = AdjustCaretIndex(text, newCaretIndex, takeGreaterIfNotExists: false);
+                                text = text.Remove(newCaretIndex, caretIndex - newCaretIndex);
+                                caretIndex = newCaretIndex;
+                            }
+                        }
                     }
                     break;
                 default:
-                    RemoveSelection();
-                    string newText = Text.Insert(_caretIndex, character.ToString());
-                    Text = newText;
-                    CaretIndex++;
+                    {
+                        SelectionRange selectionRange = ReferenceHelper.Exchange(ref _selectionRange, default);
+                        if (selectionRange.Length > 0)
+                            RemoveSelectionCore(ref text, ref caretIndex, selectionRange);
+                        int length = text.Length;
+                        int requiredCapacity = length + 1;
+                        using StringBuilderTiny builder = new StringBuilderTiny();
+                        if (Limits.UseStackallocStringBuilder && requiredCapacity <= Limits.MaxStackallocChars)
+                        {
+                            char* buffer = stackalloc char[requiredCapacity];
+                            builder.SetStartPointer(buffer, requiredCapacity);
+                        }
+                        else
+                        {
+                            builder.EnsureCapacity(requiredCapacity);
+                        }
+                        builder.Append(text, 0, caretIndex);
+                        builder.Append(character);
+                        builder.Append(text, caretIndex, length - caretIndex);
+                        text = builder.ToString();
+                        caretIndex++;
+                    }
                     break;
             }
+            UpdateTextAndCaretIndex(text, caretIndex, checkCaretIndex: false);
         }
         #endregion
 
         #region TextBox Functions
         public void Cut()
         {
-            string text = selectionRange.Length <= 0 ? string.Empty : _text.Substring(MathHelper.MakeSigned(selectionRange.ToTextRange().StartPosition), selectionRange.Length);
+            string text = _selectionRange.Length <= 0 ? string.Empty : _text.Substring(MathHelper.MakeSigned(_selectionRange.ToTextRange().StartPosition), _selectionRange.Length);
             RemoveSelection();
             Clipboard.SetText(text);
         }
 
         public void Copy()
         {
-            SelectionRange selectionRange = this.selectionRange;
+            SelectionRange selectionRange = _selectionRange;
             string text;
             if (selectionRange.Length > 0)
             {
@@ -686,240 +793,259 @@ namespace ConcreteUI.Controls
 
         public void Paste()
         {
-            string? text = Clipboard.GetText();
-            RemoveSelection();
-            if (StringHelper.IsNullOrEmpty(text))
-                return;
-            Text = _text.Insert(CaretIndex, text);
-            CaretIndex += text.Length;
+            string text = _text;
+            int caretIndex = _caretIndex;
+            RemoveSelectionCore(ref text, ref caretIndex, ReferenceHelper.Exchange(ref _selectionRange, default));
+            try
+            {
+                string? str = Clipboard.GetText();
+                if (!StringHelper.IsNullOrEmpty(str))
+                {
+                    text = text.Insert(caretIndex, str);
+                    caretIndex += str.Length;
+                }
+            }
+            finally
+            {
+                UpdateTextAndCaretIndex(text, caretIndex);
+            }
         }
 
         public void SelectAll()
         {
-            int length = Text.Length;
-            SelectionRange selectionRange = this.selectionRange;
-            selectionRange.StartPosition = 0;
-            selectionRange.Length = length;
-            this.selectionRange = selectionRange;
-            CaretIndex = length;
-            Update();
+            int length = _text.Length;
+            _selectionRange = new SelectionRange(0, length);
+            UpdateCaretIndex(length);
         }
 
         public void RemoveSelection()
         {
-            SelectionRange selectionRange = this.selectionRange;
+            string text = _text;
+            int caretIndex = _caretIndex;
+            RemoveSelectionCore(ref text, ref caretIndex, ReferenceHelper.Exchange(ref _selectionRange, default));
+            UpdateTextAndCaretIndex(text, caretIndex);
+        }
+
+        private void RemoveSelectionCore(ref string str, ref int caretIndex, in SelectionRange selectionRange)
+        {
             int selectionLength = selectionRange.Length;
             if (selectionLength <= 0)
                 return;
             DWriteTextRange range = selectionRange.ToTextRange();
-            CaretIndex = MathHelper.MakeSigned(range.StartPosition);
-            Text = SafeRemove(Text, MathHelper.MakeSigned(range.StartPosition), selectionLength);
-            selectionRange.Length = 0;
-            this.selectionRange = selectionRange;
-            Update();
+            caretIndex = MathHelper.MakeSigned(range.StartPosition);
+            str = str.Remove(caretIndex, selectionLength);
         }
 
         [Inline(InlineBehavior.Remove)]
         private void DeleteOne()
         {
-            string text = Text;
+            string text = _text;
             if (StringHelper.IsNullOrEmpty(text))
                 return;
-            if (selectionRange.Length > 0)
-            {
-                RemoveSelection();
-                return;
-            }
             int caretIndex = _caretIndex;
-            int length = text.Length;
-            if (caretIndex >= length)
+            SelectionRange selectionRange = ReferenceHelper.Exchange(ref _selectionRange, default);
+            if (selectionRange.Length > 0)
+                RemoveSelectionCore(ref text, ref caretIndex, in selectionRange);
+            else
             {
-                if (caretIndex > 0)
+                int length = text.Length;
+
+                if (caretIndex >= length)
                 {
-                    caretIndex--;
-                    goto RemoveText;
+                    int newCaretIndex = AdjustCaretIndex(text, caretIndex - 1, takeGreaterIfNotExists: false);
+                    text = text.Remove(newCaretIndex, caretIndex - newCaretIndex);
+                    caretIndex = newCaretIndex;
                 }
-                return;
+                else
+                {
+                    int indexForRemoval = AdjustCaretIndex(text, caretIndex + 1, takeGreaterIfNotExists: true);
+                    text = text.Remove(caretIndex, indexForRemoval - caretIndex);
+                }
             }
-            if (caretIndex >= 0)
-                goto RemoveText;
-
-            return;
-
-        RemoveText:
-            Text = SafeRemove(text, ref caretIndex, 1);
-            CaretIndex = caretIndex;
+            UpdateTextAndCaretIndex(text, caretIndex, checkCaretIndex: false);
         }
 
-        private static string SafeRemove(string str, int startIndex, int count)
-            => SafeRemove(str, ref startIndex, count);
-
-        private static string SafeRemove(string str, ref int startIndex, int count)
+        private int AdjustCaretIndex(int caretIndex, bool takeGreaterIfNotExists)
         {
-            if (count <= 0)
-                return str;
-            if (startIndex > 0)
-            {
-                int addition = MathHelper.BooleanToInt32(char.IsSurrogatePair(str[startIndex - 1], str[startIndex]));
-                startIndex -= addition;
-                count += addition;
-            }
-            int endIndexExclusive = startIndex + count;
-            if (endIndexExclusive < str.Length)
-                count += MathHelper.BooleanToInt32(char.IsSurrogatePair(str[endIndexExclusive - 1], str[endIndexExclusive]));
-            return str.Remove(startIndex, count);
+            if (caretIndex <= 0)
+                return 0;
+
+            GraphemeInfo graphemeInfo = InterlockedHelper.Read(ref _textGraphemeInfo);
+            int length = graphemeInfo.Original.Length;
+            if (caretIndex >= length)
+                return length;
+            return AdjustCaretIndexCore(caretIndex, length, graphemeInfo.GraphemeIndices, takeGreaterIfNotExists);
+        }
+
+        private int AdjustCaretIndex(string str, int caretIndex, bool takeGreaterIfNotExists)
+        {
+            if (caretIndex <= 0)
+                return 0;
+
+            int length = str.Length;
+            if (caretIndex >= length)
+                return length;
+
+            GraphemeInfo graphemeInfo = InterlockedHelper.Read(ref _textGraphemeInfo);
+            int[] indices = ReferenceEquals(str, graphemeInfo.Original) ? graphemeInfo.GraphemeIndices : StringInfo.ParseCombiningCharacters(str);
+            return AdjustCaretIndexCore(caretIndex, length, indices, takeGreaterIfNotExists);
+        }
+
+        private int AdjustCaretIndexCore(int caretIndex, int originalStringLength, int[] graphemeIndices, bool takeGreaterIfNotExists)
+        {
+            int index = Array.BinarySearch(graphemeIndices, caretIndex);
+            if (index >= 0)
+                return caretIndex;
+            index = ~index;
+            int indicesCount = graphemeIndices.Length;
+            if (index < indicesCount)
+                return takeGreaterIfNotExists ? graphemeIndices[index] : graphemeIndices[MathHelper.Max(index, 1) - 1];
+            return takeGreaterIfNotExists ? originalStringLength : graphemeIndices[indicesCount - 1];
+        }
+
+        private void AddCaretIndex(int increment) => UpdateCaretIndex(_caretIndex + increment);
+
+        private void UpdateCaretIndex(int caretIndex, RenderObjectUpdateFlags updateFlags = RenderObjectUpdateFlags.None)
+        {
+            _caretIndex = caretIndex;
+            _caretState = true;
+            if (Enabled)
+                _caretTimer.Change(500, 500);
+            CalculateCurrentViewportPoint();
+            Update(updateFlags);
         }
 
         [Inline(InlineBehavior.Remove)]
         private void MoveToStart(bool isSelectionMode)
         {
-            bool isInComposition = compositionRange.Length > 0;
-            int selectionStartPos = 0, selectionEndPos = 0;
+            bool isInComposition = _compositionRange.Length > 0;
+            SelectionRange selectionRange = _selectionRange;
             if (isSelectionMode)
             {
                 if (selectionRange.Length == 0)
                 {
                     if (isInComposition)
-                    {
-                        selectionEndPos = CaretIndex + _compositionCaretIndex;
-                    }
+                        selectionRange.EndPosition = _caretIndex + _compositionCaretIndex;
                     else
-                    {
-                        selectionEndPos = CaretIndex;
-                    }
+                        selectionRange.EndPosition = _caretIndex;
                 }
                 else
                 {
-                    selectionEndPos = MathHelper.Max(selectionRange.StartPosition, selectionRange.EndPosition);
+                    selectionRange.EndPosition = MathHelper.Max(selectionRange.StartPosition, selectionRange.EndPosition);
                 }
             }
             if (isInComposition)
             {
                 _compositionCaretIndex = 0;
                 if (isSelectionMode)
-                {
-                    selectionStartPos = CaretIndex;
-                }
+                    selectionRange.StartPosition = _caretIndex;
+                _selectionRange = selectionRange;
+                Update();
             }
             else
             {
-                CaretIndex = 0;
+                _selectionRange = selectionRange;
+                UpdateCaretIndex(0);
             }
-            selectionRange.StartPosition = selectionStartPos;
-            selectionRange.EndPosition = selectionEndPos;
-            Update();
         }
 
         [Inline(InlineBehavior.Remove)]
         private void MoveToEnd(bool isSelectionMode)
         {
-            int caretIndex = CaretIndex;
-            int compositionLength = MathHelper.MakeSigned(compositionRange.Length);
-            int textLength = Text.Length, selectionStartPos = textLength, selectionEndPos = textLength;
+            int caretIndex = _caretIndex;
+            int compositionLength = MathHelper.MakeSigned(_compositionRange.Length);
+            int textLength = _text.Length;
             bool isInComposition = compositionLength > 0;
-            SelectionRange selectionRange = this.selectionRange;
+            SelectionRange newSelectionRange = new SelectionRange(textLength, textLength);
             if (isSelectionMode)
             {
+                SelectionRange selectionRange = _selectionRange;
                 if (selectionRange.Length == 0)
                 {
                     if (isInComposition)
-                        selectionStartPos = caretIndex + _compositionCaretIndex;
+                        newSelectionRange.StartPosition = caretIndex + _compositionCaretIndex;
                     else
-                        selectionStartPos = caretIndex;
+                        newSelectionRange.StartPosition = caretIndex;
                 }
                 else
                 {
-                    selectionStartPos = MathHelper.Min(selectionRange.StartPosition, selectionRange.EndPosition);
+                    newSelectionRange.StartPosition = MathHelper.Min(selectionRange.StartPosition, selectionRange.EndPosition);
                 }
             }
             if (isInComposition)
             {
                 _compositionCaretIndex = compositionLength;
                 if (isSelectionMode)
-                    selectionEndPos = caretIndex + compositionLength;
+                    newSelectionRange.EndPosition = caretIndex + compositionLength;
+                _selectionRange = newSelectionRange;
+                Update();
             }
             else
             {
-                CaretIndex = textLength;
+                _selectionRange = newSelectionRange;
+                UpdateCaretIndex(textLength);
             }
-            selectionRange.StartPosition = selectionStartPos;
-            selectionRange.EndPosition = selectionEndPos;
-            this.selectionRange = selectionRange;
-            Update();
         }
 
         [Inline(InlineBehavior.Remove)]
         private void MoveLeft(bool isSelectionMode)
         {
-            if (compositionRange.Length > 0)
+            if (_compositionRange.Length > 0)
             {
                 _compositionCaretIndex = MathHelper.Max(_compositionCaretIndex - 1, 0);
-                selectionRange.Length = 0;
+                _selectionRange.Length = 0;
                 Update();
                 return;
             }
-            int caretIndex = CaretIndex;
+            int caretIndex = _caretIndex;
             bool selection = false;
             if (isSelectionMode)
             {
                 selection = true;
-                if (selectionRange.Length <= 0)
+                if (_selectionRange.Length <= 0)
                 {
-                    selectionRange.StartPosition = caretIndex;
+                    _selectionRange.StartPosition = caretIndex;
                 }
             }
             else
             {
-                selectionRange.Length = 0;
+                _selectionRange.Length = 0;
             }
-            caretIndex--;
+            caretIndex = AdjustCaretIndex(caretIndex - 1, takeGreaterIfNotExists: false);
             if (selection)
-                selectionRange.EndPosition = caretIndex;
-            CaretIndex = caretIndex;
+                _selectionRange.EndPosition = caretIndex;
+            UpdateCaretIndex(caretIndex);
         }
 
         [Inline(InlineBehavior.Remove)]
         private void MoveRight(bool isSelectionMode)
         {
-            int compositionLength = MathHelper.MakeSigned(compositionRange.Length);
+            int compositionLength = MathHelper.MakeSigned(_compositionRange.Length);
             if (compositionLength > 0)
             {
                 _compositionCaretIndex = MathHelper.Min(_compositionCaretIndex + 1, compositionLength);
-                selectionRange.Length = 0;
+                _selectionRange.Length = 0;
                 Update();
                 return;
             }
-            int caretIndex = CaretIndex;
+            int caretIndex = _caretIndex;
             bool selection = false;
             if (isSelectionMode)
             {
                 selection = true;
-                if (selectionRange.Length <= 0)
+                if (_selectionRange.Length <= 0)
                 {
-                    selectionRange.StartPosition = caretIndex;
+                    _selectionRange.StartPosition = caretIndex;
                 }
             }
             else
             {
-                selectionRange.Length = 0;
+                _selectionRange.Length = 0;
             }
-            caretIndex = MoveRight(_text, caretIndex);
+            caretIndex = AdjustCaretIndex(caretIndex + 1, takeGreaterIfNotExists: true);
             if (selection)
-            {
-                selectionRange.EndPosition = caretIndex;
-            }
-            CaretIndex = caretIndex;
-        }
-
-        private static int MoveRight(string text, int caretIndex)
-        {
-            int length = text.Length;
-            if (caretIndex >= length)
-                return caretIndex;
-            int newCaretIndex = caretIndex + 1;
-            if (newCaretIndex == length || !char.IsHighSurrogate(text[caretIndex]) || !char.IsLowSurrogate(text[newCaretIndex]))
-                return newCaretIndex;
-            return newCaretIndex + 1;
+                _selectionRange.EndPosition = caretIndex;
+            UpdateCaretIndex(caretIndex);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -927,11 +1053,12 @@ namespace ConcreteUI.Controls
         {
             if (!MultiLine)
                 return;
-            int caretIndex = CaretIndex;
+            int caretIndex = _caretIndex;
             if (caretIndex <= 0)
                 return;
 
-            using DWriteTextLayout layout = CreateVirtualTextLayout();
+            string text = _text;
+            using DWriteTextLayout layout = CreateVirtualTextLayout(text);
             layout.HitTestTextPosition(MathHelper.MakeUnsigned(caretIndex), false, out float pointX, out float pointY);
 
             pointY -= 5;
@@ -940,17 +1067,8 @@ namespace ConcreteUI.Controls
 
             int pos = MathHelper.MakeSigned(layout.HitTestPoint(pointX, pointY, out bool isTrailingHit, out bool isInside).TextPosition);
             if (isTrailingHit)
-            {
-                int textLength = Text.Length;
-                if (pos < textLength - 1)
-                {
-                    if (isInside)
-                        pos++;
-                }
-                else
-                    pos = textLength;
-            }
-            CaretIndex = pos;
+                pos = AdjustCaretIndex(text, pos + 1, takeGreaterIfNotExists: true);
+            UpdateCaretIndex(pos);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -958,27 +1076,20 @@ namespace ConcreteUI.Controls
         {
             if (!MultiLine)
                 return;
-            int caretIndex = CaretIndex;
-            int textLength = Text.Length;
+            string text = _text;
+            int caretIndex = _caretIndex;
+            int textLength = text.Length;
             if (caretIndex >= textLength)
                 return;
-            using DWriteTextLayout layout = CreateVirtualTextLayout();
+            using DWriteTextLayout layout = CreateVirtualTextLayout(text);
             DWriteHitTestMetrics metrics = layout.HitTestTextPosition(MathHelper.MakeUnsigned(caretIndex), false, out float pointX, out float pointY);
             pointY += metrics.Height + 5;
             if (pointY < 0)
                 return;
             int pos = MathHelper.MakeSigned(layout.HitTestPoint(pointX, pointY, out bool isTrailingHit, out bool isInside).TextPosition);
             if (isTrailingHit)
-            {
-                if (pos < textLength - 1)
-                {
-                    if (isInside)
-                        pos++;
-                }
-                else
-                    pos = textLength;
-            }
-            CaretIndex = pos;
+                pos = AdjustCaretIndex(text, pos + 1, takeGreaterIfNotExists: true);
+            UpdateCaretIndex(pos);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -986,9 +1097,9 @@ namespace ConcreteUI.Controls
         {
             if (!MultiLine)
                 return;
-            int caretIndex = CaretIndex;
-            Text = Text.Insert(caretIndex, "\n");
-            CaretIndex = caretIndex + 1;
+            string newLine = Environment.NewLine;
+            int caretIndex = _caretIndex;
+            UpdateTextAndCaretIndex(_text.Insert(caretIndex, newLine), caretIndex + newLine.Length);
         }
         #endregion
 
@@ -1006,16 +1117,10 @@ namespace ConcreteUI.Controls
             float viewportLeft = MathF.Floor(Location.X + UIConstants.ElementMarginHalf) - viewportPoint.X;
             float viewportTop = MathF.Floor(Location.Y + UIConstants.ElementMarginHalf) - viewportPoint.Y;
             string text = _text;
-            using DWriteTextLayout layout = CreateVirtualTextLayout();
+            using DWriteTextLayout layout = CreateVirtualTextLayout(text);
             int result = MathHelper.MakeSigned(layout.HitTestPoint(point.X - viewportLeft, point.Y - viewportTop, out bool isTrailingHit, out isInside).TextPosition);
             if (isTrailingHit)
-            {
-                int textLength = text.Length;
-                if (isInside)
-                    result = MoveRight(text, result);
-                else
-                    result = textLength;
-            }
+                result = AdjustCaretIndex(text, result + 1, takeGreaterIfNotExists: true);
             return result;
         }
 
@@ -1037,9 +1142,9 @@ namespace ConcreteUI.Controls
             if (args.Handled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton) || !Enabled)
             {
                 _drag = false;
-                if (selectionRange.Length > 0)
+                if (_selectionRange.Length > 0)
                 {
-                    selectionRange.Length = 0;
+                    _selectionRange.Length = 0;
                     Update();
                 }
                 return;
@@ -1068,17 +1173,17 @@ namespace ConcreteUI.Controls
             switch (clicks)
             {
                 case 1:
-                    previousSelectionRange = selectionRange = new SelectionRange(caretIndex, caretIndex);
+                    previousSelectionRange = _selectionRange = new SelectionRange(caretIndex, caretIndex);
                     break;
                 default:
-                    string text = Text;
+                    string text = _text;
                     int textLength = text.Length;
                     if (textLength > 0)
                     {
                         switch ((clicks - 1) % 2)
                         {
                             case 0:
-                                previousSelectionRange = selectionRange = new SelectionRange(0, textLength);
+                                previousSelectionRange = _selectionRange = new SelectionRange(0, textLength);
                                 break;
                             case 1:
                                 {
@@ -1113,7 +1218,7 @@ namespace ConcreteUI.Controls
                                         } while (index < textLength);
                                         if (selectionStart < 0) selectionStart = 0;
                                         if (selectionEnd < 0) selectionEnd = textLength;
-                                        previousSelectionRange = selectionRange = new SelectionRange(selectionStart, selectionEnd);
+                                        previousSelectionRange = _selectionRange = new SelectionRange(selectionStart, selectionEnd);
                                         caretIndex = selectionEnd;
                                     }
                                     else
@@ -1122,7 +1227,7 @@ namespace ConcreteUI.Controls
                                         int selectionEnd = StringHelper.IndexOf(text, ' ', caretIndex);
                                         if (selectionStart < 0) selectionStart = 0;
                                         if (selectionEnd < 0) selectionEnd = text.Length;
-                                        previousSelectionRange = selectionRange = new SelectionRange(selectionStart, selectionEnd);
+                                        previousSelectionRange = _selectionRange = new SelectionRange(selectionStart, selectionEnd);
                                         caretIndex = selectionEnd;
                                     }
                                 }
@@ -1131,10 +1236,8 @@ namespace ConcreteUI.Controls
                     }
                     break;
             }
-            if (CaretIndex != caretIndex || !isInside)
-            {
-                CaretIndex = caretIndex;
-            }
+            if (!isInside || _caretIndex != caretIndex)
+                UpdateCaretIndex(caretIndex);
         }
 
         bool isEnter = false;
@@ -1165,20 +1268,19 @@ namespace ConcreteUI.Controls
                 PointF location = args.Location;
                 if (!_multiLine)
                 {
-                    using DWriteTextLayout layout = CreateVirtualTextLayout();
+                    using DWriteTextLayout layout = CreateVirtualTextLayout(text);
                     location.Y = Location.Y + 3 + layout.GetMetrics().Top;
                 }
                 int newCaretIndex = GetCaretIndexFromPoint(location, out _);
-                if (CaretIndex != newCaretIndex)
+                if (_caretIndex != newCaretIndex)
                 {
                     int previousSelectionStart = previousSelectionRange.StartPosition;
                     int previousSelectionEnd = previousSelectionRange.EndPosition;
                     if (newCaretIndex < previousSelectionStart)
-                        selectionRange.StartPosition = newCaretIndex;
+                        _selectionRange.StartPosition = newCaretIndex;
                     else if (newCaretIndex > previousSelectionEnd)
-                        selectionRange.EndPosition = newCaretIndex;
-                    CaretIndex = newCaretIndex;
-                    Update();
+                        _selectionRange.EndPosition = newCaretIndex;
+                    UpdateCaretIndex(newCaretIndex);
                 }
             }
         }
@@ -1214,5 +1316,10 @@ namespace ConcreteUI.Controls
         #endregion
 
         public Rect GetInputArea() => ContentBounds;
+
+        private sealed record class GraphemeInfo(
+            string Original,
+            int[] GraphemeIndices
+            );
     }
 }
