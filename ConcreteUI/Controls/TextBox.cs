@@ -427,8 +427,7 @@ namespace ConcreteUI.Controls
         private static void RenderLayoutCore(D2D1DeviceContext context, D2D1Brush foreBrush, DWriteTextLayout layout, in PointF point)
         {
             //繪製文字
-            context.DrawTextLayout(point, layout, foreBrush,
-              D2D1DrawTextOptions.NoSnap | D2D1DrawTextOptions.EnableColorFont | D2D1DrawTextOptions.DisableColorBitmapSnapping);
+            context.DrawTextLayout(point, layout, foreBrush, D2D1DrawTextOptions.EnableColorFont);
         }
 
         private void DrawCaret(D2D1DeviceContext context, DWriteTextLayout layout, in PointF layoutPoint, int caretIndex)
@@ -596,7 +595,7 @@ namespace ConcreteUI.Controls
         void ICharacterEvents.OnCharacterInput(ref CharacterInteractEventArgs args)
         {
             if (!_focused || !Enabled)
-                return; 
+                return;
             args.Handle();
             char character = args.Character;
             if (character < '\u0020')
@@ -607,11 +606,15 @@ namespace ConcreteUI.Controls
                         if (selectionRange.Length > 0)
                         {
                             RemoveSelection();
+                            break;
                         }
-                        else if (_caretIndex > 0)
+
+                        int caretIndex = CaretIndex;
+                        if (caretIndex > 0)
                         {
-                            CaretIndex--;
-                            Text = Text.Remove(_caretIndex, 1);
+                            caretIndex--;
+                            Text = SafeRemove(Text, ref caretIndex, 1);
+                            CaretIndex = caretIndex;
                         }
                         break;
                 }
@@ -623,30 +626,27 @@ namespace ConcreteUI.Controls
                     if (selectionRange.Length > 0)
                     {
                         RemoveSelection();
+                        break;
                     }
-                    else
+                    int caretIndex = _caretIndex;
+                    if (caretIndex > 0)
                     {
-                        int caretIndex = CaretIndex;
-                        if (caretIndex > 0)
+                        string text = Text;
+                        int lastIndex = text.Length - 1;
+                        int index;
+                        int startIndex = MathHelper.Min(caretIndex, lastIndex);
+                        caretIndex = startIndex + 1;
+                        do
                         {
-                            string text = Text;
-                            int lastIndex = text.Length - 1;
-                            int index;
-                            int startIndex = MathHelper.Min(CaretIndex, lastIndex);
-                            caretIndex = startIndex + 1;
-                            do
-                            {
-                                index = text.LastIndexOf(' ', startIndex);
-                                if (index >= startIndex)
-                                    startIndex = index - 1;
-                                else
-                                    break;
-                            } while (index > 0);
-                            if (index < 0) index = 0;
-                            else index++;
-                            Text = text.Remove(index, caretIndex - index);
-                            CaretIndex = index;
-                        }
+                            index = text.LastIndexOf(' ', startIndex);
+                            if (index >= startIndex)
+                                startIndex = index - 1;
+                            else
+                                break;
+                        } while (index > 0);
+                        index = index < 0 ? 0 : index + 1;
+                        Text = SafeRemove(text, ref index, caretIndex - index);
+                        CaretIndex = index;
                     }
                     break;
                 default:
@@ -713,7 +713,7 @@ namespace ConcreteUI.Controls
                 return;
             DWriteTextRange range = selectionRange.ToTextRange();
             CaretIndex = MathHelper.MakeSigned(range.StartPosition);
-            Text = Text.Remove(MathHelper.MakeSigned(range.StartPosition), selectionLength);
+            Text = SafeRemove(Text, MathHelper.MakeSigned(range.StartPosition), selectionLength);
             selectionRange.Length = 0;
             this.selectionRange = selectionRange;
             Update();
@@ -736,15 +736,38 @@ namespace ConcreteUI.Controls
             {
                 if (caretIndex > 0)
                 {
-                    CaretIndex = --caretIndex;
-                    Text = text.Remove(caretIndex, 1);
+                    caretIndex--;
+                    goto RemoveText;
                 }
                 return;
             }
             if (caretIndex >= 0)
+                goto RemoveText;
+
+            return;
+
+        RemoveText:
+            Text = SafeRemove(text, ref caretIndex, 1);
+            CaretIndex = caretIndex;
+        }
+
+        private static string SafeRemove(string str, int startIndex, int count)
+            => SafeRemove(str, ref startIndex, count);
+
+        private static string SafeRemove(string str, ref int startIndex, int count)
+        {
+            if (count <= 0)
+                return str;
+            if (startIndex > 0)
             {
-                Text = text.Remove(caretIndex, 1);
+                int addition = MathHelper.BooleanToInt32(char.IsSurrogatePair(str[startIndex - 1], str[startIndex]));
+                startIndex -= addition;
+                count += addition;
             }
+            int endIndexExclusive = startIndex + count;
+            if (endIndexExclusive < str.Length)
+                count += MathHelper.BooleanToInt32(char.IsSurrogatePair(str[endIndexExclusive - 1], str[endIndexExclusive]));
+            return str.Remove(startIndex, count);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -880,12 +903,23 @@ namespace ConcreteUI.Controls
             {
                 selectionRange.Length = 0;
             }
-            caretIndex++;
+            caretIndex = MoveRight(_text, caretIndex);
             if (selection)
             {
                 selectionRange.EndPosition = caretIndex;
             }
             CaretIndex = caretIndex;
+        }
+
+        private static int MoveRight(string text, int caretIndex)
+        {
+            int length = text.Length;
+            if (caretIndex >= length)
+                return caretIndex;
+            int newCaretIndex = caretIndex + 1;
+            if (newCaretIndex == length || !char.IsHighSurrogate(text[caretIndex]) || !char.IsLowSurrogate(text[newCaretIndex]))
+                return newCaretIndex;
+            return newCaretIndex + 1;
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -977,11 +1011,8 @@ namespace ConcreteUI.Controls
             if (isTrailingHit)
             {
                 int textLength = text.Length;
-                if (result < textLength - 1)
-                {
-                    if (isInside)
-                        result++;
-                }
+                if (isInside)
+                    result = MoveRight(text, result);
                 else
                     result = textLength;
             }

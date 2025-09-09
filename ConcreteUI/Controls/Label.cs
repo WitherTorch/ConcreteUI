@@ -129,8 +129,7 @@ namespace ConcreteUI.Controls
             layout.MaxWidth = bounds.Width;
             layout.MaxHeight = bounds.Height;
             layout.WordWrapping = _wordWrap ? DWriteWordWrapping.EmergencyBreak : DWriteWordWrapping.NoWrap;
-            deviceContext.DrawTextLayout(bounds.Location, layout, foreBrush,
-              D2D1DrawTextOptions.NoSnap | D2D1DrawTextOptions.EnableColorFont | D2D1DrawTextOptions.DisableColorBitmapSnapping);
+            deviceContext.DrawTextLayout(bounds.Location, layout, foreBrush, D2D1DrawTextOptions.EnableColorFont);
             DisposeHelper.NullSwapOrDispose(ref _layout, layout);
             return true;
         }

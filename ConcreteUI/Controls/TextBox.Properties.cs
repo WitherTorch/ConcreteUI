@@ -66,9 +66,21 @@ namespace ConcreteUI.Controls
                 int oldCaretIndex = _caretIndex;
                 if (oldCaretIndex == value)
                     return;
-                value = MathHelper.Max(MathHelper.Min(value, _text.Length), 0);
+                string text = _text;
+                int length = text.Length;
+                value = MathHelper.Max(MathHelper.Min(value, length), 0);
                 if (oldCaretIndex == value)
                     return;
+                if (value > 1 && value < length)
+                {
+                    char c = text[value];
+                    if (char.IsLowSurrogate(c))
+                    {
+                        int newValue = value - 1;
+                        if (char.IsHighSurrogate(text[newValue]))
+                            value = newValue;
+                    }
+                }
                 _caretIndex = value;
                 _caretState = true;
                 if (Enabled)
