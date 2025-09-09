@@ -427,7 +427,8 @@ namespace ConcreteUI.Controls
         private static void RenderLayoutCore(D2D1DeviceContext context, D2D1Brush foreBrush, DWriteTextLayout layout, in PointF point)
         {
             //繪製文字
-            context.DrawTextLayout(point, layout, foreBrush, D2D1DrawTextOptions.None);
+            context.DrawTextLayout(point, layout, foreBrush,
+              D2D1DrawTextOptions.NoSnap | D2D1DrawTextOptions.EnableColorFont | D2D1DrawTextOptions.DisableColorBitmapSnapping);
         }
 
         private void DrawCaret(D2D1DeviceContext context, DWriteTextLayout layout, in PointF layoutPoint, int caretIndex)
