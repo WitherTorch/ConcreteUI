@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -139,8 +138,9 @@ namespace ConcreteUI.Controls
 
         private static GraphemeInfo CreateGraphemeInfoForString(string str)
         {
-            int[] indices = str.Length <= 0 ? Array.Empty<int>() : StringInfo.ParseCombiningCharacters(str);
-            return new GraphemeInfo(str, indices);
+            if (str.Length <= 0)
+                return GraphemeInfo.Empty;
+            return new GraphemeInfo(str, GraphemeHelper.GetGraphemeIndices(str));
         }
 
         private void Window_FocusElementChanged(object? sender, UIElement? element)
@@ -887,7 +887,7 @@ namespace ConcreteUI.Controls
                 return length;
 
             GraphemeInfo graphemeInfo = InterlockedHelper.Read(ref _textGraphemeInfo);
-            int[] indices = ReferenceEquals(str, graphemeInfo.Original) ? graphemeInfo.GraphemeIndices : StringInfo.ParseCombiningCharacters(str);
+            int[] indices = ReferenceEquals(str, graphemeInfo.Original) ? graphemeInfo.GraphemeIndices : GraphemeHelper.GetGraphemeIndices(str);
             return AdjustCaretIndexCore(caretIndex, length, indices, takeGreaterIfNotExists);
         }
 
@@ -1320,6 +1320,9 @@ namespace ConcreteUI.Controls
         private sealed record class GraphemeInfo(
             string Original,
             int[] GraphemeIndices
-            );
+            )
+        {
+            public static readonly GraphemeInfo Empty = new GraphemeInfo(string.Empty, Array.Empty<int>());
+        }
     }
 }
