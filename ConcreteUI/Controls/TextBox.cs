@@ -612,16 +612,21 @@ namespace ConcreteUI.Controls
                 _compositionCaretIndex = cursorPosition;
                 _compositionRange = compositionRange;
 
-                int newLength = text.Length - length + str.Length;
-                text = StringHelper.AllocateRawString(newLength);
-                fixed (char* ptr = text)
+                int capacity = text.Length - length + MathHelper.Max(str.Length, length);
+                using StringBuilderTiny builder = new StringBuilderTiny();
+                if (Limits.UseStackallocStringBuilder && capacity <= Limits.MaxStackallocChars)
                 {
-                    using StringBuilderTiny builder = new StringBuilderTiny();
-                    builder.SetStartPointer(ptr, newLength);
-                    builder.Append(text);
-                    builder.Remove(startPos, length);
-                    builder.Insert(startPos, str);
+                    char* buffer = stackalloc char[capacity];
+                    builder.SetStartPointer(buffer, capacity);
                 }
+                else
+                {
+                    builder.EnsureCapacity(capacity);
+                }
+                builder.Append(text);
+                builder.Remove(startPos, length);
+                builder.Insert(startPos, str);
+                text = builder.ToString();
             }
             UpdateTextAndCaretIndex(text, caretIndex);
         }
@@ -646,16 +651,21 @@ namespace ConcreteUI.Controls
                 _compositionCaretIndex = 0;
                 int startPos = MathHelper.MakeSigned(compositionRange.StartPosition);
                 int length = MathHelper.MakeSigned(compositionRange.Length);
-                int newLength = text.Length - length + str.Length;
-                text = StringHelper.AllocateRawString(newLength);
-                fixed (char* ptr = text)
+                int capacity = text.Length - length + MathHelper.Max(str.Length, length);
+                using StringBuilderTiny builder = new StringBuilderTiny();
+                if (Limits.UseStackallocStringBuilder && capacity <= Limits.MaxStackallocChars)
                 {
-                    using StringBuilderTiny builder = new StringBuilderTiny();
-                    builder.SetStartPointer(ptr, newLength);
-                    builder.Append(text);
-                    builder.Remove(startPos, length);
-                    builder.Insert(startPos, str);
+                    char* buffer = stackalloc char[capacity];
+                    builder.SetStartPointer(buffer, capacity);
                 }
+                else
+                {
+                    builder.EnsureCapacity(capacity);
+                }
+                builder.Append(text);
+                builder.Remove(startPos, length);
+                builder.Insert(startPos, str);
+                text = builder.ToString();
                 caretIndex += length;
             }
             UpdateTextAndCaretIndex(text, caretIndex);
@@ -734,8 +744,8 @@ namespace ConcreteUI.Controls
 
                         int length = text.Length;
                         int newLength = length + 1;
-                        text = StringHelper.AllocateRawString(newLength);
-                        fixed (char* ptr = text)
+                        string newText = StringHelper.AllocateRawString(newLength);
+                        fixed (char* ptr = newText)
                         {
                             using StringBuilderTiny builder = new StringBuilderTiny();
                             builder.SetStartPointer(ptr, newLength);
@@ -743,6 +753,7 @@ namespace ConcreteUI.Controls
                             builder.Append(character);
                             builder.Append(text, caretIndex, length - caretIndex);
                         }
+                        text = newText;
                         caretIndex++;
                     }
                     break;
