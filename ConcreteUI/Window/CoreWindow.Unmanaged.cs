@@ -258,11 +258,15 @@ namespace ConcreteUI.Window
                     {
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
                         MouseButtons buttons = ((MouseButtons)wParam) & MouseButtons._Mask;
-                        MouseButtons oldButtons = _lastMouseDownButtons;
-                        _lastMouseDownButtons = buttons;
+                        MouseButtons oldButtons = ReferenceHelper.Exchange(ref _lastMouseDownButtons, buttons);
+                        buttons &= ~oldButtons;
+                        if (buttons == MouseButtons.None)
+                            goto default;
+                        if (oldButtons == MouseButtons.None)
+                            User32.SetCapture(hwnd);
                         MouseInteractEventArgs args = new MouseInteractEventArgs(
                             point: ScalingPixelToLogical(point, _windowScaleFactor),
-                            buttons: buttons & ~oldButtons);
+                            buttons: buttons);
                         OnMouseDown(ref args);
                         if (args.Handled)
                             break;
@@ -277,11 +281,15 @@ namespace ConcreteUI.Window
                     {
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
                         MouseButtons buttons = ((MouseButtons)wParam) & MouseButtons._Mask;
-                        MouseButtons oldButtons = _lastMouseDownButtons;
-                        _lastMouseDownButtons = buttons;
+                        MouseButtons oldButtons = ReferenceHelper.Exchange(ref _lastMouseDownButtons, buttons);
+                        (buttons, oldButtons) = (oldButtons & ~buttons, buttons);
+                        if (oldButtons == MouseButtons.None)
+                            User32.ReleaseCapture();
+                        if (buttons == MouseButtons.None)
+                            goto default;
                         MouseNotifyEventArgs args = new MouseNotifyEventArgs(
                             point: ScalingPixelToLogical(point, _windowScaleFactor),
-                            buttons: oldButtons & ~buttons);
+                            buttons: buttons);
                         OnMouseUp(in args);
                         goto default;
                     }
@@ -361,15 +369,6 @@ namespace ConcreteUI.Window
                 case WindowMessage.MouseLeave:
                 case WindowMessage.NCMouseLeave:
                     {
-                        MouseButtons lastButtons = _lastMouseDownButtons;
-                        if (lastButtons != MouseButtons.None)
-                        {
-                            _lastMouseDownButtons = MouseButtons.None;
-                            // 模擬一次 MouseUp
-                            OnMouseUp(new MouseInteractEventArgs(
-                                point: PointToClient(MouseHelper.GetMousePosition()),
-                                buttons: lastButtons));
-                        }
                         _beforeHitTest = (nint)HitTestValue.NoWhere;
                         _titleBarButtonStatus.Reset();
                         _titleBarButtonChangedStatus.Set();

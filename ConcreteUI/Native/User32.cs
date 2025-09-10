@@ -264,6 +264,12 @@ namespace ConcreteUI.Native
         public static extern bool ReplyMessage(nint lResult);
 
         [DllImport(USER32_DLL)]
+        public static extern bool SetCapture(IntPtr hWnd);
+
+        [DllImport(USER32_DLL)]
+        public static extern bool ReleaseCapture();
+
+        [DllImport(USER32_DLL)]
         public static extern int GetLastError();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
