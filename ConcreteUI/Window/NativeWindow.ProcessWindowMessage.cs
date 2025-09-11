@@ -138,7 +138,17 @@ namespace ConcreteUI.Window
         {
             ClosingEventArgs args = new ClosingEventArgs((CloseReason)InterlockedHelper.Exchange(ref _closeReason, (uint)CloseReason.Unknown), cancelled: false);
             OnClosing(ref args);
-            return args.Cancelled;
+            if (args.Cancelled)
+                return true;
+            IntPtr dialogParent = InterlockedHelper.Exchange(ref _dialogParent, IntPtr.Zero);
+            if (dialogParent != IntPtr.Zero)
+            {
+                User32.EnableWindow(dialogParent, true);
+
+                if (User32.IsWindowVisible(dialogParent))
+                    User32.SetActiveWindow(dialogParent);
+            }
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -151,8 +161,29 @@ namespace ConcreteUI.Window
                     return true;
                 if (!WindowClassImpl.Instance.UnregisterWindowUnsafe(handle, this))
                     DebugHelper.Throw();
-                OnDestroyed(EventArgs.Empty);
-                Dispose();
+                CancellationTokenSource? dialogTokenSource = InterlockedHelper.Exchange(ref _dialogTokenSource, null);
+                if (dialogTokenSource is not null)
+                {
+                    try
+                    {
+                        dialogTokenSource.Cancel(throwOnFirstException: false);
+                    }
+                    catch (Exception)
+                    {
+                    }
+                    finally
+                    {
+                        dialogTokenSource.Dispose();
+                    }
+                }
+                try
+                {
+                    OnDestroyed(EventArgs.Empty);
+                }
+                finally
+                {
+                    Dispose();
+                }
             }
             return true;
         }
