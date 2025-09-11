@@ -5,7 +5,7 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Native
 {
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     internal struct CandidateForm
     {
         public int dwIndex;
@@ -14,7 +14,7 @@ namespace ConcreteUI.Native
         public Rect rcArea;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     internal struct CompositionForm
     {
         public int dwStyle;
