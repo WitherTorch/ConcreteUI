@@ -19,10 +19,12 @@ namespace ConcreteUI.Window
         private readonly WeakReference<IHwndOwner>? _parentReference;
         private readonly Lazy<IntPtr> _handleLazy;
 
+        private CancellationTokenSource? _dialogTokenSource;
         private Win32ImageHandle _cursor;
         private Icon? _cachedIcon;
         private string? _cachedText;
         private Rectangle _cachedBounds;
+        private IntPtr _dialogParent;
         /* Window flags
          * bit[0] = show() called or not
          * bit[1] = already shown or not
@@ -44,6 +46,7 @@ namespace ConcreteUI.Window
                 return CreateWindowHandle(parentHandle);
             }, LazyThreadSafetyMode.None);
             _cursor = SystemCursors.Default;
+            _dialogTokenSource = null;
         }
 
         public void Show()
@@ -98,29 +101,12 @@ namespace ConcreteUI.Window
 
         private void ShowDialogCore()
         {
-            IntPtr handle = ShowCoreWithReturn();
-            IntPtr parent = User32.GetWindow(handle, GetWindowCommand.Owner);
-            if (parent == IntPtr.Zero)
-            {
-                const int GWLP_HWNDPARENT = -8;
-
-                parent = User32.GetActiveWindow();
-                User32.SetWindowLongPtrW(handle, GWLP_HWNDPARENT, parent);
-            }
-            using CancellationTokenSource destroyTokenSource = new CancellationTokenSource();
-            void OnDestroyed(object? sender, EventArgs args)
-            {
-                Destroyed -= OnDestroyed;
-                destroyTokenSource.Cancel();
-            }
+            IntPtr parent = FindParentHandleForDialog(handle: ShowCoreWithReturn());
             User32.EnableWindow(parent, false);
-            Destroyed += OnDestroyed;
-            WindowMessageLoop.StartMiniLoop(destroyTokenSource.Token);
-            Destroyed -= OnDestroyed;
-            User32.EnableWindow(parent, true);
-
-            if (User32.IsWindowVisible(parent))
-                User32.SetActiveWindow(parent);
+            InterlockedHelper.Exchange(ref _dialogParent, parent);
+            CancellationTokenSource tokenSource = new CancellationTokenSource();
+            InterlockedHelper.Exchange(ref _dialogTokenSource, tokenSource);
+            WindowMessageLoop.StartMiniLoop(tokenSource.Token);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
@@ -133,6 +119,19 @@ namespace ConcreteUI.Window
                 return;
             InterlockedHelper.Exchange(ref _closeReason, (uint)reason);
             User32.PostMessageW(handle, WindowMessage.Close, 0, 0);
+        }
+
+        private static IntPtr FindParentHandleForDialog(IntPtr handle)
+        {
+            IntPtr parent = User32.GetWindow(handle, GetWindowCommand.Owner);
+            if (parent != IntPtr.Zero)
+                return parent;
+
+            const int GWLP_HWNDPARENT = -8;
+
+            parent = User32.GetActiveWindow();
+            User32.SetWindowLongPtrW(handle, GWLP_HWNDPARENT, parent);
+            return parent;
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -9,7 +10,6 @@ using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
-using ConcreteUI.Native;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
@@ -52,7 +52,7 @@ namespace ConcreteUI.Window
         #region Fields
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
         private DWriteTextLayout? _titleLayout, _titleDescriptionLayout;
-        private string? _title, _titleDescription;
+        private string _title, _titleDescription;
         private long _updateFlags = -1L;
         private D2D1ColorF _wizardBaseColor;
         private PointF _titleLocation, _titleDescriptionLocation;
@@ -64,6 +64,8 @@ namespace ConcreteUI.Window
             MinimizeBox = false;
             MaximizeBox = false;
             ShowTitle = WindowMaterial == WindowMaterial.Integrated;
+            _title = string.Empty;
+            _titleDescription = string.Empty;
         }
         #endregion
 
@@ -71,10 +73,11 @@ namespace ConcreteUI.Window
         public string? Title
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [return: NotNull]
             get => _title;
             set
             {
-                _title = value;
+                _title = value ?? string.Empty;
                 InterlockedHelper.Or(ref _updateFlags, (long)UpdateFlags.UpdateTitle);
                 TriggerResize();
             }
@@ -83,10 +86,11 @@ namespace ConcreteUI.Window
         public string? TitleDescription
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [return: NotNull]
             get => _titleDescription;
             protected set
             {
-                _titleDescription = value;
+                _titleDescription = value ?? string.Empty;
                 InterlockedHelper.Or(ref _updateFlags, (long)UpdateFlags.UpdateTitleDescription);
                 TriggerResize();
             }
@@ -136,7 +140,7 @@ namespace ConcreteUI.Window
                     format = factory.CreateTextFormat(fontName, UIConstants.WizardWindowTitleFontSize);
                     format.WordWrapping = DWriteWordWrapping.Wrap;
                 }
-                titleLayout = factory.CreateTextLayout(_title ?? string.Empty, format);
+                titleLayout = factory.CreateTextLayout(_title, format);
                 format.Dispose();
             }
             if ((flags & UpdateFlags.UpdateTitleDescription) == UpdateFlags.UpdateTitleDescription)
@@ -149,7 +153,7 @@ namespace ConcreteUI.Window
                     format = factory.CreateTextFormat(fontName, UIConstants.WizardWindowTitleDescriptionFontSize);
                     format.WordWrapping = DWriteWordWrapping.Wrap;
                 }
-                titleDescriptionLayout = factory.CreateTextLayout(_titleDescription ?? string.Empty, format);
+                titleDescriptionLayout = factory.CreateTextLayout(_titleDescription, format);
                 format.Dispose();
             }
         }
@@ -173,7 +177,7 @@ namespace ConcreteUI.Window
             {
                 RectF titleBarRect = _titleBarRect;
                 RectF pageRect = _pageRect;
-                rect = new RectF(titleBarRect.Left, titleBarRect.Bottom, titleBarRect.Right, pageRect.Top);
+                rect = new RectF(pageRect.Left, titleBarRect.Bottom, pageRect.Right, pageRect.Top);
             }
             deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
             ClearDC(deviceContext);
@@ -195,8 +199,8 @@ namespace ConcreteUI.Window
         {
             base.RecalculateLayout(windowSize, false);
             RectF pageRect = _pageRect;
-            pageRect.X += UIConstantsPrivate.WizardLeftPadding;
-            pageRect.Y += UIConstantsPrivate.WizardPadding;
+            pageRect.Left += UIConstantsPrivate.WizardLeftPadding;
+            pageRect.Top += UIConstantsPrivate.WizardPadding;
             pageRect.Right -= UIConstantsPrivate.WizardPadding;
             pageRect.Bottom -= UIConstantsPrivate.WizardPadding;
             _titleLocation = pageRect.Location;
