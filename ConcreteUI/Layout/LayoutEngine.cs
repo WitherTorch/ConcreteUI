@@ -156,18 +156,17 @@ namespace ConcreteUI.Layout
             RecalculateLayoutCore(in pageRect);
         }
 
-        [LocalsInit(false)]
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private unsafe void RecalculateLayoutCore(in Rect pageRect)
         {
             TreeDictionary<UIElement, LayoutVariable?[]> elementDict = _elementDict;
             TreeDictionary<LayoutVariable, StrongBox<int?>> computeDict = _computeDict;
             LayoutVariableManager variableManager = new LayoutVariableManager(pageRect, elementDict, computeDict);
 
-            int* values = stackalloc int[(int)LayoutProperty._DirectlyLast];
-
             foreach ((UIElement element, LayoutVariable?[] variables) in elementDict)
             {
+                Rectangle bounds = default;
+                int* values = (int*)&bounds;
+
                 ref LayoutVariable? variableArrayRef = ref variables[0];
 
                 bool hasNull = false;
@@ -213,7 +212,7 @@ namespace ConcreteUI.Layout
                         values[i - 2] = variableManager.GetComputedValue(leftVariable) - variableManager.GetComputedValue(rightVariable);
                     }
                 }
-                element.Bounds = UnsafeHelper.ReadUnaligned<Rectangle>(values);
+                element.Bounds = bounds;
             }
 
             elementDict.Clear();
