@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Internals;
 using ConcreteUI.Native;
-using ConcreteUI.Utils;
 
 using InlineIL;
 
@@ -113,7 +111,7 @@ namespace ConcreteUI.Window
             ref IWindowMessageFilter filterRef = ref filterList.Unwrap()[0];
             for (nuint i = 0, limit = unchecked((nuint)count); i < limit; i++)
             {
-                if (UnsafeHelper.AddByteOffset(ref filterRef, i * UnsafeHelper.SizeOf<IWindowMessageFilter>()).TryProcessWindowMessage(hwnd, message, wParam, lParam, out result))
+                if (UnsafeHelper.AddTypedOffset(ref filterRef, i).TryProcessWindowMessage(hwnd, message, wParam, lParam, out result))
                     return true;
             }
 

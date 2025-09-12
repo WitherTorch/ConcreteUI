@@ -62,7 +62,7 @@ namespace ConcreteUI.Layout
                 return new FixedLayoutVariable(value);
             byte index = (byte)(sbyte)value;
             ref LazyTiny<LayoutVariable> variableCacheRef = ref _smallValueVariableCaches[0];
-            return UnsafeHelper.AddByteOffset(ref variableCacheRef, index * UnsafeHelper.SizeOf<LazyTiny<LayoutVariable>>()).Value;
+            return UnsafeHelper.AddTypedOffset(ref variableCacheRef, index).Value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -75,7 +75,7 @@ namespace ConcreteUI.Layout
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
             ref LazyTiny<LayoutVariable> variableCacheRef = ref _pageRectVariableCaches[0];
-            return UnsafeHelper.AddByteOffset(ref variableCacheRef, (uint)property * UnsafeHelper.SizeOf<LazyTiny<LayoutVariable>>()).Value;
+            return UnsafeHelper.AddTypedOffset(ref variableCacheRef, (uint)property).Value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

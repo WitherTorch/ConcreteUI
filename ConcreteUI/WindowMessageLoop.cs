@@ -222,7 +222,7 @@ namespace ConcreteUI
             ref IWindowMessageFilter filterRef = ref filters.Unwrap()[0];
             for (nuint i = 0, limit = unchecked((nuint)count); i < limit; i++)
             {
-                IWindowMessageFilter filter = UnsafeHelper.AddByteOffset(ref filterRef, i * UnsafeHelper.SizeOf<IWindowMessageFilter>());
+                IWindowMessageFilter filter = UnsafeHelper.AddTypedOffset(ref filterRef, i);
                 if (catchException)
                 {
                     try

@@ -60,7 +60,7 @@ namespace ConcreteUI.Controls
             ref UIElement elementRef = ref array[0];
             for (nint i = length - 1; i >= 0; i--)
             {
-                UIElement element = UnsafeHelper.AddByteOffset(ref elementRef, i * sizeof(UIElement));
+                UIElement element = UnsafeHelper.AddTypedOffset(ref elementRef, i);
                 if (element is null)
                     continue;
                 eventHandler(element, ref args);
@@ -144,7 +144,7 @@ namespace ConcreteUI.Controls
             ref UIElement elementRef = ref array[0];
             for (nint i = length - 1; i >= 0; i--)
             {
-                UIElement element = UnsafeHelper.AddByteOffset(ref elementRef, i * sizeof(UIElement));
+                UIElement element = UnsafeHelper.AddTypedOffset(ref elementRef, i);
                 if (element is null)
                     continue;
                 eventHandler(element, ref args);
@@ -222,7 +222,7 @@ namespace ConcreteUI.Controls
             ref UIElement elementRef = ref array[0];
             for (nint i = length - 1; i >= 0; i--)
             {
-                UIElement element = UnsafeHelper.AddByteOffset(ref elementRef, i * sizeof(UIElement));
+                UIElement element = UnsafeHelper.AddTypedOffset(ref elementRef, i);
                 if (element is null)
                     continue;
                 eventHandler(element, in args, ref data);
