@@ -165,15 +165,15 @@ namespace ConcreteUI.Layout
             LayoutVariableManager variableManager = new LayoutVariableManager(pageRect, elementDict, computeDict);
 
             int* values = stackalloc int[(int)LayoutProperty._DirectlyLast];
-            var enumerator = elementDict.GetEnumerator();
-            while (enumerator.MoveNext())
+
+            foreach ((UIElement element, LayoutVariable?[] variables) in elementDict)
             {
-                enumerator.Current.Deconstruct(out UIElement? element, out LayoutVariable?[]? variables);
+                ref LayoutVariable? variableArrayRef = ref variables[0];
 
                 bool hasNull = false;
-                for (int i = (int)LayoutProperty.Left; i <= (int)LayoutProperty.Top; i++)
+                for (nuint i = (nuint)LayoutProperty.Left; i <= (nuint)LayoutProperty.Top; i++)
                 {
-                    LayoutVariable? variable = variables[i];
+                    LayoutVariable? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
                     if (variable is null)
                     {
                         hasNull = true;
@@ -181,9 +181,9 @@ namespace ConcreteUI.Layout
                     }
                     values[i] = variableManager.GetComputedValue(variable);
                 }
-                for (int i = (int)LayoutProperty.Width; i <= (int)LayoutProperty.Height; i++)
+                for (nuint i = (nuint)LayoutProperty.Width; i <= (nuint)LayoutProperty.Height; i++)
                 {
-                    LayoutVariable? variable = variables[i];
+                    LayoutVariable? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
                     if (variable is null)
                     {
                         hasNull = true;
@@ -194,26 +194,26 @@ namespace ConcreteUI.Layout
 
                 if (hasNull)
                 {
-                    for (int i = (int)LayoutProperty.Left; i <= (int)LayoutProperty.Top; i++)
+                    for (nuint i = (nuint)LayoutProperty.Left; i <= (nuint)LayoutProperty.Top; i++)
                     {
-                        LayoutVariable? variable = variables[i];
+                        LayoutVariable? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
                         if (variable is not null)
                             continue;
-                        LayoutVariable leftVariable = NullSafetyHelper.ThrowIfNull(variables[i + 2]);
-                        LayoutVariable rightVariable = NullSafetyHelper.ThrowIfNull(variables[i + 4]);
+                        LayoutVariable leftVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i + 2) ?? throw new InvalidOperationException();
+                        LayoutVariable rightVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i + 4) ?? throw new InvalidOperationException();
                         values[i] = variableManager.GetComputedValue(leftVariable) - variableManager.GetComputedValue(rightVariable);
                     }
-                    for (int i = (int)LayoutProperty.Width; i <= (int)LayoutProperty.Height; i++)
+                    for (nuint i = (nuint)LayoutProperty.Width; i <= (nuint)LayoutProperty.Height; i++)
                     {
-                        LayoutVariable? variable = variables[i];
+                        LayoutVariable? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
                         if (variable is not null)
                             continue;
-                        LayoutVariable leftVariable = NullSafetyHelper.ThrowIfNull(variables[i - 2]);
-                        LayoutVariable rightVariable = NullSafetyHelper.ThrowIfNull(variables[i - 4]);
+                        LayoutVariable leftVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i - 2) ?? throw new InvalidOperationException();
+                        LayoutVariable rightVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i - 4) ?? throw new InvalidOperationException();
                         values[i - 2] = variableManager.GetComputedValue(leftVariable) - variableManager.GetComputedValue(rightVariable);
                     }
                 }
-                element.Bounds = UnsafeHelper.Read<Rectangle>(values);
+                element.Bounds = UnsafeHelper.ReadUnaligned<Rectangle>(values);
             }
 
             elementDict.Clear();
