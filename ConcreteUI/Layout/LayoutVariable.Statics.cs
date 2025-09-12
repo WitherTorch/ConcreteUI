@@ -1,29 +1,68 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Layout.Internals;
+
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Threading;
+
+#pragma warning disable CS8500
 
 namespace ConcreteUI.Layout
 {
     partial class LayoutVariable
     {
-        private static readonly FixedLayoutVariable?[] _smallValueVariableCache = new FixedLayoutVariable?[256];
-        private static readonly PageRectLayoutVariable?[] _pageRectVariableCache = new PageRectLayoutVariable?[(int)LayoutProperty._Last];
+        private static readonly LazyTiny<LayoutVariable>[] _smallValueVariableCaches = CreateSmallValueVariableCaches();
+        private static readonly LazyTiny<LayoutVariable>[] _pageRectVariableCaches = CreatePageRectVariableCaches();
+
+        private static LazyTiny<LayoutVariable>[] CreateSmallValueVariableCaches()
+        {
+            LazyTiny<LayoutVariable>[] result = new LazyTiny<LayoutVariable>[256];
+            for (int i = 0; i < 128; i++)
+            {
+                int val = i;
+                sbyte value = (sbyte)(byte)val;
+                if (value >= 0)
+                    val = value + 1;
+                result[i] = new LazyTiny<LayoutVariable>(() => new FixedLayoutVariable(val), LazyThreadSafetyMode.PublicationOnly);
+            }
+            return result;
+        }
+
+        private static LazyTiny<LayoutVariable>[] CreatePageRectVariableCaches()
+        {
+            LazyTiny<LayoutVariable>[] result = new LazyTiny<LayoutVariable>[(int)LayoutProperty._Last];
+            for (int i = 0; i < (int)LayoutProperty._Last; i++)
+            {
+                LayoutProperty prop = (LayoutProperty)i;
+                result[i] = new LazyTiny<LayoutVariable>(() => new PageRectLayoutVariable(prop), LazyThreadSafetyMode.PublicationOnly);
+            }
+            return result;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static LayoutVariable Fixed(int value)
+        public static unsafe LayoutVariable Fixed(int value)
         {
             if (value == 0)
                 return _empty;
+            if (value > 0)
+            {
+                if (value > 128)
+                    return new FixedLayoutVariable(value);
+                value--;
+            }
+            else
+            {
+                if (value < -128)
+                    return new FixedLayoutVariable(value);
+            }
             if (value < -128 || value > 128)
                 return new FixedLayoutVariable(value);
-            int index;
-            if (value < 0)
-                index = value + 128;
-            else
-                index = value + 127;
-            return _smallValueVariableCache[index] ??= new FixedLayoutVariable(value);
+            byte index = (byte)(sbyte)value;
+            ref LazyTiny<LayoutVariable> variableCacheRef = ref _smallValueVariableCaches[0];
+            return UnsafeHelper.AddByteOffset(ref variableCacheRef, index * UnsafeHelper.SizeOf<LazyTiny<LayoutVariable>>()).Value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -32,7 +71,12 @@ namespace ConcreteUI.Layout
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LayoutVariable PageReference(LayoutProperty property)
-            => _pageRectVariableCache[(int)property] ??= new PageRectLayoutVariable(property);
+        {
+            if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
+                throw new ArgumentOutOfRangeException(nameof(property));
+            ref LazyTiny<LayoutVariable> variableCacheRef = ref _pageRectVariableCaches[0];
+            return UnsafeHelper.AddByteOffset(ref variableCacheRef, (uint)property * UnsafeHelper.SizeOf<LazyTiny<LayoutVariable>>()).Value;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LayoutVariable Custom(Func<LayoutVariableManager, int> computeFunc) => new CustomLayoutVariable(computeFunc);
