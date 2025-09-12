@@ -12,6 +12,8 @@ using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
+using InlineMethod;
+
 using WitherTorch.Common;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
@@ -61,7 +63,7 @@ namespace ConcreteUI.Controls
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
-            return UnsafeHelper.AddTypedOffset(ref _layoutReferences[0], (nuint)property).Value;
+            return GetLayoutReferenceCore(property);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -69,7 +71,7 @@ namespace ConcreteUI.Controls
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
-            return UnsafeHelper.AddTypedOffset(ref _layoutVariables[0], (nuint)property);
+            return GetLayoutVariableCore(property);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -77,8 +79,20 @@ namespace ConcreteUI.Controls
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
-            UnsafeHelper.AddTypedOffset(ref _layoutVariables[0], (nuint)property) = variable;
+            SetLayoutVariableCore(property, variable);
         }
+
+        [Inline(InlineBehavior.Remove)]
+        public LayoutVariable GetLayoutReferenceCore(LayoutProperty property) 
+            => UnsafeHelper.AddTypedOffset(ref _layoutReferences[0], (nuint)property).Value;
+
+        [Inline(InlineBehavior.Remove)]
+        public LayoutVariable? GetLayoutVariableCore(LayoutProperty property) 
+            => UnsafeHelper.AddTypedOffset(ref _layoutVariables[0], (nuint)property);
+
+        [Inline(InlineBehavior.Remove)]
+        public void SetLayoutVariableCore(LayoutProperty property, LayoutVariable? variable) 
+            => UnsafeHelper.AddTypedOffset(ref _layoutVariables[0], (nuint)property) = variable;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual void Update()

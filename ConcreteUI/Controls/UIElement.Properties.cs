@@ -107,16 +107,16 @@ namespace ConcreteUI.Controls
 
         public LayoutVariable LeftReference
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutReference(LayoutProperty.Left);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetLayoutReferenceCore(LayoutProperty.Left);
         }
 
         public LayoutVariable? LeftVariable
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutVariable(LayoutProperty.Left);
-            [Inline(InlineBehavior.Keep, export: true)]
-            set => SetLayoutVariable(LayoutProperty.Left, value);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetLayoutVariableCore(LayoutProperty.Left);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => SetLayoutVariableCore(LayoutProperty.Left, value);
         }
 
         public int Y
@@ -145,16 +145,16 @@ namespace ConcreteUI.Controls
 
         public LayoutVariable TopReference
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutReference(LayoutProperty.Top);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetLayoutReferenceCore(LayoutProperty.Top);
         }
 
         public LayoutVariable? TopVariable
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutVariable(LayoutProperty.Top);
-            [Inline(InlineBehavior.Keep, export: true)]
-            set => SetLayoutVariable(LayoutProperty.Top, value);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetLayoutVariableCore(LayoutProperty.Top);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => SetLayoutVariableCore(LayoutProperty.Top, value);
         }
 
         public int Right
@@ -172,16 +172,16 @@ namespace ConcreteUI.Controls
 
         public LayoutVariable RightReference
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutReference(LayoutProperty.Right);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetLayoutReferenceCore(LayoutProperty.Right);
         }
 
         public LayoutVariable? RightVariable
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutVariable(LayoutProperty.Right);
-            [Inline(InlineBehavior.Keep, export: true)]
-            set => SetLayoutVariable(LayoutProperty.Right, value);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetLayoutVariableCore(LayoutProperty.Right);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => SetLayoutVariableCore(LayoutProperty.Right, value);
         }
 
         public int Bottom
@@ -199,16 +199,16 @@ namespace ConcreteUI.Controls
 
         public LayoutVariable BottomReference
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutReference(LayoutProperty.Bottom);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetLayoutReferenceCore(LayoutProperty.Bottom);
         }
 
         public LayoutVariable? BottomVariable
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutVariable(LayoutProperty.Bottom);
-            [Inline(InlineBehavior.Keep, export: true)]
-            set => SetLayoutVariable(LayoutProperty.Bottom, value);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetLayoutVariableCore(LayoutProperty.Bottom);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => SetLayoutVariableCore(LayoutProperty.Bottom, value);
         }
 
         public int Height
@@ -225,16 +225,16 @@ namespace ConcreteUI.Controls
 
         public LayoutVariable HeightReference
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutReference(LayoutProperty.Height);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetLayoutReferenceCore(LayoutProperty.Height);
         }
 
         public LayoutVariable? HeightVariable
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutVariable(LayoutProperty.Height);
-            [Inline(InlineBehavior.Keep, export: true)]
-            set => SetLayoutVariable(LayoutProperty.Height, value);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetLayoutVariableCore(LayoutProperty.Height);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => SetLayoutVariableCore(LayoutProperty.Height, value);
         }
 
         public int Width
@@ -251,16 +251,16 @@ namespace ConcreteUI.Controls
 
         public LayoutVariable WidthReference
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutReference(LayoutProperty.Width);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetLayoutReferenceCore(LayoutProperty.Width);
         }
 
         public LayoutVariable? WidthVariable
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetLayoutVariable(LayoutProperty.Width);
-            [Inline(InlineBehavior.Keep, export: true)]
-            set => SetLayoutVariable(LayoutProperty.Width, value);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetLayoutVariableCore(LayoutProperty.Width);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => SetLayoutVariableCore(LayoutProperty.Width, value);
         }
 
         public IThemeContext? CurrentTheme
