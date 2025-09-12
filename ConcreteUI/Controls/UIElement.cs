@@ -14,6 +14,8 @@ using ConcreteUI.Window;
 
 using WitherTorch.Common;
 using WitherTorch.Common.Extensions;
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Threading;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
@@ -22,7 +24,7 @@ namespace ConcreteUI.Controls
     {
         private static int _identifierGenerator = 0;
 
-        private readonly LayoutVariable?[] _layoutReferences = new LayoutVariable?[(int)LayoutProperty._Last];
+        private readonly LazyTiny<LayoutVariable>[] _layoutReferences;
         private readonly LayoutVariable?[] _layoutVariables = new LayoutVariable?[(int)LayoutProperty._Last];
         private readonly SemaphoreSlim _semaphore;
         private readonly IRenderer _renderer;
@@ -38,21 +40,45 @@ namespace ConcreteUI.Controls
         {
             _renderer = renderer;
             _semaphore = new SemaphoreSlim(1, 1);
-            _identifier = Interlocked.Increment(ref _identifierGenerator) - 1;
+            _identifier = InterlockedHelper.GetAndIncrement(ref _identifierGenerator);
             _themePrefix = themePrefix.ToLowerAscii();
+            _layoutReferences = CreateLayoutReferenceLazies();
+        }
+
+        private LazyTiny<LayoutVariable>[] CreateLayoutReferenceLazies()
+        {
+            LazyTiny<LayoutVariable>[] result = new LazyTiny<LayoutVariable>[(int)LayoutProperty._Last];
+            for (int i = 0; i < (int)LayoutProperty._Last; i++)
+            {
+                LayoutProperty prop = (LayoutProperty)i;
+                result[i] = new LazyTiny<LayoutVariable>(() => new UIElementLayoutVariable(this, prop), LazyThreadSafetyMode.PublicationOnly);
+            }
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LayoutVariable GetLayoutReference(LayoutProperty property)
-            => _layoutReferences[(int)property] ??= new UIElementLayoutVariable(this, property);
+        {
+            if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
+                throw new ArgumentOutOfRangeException(nameof(property));
+            return UnsafeHelper.AddTypedOffset(ref _layoutReferences[0], (nuint)property).Value;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LayoutVariable? GetLayoutVariable(LayoutProperty property)
-            => _layoutVariables[(int)property];
+        {
+            if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
+                throw new ArgumentOutOfRangeException(nameof(property));
+            return UnsafeHelper.AddTypedOffset(ref _layoutVariables[0], (nuint)property);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetLayoutVariable(LayoutProperty property, LayoutVariable? variable)
-            => _layoutVariables[(int)property] = variable;
+        {
+            if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
+                throw new ArgumentOutOfRangeException(nameof(property));
+            UnsafeHelper.AddTypedOffset(ref _layoutVariables[0], (nuint)property) = variable;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual void Update()
