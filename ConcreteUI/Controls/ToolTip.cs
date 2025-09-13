@@ -93,9 +93,9 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public override void Render(DirtyAreaCollector collector) => ResetNeedRefreshFlag();
+        public override void Render(in RegionalRenderingContext context) => ResetNeedRefreshFlag();
 
-        protected override bool RenderCore(DirtyAreaCollector collector) => true;
+        protected override bool RenderCore(in RegionalRenderingContext context) => true;
 
         Point lastPoint;
         public void OnMouseMove(in MouseNotifyEventArgs args)

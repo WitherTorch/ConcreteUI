@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Threading;
 
 using ConcreteUI.Graphics;
+using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
@@ -43,92 +44,91 @@ namespace ConcreteUI.Controls
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
-            ContextMenuItem[] items = MenuItems;
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
-            int count = items.Length;
-            float itemHeight = 0f, itemWidth = 50f;
             DWriteFactory factory = SharedResources.DWriteFactory;
-            DWriteTextFormat format = factory.CreateTextFormat(provider.FontName, UIConstants.BoxFontSize);
-            format.ParagraphAlignment = DWriteParagraphAlignment.Center;
+
+            ContextMenuItem[] items = MenuItems;
+            float itemHeight = 0f, itemWidth = 0f;
+            float pointsPerPixel = Renderer.GetPointsPerPixel();
+            int count = items.Length;
             DWriteTextLayout[] layouts = new DWriteTextLayout[count];
-            float lineWidth = Renderer.GetBaseLineWidth();
-            for (int i = 0; i < count; i++)
+            using (DWriteTextFormat format = factory.CreateTextFormat(provider.FontName, UIConstants.BoxFontSize))
             {
-                DWriteTextLayout layout = factory.CreateTextLayout(items[i].Text, format);
-                DWriteTextMetrics metrics = layout.GetMetrics();
-                float width = metrics.Width;
-                float height = metrics.Height + lineWidth * 2;
-                if (itemHeight < height)
-                    itemHeight = height;
-                if (itemWidth < width)
-                    itemWidth = width;
-                layouts[i] = layout;
+                format.ParagraphAlignment = DWriteParagraphAlignment.Center;
+                ref ContextMenuItem itemArrayRef = ref items[0];
+                ref DWriteTextLayout layoutArrayRef = ref layouts[0];
+                for (int i = 0; i < count; i++)
+                {
+                    string text = UnsafeHelper.AddTypedOffset(ref itemArrayRef, i).Text;
+                    DWriteTextLayout layout = factory.CreateTextLayout(items[i].Text, format);
+                    DWriteTextMetrics metrics = layout.GetMetrics();
+                    itemWidth = MathHelper.Max(itemWidth, metrics.Width);
+                    itemHeight = MathHelper.Max(itemHeight, metrics.Height);
+                    UnsafeHelper.AddTypedOffset(ref layoutArrayRef, i) = layout;
+                }
+                itemWidth = RenderingHelper.CeilingInPixel(itemWidth, pointsPerPixel);
+                itemHeight = RenderingHelper.CeilingInPixel(itemHeight + UIConstants.ElementMarginHalf, pointsPerPixel);
+                for (int i = 0; i < count; i++)
+                {
+                    DWriteTextLayout layout = UnsafeHelper.AddTypedOffset(ref layoutArrayRef, i);
+                    layout.MaxWidth = itemWidth;
+                    layout.MaxHeight = itemHeight;
+                }
             }
-            itemHeight = MathF.Ceiling(itemHeight);
-            for (int i = 0; i < count; i++)
-            {
-                DWriteTextLayout layout = layouts[i];
-                layout.MaxHeight = itemHeight;
-                layout.MaxWidth = itemWidth;
-            }
-            format.Dispose();
-            Size size = new Size(MathI.Ceiling(itemWidth + lineWidth * 2) + 12, (int)itemHeight * count);
-            _itemHeight = itemHeight;
+            float borderWidth = RenderingHelper.GetDefaultBorderWidth(pointsPerPixel);
+            Size size = new Size(
+                width: MathI.Ceiling(itemWidth + UIConstants.ElementMargin + borderWidth * 2),
+                height: MathI.Ceiling(itemHeight * count + borderWidth * 2));
+            _itemHeight = itemHeight + borderWidth;
             Size = size;
             DisposeHelper.SwapDisposeInterlocked(ref _layouts, layouts);
         }
 
-        protected override bool RenderCore(DirtyAreaCollector collector)
+        protected override bool RenderCore(in RegionalRenderingContext context)
         {
-            D2D1DeviceContext context = Renderer.GetDeviceContext();
-            float lineWidth = Renderer.GetBaseLineWidth();
-            RectF bounds = (RectF)Bounds;
-            RectF borderBounds = GraphicsUtils.AdjustRectangleFAsBorderBounds(bounds, lineWidth);
-            RectF itemBounds = RectF.FromXYWH(borderBounds.X, borderBounds.Y - lineWidth * 0.5f, borderBounds.Width, _itemHeight);
-            context.PushAxisAlignedClip(bounds, D2D1AntialiasMode.Aliased);
+            SizeF renderSize = context.Size;
+            float borderWidth = context.DefaultBorderWidth;
             D2D1Brush[] brushes = _brushes;
-            D2D1Brush backBrush = brushes[(int)Brush.BackBrush];
+            D2D1Brush backBrush = brushes[(int)Brush.BackBrush], borderBrush = brushes[(int)Brush.BorderBrush];
             RenderBackground(context, backBrush);
             DWriteTextLayout[]? layouts = Interlocked.Exchange(ref _layouts, null);
-            if (layouts is null)
-                return true;
-            ContextMenuItem[] items = MenuItems;
-            D2D1Brush foreBrush = brushes[(int)Brush.TextBrush], foreDisabledBrush = brushes[(int)Brush.TextInactiveBrush];
-            int hoveredIndex = _hoveredIndex;
-            if (hoveredIndex >= 0 && hoveredIndex < layouts.Length)
+            if (layouts is not null && layouts.Length > 0)
             {
-                RectF currentItemBounds = RectF.FromXYWH(itemBounds.X, itemBounds.Y + itemBounds.Height * hoveredIndex, itemBounds.Width, itemBounds.Height);
-                context.PushAxisAlignedClip(currentItemBounds, D2D1AntialiasMode.Aliased);
-                D2D1Brush currentForeBrush = foreDisabledBrush;
-                if (items[hoveredIndex].Enabled)
+                ref ContextMenuItem itemArrayRef = ref MenuItems[0];
+                ref DWriteTextLayout layoutArrayRef = ref layouts[0];
+                D2D1Brush foreBrush = brushes[(int)Brush.TextBrush], foreDisabledBrush = brushes[(int)Brush.TextInactiveBrush];
+                int hoveredIndex = _hoveredIndex;
+                float itemLeft = borderWidth,
+                    textLeft = itemLeft + UIConstants.ElementMarginHalf,
+                    itemTop = borderWidth, 
+                    itemRight = renderSize.Width - borderWidth;
+                for (int i = 0, count = layouts.Length; i < count; i++)
                 {
-                    D2D1Brush currentBackBrush = _isPressed ? brushes[(int)Brush.BackPressedBrush] : brushes[(int)Brush.BackHoveredBrush];
-                    currentForeBrush = foreBrush;
-                    RenderBackground(context, currentBackBrush);
+                    DWriteTextLayout layout = UnsafeHelper.AddTypedOffset(ref layoutArrayRef, i);
+                    bool isEnabled = UnsafeHelper.AddTypedOffset(ref itemArrayRef, i).Enabled;
+                    float itemHeight = layout.MaxHeight;
+                    D2D1Brush currentForeBrush;
+                    if (isEnabled)
+                    {
+                        if (i == hoveredIndex && isEnabled)
+                        {
+                            using RenderingClipToken token = context.PushAxisAlignedClip(
+                                new RectF(itemLeft, itemTop, itemRight, itemTop + itemHeight), D2D1AntialiasMode.Aliased);
+                            D2D1Brush currentBackBrush = _isPressed ? brushes[(int)Brush.BackPressedBrush] : brushes[(int)Brush.BackHoveredBrush];
+                            currentForeBrush = brushes[(int)Brush.TextHoveredBrush];
+                            RenderBackground(context, currentBackBrush);
+                        }
+                        else
+                            currentForeBrush = foreBrush;
+                    }
+                    else
+                        currentForeBrush = foreDisabledBrush;
+                    context.DrawTextLayout(new PointF(textLeft, itemTop), layout, currentForeBrush, D2D1DrawTextOptions.NoSnap);
+                    itemTop += itemHeight;
                 }
-                PointF textLocation = currentItemBounds.Location;
-                textLocation.X += 6 + lineWidth;
-                context.DrawTextLayout(textLocation, layouts[hoveredIndex], currentForeBrush);
-                context.PopAxisAlignedClip();
+                DisposeHelper.NullSwapOrDispose(ref _layouts, layouts);
             }
-            for (int i = 0, count = layouts.Length; i < count; i++)
-            {
-                if (i == hoveredIndex)
-                {
-                    itemBounds.Bottom = (itemBounds.Top = itemBounds.Bottom) + _itemHeight;
-                    continue;
-                }
-                DWriteTextLayout layout = layouts[i];
-                context.PushAxisAlignedClip(itemBounds, D2D1AntialiasMode.Aliased);
-                PointF textLocation = itemBounds.Location;
-                textLocation.X += 6 + lineWidth;
-                context.DrawTextLayout(textLocation, layout, items[i].Enabled ? foreBrush : foreDisabledBrush, D2D1DrawTextOptions.Clip);
-                context.PopAxisAlignedClip();
-                itemBounds.Bottom = (itemBounds.Top = itemBounds.Bottom) + _itemHeight;
-            }
-            context.DrawRectangle(borderBounds, brushes[(int)Brush.BorderBrush], lineWidth);
-            context.PopAxisAlignedClip();
-            DisposeHelper.NullSwapOrDispose(ref _layouts, layouts);
+            context.DrawBorder(borderBrush);
             return true;
         }
 
@@ -168,28 +168,24 @@ namespace ConcreteUI.Controls
         public override void OnMouseMove(in MouseNotifyEventArgs args)
         {
             base.OnMouseMove(args);
-            RectangleF bound = Bounds;
-            if (bound.Contains(args.Location))
-            {
-                float Y = args.Y - Location.Y;
-                float itemHeight = _itemHeight;
-                int hoveredIndex = (int)(Y / itemHeight);
-                if (MenuItems.Length > hoveredIndex)
-                {
-                    if (_hoveredIndex != hoveredIndex)
-                    {
-                        _hoveredIndex = hoveredIndex;
-                        Update();
-                    }
-                }
-            }
+
+            Rectangle bounds = Bounds;
+            int hoveredIndex;
+
+            if (!bounds.Contains(args.Location))
+                hoveredIndex = -1;
             else
             {
-                if (_hoveredIndex != -1)
-                {
-                    _hoveredIndex = -1;
-                    Update();
-                }
+                float itemHeight = _itemHeight;
+                hoveredIndex = (int)((args.Y - Location.Y) / itemHeight);
+                if (MenuItems.Length <= hoveredIndex)
+                    hoveredIndex = -1;
+            }
+
+            if (_hoveredIndex != hoveredIndex)
+            {
+                _hoveredIndex = hoveredIndex;
+                Update();
             }
         }
 

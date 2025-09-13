@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -83,15 +84,15 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Remove)]
-        public LayoutVariable GetLayoutReferenceCore(LayoutProperty property) 
+        public LayoutVariable GetLayoutReferenceCore(LayoutProperty property)
             => UnsafeHelper.AddTypedOffset(ref _layoutReferences[0], (nuint)property).Value;
 
         [Inline(InlineBehavior.Remove)]
-        public LayoutVariable? GetLayoutVariableCore(LayoutProperty property) 
+        public LayoutVariable? GetLayoutVariableCore(LayoutProperty property)
             => UnsafeHelper.AddTypedOffset(ref _layoutVariables[0], (nuint)property);
 
         [Inline(InlineBehavior.Remove)]
-        public void SetLayoutVariableCore(LayoutProperty property, LayoutVariable? variable) 
+        public void SetLayoutVariableCore(LayoutProperty property, LayoutVariable? variable)
             => UnsafeHelper.AddTypedOffset(ref _layoutVariables[0], (nuint)property) = variable;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -110,50 +111,38 @@ namespace ConcreteUI.Controls
             renderer.GetRenderingController()?.RequestUpdate(false);
         }
 
-        public virtual void Render(DirtyAreaCollector collector) => Render(collector, markDirty: true);
+        public virtual void Render(in RegionalRenderingContext context) => Render(in context, markDirty: true);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void Render(DirtyAreaCollector collector, bool markDirty)
+        public virtual void Render(in RegionalRenderingContext context, bool markDirty)
         {
             SemaphoreSlim semaphore = _semaphore;
             semaphore.Wait();
-            ResetNeedRefreshFlag();
-            Rect bounds = Bounds;
-            if (!bounds.IsValid)
-            {
-                semaphore.Release();
-                return;
-            }
-            D2D1DeviceContext context = Renderer.GetDeviceContext();
-            context.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
-            bool result;
             try
             {
-                result = RenderCore(collector);
+                ResetNeedRefreshFlag();
+                if (!RenderCore(in context))
+                    Update();
             }
             finally
             {
-                context.PopAxisAlignedClip();
-                if (markDirty)
-                    collector.MarkAsDirty(bounds);
                 semaphore.Release();
+                if (markDirty)
+                    context.MarkAsDirty();
             }
-            if (!result)
-                Update();
         }
 
-        protected void RenderBackground(D2D1DeviceContext context)
+        protected void RenderBackground(in RegionalRenderingContext context)
         {
             IContainerElement? parent = _parent;
             if (parent is null)
             {
-                _renderer.RenderElementBackground(this, context);
+                _renderer.RenderElementBackground(this, in context);
                 return;
             }
-            parent.RenderChildBackground(this, context);
+            parent.RenderChildBackground(this, in context);
         }
 
-        protected void RenderBackground(D2D1DeviceContext context, D2D1Brush backBrush)
+        protected void RenderBackground(in RegionalRenderingContext context, D2D1Brush backBrush)
         {
             if (backBrush is D2D1SolidColorBrush solidColorBrush)
             {
@@ -163,7 +152,7 @@ namespace ConcreteUI.Controls
                     return;
                 }
                 RenderBackground(context);
-                context.FillRectangle((RectF)Bounds, backBrush);
+                context.FillRectangle(RectF.FromXYWH(PointF.Empty, context.Size), backBrush);
                 return;
             }
             bool isSolidBrush = backBrush switch
@@ -174,7 +163,7 @@ namespace ConcreteUI.Controls
             };
             if (!isSolidBrush)
                 RenderBackground(context);
-            context.FillRectangle((RectF)Bounds, backBrush);
+            context.FillRectangle(RectF.FromXYWH(PointF.Empty, context.Size), backBrush);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -188,7 +177,7 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void ResetNeedRefreshFlag() => Interlocked.Exchange(ref _requestRedraw, Booleans.FalseLong);
 
-        protected abstract bool RenderCore(DirtyAreaCollector collector);
+        protected abstract bool RenderCore(in RegionalRenderingContext context);
 
         public virtual void OnLocationChanged() { }
 

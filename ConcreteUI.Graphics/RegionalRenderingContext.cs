@@ -1,0 +1,376 @@
+﻿using System.Drawing;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+using ConcreteUI.Graphics.Helpers;
+using ConcreteUI.Graphics.Native.Direct2D;
+using ConcreteUI.Graphics.Native.Direct2D.Brushes;
+using ConcreteUI.Graphics.Native.Direct2D.Geometry;
+using ConcreteUI.Graphics.Native.DirectWrite;
+
+using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Windows.Structures;
+
+namespace ConcreteUI.Graphics
+{
+    [StructLayout(LayoutKind.Auto)]
+    public readonly ref struct RegionalRenderingContext : IRenderingContext
+    {
+        private readonly D2D1DeviceContext _context;
+        private readonly DirtyAreaCollector _collector;
+        private readonly RenderingClipToken _clipToken;
+        private readonly Matrix3x2 _originalTransform;
+        private readonly Vector2 _offsetPoint;
+        private readonly float _pointsPerPixel;
+        private readonly bool _isClone;
+
+        public D2D1DeviceContext DeviceContext => _context;
+
+        public SizeF Size => _clipToken.ClipRect.Size;
+
+        public float DefaultBorderWidth
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => RenderingHelper.GetDefaultBorderWidth(_pointsPerPixel);
+        }
+
+        public float PointsPerPixel => _pointsPerPixel;
+
+        public bool HasDirtyCollector => !_collector.IsEmptyInstance;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private RegionalRenderingContext(D2D1DeviceContext context, DirtyAreaCollector collector, 
+            scoped in RenderingClipToken clipToken, Vector2 offsetPoint, float pointsPerPixel)
+        {
+            _context = context;
+            _collector = collector;
+            _clipToken = clipToken;
+            _offsetPoint = offsetPoint;
+            _pointsPerPixel = pointsPerPixel;
+            _originalTransform = default;
+            _isClone = true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private RegionalRenderingContext(D2D1DeviceContext context, DirtyAreaCollector collector, float pointsPerPixel, 
+            scoped in RectF clipRect, D2D1AntialiasMode antialiasMode)
+        {
+            _context = context;
+            _collector = collector;
+            _pointsPerPixel = pointsPerPixel;
+            _clipToken = new RenderingClipToken(context, in clipRect, antialiasMode);
+
+            Matrix3x2 transformMatrix = context.Transform;
+            _originalTransform = transformMatrix;
+            transformMatrix.Translation += new Vector2(clipRect.X, clipRect.Y);
+            _offsetPoint = transformMatrix.Translation;
+            context.Transform = transformMatrix;
+            _isClone = false;
+        }
+
+        public static RegionalRenderingContext Create(D2D1DeviceContext context, DirtyAreaCollector collector, float pointsPerPixel,
+            in RectF clipRect, D2D1AntialiasMode antialiasMode, out RectF actualClipRect)
+        {
+            actualClipRect = RenderingHelper.RoundInPixel(in clipRect, pointsPerPixel);
+            return new RegionalRenderingContext(context, collector, pointsPerPixel, in actualClipRect, antialiasMode);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Clear() => _context.Clear();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Clear(in D2D1ColorF color) => _context.Clear(in color);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawLine(PointF point0, PointF point1, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
+            => _context.DrawLine(point0, point1, brush, strokeWidth, strokeStyle);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawBorder(D2D1Brush brush, D2D1StrokeStyle? strokeStyle = null)
+        {
+            RectF borderRect = GetBorderRect(out float strokeWidth);
+            _context.DrawRectangle(borderRect, brush, strokeWidth, strokeStyle);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawBorder(in RectF rect, D2D1Brush brush, D2D1StrokeStyle? strokeStyle = null)
+        {
+            RectF borderRect = GetBorderRect(rect, out float strokeWidth);
+            _context.DrawRectangle(borderRect, brush, strokeWidth, strokeStyle);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void DrawBorder(RectF* rect, D2D1Brush brush, D2D1StrokeStyle? strokeStyle = null)
+        {
+            RectF borderRect = GetBorderRect(*rect, out float strokeWidth);
+            _context.DrawRectangle(borderRect, brush, strokeWidth, strokeStyle);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawRectangle(in RectF rect, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
+            => _context.DrawRectangle(rect, brush, strokeWidth, strokeStyle);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void DrawRectangle(RectF* rect, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
+            => _context.DrawRectangle(rect, brush, strokeWidth, strokeStyle);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void FillRectangle(in RectF rect, D2D1Brush brush)
+            => _context.FillRectangle(rect, brush);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void FillRectangle(RectF* rect, D2D1Brush brush)
+            => _context.FillRectangle(rect, brush);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawRoundedRectangle(in D2D1RoundedRectangle roundedRect, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
+            => _context.DrawRoundedRectangle(roundedRect, brush, strokeWidth, strokeStyle);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void DrawRoundedRectangle(D2D1RoundedRectangle* roundedRect, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
+            => _context.DrawRoundedRectangle(roundedRect, brush, strokeWidth, strokeStyle);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void FillRoundedRectangle(in D2D1RoundedRectangle roundedRect, D2D1Brush brush)
+            => _context.FillRoundedRectangle(roundedRect, brush);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void FillRoundedRectangle(D2D1RoundedRectangle* roundedRect, D2D1Brush brush)
+            => _context.FillRoundedRectangle(roundedRect, brush);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawEllipse(in D2D1Ellipse ellipse, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
+            => _context.DrawEllipse(ellipse, brush, strokeWidth, strokeStyle);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void DrawEllipse(D2D1Ellipse* ellipse, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
+            => _context.DrawEllipse(ellipse, brush, strokeWidth, strokeStyle);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void FillEllipse(in D2D1Ellipse ellipse, D2D1Brush brush)
+            => _context.FillEllipse(ellipse, brush);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void FillEllipse(D2D1Ellipse* ellipse, D2D1Brush brush)
+            => _context.FillEllipse(ellipse, brush);
+
+        /// <inheritdoc cref="D2D1RenderTarget.DrawGeometry(D2D1Geometry, D2D1Brush, float, D2D1StrokeStyle?)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawGeometry(D2D1Geometry geometry, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
+            => _context.DrawGeometry(geometry, brush, strokeWidth, strokeStyle);
+
+        /// <inheritdoc cref="D2D1RenderTarget.FillGeometry(D2D1Geometry, D2D1Brush, D2D1Brush?)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void FillGeometry(D2D1Geometry geometry, D2D1Brush brush, D2D1Brush? opacityBrush = null)
+            => _context.FillGeometry(geometry, brush, opacityBrush);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawBitmap(D2D1Bitmap bitmap, in RectF destinationRectangle, float opacity,
+            D2D1BitmapInterpolationMode interpolationMode)
+            => _context.DrawBitmap(bitmap, in destinationRectangle, opacity, interpolationMode);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawBitmap(D2D1Bitmap bitmap, in RectF destinationRectangle, in RectF sourceRectangle, float opacity,
+            D2D1BitmapInterpolationMode interpolationMode)
+            => _context.DrawBitmap(bitmap, in destinationRectangle, in sourceRectangle, opacity, interpolationMode);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void DrawBitmap(D2D1Bitmap bitmap, RectF* destinationRectangle = null, float opacity = 1.0f,
+            D2D1BitmapInterpolationMode interpolationMode = D2D1BitmapInterpolationMode.Linear, RectF* sourceRectangle = null)
+            => _context.DrawBitmap(bitmap, destinationRectangle, opacity, interpolationMode, sourceRectangle);
+
+        ///<inheritdoc cref="D2D1RenderTarget.DrawText(char, DWriteTextFormat, in RectF, D2D1Brush, D2D1DrawTextOptions, DWriteMeasuringMode)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawText(char character, DWriteTextFormat textFormat, in RectF layoutRect, D2D1Brush defaultFillBrush,
+            D2D1DrawTextOptions options = D2D1DrawTextOptions.None, DWriteMeasuringMode measuringMode = DWriteMeasuringMode.Natural)
+            => _context.DrawText(character, textFormat, layoutRect, defaultFillBrush, options, measuringMode);
+
+        ///<inheritdoc cref="D2D1RenderTarget.DrawText(char, DWriteTextFormat, RectF*, D2D1Brush, D2D1DrawTextOptions, DWriteMeasuringMode)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void DrawText(char character, DWriteTextFormat textFormat, RectF* layoutRect, D2D1Brush defaultFillBrush,
+            D2D1DrawTextOptions options = D2D1DrawTextOptions.None, DWriteMeasuringMode measuringMode = DWriteMeasuringMode.Natural)
+            => _context.DrawText(character, textFormat, layoutRect, defaultFillBrush, options, measuringMode);
+
+        ///<inheritdoc cref="D2D1RenderTarget.DrawText(string, DWriteTextFormat, in RectF, D2D1Brush, D2D1DrawTextOptions, DWriteMeasuringMode)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawText(string text, DWriteTextFormat textFormat, in RectF layoutRect, D2D1Brush defaultFillBrush,
+            D2D1DrawTextOptions options = D2D1DrawTextOptions.None, DWriteMeasuringMode measuringMode = DWriteMeasuringMode.Natural)
+            => _context.DrawText(text, textFormat, layoutRect, defaultFillBrush, options, measuringMode);
+
+        ///<inheritdoc cref="D2D1RenderTarget.DrawText(string, DWriteTextFormat, RectF*, D2D1Brush, D2D1DrawTextOptions, DWriteMeasuringMode)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void DrawText(string text, DWriteTextFormat textFormat, RectF* layoutRect, D2D1Brush defaultFillBrush,
+            D2D1DrawTextOptions options = D2D1DrawTextOptions.None, DWriteMeasuringMode measuringMode = DWriteMeasuringMode.Natural)
+            => _context.DrawText(text, textFormat, layoutRect, defaultFillBrush, options, measuringMode);
+
+        ///<inheritdoc cref="D2D1RenderTarget.DrawText(char*, uint, DWriteTextFormat, RectF*, D2D1Brush, D2D1DrawTextOptions, DWriteMeasuringMode)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void DrawText(char* text, uint textLength, DWriteTextFormat textFormat, RectF* layoutRect, D2D1Brush defaultFillBrush,
+            D2D1DrawTextOptions options = D2D1DrawTextOptions.None, DWriteMeasuringMode measuringMode = DWriteMeasuringMode.Natural)
+            => _context.DrawText(text, textLength, textFormat, layoutRect, defaultFillBrush, options, measuringMode);
+
+        /// <inheritdoc cref="D2D1RenderTarget.DrawTextLayout(PointF, DWriteTextLayout, D2D1Brush, D2D1DrawTextOptions)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawTextLayout(PointF origin, DWriteTextLayout textLayout, D2D1Brush defaultFillBrush, D2D1DrawTextOptions options = D2D1DrawTextOptions.None)
+            => _context.DrawTextLayout(origin, textLayout, defaultFillBrush, options);
+
+        /// <inheritdoc cref="D2D1DeviceContext.DrawImage(D2D1Image, D2D1InterpolationMode, D2D1CompositeMode)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawImage(D2D1Image image,
+            D2D1InterpolationMode interpolationMode = D2D1InterpolationMode.Linear, D2D1CompositeMode compositeMode = D2D1CompositeMode.SourceOver)
+            => _context.DrawImage(image, interpolationMode, compositeMode);
+
+        /// <inheritdoc cref="D2D1DeviceContext.DrawImage(D2D1Image, in PointF, D2D1InterpolationMode, D2D1CompositeMode)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawImage(D2D1Image image, in PointF targetOffset,
+            D2D1InterpolationMode interpolationMode = D2D1InterpolationMode.Linear, D2D1CompositeMode compositeMode = D2D1CompositeMode.SourceOver)
+            => _context.DrawImage(image, targetOffset, interpolationMode, compositeMode);
+
+        /// <inheritdoc cref="D2D1DeviceContext.DrawImage(D2D1Image, in PointF, in RectF, D2D1InterpolationMode, D2D1CompositeMode)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawImage(D2D1Image image, in PointF targetOffset, in RectF imageRectangle,
+            D2D1InterpolationMode interpolationMode = D2D1InterpolationMode.Linear, D2D1CompositeMode compositeMode = D2D1CompositeMode.SourceOver)
+            => _context.DrawImage(image, targetOffset, imageRectangle, interpolationMode, compositeMode);
+
+        /// <inheritdoc cref="D2D1DeviceContext.DrawImage(D2D1Image, PointF*, RectF*, D2D1InterpolationMode, D2D1CompositeMode)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void DrawImage(D2D1Image image, PointF* targetOffset, RectF* imageRectangle,
+            D2D1InterpolationMode interpolationMode = D2D1InterpolationMode.Linear, D2D1CompositeMode compositeMode = D2D1CompositeMode.SourceOver)
+            => _context.DrawImage(image, targetOffset, imageRectangle, interpolationMode, compositeMode);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawBitmap(D2D1Bitmap bitmap, in RectF destinationRectangle)
+            => _context.DrawBitmap(bitmap, destinationRectangle, 1.0f, D2D1InterpolationMode.Linear);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawBitmap(D2D1Bitmap bitmap, in RectF destinationRectangle, float opacity,
+           D2D1InterpolationMode interpolationMode)
+            => _context.DrawBitmap(bitmap, destinationRectangle, opacity, interpolationMode);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawBitmap(D2D1Bitmap bitmap, in RectF destinationRectangle, in RectF sourceRectangle)
+            => _context.DrawBitmap(bitmap, destinationRectangle, sourceRectangle, 1.0f, D2D1InterpolationMode.Linear);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawBitmap(D2D1Bitmap bitmap, in RectF destinationRectangle, in RectF sourceRectangle, float opacity,
+            D2D1InterpolationMode interpolationMode)
+            => _context.DrawBitmap(bitmap, destinationRectangle, sourceRectangle, opacity, interpolationMode);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawBitmap(D2D1Bitmap bitmap, in RectF destinationRectangle, in RectF sourceRectangle, in Matrix4x4 perspectiveTransform, float opacity = 1.0f,
+            D2D1InterpolationMode interpolationMode = D2D1InterpolationMode.Linear)
+            => _context.DrawBitmap(bitmap, destinationRectangle, sourceRectangle, perspectiveTransform, opacity, interpolationMode);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void DrawBitmap(D2D1Bitmap bitmap, RectF* destinationRectangle = null, float opacity = 1.0f,
+            D2D1InterpolationMode interpolationMode = D2D1InterpolationMode.Linear, RectF* sourceRectangle = null, Matrix4x4* perspectiveTransform = null)
+            => _context.DrawBitmap(bitmap, destinationRectangle, opacity, interpolationMode, sourceRectangle, perspectiveTransform);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RenderingClipToken PushAxisAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode)
+            => new RenderingClipToken(_context, in clipRect, antialiasMode);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RenderingClipToken PushPixelAlignedClip(ref RectF clipRect, D2D1AntialiasMode antialiasMode)
+            => PushPixelAlignedClip(in clipRect, antialiasMode, out clipRect);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RenderingClipToken PushPixelAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode, out RectF actualClipRect)
+        {
+            actualClipRect = GetPixelAlignedRect(in clipRect);
+            return new RenderingClipToken(_context, in actualClipRect, antialiasMode);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RegionalRenderingContext WithEmptyDirtyCollector()
+            => _collector.IsEmptyInstance ? this : new RegionalRenderingContext(_context, DirtyAreaCollector.Empty, 
+                _clipToken, _offsetPoint, _pointsPerPixel);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RegionalRenderingContext WithPixelAlignedClip(ref RectF clipRect, D2D1AntialiasMode antialiasMode)
+            => WithPixelAlignedClip(in clipRect, antialiasMode, out clipRect);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RegionalRenderingContext WithPixelAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode, out RectF actualClipRect)
+        {
+            actualClipRect = GetPixelAlignedRect(clipRect);
+            return new RegionalRenderingContext(_context, _collector, _pointsPerPixel, in actualClipRect, antialiasMode);
+        }
+
+        public RectF GetPixelAlignedRect(in RectF rect)
+        {
+            RectF sourceClipRect = _clipToken.ClipRect;
+            float width = sourceClipRect.Width;
+            float height = sourceClipRect.Height;
+            RectF adjustedRect = new RectF(MathHelper.Min(rect.Left, width), MathHelper.Min(rect.Top, height),
+                MathHelper.Min(rect.Right, width), MathHelper.Min(rect.Bottom, height));
+            if (!adjustedRect.IsValid)
+                return default;
+            return RenderingHelper.RoundInPixel(adjustedRect, _pointsPerPixel);
+        }
+
+        public RectF GetBorderRect(out float strokeWidth)
+        {
+            strokeWidth = RenderingHelper.GetDefaultBorderWidth(_pointsPerPixel);
+            return GetBorderRectCore(RectF.FromXYWH(PointF.Empty, Size), strokeWidth);
+        }
+
+        public RectF GetBorderRect(in RectF rect, out float strokeWidth)
+        {
+            float pointsPerPixel = _pointsPerPixel;
+            strokeWidth = RenderingHelper.GetDefaultBorderWidth(pointsPerPixel);
+            return GetBorderRect(in rect, pointsPerPixel, strokeWidth);
+        }
+
+        private static RectF GetBorderRect(in RectF rect, float pointsPerPixel, float strokeWidth)
+            => GetBorderRectCore(RenderingHelper.RoundInPixel(in rect, pointsPerPixel), strokeWidth);
+
+        private static RectF GetBorderRectCore(in RectF rect, float strokeWidth)
+        {
+            float unit = strokeWidth * 0.5f;
+            return new RectF(rect.Left + unit, rect.Top + unit,
+                rect.Right - unit, rect.Bottom - unit);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void MarkAsDirty()
+        {
+            DirtyAreaCollector collector = _collector;
+            if (collector.IsEmptyInstance)
+                return;
+            MarkAsDirtyCore(RectF.FromXYWH(PointF.Empty, Size));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void MarkAsDirty(in RectF rect)
+        {
+            DirtyAreaCollector collector = _collector;
+            if (collector.IsEmptyInstance)
+                return;
+            MarkAsDirtyCore(rect);
+        }
+
+        private void MarkAsDirtyCore(in RectF rect)
+        {
+            DirtyAreaCollector collector = _collector;
+            if (collector.IsEmptyInstance)
+                return;
+            Vector2 offsetPoint = _offsetPoint;
+            float offsetX = offsetPoint.X;
+            float offsetY = offsetPoint.Y;
+            collector.MarkAsDirty(new RectF(rect.Left + offsetX, rect.Top + offsetY,
+                rect.Right + offsetX, rect.Bottom + offsetY));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose()
+        {
+            if (_isClone)
+                return;
+
+            _context.Transform = _originalTransform;
+            _clipToken.Dispose();
+        }
+    }
+}

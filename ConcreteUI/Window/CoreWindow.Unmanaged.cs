@@ -33,7 +33,7 @@ namespace ConcreteUI.Window
         private SizeF _minimumSize, _maximumSize;
         private nint _beforeHitTest;
         private MouseButtons _lastMouseDownButtons;
-        private int _borderWidth;
+        private int _borderWidthInPixels;
         private bool _isMaximized, _isCreateByDefaultX, _isCreateByDefaultY;
         #endregion
 
@@ -93,7 +93,7 @@ namespace ConcreteUI.Window
             }
         }
 
-        protected int FormBorderWidth => _borderWidth;
+        protected int FormBorderWidth => _borderWidthInPixels;
         #endregion
 
         #region Initialize
@@ -150,7 +150,7 @@ namespace ConcreteUI.Window
 
                         Rect rect = UnsafeHelper.ReadUnaligned<Rect>((void*)lParam);
                         Size oldSize = rect.Size;
-                        Size newSize = AdjustSize(oldSize, minimumSize, maximumSize, _dpiScaleFactor);
+                        Size newSize = AdjustSize(oldSize, minimumSize, maximumSize, _pointsPerPixel);
                         if (newSize == oldSize)
                             goto default;
 
@@ -200,7 +200,7 @@ namespace ConcreteUI.Window
 
                         (ushort width, ushort height) = lParam.GetWords();
                         Size oldSize = new Size(width, height);
-                        Size newSize = AdjustSize(oldSize, minimumSize, maximumSize, _dpiScaleFactor);
+                        Size newSize = AdjustSize(oldSize, minimumSize, maximumSize, _pointsPerPixel);
 
                         if (oldSize == newSize)
                             goto default;
@@ -263,7 +263,7 @@ namespace ConcreteUI.Window
                         if (oldButtons == MouseButtons.None)
                             User32.SetCapture(hwnd);
                         MouseInteractEventArgs args = new MouseInteractEventArgs(
-                            point: ScalingPixelToLogical(point, _windowScaleFactor),
+                            point: ScalingPixelToLogical(point, _pixelsPerPoint),
                             buttons: buttons);
                         OnMouseDown(ref args);
                         if (args.Handled)
@@ -286,7 +286,7 @@ namespace ConcreteUI.Window
                         if (buttons == MouseButtons.None)
                             goto default;
                         MouseNotifyEventArgs args = new MouseNotifyEventArgs(
-                            point: ScalingPixelToLogical(point, _windowScaleFactor),
+                            point: ScalingPixelToLogical(point, _pixelsPerPoint),
                             buttons: buttons);
                         OnMouseUp(in args);
                         goto default;
@@ -341,7 +341,7 @@ namespace ConcreteUI.Window
                     {
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
                         OnMouseMove(new MouseInteractEventArgs(
-                            point: ScalingPixelToLogical(point, _windowScaleFactor)));
+                            point: ScalingPixelToLogical(point, _pixelsPerPoint)));
                         if (_beforeHitTest != (nint)HitTestValue.Client)
                         {
                             switch ((HitTestValue)_beforeHitTest)
@@ -433,7 +433,7 @@ namespace ConcreteUI.Window
                                     Rect clientRect = lpParams->rcNewWindow;
                                     int metrics_paddedBorder = User32.GetSystemMetrics(SystemMetric.SM_CXPADDEDBORDER);
                                     int yBorder = User32.GetSystemMetrics(SystemMetric.SM_CYFRAME) + metrics_paddedBorder;
-                                    float dpiScaleFactor = _dpiScaleFactor;
+                                    float dpiScaleFactor = _pointsPerPixel;
                                     clientRect.Bottom -= yBorder + (dpiScaleFactor == 1.0f ? 1 : MathI.Ceiling(1 * dpiScaleFactor));
                                     lpParams->rcNewWindow = clientRect;
                                 }
@@ -535,7 +535,7 @@ namespace ConcreteUI.Window
             {
                 if (HasSizableBorder)
                 {
-                    int borderWidth = _borderWidth;
+                    int borderWidth = _borderWidthInPixels;
                     int x = point.X;
                     int y = point.Y;
                     int topBorder = borderWidth;
@@ -561,7 +561,7 @@ namespace ConcreteUI.Window
                     }
                 }
             }
-            return CustomHitTest(ScalingPixelToLogical(point, _windowScaleFactor));
+            return CustomHitTest(ScalingPixelToLogical(point, _pixelsPerPoint));
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -596,7 +596,7 @@ namespace ConcreteUI.Window
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ChangeDpi(uint newDpi)
         {
-            _borderWidth = User32.GetSystemMetrics(SystemMetric.SM_CXBORDER) + User32.GetSystemMetrics(SystemMetric.SM_CXPADDEDBORDER);
+            _borderWidthInPixels = User32.GetSystemMetrics(SystemMetric.SM_CXBORDER) + User32.GetSystemMetrics(SystemMetric.SM_CXPADDEDBORDER);
 
             switch (newDpi)
             {
@@ -610,20 +610,20 @@ namespace ConcreteUI.Window
             }
 
         Normal:
-            baseLineWidth = _windowScaleFactor = _dpiScaleFactor = 1.0f;
+            _baseLineWidth = _pixelsPerPoint = _pointsPerPixel = 1.0f;
 
         NeedAmplified:
             float dpiScaleFactor = newDpi / 96.0f;
             float windowScaleFactor = 96.0f / newDpi;
-            _dpiScaleFactor = dpiScaleFactor;
-            _windowScaleFactor = windowScaleFactor;
+            _pointsPerPixel = dpiScaleFactor;
+            _pixelsPerPoint = windowScaleFactor;
             if (dpiScaleFactor > 1f)
             {
                 float factor = MathF.Round(dpiScaleFactor - float.Epsilon);
-                baseLineWidth = windowScaleFactor * factor;
+                _baseLineWidth = windowScaleFactor * factor;
             }
             else
-                baseLineWidth = windowScaleFactor;
+                _baseLineWidth = windowScaleFactor;
 
             _dpi = newDpi;
             OnDpiChanged();
@@ -645,12 +645,12 @@ namespace ConcreteUI.Window
         #region Hit Test
         private HitTestValue CustomHitTestForConcreteUI(PointF clientPoint)
         {
-            BitVector64 titleBarStates = this.titleBarStates;
+            BitVector64 titleBarStates = this._titleBarStates;
             bool hasMinimum = titleBarStates[1];
             bool hasMaximum = titleBarStates[2];
             float clientX = clientPoint.X;
             float clientY = clientPoint.Y;
-            float drawingBorderWidth = _drawingBorderWidth;
+            float drawingBorderWidth = _borderWidthInPoints;
             float titleRightLoc;
             RectF minRect = _minRect;
             RectF maxRect = _maxRect;
@@ -722,7 +722,7 @@ namespace ConcreteUI.Window
                             WindowPositionFlags.SwapWithFrameChanged | WindowPositionFlags.SwapWithNoZOrder);
 
             ChangeDpi(User32.GetDpiForWindow(handle));
-            float dpiScaleFactor = _dpiScaleFactor;
+            float dpiScaleFactor = _pointsPerPixel;
             if (dpiScaleFactor == 1.0f)
                 goto InitRenderObj;
 
@@ -754,7 +754,7 @@ namespace ConcreteUI.Window
             if (handle == IntPtr.Zero)
                 return Point.Empty;
 
-            return ScalingPixelToLogical(PointToLocalCore(handle, point), _windowScaleFactor);
+            return ScalingPixelToLogical(PointToLocalCore(handle, point), _pixelsPerPoint);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -784,7 +784,7 @@ namespace ConcreteUI.Window
             if (handle == IntPtr.Zero)
                 return Point.Empty;
 
-            return ScalingPixelToLogical(PointToClientCore(handle, point), _windowScaleFactor);
+            return ScalingPixelToLogical(PointToClientCore(handle, point), _pixelsPerPoint);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

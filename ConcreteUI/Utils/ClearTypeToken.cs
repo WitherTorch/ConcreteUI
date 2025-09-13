@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 
 using ConcreteUI.Controls;
+using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Window;
@@ -30,6 +31,9 @@ namespace ConcreteUI.Utils
             deviceContext.TextAntialiasMode = D2D1TextAntialiasMode.ClearType;
             return new ClearTypeToken(deviceContext, oldAntialiasMode);
         }
+
+        public static ClearTypeToken TryEnterClearTypeMode(IRenderer renderer, scoped in RegionalRenderingContext renderingContext, D2D1Brush backgroundBrush)
+            => TryEnterClearTypeMode(renderer, renderingContext.DeviceContext, backgroundBrush);
 
         public void Dispose()
         {

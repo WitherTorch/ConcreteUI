@@ -34,7 +34,8 @@ namespace ConcreteUI.Controls
                 if (element._multiLine)
                 {
                     using DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(element._text, fontName, element._alignment, fontSize);
-                    SetRenderingPropertiesForMultiLine(layout, manager.GetComputedValue(element, LayoutProperty.Width) - UIConstants.ElementMargin);
+                    element.SetRenderingPropertiesForMultiLine(layout, manager.GetComputedValue(element, LayoutProperty.Width) - UIConstants.ElementMargin,
+                        element.Renderer.GetPointsPerPixel());
                     return layout.GetMetrics().Height;
                 }
                 return FontHeightHelper.GetFontHeight(fontName, fontSize);

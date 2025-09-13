@@ -1,7 +1,6 @@
 ﻿using System.Drawing;
 
 using ConcreteUI.Graphics;
-using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Theme;
 
 namespace ConcreteUI.Controls
@@ -10,9 +9,11 @@ namespace ConcreteUI.Controls
     {
         bool IsInitializingElements();
 
+        float GetPointsPerPixel();
+
         float GetBaseLineWidth();
 
-        void RenderElementBackground(UIElement element, D2D1DeviceContext context);
+        void RenderElementBackground(UIElement element, in RegionalRenderingContext context);
 
         ToolTip? GetToolTip();
 

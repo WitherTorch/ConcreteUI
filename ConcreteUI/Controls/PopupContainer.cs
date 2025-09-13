@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 
 using ConcreteUI.Graphics;
-using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Theme;
-using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
 using InlineMethod;
@@ -49,19 +46,14 @@ namespace ConcreteUI.Controls
 
         public void RemoveChild(UIElement element) => _children.Remove(element);
 
-        public void RenderChildBackground(UIElement child, D2D1DeviceContext context)
+        public void RenderChildBackground(UIElement child, in RegionalRenderingContext context)
             => RenderBackground(context, _brushes[(int)Brush.BackBrush]);
 
-        protected override bool RenderCore(DirtyAreaCollector collector)
+        protected override bool RenderCore(in RegionalRenderingContext context)
         {
-            IRenderer renderer = Renderer;
-            Rectangle bounds = Bounds;
-            D2D1DeviceContext context = renderer.GetDeviceContext();
-            float lineWidth = renderer.GetBaseLineWidth();
-
             D2D1Brush[] brushes = _brushes;
             RenderBackground(context, brushes[(int)Brush.BackBrush]);
-            context.DrawRectangle(GraphicsUtils.AdjustRectangleAsBorderBounds(bounds, lineWidth), brushes[(int)Brush.BorderBrush], lineWidth);
+            context.DrawBorder(brushes[(int)Brush.BorderBrush]);
 
             return true;
         }

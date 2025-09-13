@@ -23,7 +23,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// to render to a target bitmap.
     /// </summary>
     [SuppressUnmanagedCodeSecurity]
-    public unsafe class D2D1DeviceContext : D2D1RenderTarget
+    public unsafe class D2D1DeviceContext : D2D1RenderTarget, IRenderingContext
     {
         protected new enum MethodTable
         {

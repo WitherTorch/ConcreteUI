@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 
 using ConcreteUI.Graphics;
+using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
@@ -25,6 +26,7 @@ using WitherTorch.Common;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Text;
+using WitherTorch.Common.Threading;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
@@ -32,7 +34,8 @@ namespace ConcreteUI.Controls
     public sealed partial class TextBox : ScrollableElementBase, IIMEControl, IMouseInteractEvents, IMouseNotifyEvents, IKeyEvents, ICharacterEvents, ICursorPredicator
     {
         private static readonly char[] LineSeparators = Environment.NewLine.ToCharArray();
-        private static readonly GraphemeInfo EmptyGraphemeInfo = new GraphemeInfo(string.Empty, Array.Empty<int>());
+        private static readonly LazyTiny<GraphemeInfo> EmptyGraphemeInfoLazy = 
+            new LazyTiny<GraphemeInfo>(new GraphemeInfo(string.Empty, Array.Empty<int>()));
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
             "back",
@@ -51,7 +54,7 @@ namespace ConcreteUI.Controls
         private readonly InputMethod? _ime;
         private readonly Timer _caretTimer;
 
-        private GraphemeInfo _textGraphemeInfo;
+        private LazyTiny<GraphemeInfo> _textGraphemeInfoLazy;
         private DWriteTextLayout? _layout, _watermarkLayout;
         private string? _fontName;
         private string _text, _watermark;
@@ -61,7 +64,7 @@ namespace ConcreteUI.Controls
         private TextAlignment _alignment;
         private long _rawUpdateFlags;
         private float _fontSize;
-        private int _caretIndex, _compositionCaretIndex;
+        private int _caretIndex, _compositionCaretIndex, _borderBrushIndex;
         private char _passwordChar;
         private bool _caretState, _focused, _multiLine, _imeEnabled;
 
@@ -75,9 +78,10 @@ namespace ConcreteUI.Controls
             _compositionCaretIndex = 0;
             _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
             _text = string.Empty;
-            _textGraphemeInfo = EmptyGraphemeInfo;
+            _textGraphemeInfoLazy = EmptyGraphemeInfoLazy;
             _watermark = string.Empty;
             _fontSize = UIConstants.BoxFontSize;
+            _borderBrushIndex = (int)Brush.BorderBrush;
             _passwordChar = '\0';
             ScrollBarType = ScrollBarType.AutoVertial;
             SurfaceSize = new Size(int.MaxValue, 0);
@@ -112,7 +116,7 @@ namespace ConcreteUI.Controls
 
         protected override D2D1Brush GetBackDisabledBrush() => _brushes[(int)Brush.BackDisabledBrush];
 
-        protected override D2D1Brush GetBorderBrush() => _focused ? _brushes[(int)Brush.BorderFocusedBrush] : _brushes[(int)Brush.BorderBrush];
+        protected override D2D1Brush GetBorderBrush() => _brushes[_borderBrushIndex];
 
         protected override void OnEnableChanged(bool enable)
         {
@@ -151,6 +155,7 @@ namespace ConcreteUI.Controls
             _focused = newFocus;
             if (newFocus)
             {
+                _borderBrushIndex = (int)Brush.BorderFocusedBrush;
                 bool enabled = Enabled;
                 _caretState = true;
                 _caretTimer.Change(500, 500);
@@ -161,6 +166,7 @@ namespace ConcreteUI.Controls
             }
             else
             {
+                _borderBrushIndex = (int)Brush.BorderBrush;
                 _caretTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 _ime?.Detach(this);
                 _compositionRange.Length = 0;
@@ -275,30 +281,30 @@ namespace ConcreteUI.Controls
         }
 
         private void SetRenderingProperties(DWriteTextLayout layout)
-            => SetRenderingProperties(layout, ContentBounds, _multiLine);
+            => SetRenderingProperties(layout, ContentBounds.Size, Renderer.GetPointsPerPixel(), _multiLine);
 
         [Inline(InlineBehavior.Remove)]
-        private static void SetRenderingProperties(DWriteTextLayout layout, in Rect bounds, bool multiLine)
+        private void SetRenderingProperties(DWriteTextLayout layout, SizeF size, float pointsPerPixel, bool multiLine)
         {
             if (multiLine)
-                SetRenderingPropertiesForMultiLine(layout, bounds.Width);
+                SetRenderingPropertiesForMultiLine(layout, size.Width, pointsPerPixel);
             else
-                SetRenderingPropertiesForSingleLine(layout, bounds.Height);
+                SetRenderingPropertiesForSingleLine(layout, size.Height, pointsPerPixel);
         }
 
-        [Inline(InlineBehavior.Remove)]
-        private static void SetRenderingPropertiesForMultiLine(DWriteTextLayout layout, int maxWidth)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void SetRenderingPropertiesForMultiLine(DWriteTextLayout layout, float maxWidth, float pointsPerPixel)
         {
-            layout.MaxWidth = MathHelper.MakeUnsigned(maxWidth);
+            layout.MaxWidth = RenderingHelper.CeilingInPixel(MathHelper.Max(maxWidth, 0.0f), pointsPerPixel);
             layout.MaxHeight = float.PositiveInfinity;
             layout.WordWrapping = DWriteWordWrapping.EmergencyBreak;
         }
 
-        [Inline(InlineBehavior.Remove)]
-        private static void SetRenderingPropertiesForSingleLine(DWriteTextLayout layout, int maxHeight)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void SetRenderingPropertiesForSingleLine(DWriteTextLayout layout, float maxHeight, float pointsPerPixel)
         {
             layout.MaxWidth = float.PositiveInfinity;
-            layout.MaxHeight = MathHelper.MakeUnsigned(maxHeight);
+            layout.MaxHeight = RenderingHelper.CeilingInPixel(MathHelper.Max(maxHeight, 0.0f), pointsPerPixel);
             layout.WordWrapping = DWriteWordWrapping.EmergencyBreak;
         }
 
@@ -341,41 +347,39 @@ namespace ConcreteUI.Controls
             ViewportPoint = new Point(MathI.Round(viewportPoint.X), MathI.Round(viewportPoint.Y));
         }
 
-        protected override bool RenderContent(DirtyAreaCollector collector)
+        protected override bool RenderContent(in RegionalRenderingContext context, D2D1Brush backBrush)
         {
-            D2D1DeviceContext context = Renderer.GetDeviceContext();
             D2D1Brush[] brushes = _brushes;
-            Rect bounds = ContentBounds;
+            SizeF renderSize = context.Size;
             bool focused = _focused;
-            D2D1Brush backBrush = Enabled ? brushes[(int)Brush.BackBrush] : brushes[(int)Brush.BackDisabledBrush];
-            RenderBackground(context, backBrush);
+
+            if (context.HasDirtyCollector)
+            {
+                RenderBackground(context, backBrush);
+                context.MarkAsDirty();
+            }
 
             GetTextLayouts(out DWriteTextLayout? layout, out DWriteTextLayout? watermarkLayout);
-            collector.MarkAsDirty(bounds);
+
             if (layout is null || (layout.DetermineMinWidth() <= 0.0f && (!_multiLine || !SequenceHelper.Contains(_text, '\n'))))
             {
                 if (watermarkLayout is null)
                     return true;
-                SetRenderingProperties(watermarkLayout, bounds, _multiLine);
+                SetRenderingProperties(watermarkLayout, renderSize, context.PointsPerPixel, _multiLine);
                 //文字為空，繪製浮水印
-                PointF layoutPoint = bounds.Location;
-                context.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
                 using (ClearTypeToken token = ClearTypeToken.TryEnterClearTypeMode(Renderer, context, backBrush))
-                    RenderLayoutCore(context, brushes[(int)Brush.ForeInactiveBrush], watermarkLayout, layoutPoint);
-                context.PopAxisAlignedClip();
+                    RenderLayoutCore(context, brushes[(int)Brush.ForeInactiveBrush], watermarkLayout, PointF.Empty);
                 if (focused)
-                    DrawCaret(context, watermarkLayout, layoutPoint, 0);
+                    DrawCaret(context, watermarkLayout, PointF.Empty, 0);
                 if (layout is not null)
                     DisposeHelper.NullSwapOrDispose(ref _layout, layout);
                 DisposeHelper.NullSwapOrDispose(ref _watermarkLayout, watermarkLayout);
                 return true;
             }
 
-            SetRenderingProperties(layout, bounds, _multiLine);
-            context.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
+            SetRenderingProperties(layout, renderSize, context.PointsPerPixel, _multiLine);
             using (ClearTypeToken token = ClearTypeToken.TryEnterClearTypeMode(Renderer, context, backBrush))
-                RenderLayout(context, focused, layout, bounds);
-            context.PopAxisAlignedClip();
+                RenderLayout(context, focused, layout, RectF.FromXYWH(PointF.Empty, renderSize));
             DisposeHelper.NullSwapOrDispose(ref _layout, layout);
             if (watermarkLayout is not null)
                 DisposeHelper.NullSwapOrDispose(ref _watermarkLayout, watermarkLayout);
@@ -383,7 +387,7 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        private void RenderLayout(D2D1DeviceContext context, bool focused, DWriteTextLayout layout, in Rect layoutRect)
+        private void RenderLayout(in RegionalRenderingContext context, bool focused, DWriteTextLayout layout, in RectF layoutRect)
         {
             D2D1Brush[] brushes = _brushes;
             PointF viewportPoint = ViewportPoint;
@@ -408,10 +412,13 @@ namespace ConcreteUI.Controls
                 int length = metricsArray is null ? 0 : metricsArray.Length;
                 if (length > 0)
                 {
+                    float pointsPerPixel = Renderer.GetPointsPerPixel();
                     for (int i = 0; i < length; i++)
                     {
                         DWriteHitTestMetrics rangeMetrics = metricsArray![i];
-                        RectF selectionBounds = new RectangleF(layoutPoint.X + rangeMetrics.Left, layoutPoint.Y + rangeMetrics.Top, rangeMetrics.Width, rangeMetrics.Height);
+                        RectF selectionBounds = RenderingHelper.RoundInPixel(RectF.FromXYWH(
+                            layoutPoint.X + rangeMetrics.Left, layoutPoint.Y + rangeMetrics.Top, rangeMetrics.Width, rangeMetrics.Height),
+                            pointsPerPixel);
                         context.FillRectangle(selectionBounds, selectionBackBrush);
                     }
                 }
@@ -434,23 +441,22 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static void RenderLayoutCore(D2D1DeviceContext context, D2D1Brush foreBrush, DWriteTextLayout layout, in PointF point)
+        private static void RenderLayoutCore(in RegionalRenderingContext context, D2D1Brush foreBrush, DWriteTextLayout layout, PointF point)
         {
             //繪製文字
             context.DrawTextLayout(point, layout, foreBrush, D2D1DrawTextOptions.EnableColorFont);
         }
 
-        private void DrawCaret(D2D1DeviceContext context, DWriteTextLayout layout, in PointF layoutPoint, int caretIndex)
+        private void DrawCaret(in RegionalRenderingContext context, DWriteTextLayout layout, PointF layoutPoint, int caretIndex)
         {
             if (!_caretState)
                 return;
             DWriteHitTestMetrics rangeMetrics = layout.HitTestTextRange(MathHelper.MakeUnsigned(caretIndex), 0, 0, 0)[0];
-            float visualCaretX1 = MathF.Floor(layoutPoint.X + rangeMetrics.Left) + 0.5f;
-            float visualCaretY1 = layoutPoint.Y + rangeMetrics.Top;
-            float visualCaretY2 = visualCaretY1 + rangeMetrics.Height;
-            PointF startPoint = new PointF(visualCaretX1, MathF.Floor(visualCaretY1));
-            PointF endPoint = new PointF(visualCaretX1, MathF.Floor(visualCaretY2));
-            context.DrawLine(startPoint, endPoint, _brushes[(int)Brush.ForeBrush], Renderer.GetBaseLineWidth());
+            float pointsPerPixel = Renderer.GetPointsPerPixel();
+            RectF selectionBounds = RenderingHelper.RoundInPixel(RectF.FromXYWH(
+                layoutPoint.X + rangeMetrics.Left - 0.5f, layoutPoint.Y + rangeMetrics.Top, 1.0f, rangeMetrics.Height),
+                pointsPerPixel);
+            context.FillRectangle(selectionBounds, _brushes[(int)Brush.ForeBrush]);
         }
 
         private void UpdateTextAndCaretIndex(string text, int caretIndex, bool checkCaretIndex = true)
@@ -460,6 +466,8 @@ namespace ConcreteUI.Controls
             if (Renderer.IsInitializingElements())
             {
                 _text = text;
+                InterlockedHelper.Exchange(ref _textGraphemeInfoLazy, new LazyTiny<GraphemeInfo>(
+                    () => CreateGraphemeInfoForString(text)));
                 return;
             }
 
@@ -480,7 +488,7 @@ namespace ConcreteUI.Controls
             int length = text.Length;
             GraphemeInfo graphemeInfo = CreateGraphemeInfoForString(text);
             _text = text;
-            InterlockedHelper.Exchange(ref _textGraphemeInfo, graphemeInfo);
+            InterlockedHelper.Exchange(ref _textGraphemeInfoLazy, new LazyTiny<GraphemeInfo>(graphemeInfo));
             if (checkCaretIndex)
             {
                 if (caretIndex <= 0)
@@ -866,7 +874,7 @@ namespace ConcreteUI.Controls
             if (caretIndex <= 0)
                 return 0;
 
-            GraphemeInfo graphemeInfo = InterlockedHelper.Read(ref _textGraphemeInfo);
+            GraphemeInfo graphemeInfo = InterlockedHelper.Read(ref _textGraphemeInfoLazy).Value;
             int length = graphemeInfo.Original.Length;
             if (caretIndex >= length)
                 return length;
@@ -882,7 +890,7 @@ namespace ConcreteUI.Controls
             if (caretIndex >= length)
                 return length;
 
-            GraphemeInfo graphemeInfo = InterlockedHelper.Read(ref _textGraphemeInfo);
+            GraphemeInfo graphemeInfo = InterlockedHelper.Read(ref _textGraphemeInfoLazy).Value;
             int[] indices = ReferenceEquals(str, graphemeInfo.Original) ? graphemeInfo.GraphemeIndices : GraphemeHelper.GetGraphemeIndices(str);
             return AdjustCaretIndexCore(caretIndex, length, indices, takeGreaterIfNotExists);
         }
@@ -905,7 +913,7 @@ namespace ConcreteUI.Controls
         {
             _caretIndex = caretIndex;
             _caretState = true;
-            if (Enabled)
+            if (Enabled && _focused)
                 _caretTimer.Change(500, 500);
             CalculateCurrentViewportPoint();
             Update(updateFlags);

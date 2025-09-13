@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -15,7 +16,6 @@ using ConcreteUI.Utils;
 using InlineMethod;
 
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
@@ -116,20 +116,18 @@ namespace ConcreteUI.Controls
             return false;
         }
 
-        protected override bool RenderCore(DirtyAreaCollector collector)
+        protected override bool RenderCore(in RegionalRenderingContext context)
         {
-            IRenderer renderer = Renderer;
             DWriteTextLayout? layout = GetTextLayout(GetAndCleanRenderObjectUpdateFlags());
-            D2D1DeviceContext deviceContext = renderer.GetDeviceContext();
             D2D1Brush foreBrush = _brushes[(int)Brush.ForeBrush];
-            RenderBackground(deviceContext);
-            Rect bounds = Bounds;
+            RenderBackground(context);
             if (layout is null)
                 return true;
-            layout.MaxWidth = bounds.Width;
-            layout.MaxHeight = bounds.Height;
+            SizeF renderSize = context.Size;
+            layout.MaxWidth = renderSize.Width;
+            layout.MaxHeight = renderSize.Height;
             layout.WordWrapping = _wordWrap ? DWriteWordWrapping.EmergencyBreak : DWriteWordWrapping.NoWrap;
-            deviceContext.DrawTextLayout(bounds.Location, layout, foreBrush, D2D1DrawTextOptions.EnableColorFont);
+            context.DrawTextLayout(PointF.Empty, layout, foreBrush, D2D1DrawTextOptions.EnableColorFont);
             DisposeHelper.NullSwapOrDispose(ref _layout, layout);
             return true;
         }

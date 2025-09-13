@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
+using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
@@ -15,34 +16,6 @@ namespace ConcreteUI.Utils
 {
     public static class GraphicsUtils
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Rect ConvertRectangle(in RectF rawRect)
-            => new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Floor(rawRect.Right), MathI.Floor(rawRect.Bottom));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Rect ConvertRectangle(in RectangleF rawRect)
-            => new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Floor(rawRect.Right), MathI.Floor(rawRect.Bottom));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Rect AdjustRectangle(in RectF rawRect)
-            => new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Ceiling(rawRect.Right), MathI.Ceiling(rawRect.Bottom));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Rect AdjustRectangle(in RectangleF rawRect)
-            => new Rect(MathI.Floor(rawRect.Left), MathI.Floor(rawRect.Top), MathI.Ceiling(rawRect.Right), MathI.Ceiling(rawRect.Bottom));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RectF AdjustRectangleF(in RectF rawRect)
-            => new RectF(MathF.Floor(rawRect.Left), MathF.Floor(rawRect.Top), MathF.Ceiling(rawRect.Right), MathF.Ceiling(rawRect.Bottom));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RectF AdjustRectangleF(in RectangleF rawRect)
-            => new RectF(MathF.Floor(rawRect.Left), MathF.Floor(rawRect.Top), MathF.Ceiling(rawRect.Right), MathF.Ceiling(rawRect.Bottom));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RectangleF AdjustRectangleF2(RectangleF rawRect)
-            => RectangleF.FromLTRB(MathF.Floor(rawRect.Left), MathF.Floor(rawRect.Top), MathF.Ceiling(rawRect.Right), MathF.Ceiling(rawRect.Bottom));
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF AdjustRectangleFAsBorderBounds(in RectF rawRect, float lineWidth)
         {
@@ -215,7 +188,29 @@ namespace ConcreteUI.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ClearAndFill(D2D1DeviceContext context, D2D1Brush brushToFill, in D2D1ColorF colorToClear)
+        public static void ClearAndFill(in RegionalRenderingContext context, D2D1Brush brushToFill, in D2D1ColorF colorToClear)
+        {
+            if (brushToFill is null)
+            {
+                context.Clear(colorToClear);
+                return;
+            }
+            if (CheckBrushIsSolid(brushToFill))
+            {
+                if (brushToFill is D2D1SolidColorBrush solidColorBrush)
+                {
+                    context.Clear(solidColorBrush.Color);
+                    return;
+                }
+                context.FillRectangle(RectF.FromXYWH(PointF.Empty, context.Size), brushToFill);
+                return;
+            }
+            context.Clear(colorToClear);
+            context.FillRectangle(RectF.FromXYWH(PointF.Empty, context.Size), brushToFill);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ClearAndFill(IRenderingContext context, D2D1Brush brushToFill, in D2D1ColorF colorToClear)
         {
             if (brushToFill is null)
             {

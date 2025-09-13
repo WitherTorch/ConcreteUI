@@ -71,7 +71,7 @@ namespace ConcreteUI.Window
             return pageIndex < 0 ? Enumerable.Empty<UIElement>() : GetRenderingElements(pageIndex);
         }
 
-        protected override void RecalculatePageLayout(in Rect pageRect)
+        protected override void RecalculatePageLayout(in RectF pageRect)
         {
             int pageIndex = _pageIndex;
             if (pageIndex < 0)
@@ -96,11 +96,12 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Virtual Methods
-        protected virtual void RecalculatePageLayout(in Rect pageRect, int pageIndex)
+        protected virtual void RecalculatePageLayout(in RectF pageRect, int pageIndex)
         {
+            Rect flooredPageRect = (Rect)pageRect;
             LayoutEngine layoutEngine = RentLayoutEngine();
-            layoutEngine.RecalculateLayout(pageRect, GetRenderingElements(pageIndex));
-            layoutEngine.RecalculateLayout(pageRect, GetOverlayElements());
+            layoutEngine.RecalculateLayout(flooredPageRect, GetRenderingElements(pageIndex));
+            layoutEngine.RecalculateLayout(flooredPageRect, GetOverlayElements());
             ReturnLayoutEngine(layoutEngine);
         }
         #endregion
@@ -119,7 +120,7 @@ namespace ConcreteUI.Window
                 if (pageIndex < 0)
                     return true;
                 if (!_recalcState.InterlockedSet(pageIndex, true))
-                    RecalculatePageLayout((Rect)pageRect, pageIndex);
+                    RecalculatePageLayout(pageRect, pageIndex);
                 return true;
             }
             return false;

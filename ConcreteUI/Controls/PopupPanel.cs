@@ -1,10 +1,8 @@
 ﻿using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
-using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Theme;
 using ConcreteUI.Window;
 
@@ -44,8 +42,8 @@ namespace ConcreteUI.Controls
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider) => _collection.Value?.ApplyTheme(provider);
 
-        protected override bool RenderCore(DirtyAreaCollector collector) => true;
+        protected override bool RenderCore(in RegionalRenderingContext context) => true;
 
-        public void RenderChildBackground(UIElement child, D2D1DeviceContext context) => RenderBackground(context);
+        public void RenderChildBackground(UIElement child, in RegionalRenderingContext context) => RenderBackground(context);
     }
 }

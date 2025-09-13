@@ -4,12 +4,12 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 
 using ConcreteUI.Graphics;
+using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Internals;
 using ConcreteUI.Internals.NativeHelpers;
 using ConcreteUI.Theme;
-using ConcreteUI.Utils;
 
 using InlineMethod;
 
@@ -88,7 +88,7 @@ namespace ConcreteUI.Controls
         private UpdateFlags GetUpdateFlagsAndReset()
             => (UpdateFlags)InterlockedHelper.Exchange(ref _updateFlagsRaw, (ulong)UpdateFlags.None);
 
-        protected abstract bool RenderContent(DirtyAreaCollector collector);
+        protected abstract bool RenderContent(in RegionalRenderingContext context, D2D1Brush backBrush);
 
         protected virtual void OnScrollBarUpButtonClicked() => Scrolling(-60);
 
@@ -112,17 +112,16 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public override void Render(DirtyAreaCollector collector) => Render(collector, markDirty: false);
+        public override void Render(in RegionalRenderingContext context) => Render(context, markDirty: false);
 
-        protected override bool RenderCore(DirtyAreaCollector collector)
+        protected override bool RenderCore(in RegionalRenderingContext context)
         {
             UpdateFlags updateFlags = GetUpdateFlagsAndReset();
-            if (collector.IsEmptyInstance)
+            if (!context.HasDirtyCollector)
                 updateFlags |= UpdateFlags.All;
             else if (updateFlags == UpdateFlags.None)
                 return true;
 
-            D2D1DeviceContext context = Renderer.GetDeviceContext();
             Rect bounds = Bounds;
             D2D1Brush[] brushes = _brushes;
             bool enabled = _enabled;
@@ -131,7 +130,6 @@ namespace ConcreteUI.Controls
             if ((updateFlags & UpdateFlags.RecalcLayout) == UpdateFlags.RecalcLayout)
                 updateFlags = (updateFlags & ~UpdateFlags.RecalcLayout) | RecalculateLayout(bounds);
 
-            Rect contentBounds = _contentBounds;
             bool hasScrollBar = _hasScrollBar;
             bool triggerViewportPointChanged = (updateFlags & UpdateFlags.TriggerViewportPointChanged) == UpdateFlags.TriggerViewportPointChanged;
             bool recalcScrollBar = (updateFlags & UpdateFlags.RecalcScrollBar) == UpdateFlags.RecalcScrollBar;
@@ -139,56 +137,86 @@ namespace ConcreteUI.Controls
             bool redrawScrollBar = (updateFlags & UpdateFlags.ScrollBar) == UpdateFlags.ScrollBar;
             bool redrawContent = (updateFlags & UpdateFlags.Content) == UpdateFlags.Content;
             bool redrawContentResult = false;
+
+            if (redrawAll)
+            {
+                RenderBackground(context, enabled ? GetBackBrush() : GetBackDisabledBrush());
+                context.MarkAsDirty();
+            }
             if (redrawContent)
             {
-                if (enabled || drawWhenDisabled)
+                Rect contentBoundsRaw = _contentBounds;
+                RectF contentBounds = new RectF(contentBoundsRaw.Left - bounds.Left, contentBoundsRaw.Top - bounds.Top,
+                    contentBoundsRaw.Right - bounds.Left, contentBoundsRaw.Bottom - bounds.Top);
+                if (contentBounds.IsValid)
                 {
-                    RenderBackground(context, enabled ? GetBackBrush() : GetBackDisabledBrush());
-                    if (contentBounds.IsValid)
+                    using RegionalRenderingContext clippedContext = context.WithPixelAlignedClip(ref contentBounds, D2D1AntialiasMode.Aliased);
+                    if (enabled || drawWhenDisabled)
                     {
-                        context.PushAxisAlignedClip((RectF)contentBounds, D2D1AntialiasMode.Aliased);
-                        redrawContentResult = !RenderContent(redrawAll ? DirtyAreaCollector.Empty : collector);
-                        context.PopAxisAlignedClip();
+                        redrawContentResult = !RenderContent(
+                            redrawAll ? clippedContext.WithEmptyDirtyCollector() : clippedContext,
+                            enabled ? GetBackBrush() : GetBackDisabledBrush());
                     }
-                }
-                else
-                {
-                    RenderBackground(context, GetBackDisabledBrush());
-                    if (!redrawAll && contentBounds.IsValid)
-                        collector.MarkAsDirty(contentBounds);
+                    else if (!redrawAll)
+                    {
+                        RenderBackground(clippedContext, GetBackDisabledBrush());
+                        clippedContext.MarkAsDirty();
+                    }
                 }
             }
             if (hasScrollBar && redrawScrollBar)
             {
                 if (recalcScrollBar)
                     RecalculateScrollBarButton();
-                Rect scrollBarBounds = _scrollBarBounds;
-                context.AntialiasMode = D2D1AntialiasMode.PerPrimitive;
-                context.PushAxisAlignedClip((RectF)scrollBarBounds, D2D1AntialiasMode.Aliased);
-                RenderBackground(context, brushes[(int)Brush.ScrollBarBackBrush]);
-                context.FillRoundedRectangle(new D2D1RoundedRectangle() { RadiusX = 3, RadiusY = 3, Rect = (RectF)_scrollBarScrollButtonBounds },
-                    GetButtonStateBrush(_scrollButtonState));
-                FontIconResources resources = FontIconResources.Instance;
-                resources.DrawScrollBarUpButton(context, (RectangleF)_scrollBarUpButtonBounds, GetButtonStateBrush(_scrollUpButtonState));
-                resources.DrawScrollBarDownButton(context, (RectangleF)_scrollBarDownButtonBounds, GetButtonStateBrush(_scrollDownButtonState));
-                context.PopAxisAlignedClip();
-                context.AntialiasMode = D2D1AntialiasMode.Aliased;
-                if (!redrawAll)
-                    collector.MarkAsDirty(scrollBarBounds);
+                Rect scrollBarBoundsRaw = _scrollBarBounds;
+                Rect scrollButtonBoundsRaw = _scrollBarScrollButtonBounds;
+                Rect upButtonBoundsRaw = _scrollBarUpButtonBounds;
+                Rect downButtonBoundsRaw = _scrollBarDownButtonBounds;
+
+                RectF scrollBarBounds = new RectF(scrollBarBoundsRaw.Left - bounds.Left, scrollBarBoundsRaw.Top - bounds.Top,
+                    scrollBarBoundsRaw.Right - bounds.Left, scrollBarBoundsRaw.Bottom - bounds.Top);
+                RectF scrollButtonBounds = new RectF(scrollButtonBoundsRaw.Left - bounds.Left, scrollButtonBoundsRaw.Top - bounds.Top,
+                    scrollButtonBoundsRaw.Right - bounds.Left, scrollButtonBoundsRaw.Bottom - bounds.Top);
+                RectF upButtonBounds = new RectF(upButtonBoundsRaw.Left - bounds.Left, upButtonBoundsRaw.Top - bounds.Top,
+                    upButtonBoundsRaw.Right - bounds.Left, upButtonBoundsRaw.Bottom - bounds.Top);
+                RectF downButtonBounds = new RectF(downButtonBoundsRaw.Left - bounds.Left, downButtonBoundsRaw.Top - bounds.Top,
+                    downButtonBoundsRaw.Right - bounds.Left, downButtonBoundsRaw.Bottom - bounds.Top);
+
+                if (scrollBarBounds.IsValid && scrollButtonBounds.IsValid && upButtonBounds.IsValid && downButtonBounds.IsValid)
+                {
+                    float pointsPerPixel = context.PointsPerPixel;
+                    scrollBarBounds = RenderingHelper.RoundInPixel(scrollBarBounds, pointsPerPixel);
+                    scrollButtonBounds = RenderingHelper.RoundInPixel(scrollButtonBounds, pointsPerPixel);
+                    upButtonBounds = RenderingHelper.RoundInPixel(upButtonBounds, pointsPerPixel);
+                    downButtonBounds = RenderingHelper.RoundInPixel(downButtonBounds, pointsPerPixel);
+
+                    using RenderingClipToken clipToken = context.PushAxisAlignedClip(scrollBarBounds, D2D1AntialiasMode.Aliased);
+                    RenderBackground(context, brushes[(int)Brush.ScrollBarBackBrush]);
+
+                    D2D1DeviceContext deviceContext = context.DeviceContext;
+                    (D2D1AntialiasMode antialiasModeBefore, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
+                    try
+                    {
+                        context.FillRoundedRectangle(new D2D1RoundedRectangle() { RadiusX = 3, RadiusY = 3, Rect = scrollButtonBounds },
+                            GetButtonStateBrush(_scrollButtonState));
+                        FontIconResources resources = FontIconResources.Instance;
+                        resources.DrawScrollBarUpButton(context, (RectangleF)upButtonBounds, GetButtonStateBrush(_scrollUpButtonState));
+                        resources.DrawScrollBarDownButton(context, (RectangleF)downButtonBounds, GetButtonStateBrush(_scrollDownButtonState));
+                    }
+                    finally
+                    {
+                        deviceContext.AntialiasMode = antialiasModeBefore;
+                    }
+                    if (!redrawAll)
+                        context.MarkAsDirty(scrollBarBounds);
+                }
             }
             if (redrawContent || hasScrollBar && redrawScrollBar)
             {
                 D2D1Brush? borderBrush = GetBorderBrush();
                 if (borderBrush is not null)
-                {
-                    context.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
-                    float lineWidth = Renderer.GetBaseLineWidth();
-                    context.DrawRectangle(GraphicsUtils.AdjustRectangleAsBorderBounds(bounds, lineWidth), borderBrush, lineWidth);
-                    context.PopAxisAlignedClip();
-                }
+                    context.DrawBorder(borderBrush);
             }
-            if (redrawAll)
-                collector.MarkAsDirty(bounds);
             if (triggerViewportPointChanged)
                 OnViewportPointChanged();
             if (redrawContentResult)

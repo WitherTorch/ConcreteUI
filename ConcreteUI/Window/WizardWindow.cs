@@ -6,6 +6,7 @@ using System.Threading;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
+using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
@@ -116,9 +117,9 @@ namespace ConcreteUI.Window
             Interlocked.Exchange(ref _updateFlags, -1L);
         }
 
-        public override void RenderElementBackground(UIElement element, D2D1DeviceContext context)
+        public override void RenderElementBackground(UIElement element, in RegionalRenderingContext context)
         {
-            ClearDC(context);
+            ClearDC(context.DeviceContext);
         }
 
         protected override void RenderPageBackground(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in RectF pageRect)
@@ -192,7 +193,7 @@ namespace ConcreteUI.Window
                 DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
             }
             deviceContext.PopAxisAlignedClip();
-            collector.MarkAsDirty(GraphicsUtils.ConvertRectangle(rect));
+            collector.MarkAsDirty(rect);
         }
 
         protected override void RecalculateLayout(in SizeF windowSize, bool callRecalculatePageLayout)
@@ -221,10 +222,10 @@ namespace ConcreteUI.Window
                 DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
             }
 
-            _pageRect = pageRect = GraphicsUtils.AdjustRectangleF(pageRect);
+            _pageRect = pageRect = RenderingHelper.CeilingInPixel(pageRect, GetPointsPerPixel());
             if (callRecalculatePageLayout && pageRect.IsValid)
             {
-                RecalculatePageLayout((Rect)pageRect);
+                RecalculatePageLayout(pageRect);
             }
         }
 

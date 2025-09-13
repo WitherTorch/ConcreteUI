@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
@@ -73,11 +74,34 @@ namespace ConcreteUI.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Render(D2D1DeviceContext context, PointF location, D2D1Brush brush)
+        public void Render(IRenderingContext context, PointF location, D2D1Brush brush)
             => Render(context, new RectangleF(location, _size), brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Render(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+        public void Render(IRenderingContext context, in RectangleF rect, D2D1Brush brush)
+        {
+            SemaphoreSlim semaphore = _semaphore;
+            DWriteTextLayout layout = _layout;
+
+            semaphore.Wait();
+            try
+            {
+                layout.MaxHeight = rect.Height;
+                layout.MaxWidth = rect.Width;
+                context.DrawTextLayout(rect.Location, layout, brush, D2D1DrawTextOptions.NoSnap | D2D1DrawTextOptions.Clip);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Render(in RegionalRenderingContext context, PointF location, D2D1Brush brush)
+            => Render(context, new RectangleF(location, _size), brush);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Render(in RegionalRenderingContext context, in RectangleF rect, D2D1Brush brush)
         {
             SemaphoreSlim semaphore = _semaphore;
             DWriteTextLayout layout = _layout;

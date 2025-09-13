@@ -1,11 +1,8 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Hosting;
 using ConcreteUI.Graphics.Native.DXGI;
-
-using InlineMethod;
 
 using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
@@ -14,21 +11,19 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics
 {
-    public sealed class DirtyAreaCollector
+    public sealed partial class DirtyAreaCollector
     {
-        private static readonly DirtyAreaCollector _empty = new DirtyAreaCollector(null, null, null);
+        private static readonly DirtyAreaCollector _empty = new DirtyAreaCollector(null, null);
         public static DirtyAreaCollector Empty => _empty;
 
         private readonly SwapChainGraphicsHost1? _host;
-        private readonly UnwrappableList<Rect>? _list;
-        private readonly UnwrappableList<bool>? _typeList;
+        private readonly UnwrappableList<RectF>? _list;
 
         private bool _presentAllMode;
 
-        private DirtyAreaCollector(UnwrappableList<Rect>? list, UnwrappableList<bool>? typeList, SwapChainGraphicsHost1? host)
+        private DirtyAreaCollector(UnwrappableList<RectF>? list, SwapChainGraphicsHost1? host)
         {
             _list = list;
-            _typeList = typeList;
             _host = host;
         }
 
@@ -36,7 +31,7 @@ namespace ConcreteUI.Graphics
         {
             if (host is null || host.IsDisposed)
                 return null;
-            return new DirtyAreaCollector(new UnwrappableList<Rect>(), new UnwrappableList<bool>(), host);
+            return new DirtyAreaCollector(new UnwrappableList<RectF>(), host);
         }
 
         public bool IsEmptyInstance => _list is null;
@@ -46,41 +41,24 @@ namespace ConcreteUI.Graphics
         {
             if (_presentAllMode)
                 return true;
-            UnwrappableList<Rect>? list = _list;
+            UnwrappableList<RectF>? list = _list;
             if (list is null)
                 return false;
             return list.Count > 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void MarkAsDirty(in Rect rect)
-        {
-            UnwrappableList<Rect>? list = _list;
-            if (list is null)
-                return;
-            list.Add(rect);
-            _typeList!.Add(false);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void MarkAsDirty(in RectF rect)
-        {
-            UnwrappableList<Rect>? list = _list;
-            if (list is null)
-                return;
-            list.Add(*(Rect*)UnsafeHelper.AsPointerIn(in rect));
-            _typeList!.Add(true);
-        }
+        public unsafe void MarkAsDirty(in RectF rect) => _list?.Add(rect);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void UsePresentAllModeOnce() => _presentAllMode = true;
 
-        public unsafe void Present(double dpiScaleFactor)
+        public unsafe void Present(float pointsPerPixel)
         {
             SwapChainGraphicsHost1? host = _host;
             if (host is null)
                 return;
-            UnwrappableList<Rect>? list = _list;
+            UnwrappableList<RectF>? list = _list;
             if (list is null)
             {
                 host.Present();
@@ -93,29 +71,25 @@ namespace ConcreteUI.Graphics
                 host.Present();
                 return;
             }
-            if (!TryGetPresentingRects(dpiScaleFactor, out ArrayPool<Rect>? pool, out Rect[]? rects, out int count))
+            if (!TryGetPresentingRects(pointsPerPixel, out ArrayPool<Rect>? pool, out Rect[]? rects, out uint count))
                 return;
             try
             {
                 fixed (Rect* ptr = rects)
-                    host.Present(new DXGIPresentParameters(unchecked((uint)count), ptr));
-            }
-            catch (Exception)
-            {
-                throw;
+                    host.Present(new DXGIPresentParameters(count, ptr));
             }
             finally
             {
-                pool?.Return(rects);
+                pool.Return(rects);
             }
         }
 
-        public unsafe bool TryPresent(double dpiScaleFactor)
+        public unsafe bool TryPresent(float pointsPerPixel)
         {
             SwapChainGraphicsHost1? host = _host;
             if (host is null)
                 return false;
-            UnwrappableList<Rect>? list = _list;
+            UnwrappableList<RectF>? list = _list;
             if (list is null)
                 return host.TryPresent();
             if (_presentAllMode)
@@ -124,65 +98,60 @@ namespace ConcreteUI.Graphics
                 list.Clear();
                 return host.TryPresent();
             }
-            if (!TryGetPresentingRects(dpiScaleFactor, out ArrayPool<Rect>? pool, out Rect[]? rects, out int count))
+            if (!TryGetPresentingRects(pointsPerPixel, out ArrayPool<Rect>? pool, out Rect[]? rects, out uint count))
                 return false;
-            bool result;
-            fixed (Rect* ptr = rects)
-                result = host.TryPresent(new DXGIPresentParameters(unchecked((uint)count), ptr));
-            pool?.Return(rects);
-            return result;
+            try
+            {
+                fixed (Rect* ptr = rects)
+                    return host.TryPresent(new DXGIPresentParameters(count, ptr));
+            }
+            finally
+            {
+                pool.Return(rects);
+            }
         }
 
-        private bool TryGetPresentingRects(double dpiScaleFactor, out ArrayPool<Rect>? pool, [NotNullWhen(true)] out Rect[]? rects, out int count)
+        private bool TryGetPresentingRects(float pointsPerPixel,
+            [NotNullWhen(true)] out ArrayPool<Rect>? pool, [NotNullWhen(true)] out Rect[]? rects, out uint count)
         {
-            UnwrappableList<Rect> list = _list!;
-            count = list.Count;
-            if (count <= 0)
+            UnwrappableList<RectF> list = _list!;
+            int countRaw = list.Count;
+            if (countRaw <= 0)
             {
                 pool = null;
                 rects = null;
+                count = 0;
                 return false;
             }
-            UnwrappableList<bool> typeList = _typeList!;
-            list.Clear();
-            typeList.Clear();
-            Rect[] sourceRects = list.Unwrap();
-            bool[] sourceRectTypes = typeList.Unwrap();
-            if (dpiScaleFactor == 1.0f && !SequenceHelper.ContainsExclude(sourceRectTypes, false))
-            {
-                pool = null;
-                rects = sourceRects;
-                return true;
-            }
+            count = (uint)countRaw;
+            RectF[] sourceRects = list.Unwrap();
             pool = ArrayPool<Rect>.Shared;
             rects = pool.Rent(count);
-            ScaleRects(rects, sourceRects, sourceRectTypes, count, dpiScaleFactor);
+            count = ScaleRects(rects, sourceRects, count, pointsPerPixel);
+            list.Clear();
             return true;
         }
 
-        [Inline(InlineBehavior.Remove)]
-        private static unsafe void ScaleRects(Rect[] destination, Rect[] source, bool[] typeOfSource, int count, double dpiScaleFactor)
+        private static unsafe uint ScaleRects(Rect[] destination, RectF[] source, uint count, float pointsPerPixel)
         {
-            for (int i = 0; i < count; i++)
+            uint j = 0;
+            ref Rect destinationArrayRef = ref destination[0];
+
+            fixed (RectF* ptr = source)
             {
-                if (typeOfSource[i])
+                ScaleRects(ptr, count, pointsPerPixel);
+                for (uint i = 0; i < count; i++)
                 {
-                    RectF sourceRect = UnsafeHelper.As<Rect, RectF>(source[i]);
-                    destination[i] = new Rect(
-                        left: MathI.Floor(sourceRect.Left * dpiScaleFactor), top: MathI.Floor(sourceRect.Top * dpiScaleFactor),
-                        right: MathI.Ceiling(sourceRect.Right * dpiScaleFactor), bottom: MathI.Ceiling(sourceRect.Bottom * dpiScaleFactor));
-                    continue;
-                }
-                if (dpiScaleFactor == 1.0f)
-                    destination[i] = source[i];
-                else
-                {
-                    Rect sourceRect = source[i];
-                    destination[i] = new Rect(
-                        left: MathI.Floor(sourceRect.Left * dpiScaleFactor), top: MathI.Floor(sourceRect.Top * dpiScaleFactor),
-                        right: MathI.Ceiling(sourceRect.Right * dpiScaleFactor), bottom: MathI.Ceiling(sourceRect.Bottom * dpiScaleFactor));
+                    Rect area = *(Rect*)(ptr + i);
+                    if (!area.IsValid)
+                        continue;
+                    UnsafeHelper.AddTypedOffset(ref destinationArrayRef, j++) = area;
                 }
             }
+
+            return j;
         }
+
+        private static unsafe partial void ScaleRects(RectF* source, uint count, float pointsPerPixel);
     }
 }

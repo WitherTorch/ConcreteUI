@@ -97,7 +97,7 @@ namespace ConcreteUI.Controls
             Update(RenderObjectUpdateFlags.Format, RedrawType.RedrawAllContent);
         }
 
-        public void RenderChildBackground(UIElement child, D2D1DeviceContext context)
+        public void RenderChildBackground(UIElement child, in RegionalRenderingContext context)
             => RenderBackground(context, _brushes[(int)Brush.BackBrush]);
 
         private void Children_BeforeAdded(object? sender, BeforeListAddOrRemoveEventArgs<UIElement> e)
@@ -190,80 +190,77 @@ namespace ConcreteUI.Controls
             return false;
         }
 
-        public override void Render(DirtyAreaCollector collector) => Render(collector, markDirty: false);
+        public override void Render(in RegionalRenderingContext context) => Render(context, markDirty: false);
 
-        protected override bool RenderCore(DirtyAreaCollector collector)
+        protected override bool RenderCore(in RegionalRenderingContext context)
         {
-            IRenderer renderer = Renderer;
             RedrawType redrawType = GetRedrawTypeAndReset();
-            if (collector.IsEmptyInstance) //Force redraw
+            if (!context.HasDirtyCollector) // Force redraw
                 redrawType = RedrawType.RedrawAllContent;
             else if (redrawType == RedrawType.NoRedraw)
                 return true;
             GetLayouts(GetAndCleanRenderObjectUpdateFlags(), out DWriteTextLayout? titleLayout, out DWriteTextLayout? textLayout);
-            D2D1DeviceContext context = renderer.GetDeviceContext();
             D2D1Brush[] brushes = _brushes;
             D2D1Brush backBrush = brushes[(int)Brush.BackBrush];
             D2D1Brush textBrush = brushes[(int)Brush.TextBrush];
             switch (redrawType)
             {
-                case RedrawType.RedrawText:
-                    RenderText(context, collector, backBrush, textBrush, textLayout, justText: true);
-                    break;
                 case RedrawType.RedrawAllContent:
-                    Rect bounds = Bounds;
-                    float lineWidth = renderer.GetBaseLineWidth();
-                    RenderBackground(context, backBrush);
-                    context.DrawRectangle(GraphicsUtils.AdjustRectangleAsBorderBounds(new Rect(bounds.X, bounds.Y + MathI.Floor(_titleHeight * 0.5f),
-                        bounds.Right, bounds.Bottom), lineWidth), brushes[(int)Brush.BorderBrush], lineWidth);
-                    RenderTitle(context, backBrush, textBrush, titleLayout, bounds);
-                    RenderText(context, collector, backBrush, textBrush, textLayout, justText: false);
-                    collector.MarkAsDirty(bounds);
+                    {
+                        SizeF renderSize = context.Size;
+                        RectF borderBounds = new RectF(0, _titleHeight * 0.5f, renderSize.Width, renderSize.Height);
+                        RenderBackground(context, backBrush);
+                        context.DrawBorder(borderBounds, brushes[(int)Brush.BorderBrush]);
+                        RenderTitle(context, backBrush, textBrush, titleLayout);
+                        RenderText(context.WithEmptyDirtyCollector(), backBrush, textBrush, textLayout);
+                        context.MarkAsDirty();
+                    }
+                    break;
+                case RedrawType.RedrawText:
+                    RenderText(in context, backBrush, textBrush, textLayout);
+                    if (titleLayout is not null)
+                        DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
                     break;
             }
-            if (titleLayout is not null)
-                DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
-            if (textLayout is not null)
-                DisposeHelper.NullSwapOrDispose(ref _textLayout, textLayout);
             return true;
         }
 
-        [Inline(InlineBehavior.Remove)]
-        private void RenderTitle(D2D1DeviceContext context, D2D1Brush backBrush, D2D1Brush textBrush, DWriteTextLayout? layout, in Rect bounds)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void RenderTitle(in RegionalRenderingContext context, D2D1Brush backBrush, D2D1Brush textBrush, DWriteTextLayout? layout)
         {
             if (layout is null)
                 return;
 
-            PointF titleLoc = new PointF(bounds.X + UIConstants.ElementMargin, bounds.Y);
-            context.PushAxisAlignedClip(RectF.FromXYWH(titleLoc.X, titleLoc.Y, layout.MaxWidth, layout.MaxHeight), D2D1AntialiasMode.Aliased);
+            RectF bounds = RectF.FromXYWH(UIConstants.ElementMargin, 0, layout.MaxWidth, layout.MaxHeight);
+            using RenderingClipToken token = context.PushPixelAlignedClip(ref bounds, D2D1AntialiasMode.Aliased);
             RenderBackground(context, backBrush);
-            context.DrawTextLayout(titleLoc, layout, textBrush, D2D1DrawTextOptions.Clip);
-            context.PopAxisAlignedClip();
+            context.DrawTextLayout(bounds.Location, layout, textBrush, D2D1DrawTextOptions.Clip | D2D1DrawTextOptions.NoSnap);
+            DisposeHelper.NullSwapOrDispose(ref _titleLayout, layout);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void RenderText(D2D1DeviceContext context, DirtyAreaCollector collector, D2D1Brush backBrush, D2D1Brush textBrush,
-            DWriteTextLayout? layout, bool justText)
+        private void RenderText(in RegionalRenderingContext context, D2D1Brush backBrush, D2D1Brush textBrush, DWriteTextLayout? layout)
         {
             if (layout is null)
                 return;
             Rect bounds = Bounds;
-            Point textLoc = TextLocation;
-            int textBoundRight = bounds.Right - UIConstants.ElementMarginDouble;
-            int textBoundBottom = bounds.Bottom - UIConstants.ElementMarginDouble;
-            Rect textRect = new Rect(textLoc.X, textLoc.Y, textBoundRight, textBoundBottom);
-            if (!textRect.IsValid)
+            SizeF renderSize = context.Size;
+            Point location = TextLocation;
+
+            RectF textBounds = new RectF(location.X - bounds.X, location.Y - bounds.Y,
+                renderSize.Width - UIConstants.ElementMarginDouble, renderSize.Height - UIConstants.ElementMarginDouble);
+            if (!textBounds.IsValid)
                 return;
-            context.PushAxisAlignedClip((RectF)textRect, D2D1AntialiasMode.Aliased);
-            layout.MaxWidth = textRect.Width;
-            if (justText)
+            using RenderingClipToken clipToken = context.PushPixelAlignedClip(ref textBounds, D2D1AntialiasMode.Aliased);
+            layout.MaxWidth = textBounds.Width;
+            if (context.HasDirtyCollector)
             {
                 RenderBackground(context, backBrush);
-                collector.MarkAsDirty(textRect);
+                context.MarkAsDirty(textBounds);
             }
-            using (ClearTypeToken token = ClearTypeToken.TryEnterClearTypeMode(Renderer, context, backBrush))
-                context.DrawTextLayout(textLoc, layout, textBrush, D2D1DrawTextOptions.None);
-            context.PopAxisAlignedClip();
+            using ClearTypeToken token = ClearTypeToken.TryEnterClearTypeMode(Renderer, context.DeviceContext, backBrush);
+            context.DrawTextLayout(textBounds.Location, layout, textBrush, D2D1DrawTextOptions.None);
+            DisposeHelper.NullSwapOrDispose(ref _textLayout, layout);
         }
 
         [Inline(InlineBehavior.Remove)]

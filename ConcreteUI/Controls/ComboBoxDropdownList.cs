@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Threading;
 
 using ConcreteUI.Graphics;
+using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
@@ -36,7 +37,8 @@ namespace ConcreteUI.Controls
         private readonly CoreWindow _window;
 
         private DWriteTextLayout[]? _layouts;
-        private int _itemHeight, _selectedIndex, _maxViewCount;
+        private float _itemHeight;
+        private int _selectedIndex, _maxViewCount;
         private bool _isClicking, _isClickingClient, _isFirstTimeClick;
 
         public ComboBoxDropdownList(ComboBox parent, CoreWindow window) : base(window, "app.comboBox")
@@ -48,7 +50,7 @@ namespace ConcreteUI.Controls
             _selectedIndex = -1;
             LeftVariable = parent.LeftReference;
             RightVariable = parent.RightReference;
-            TopVariable = parent.BottomReference - MathI.Ceiling(Renderer.GetBaseLineWidth());
+            TopVariable = parent.BottomReference - MathI.Ceiling(RenderingHelper.GetDefaultBorderWidth(window.GetPointsPerPixel()));
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
@@ -73,7 +75,7 @@ namespace ConcreteUI.Controls
             ComboBox parent = _parent;
             DWriteFactory factory = SharedResources.DWriteFactory;
 
-            float maxHeight = 0f;
+            float itemHeight = 0f;
             IList<string> items = parent.Items;
             int count = items.Count;
             if (count <= 0)
@@ -83,81 +85,77 @@ namespace ConcreteUI.Controls
             {
                 DWriteTextLayout layout = factory.CreateTextLayout(items[i], format);
                 layouts[i] = layout;
-                float height = layout.GetMetrics().Height;
-                if (maxHeight < height)
-                    maxHeight = height;
+                itemHeight = MathHelper.Max(itemHeight, layout.GetMetrics().Height);
             }
             DisposeHelper.SwapDispose(ref _layouts, layouts);
 
-            int itemHeight = MathI.Ceiling(maxHeight) + 2;
+            float pointsPerPixel = _window.GetPointsPerPixel();
+            float borderWidth = RenderingHelper.GetDefaultBorderWidth(pointsPerPixel);
+            itemHeight = RenderingHelper.CeilingInPixel(itemHeight, pointsPerPixel) + borderWidth * 2;
             _itemHeight = itemHeight;
 
             int maxViewCount = MathHelper.Min(parent.DropdownListVisibleCount, count);
             int lastIndex = MathHelper.Clamp(parent.SelectedIndex, -1, count - 1);
             _selectedIndex = -1;
             _maxViewCount = maxViewCount;
-            SurfaceSize = new Size(0, itemHeight * count);
-            int elementHeight = maxViewCount * itemHeight;
-            HeightVariable = elementHeight;
+            SurfaceSize = new Size(0, MathI.Ceiling(itemHeight * count));
+            float elementHeight = maxViewCount * itemHeight;
+            HeightVariable = MathI.Ceiling(elementHeight);
             if (lastIndex > maxViewCount / 2)
-                ScrollingTo(lastIndex * itemHeight + itemHeight / 2 - elementHeight / 2);
+                ScrollingTo(MathI.Ceiling(lastIndex * itemHeight + itemHeight / 2 - elementHeight / 2));
         }
 
-        protected override bool RenderContent(DirtyAreaCollector collector)
+        protected override bool RenderContent(in RegionalRenderingContext context, D2D1Brush backBrush)
         {
-            D2D1DeviceContext context = Renderer.GetDeviceContext();
+            if (context.HasDirtyCollector)
+            {
+                RenderBackground(context, backBrush);
+                context.MarkAsDirty();
+            }
             DWriteTextLayout[]? layouts = Interlocked.Exchange(ref _layouts, null);
             if (layouts is null)
                 return true;
-            float lineWidth = Renderer.GetBaseLineWidth();
-            Rect bounds = ContentBounds;
+            SizeF renderSize = context.Size;
             int count = layouts.Length;
-            if (count <= 0 || !bounds.IsValid)
+            if (count <= 0 || renderSize.IsEmpty)
                 return true;
             bool isClicking = _isClicking;
+            float itemHeight = _itemHeight;
             int maxViewCount = _maxViewCount;
-            int itemHeight = _itemHeight;
             int viewportY = ViewportPoint.Y;
-            int startIndex = MathHelper.Clamp(Math.DivRem(viewportY, itemHeight, out int offsetY), 0, count - maxViewCount);
-            int endIndex = MathHelper.Clamp(MathHelper.CeilDiv(viewportY + bounds.Height, itemHeight), maxViewCount - 1, count - 1);
+            float startIndexRaw = viewportY / itemHeight;
+            float offsetY = (startIndexRaw - MathF.Floor(startIndexRaw)) * itemHeight;
+            int startIndex = MathHelper.Clamp(MathI.FloorPositive(startIndexRaw), 0, count - maxViewCount);
+            int endIndex = MathHelper.Clamp(MathI.Ceiling((viewportY + renderSize.Height) / itemHeight), maxViewCount - 1, count - 1);
             int selectedIndex = SelectedIndex;
-            int x = bounds.X;
-            int y = bounds.Y - offsetY;
-            int right = bounds.Right;
             D2D1Brush[] brushes = _brushes;
             D2D1Brush textBrush;
-            float offsetedX = x + 5 + lineWidth;
-            if (selectedIndex >= startIndex && selectedIndex <= endIndex)
-            {
-                RectF itemBounds = RectF.FromXYWH(x, y + (selectedIndex - startIndex) * itemHeight, right - x, itemHeight);
-                context.PushAxisAlignedClip(itemBounds, D2D1AntialiasMode.Aliased);
-                D2D1Brush backBrush = isClicking ? brushes[(int)Brush.ListBackPressedBrush] : brushes[(int)Brush.ListBackHoveredBrush];
-                textBrush = brushes[(int)Brush.ListTextHoveredBrush];
-                RenderBackground(context, backBrush);
-                DWriteTextLayout layout = layouts[selectedIndex];
-                layout.MaxWidth = itemBounds.Width;
-                layout.MaxHeight = itemBounds.Height;
-                context.DrawTextLayout(new PointF(offsetedX, itemBounds.Y), layout, textBrush);
-                context.PopAxisAlignedClip();
-            }
+            float borderWidth = context.DefaultBorderWidth;
+            float itemLeft = borderWidth,
+                textLeft = itemLeft + 5 + context.DefaultBorderWidth,
+                itemTop = -offsetY,
+                itemRight = renderSize.Width - borderWidth;
             textBrush = brushes[(int)Brush.TextBrush];
             for (int i = startIndex; i <= endIndex; i++)
             {
+                RectF itemBounds = new RectF(itemLeft, itemTop, itemRight, itemTop + itemHeight);
+                using RenderingClipToken clipToken = context.PushPixelAlignedClip(ref itemBounds, D2D1AntialiasMode.Aliased);
+
+                D2D1Brush activeTextBrush;
                 if (i == selectedIndex)
                 {
-                    y += itemHeight;
-                    continue;
+                    D2D1Brush activeBackBrush = isClicking ? brushes[(int)Brush.ListBackPressedBrush] : brushes[(int)Brush.ListBackHoveredBrush];
+                    RenderBackground(context, activeBackBrush);
+                    activeTextBrush = brushes[(int)Brush.ListTextHoveredBrush];
                 }
-                RectF itemBounds = new RectF(offsetedX, y, right, y + itemHeight);
-                context.PushAxisAlignedClip(itemBounds, D2D1AntialiasMode.Aliased);
+                else
+                    activeTextBrush = textBrush;
                 DWriteTextLayout layout = layouts[i];
                 layout.MaxWidth = itemBounds.Width;
                 layout.MaxHeight = itemBounds.Height;
-                context.DrawTextLayout(itemBounds.Location, layout, textBrush, D2D1DrawTextOptions.Clip);
-                context.PopAxisAlignedClip();
-                y += itemHeight;
+                context.DrawTextLayout(new PointF(textLeft, itemTop), layout, activeTextBrush, D2D1DrawTextOptions.Clip);
+                itemTop = itemBounds.Bottom;
             }
-            collector.MarkAsDirty(bounds);
             DisposeHelper.NullSwapOrDispose(ref _layouts, layouts);
             return true;
         }
@@ -227,14 +225,14 @@ namespace ConcreteUI.Controls
             {
                 _selectedIndex = -1;
             }
-            Update();
+            Update(UpdateFlags.Content);
         }
 
         public override void Scrolling(int scrollStep) => base.Scrolling(scrollStep / 4);
 
-        protected override void OnScrollBarUpButtonClicked() => base.Scrolling(-_itemHeight);
+        protected override void OnScrollBarUpButtonClicked() => base.Scrolling(-MathI.Ceiling(_itemHeight));
 
-        protected override void OnScrollBarDownButtonClicked() => base.Scrolling(_itemHeight);
+        protected override void OnScrollBarDownButtonClicked() => base.Scrolling(MathI.Ceiling(_itemHeight));
 
         protected override void DisposeCore(bool disposing)
         {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -15,7 +16,6 @@ using ConcreteUI.Utils;
 using InlineMethod;
 
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
@@ -116,47 +116,37 @@ namespace ConcreteUI.Controls
             return false;
         }
 
-        protected override bool RenderCore(DirtyAreaCollector collector)
+        protected override bool RenderCore(in RegionalRenderingContext context)
         {
             RenderObjectUpdateFlags flags = GetAndCleanRenderObjectUpdateFlags();
-            IRenderer renderer = Renderer;
-            D2D1DeviceContext deviceContext = renderer.GetDeviceContext();
-            float lineWidth = renderer.GetBaseLineWidth();
-            Rect bounds = Bounds;
-            RectF buttonBounds = GraphicsUtils.AdjustRectangleAsBorderBounds(bounds, lineWidth);
-
             D2D1Brush[] brushes = _brushes;
-            deviceContext.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
+            D2D1Brush borderBrush;
             switch (PressState)
             {
-                case ButtonTriState.None:
-                    RenderBackground(deviceContext, brushes[(int)Brush.FaceBrush]);
-                    deviceContext.DrawRectangle(buttonBounds, brushes[(int)Brush.BorderBrush], lineWidth);
-                    break;
                 case ButtonTriState.Hovered:
-                    RenderBackground(deviceContext, brushes[(int)Brush.FaceHoveredBrush]);
-                    deviceContext.DrawRectangle(buttonBounds, brushes[(int)Brush.BorderHoveredBrush], lineWidth);
+                    RenderBackground(in context, brushes[(int)Brush.FaceHoveredBrush]);
+                    borderBrush = brushes[(int)Brush.BorderHoveredBrush];
                     break;
                 case ButtonTriState.Pressed:
-                    RenderBackground(deviceContext, brushes[(int)Brush.FacePressedBrush]);
-                    deviceContext.DrawRectangle(buttonBounds, brushes[(int)Brush.BorderHoveredBrush], lineWidth);
+                    RenderBackground(in context, brushes[(int)Brush.FacePressedBrush]);
+                    borderBrush = brushes[(int)Brush.BorderHoveredBrush];
                     break;
                 default:
+                    RenderBackground(in context, brushes[(int)Brush.FaceBrush]);
+                    borderBrush = brushes[(int)Brush.BorderBrush];
                     break;
             }
             DWriteTextLayout? layout = GetTextLayout(flags);
-            if (layout is null)
+            if (layout is not null)
             {
-                deviceContext.PopAxisAlignedClip();
-                return true;
+                SizeF renderSize = context.Size;
+                D2D1Brush brush = Enabled ? brushes[(int)Brush.TextBrush] : brushes[(int)Brush.TextDisabledBrush];
+                layout.MaxWidth = renderSize.Width;
+                layout.MaxHeight = renderSize.Height;
+                context.DrawTextLayout(PointF.Empty, layout, brush, D2D1DrawTextOptions.Clip);
+                DisposeHelper.NullSwapOrDispose(ref _layout, layout);
             }
-
-            D2D1Brush brush = Enabled ? brushes[(int)Brush.TextBrush] : brushes[(int)Brush.TextDisabledBrush];
-            layout.MaxWidth = bounds.Width;
-            layout.MaxHeight = bounds.Height;
-            deviceContext.DrawTextLayout(bounds.TopLeft, layout, brush, D2D1DrawTextOptions.Clip);
-            deviceContext.PopAxisAlignedClip();
-            DisposeHelper.NullSwapOrDispose(ref _layout, layout);
+            context.DrawBorder(borderBrush);
             return true;
         }
 

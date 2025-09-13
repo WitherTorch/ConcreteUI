@@ -85,7 +85,7 @@ namespace ConcreteUI.Window
         private RenderingController? _controller;
         private UIElement? _focusElement;
         private IThemeResourceProvider? _resourceProvider;
-        private float baseLineWidth = 1.0f;
+        private float _baseLineWidth = 1.0f;
         private bool isShown, isInitializingElements;
         private long _updateFlags = Booleans.TrueLong;
         #endregion
@@ -97,7 +97,7 @@ namespace ConcreteUI.Window
         protected D2D1ColorF _clearDCColor, _windowBaseColor;
         protected RectF _minRect, _maxRect, _closeRect, _pageRect, _titleBarRect;
         protected BitVector64 _titleBarButtonStatus, _titleBarButtonChangedStatus;
-        protected float _drawingOffsetX, _drawingOffsetY, _drawingBorderWidth;
+        protected float _drawingOffsetX, _drawingOffsetY, _borderWidthInPoints;
         #endregion
 
         #region Properties
@@ -225,7 +225,7 @@ namespace ConcreteUI.Window
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RenderingController? GetRenderingController() => _controller;
 
-        public virtual void RenderElementBackground(UIElement element, D2D1DeviceContext context)
+        public virtual void RenderElementBackground(UIElement element, in RegionalRenderingContext context)
             => context.Clear(_windowBaseColor);
 
         void IRenderingControl.Render(RenderingFlags flags)
@@ -243,7 +243,9 @@ namespace ConcreteUI.Window
 
         public IThemeResourceProvider? GetThemeResourceProvider() => InterlockedHelper.Read(ref _resourceProvider);
 
-        public float GetBaseLineWidth() => baseLineWidth;
+        public float GetPointsPerPixel() => _pointsPerPixel;
+
+        public float GetBaseLineWidth() => _baseLineWidth;
         #endregion
 
         #region Abstract Methods
@@ -341,8 +343,7 @@ namespace ConcreteUI.Window
         {
             if (_windowMaterial == WindowMaterial.Integrated)
             {
-                SizeF size = ClientSize;
-                _pageRect = GraphicsUtils.AdjustRectangleF(RectF.FromXYWH(0, 0, size.Width, size.Height));
+                _pageRect = RenderingHelper.CeilingInPixel(RectF.FromXYWH(PointF.Empty, ClientSize), _pointsPerPixel);
             }
             else
             {
@@ -350,8 +351,8 @@ namespace ConcreteUI.Window
                 if (handle == IntPtr.Zero)
                     return;
 
-                float windowScaleFactor = _windowScaleFactor;
-                float drawingBorderWidth;
+                float windowScaleFactor = _pixelsPerPoint;
+                float borderWidthInPoints;
                 float drawingOffsetX, drawingOffsetY;
                 if (User32.IsZoomed(handle))
                 {
@@ -363,12 +364,12 @@ namespace ConcreteUI.Window
                     Rect workingArea = screenInfo.WorkingArea;
                     drawingOffsetX = (workingArea.Left - windowRect.Left) * windowScaleFactor;
                     drawingOffsetY = (workingArea.Top - windowRect.Top) * windowScaleFactor;
-                    drawingBorderWidth = _drawingBorderWidth = 0;
+                    borderWidthInPoints = _borderWidthInPoints = 0;
                 }
                 else
                 {
-                    drawingBorderWidth = _borderWidth * ((IRenderer)this).GetBaseLineWidth();
-                    _drawingBorderWidth = drawingBorderWidth;
+                    borderWidthInPoints = _borderWidthInPixels * RenderingHelper.GetDefaultBorderWidth(_pointsPerPixel);
+                    _borderWidthInPoints = borderWidthInPoints;
                     drawingOffsetX = 0;
                     drawingOffsetY = 0;
                 }
@@ -379,18 +380,19 @@ namespace ConcreteUI.Window
                 _maxRect = RectF.FromXYWH(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
                 _minRect = RectF.FromXYWH(x - UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
                 RectF titleBarRect = _titleBarRect = RectF.FromXYWH(drawingOffsetX + 1, drawingOffsetY + 1, Size.Width - 2, 26);
-                _pageRect = GraphicsUtils.AdjustRectangleF(new RectF(drawingOffsetX + drawingBorderWidth, titleBarRect.Bottom + 1,
-                    windowSize.Width - drawingOffsetX - drawingBorderWidth, windowSize.Height - drawingBorderWidth));
+                _pageRect = RenderingHelper.CeilingInPixel(new RectF(drawingOffsetX + borderWidthInPoints, titleBarRect.Bottom + 1,
+                    windowSize.Width - drawingOffsetX - borderWidthInPoints, windowSize.Height - borderWidthInPoints), _pointsPerPixel);
             }
             if (callRecalculatePageLayout && _pageRect.IsValid)
-                RecalculatePageLayout((Rect)_pageRect);
+                RecalculatePageLayout(_pageRect);
         }
 
-        protected virtual void RecalculatePageLayout(in Rect pageRect)
+        protected virtual void RecalculatePageLayout(in RectF pageRect)
         {
+            Rect flooredPageRect = (Rect)pageRect;
             LayoutEngine layoutEngine = RentLayoutEngine();
-            layoutEngine.RecalculateLayout(pageRect, GetRenderingElements());
-            layoutEngine.RecalculateLayout(pageRect, GetOverlayElements());
+            layoutEngine.RecalculateLayout(flooredPageRect, GetRenderingElements());
+            layoutEngine.RecalculateLayout(flooredPageRect, GetOverlayElements());
             ReturnLayoutEngine(layoutEngine);
         }
         #endregion
@@ -415,7 +417,7 @@ namespace ConcreteUI.Window
                 isSizeChanged = force = true;
                 Size size = base.ClientSize;
                 host.Resize(size);
-                RecalculateLayout(ScalingPixelToLogical(size, _windowScaleFactor), true);
+                RecalculateLayout(ScalingPixelToLogical(size, _pixelsPerPoint), true);
             }
             D2D1DeviceContext? deviceContext = host?.GetDeviceContext();
             if (deviceContext is null || deviceContext.IsDisposed)
@@ -439,10 +441,10 @@ namespace ConcreteUI.Window
             }
             if (ConcreteSettings.UseDebugMode)
             {
-                rawCollector.Present(_dpiScaleFactor);
+                rawCollector.Present(_pointsPerPixel);
                 return true;
             }
-            return rawCollector.TryPresent(_dpiScaleFactor);
+            return rawCollector.TryPresent(_pointsPerPixel);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -455,16 +457,16 @@ namespace ConcreteUI.Window
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual void RenderPage(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in RectF pageRect, bool force)
         {
-            deviceContext.PushAxisAlignedClip(pageRect, D2D1AntialiasMode.Aliased);
+            using RenderingClipToken token = new RenderingClipToken(deviceContext, pageRect, D2D1AntialiasMode.Aliased);
             if (force)
             {
                 collector.UsePresentAllModeOnce();
                 RenderPageBackground(deviceContext, collector, pageRect);
                 RenderOnceContent(deviceContext, collector, pageRect);
             }
-            UIElementHelper.RenderElements(collector, GetRenderingElements(), ignoreNeedRefresh: force);
-            UIElementHelper.RenderElements(collector, GetOverlayElements(), ignoreNeedRefresh: force || collector.HasAnyDirtyArea());
-            deviceContext.PopAxisAlignedClip();
+            float pointPerPixel = _pointsPerPixel;
+            UIElementHelper.RenderElements(deviceContext, collector, pointPerPixel, GetRenderingElements(), ignoreNeedRefresh: force);
+            UIElementHelper.RenderElements(deviceContext, collector, pointPerPixel, GetOverlayElements(), ignoreNeedRefresh: force || collector.HasAnyDirtyArea());
         }
 
         protected virtual void ClearDCForTitle(D2D1DeviceContext deviceContext)
@@ -484,7 +486,7 @@ namespace ConcreteUI.Window
             D2D1Brush[] brushes = _brushes;
 
             BitVector64 TitleBarButtonChangedStatus = _titleBarButtonChangedStatus;
-            BitVector64 titleBarStates = this.titleBarStates;
+            BitVector64 titleBarStates = this._titleBarStates;
             _titleBarButtonChangedStatus.Reset();
             #region 繪製標題
             if (force)
@@ -831,7 +833,7 @@ namespace ConcreteUI.Window
         {
             if (!items.HasAnyItem())
                 return;
-            
+
             ContextMenu contextMenu = new ContextMenu(this, items);
             ChangeOverlayElement(contextMenu)?.Dispose();
             RectF pageRect = _pageRect;

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -156,56 +155,49 @@ namespace ConcreteUI.Controls
             return false;
         }
 
-        public override void Render(DirtyAreaCollector collector) => Render(collector, markDirty: false);
+        public override void Render(in RegionalRenderingContext context) => Render(in context, markDirty: false);
 
-        protected override bool RenderCore(DirtyAreaCollector collector)
+        protected override bool RenderCore(in RegionalRenderingContext context)
         {
             RedrawType redrawType = GetRedrawTypeAndReset();
-            if (collector.IsEmptyInstance) //Force redraw
+            if (!context.HasDirtyCollector) //Force redraw
                 redrawType = RedrawType.RedrawAllContent;
             else if (redrawType == RedrawType.NoRedraw)
                 return true;
-            D2D1DeviceContext context = Renderer.GetDeviceContext();
-            Rectangle bounds = Bounds;
-            float lineWidth = Renderer.GetBaseLineWidth();
+
+            SizeF renderSize = context.Size;
             switch (redrawType)
             {
                 case RedrawType.RedrawAllContent:
-                    RenderObjectUpdateFlags flags = GetAndCleanRenderObjectUpdateFlags();
-                    D2D1Brush textBrush = _brushes[(int)Brush.TextBrush];
-                    context.PushAxisAlignedClip((RectF)bounds, D2D1AntialiasMode.Aliased);
-                    RenderBackground(context);
-                    DrawCheckBox(context, null, (RectF)bounds, lineWidth);
-                    DWriteTextLayout? layout = GetTextLayout(flags);
-                    if (layout is not null)
                     {
-                        PointF textLoc = new PointF(bounds.X + bounds.Height + lineWidth * 2.0f, bounds.Top);
-                        if (bounds.Right > textLoc.X && bounds.Bottom > textLoc.Y)
+                        RenderObjectUpdateFlags flags = GetAndCleanRenderObjectUpdateFlags();
+                        D2D1Brush textBrush = _brushes[(int)Brush.TextBrush];
+                        RenderBackground(context);
+                        DrawCheckBox(context.WithEmptyDirtyCollector());
+                        DWriteTextLayout? layout = GetTextLayout(flags);
+                        if (layout is not null)
                         {
-                            layout.MaxWidth = bounds.Right - textLoc.X;
-                            layout.MaxHeight = bounds.Bottom - textLoc.Y;
-                            context.DrawTextLayout(textLoc, layout, textBrush);
+                            PointF textLocation = new PointF(renderSize.Height + 3.0f, 0);
+                            if (textLocation.X < renderSize.Width && renderSize.Height > 0)
+                            {
+                                layout.MaxWidth = renderSize.Width - textLocation.X;
+                                layout.MaxHeight = renderSize.Height;
+                                context.DrawTextLayout(textLocation, layout, textBrush);
+                            }
+                            DisposeHelper.NullSwapOrDispose(ref _layout, layout);
                         }
-                        DisposeHelper.NullSwapOrDispose(ref _layout, layout);
+                        context.MarkAsDirty();
                     }
-                    context.PopAxisAlignedClip();
-                    collector.MarkAsDirty(bounds);
                     break;
                 case RedrawType.RedrawCheckBox:
-                    DrawCheckBox(context, collector, (RectF)bounds, lineWidth);
+                    DrawCheckBox(context);
                     break;
             }
             return true;
         }
 
-        private void DrawCheckBox(D2D1DeviceContext context, DirtyAreaCollector? collector, in RectF bounds, float lineWidth)
+        private void DrawCheckBox(in RegionalRenderingContext context)
         {
-            if (_strokeStyle is null)
-            {
-                context.AntialiasMode = D2D1AntialiasMode.PerPrimitive;
-                _strokeStyle = context.GetFactory()!.CreateStrokeStyle(new D2D1StrokeStyleProperties() { DashCap = D2D1CapStyle.Round, StartCap = D2D1CapStyle.Round, EndCap = D2D1CapStyle.Round });
-                context.AntialiasMode = D2D1AntialiasMode.Aliased;
-            }
             bool checkState = _checkState;
             D2D1Brush[] brushes = _brushes;
             D2D1Brush? backBrush = null;
@@ -241,27 +233,43 @@ namespace ConcreteUI.Controls
             }
             if (backBrush is null)
                 return;
-            RectF renderingBounds = RectF.FromXYWH(bounds.X, bounds.Y, bounds.Height, bounds.Height);
-            context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
+            RectF renderingBounds = RectF.FromXYWH(PointF.Empty, context.Size);
+            renderingBounds.Width = renderingBounds.Height;
+            using RenderingClipToken token = context.PushPixelAlignedClip(ref renderingBounds, D2D1AntialiasMode.Aliased);
             if (checkState)
             {
                 RenderBackground(context, backBrush);
-                context.Transform = new Matrix3x2() { Translation = new Vector2(renderingBounds.X, renderingBounds.Y), M11 = 1f, M22 = 1f };
-                D2D1StrokeStyle strokeStyle = _strokeStyle;
-                D2D1Resource checkSign = UIElementHelper.GetOrCreateCheckSign(ref _checkSign, context, strokeStyle, renderingBounds);
-                if (checkSign is D2D1GeometryRealization geometryRealization && context is D2D1DeviceContext1 context1)
-                    context1.DrawGeometryRealization(geometryRealization, brushes[(int)Brush.MarkBrush]);
-                else if (checkSign is D2D1Geometry geometry)
-                    context.DrawGeometry(geometry, brushes[(int)Brush.MarkBrush], 2.0f, strokeStyle);
-                context.Transform = Matrix3x2.Identity;
+                D2D1DeviceContext deviceContext = context.DeviceContext;
+                (D2D1AntialiasMode antialiasModeBefore, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
+                try
+                {
+                    D2D1StrokeStyle? strokeStyle = _strokeStyle;
+                    if (strokeStyle is null)
+                    {
+                        _strokeStyle = strokeStyle = deviceContext.GetFactory()!.CreateStrokeStyle(new D2D1StrokeStyleProperties()
+                        {
+                            DashCap = D2D1CapStyle.Round,
+                            StartCap = D2D1CapStyle.Round,
+                            EndCap = D2D1CapStyle.Round
+                        });
+                    }
+                    D2D1Resource checkSign = UIElementHelper.GetOrCreateCheckSign(ref _checkSign, deviceContext, strokeStyle, renderingBounds);
+                    if (checkSign is D2D1GeometryRealization geometryRealization && deviceContext is D2D1DeviceContext1 deviceContext1)
+                        deviceContext1.DrawGeometryRealization(geometryRealization, brushes[(int)Brush.MarkBrush]);
+                    else if (checkSign is D2D1Geometry geometry)
+                        context.DrawGeometry(geometry, brushes[(int)Brush.MarkBrush], 2.0f, strokeStyle);
+                }
+                finally
+                {
+                    deviceContext.AntialiasMode = antialiasModeBefore;
+                }
             }
             else
             {
                 RenderBackground(context);
-                context.DrawRectangle(GraphicsUtils.AdjustRectangleFAsBorderBounds(renderingBounds, lineWidth), backBrush, lineWidth);
+                context.DrawBorder(renderingBounds, backBrush);
             }
-            context.PopAxisAlignedClip();
-            collector?.MarkAsDirty(renderingBounds);
+            context.MarkAsDirty(renderingBounds);
         }
 
         public void OnMouseMove(in MouseNotifyEventArgs args)

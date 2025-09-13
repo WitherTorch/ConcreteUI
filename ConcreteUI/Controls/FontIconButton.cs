@@ -1,8 +1,8 @@
 ﻿using System;
+using System.Drawing;
 using System.Threading;
 
 using ConcreteUI.Graphics;
-using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
@@ -34,9 +34,8 @@ namespace ConcreteUI.Controls
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
             => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
 
-        protected override bool RenderCore(DirtyAreaCollector collector)
+        protected override bool RenderCore(in RegionalRenderingContext context)
         {
-            D2D1DeviceContext context = Renderer.GetDeviceContext();
             RenderBackground(context);
             FontIcon? icon = Interlocked.Exchange(ref _icon, null);
             if (icon is null)
@@ -56,7 +55,7 @@ namespace ConcreteUI.Controls
                 default:
                     return true;
             }
-            icon.Render(context, Bounds, brush);
+            icon.Render(context, new RectangleF(PointF.Empty, context.Size), brush);
             DisposeHelper.NullSwapOrDispose(ref _icon, icon);
             return true;
         }

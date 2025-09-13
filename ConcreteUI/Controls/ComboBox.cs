@@ -122,12 +122,9 @@ namespace ConcreteUI.Controls
             return false;
         }
 
-        protected override bool RenderCore(DirtyAreaCollector collector)
+        protected override bool RenderCore(in RegionalRenderingContext context)
         {
             DWriteTextLayout? layout = GetTextLayout(GetAndCleanRenderObjectUpdateFlags());
-            D2D1DeviceContext context = Renderer.GetDeviceContext();
-            float lineWidth = Renderer.GetBaseLineWidth();
-            Rect bounds = Bounds;
             D2D1Brush[] brushes = _brushes;
             D2D1Brush backBrush;
             if (Enabled)
@@ -135,39 +132,36 @@ namespace ConcreteUI.Controls
             else
                 backBrush = brushes[(int)Brush.BackDisabledBrush];
             RenderBackground(context, backBrush);
-            context.DrawRectangle(GraphicsUtils.AdjustRectangleFAsBorderBounds((RectF)bounds, lineWidth), brushes[(int)Brush.BorderBrush], lineWidth);
+            SizeF renderSize = context.Size;
+            float borderWidth = context.DefaultBorderWidth;
+            float buttonWidth = renderSize.Height - borderWidth * 2.0f;
+            RectF buttonRect = RectF.FromXYWH(renderSize.Width - renderSize.Height, borderWidth, buttonWidth, buttonWidth);
             if (layout is not null)
             {
-                float xOffset = lineWidth + 2;
-                float boxLeft = bounds.X + xOffset;
-                float boxTop = bounds.Y;
-                float boxRight = bounds.Right - xOffset - bounds.Height;
-                float boxBottom = bounds.Bottom;
-                RectF layoutRect = new RectF(boxLeft, boxTop, boxRight, boxBottom);
+                float xOffset = borderWidth + 2;
+                RectF layoutRect = new RectF(xOffset, 0, renderSize.Width - xOffset, renderSize.Height);
                 if (layoutRect.IsValid)
                 {
                     layout.MaxHeight = layoutRect.Height;
                     layout.MaxWidth = layoutRect.Width;
-                    context.PushAxisAlignedClip(layoutRect, D2D1AntialiasMode.Aliased);
+                    using RenderingClipToken token = context.PushAxisAlignedClip(layoutRect, D2D1AntialiasMode.Aliased);
                     context.DrawTextLayout(layoutRect.Location, layout, brushes[(int)Brush.TextBrush], D2D1DrawTextOptions.Clip);
-                    context.PopAxisAlignedClip();
                 }
                 DisposeHelper.NullSwapOrDispose(ref _layout, layout);
             }
-
-            RectF buttonRect = new RectF(0, bounds.Top + lineWidth, bounds.Right - lineWidth, bounds.Bottom - lineWidth);
-            buttonRect.Left = buttonRect.Right - buttonRect.Height;
-            context.PushAxisAlignedClip(buttonRect, D2D1AntialiasMode.Aliased);
-            RenderBackground(context, backBrush);
-            D2D1Brush buttonBrush = _state switch
+            using (RenderingClipToken token = context.PushAxisAlignedClip(buttonRect, D2D1AntialiasMode.Aliased))
             {
-                ButtonTriState.None => brushes[(int)Brush.DropdownButtonBrush],
-                ButtonTriState.Hovered => brushes[(int)Brush.DropdownButtonHoveredBrush],
-                ButtonTriState.Pressed => brushes[(int)Brush.DropdownButtonPressedBrush],
-                _ => throw new InvalidOperationException(),
-            };
-            FontIconResources.Instance.DrawDropDownButton(context, (RectangleF)buttonRect, buttonBrush);
-            context.PopAxisAlignedClip();
+                RenderBackground(context, backBrush);
+                D2D1Brush buttonBrush = _state switch
+                {
+                    ButtonTriState.None => brushes[(int)Brush.DropdownButtonBrush],
+                    ButtonTriState.Hovered => brushes[(int)Brush.DropdownButtonHoveredBrush],
+                    ButtonTriState.Pressed => brushes[(int)Brush.DropdownButtonPressedBrush],
+                    _ => throw new InvalidOperationException(),
+                };
+                FontIconResources.Instance.DrawDropDownButton(context, (RectangleF)buttonRect, buttonBrush);
+            }
+            context.DrawBorder(brushes[(int)Brush.BorderBrush]);
             return true;
         }
 

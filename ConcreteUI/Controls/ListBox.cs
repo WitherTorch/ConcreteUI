@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
 using ConcreteUI.Graphics;
+using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.Direct2D.Geometry;
@@ -57,8 +57,8 @@ namespace ConcreteUI.Controls
         private ListBoxMode _chooseMode;
         private ButtonTriState _buttonState;
         private long _recalcFormat;
-        private float _fontSize;
-        private int _itemHeight, _selectedIndex;
+        private float _fontSize, _itemHeight;
+        private int _selectedIndex;
 
         public ListBox(IRenderer renderer) : base(renderer, "app.listBox")
         {
@@ -138,7 +138,8 @@ namespace ConcreteUI.Controls
             Interlocked.Exchange(ref _recalcFormat, Booleans.TrueLong);
             using DWriteTextFormat textFormat = SharedResources.DWriteFactory.CreateTextFormat(_fontName, _fontSize);
             textFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
-            Interlocked.Exchange(ref _itemHeight, MathI.Ceiling(GraphicsUtils.MeasureTextHeight("Ty", textFormat)) + 2);
+            Interlocked.Exchange(ref _itemHeight,
+                RenderingHelper.CeilingInPixel(GraphicsUtils.MeasureTextHeight("Ty", textFormat) + 2, Renderer.GetPointsPerPixel()));
             DisposeHelper.SwapDisposeInterlocked(ref _checkSign);
             RecalculateHeight();
             Update();
@@ -172,26 +173,35 @@ namespace ConcreteUI.Controls
             return format is null || format.IsDisposed;
         }
 
-        protected override bool RenderContent(DirtyAreaCollector collector)
+        protected override bool RenderContent(in RegionalRenderingContext context, D2D1Brush backBrush)
         {
-            D2D1DeviceContext context = Renderer.GetDeviceContext();
+            if (context.HasDirtyCollector)
+            {
+                RenderBackground(context, backBrush);
+                context.MarkAsDirty();
+            }
+
             D2D1Brush[] brushes = _brushes;
             DWriteTextFormat? format = Interlocked.Exchange(ref _format, null);
             if (CheckFormatIsNotAvailable(format))
                 format = BuildTextFormat();
+            SizeF renderSize = context.Size;
             ListBoxMode mode = Mode;
-            Rect bounds = ContentBounds;
-            float lineWidth = Renderer.GetBaseLineWidth();
-            float doubledLineWidth = 2.0f * lineWidth;
-            int itemHeight = _itemHeight;
+            float itemHeight = _itemHeight;
             int currentTop = ViewportPoint.Y;
-            int startIndex = currentTop / itemHeight;
-            int yOffset = startIndex * itemHeight - currentTop;
-            int pointY = Location.Y + yOffset;
-            int endIndex = MathHelper.CeilDiv(currentTop + Size.Height, itemHeight);
-            float xOffset = bounds.X + doubledLineWidth;
-            if (mode != ListBoxMode.None)
-                xOffset += itemHeight + doubledLineWidth;
+            int startIndex = (int)(currentTop / itemHeight);
+            int endIndex = MathI.Ceiling((currentTop + renderSize.Height) / itemHeight);
+            float pointsPerPixel = context.PointsPerPixel;
+            float borderWidth = context.DefaultBorderWidth;
+
+            float itemLeftEdge = borderWidth + 2;
+            float textLeftEdge = mode == ListBoxMode.None ? itemLeftEdge : itemLeftEdge * 2 + itemHeight;
+            float itemTopEdge = startIndex * itemHeight - currentTop + borderWidth + 2;
+            float itemRightEdge = renderSize.Width - borderWidth;
+            itemLeftEdge = RenderingHelper.RoundInPixel(itemLeftEdge, pointsPerPixel);
+            textLeftEdge = RenderingHelper.RoundInPixel(textLeftEdge, pointsPerPixel) - itemLeftEdge;
+            itemTopEdge = RenderingHelper.RoundInPixel(itemTopEdge, pointsPerPixel);
+            // itemRightEdge 無須做 round 操作，因為 renderSize.Width 與 borderWidth 均已對齊 pixel
 
             BitList stateVectorList = _stateVectorList;
             D2D1Brush textBrush = brushes[(int)Brush.TextBrush];
@@ -199,38 +209,30 @@ namespace ConcreteUI.Controls
             for (int i = startIndex, count = items.Count, selectedIndex = _selectedIndex; i <= endIndex && i < count; i++)
             {
                 string item = items[i];
-                RectF itemBounds = new RectF(bounds.X + doubledLineWidth, pointY, bounds.Right - doubledLineWidth, pointY + itemHeight);
+                RectF itemBounds = new RectF(itemLeftEdge, itemTopEdge, itemRightEdge, itemTopEdge + itemHeight);
+                using RegionalRenderingContext itemContext = context.WithPixelAlignedClip(ref itemBounds, D2D1AntialiasMode.Aliased);
                 switch (mode)
                 {
                     case ListBoxMode.None:
                         if (StringHelper.IsNullOrWhiteSpace(item))
                             break;
-                        itemBounds.X = xOffset;
-                        context.DrawText(item, format, itemBounds, textBrush, D2D1DrawTextOptions.Clip, DWriteMeasuringMode.Natural);
+                        itemContext.DrawText(item, format, RectF.FromXYWH(new PointF(textLeftEdge, 0), itemContext.Size), textBrush, D2D1DrawTextOptions.Clip, DWriteMeasuringMode.Natural);
                         break;
                     case ListBoxMode.Any:
-                        DrawRadioBox(context, itemBounds, stateVectorList[i], selectedIndex == i, doubledLineWidth, lineWidth, itemHeight);
+                        DrawRadioBox(in itemContext, stateVectorList[i], selectedIndex == i);
                         goto case ListBoxMode.None;
                     case ListBoxMode.Some:
-                        DrawCheckBox(context, itemBounds, stateVectorList[i], selectedIndex == i, doubledLineWidth, lineWidth, itemHeight);
+                        DrawCheckBox(in itemContext, stateVectorList[i], selectedIndex == i);
                         goto case ListBoxMode.None;
                 }
-                pointY += itemHeight;
+                itemTopEdge += itemHeight;
             }
-            collector.MarkAsDirty(bounds);
-
             DisposeHelper.NullSwapOrDispose(ref _format, format);
             return true;
         }
 
-        private void DrawCheckBox(in D2D1DeviceContext context, in RectF bounds, bool isChecked, bool isCurrentlyItem, float gap, float lineWidth, float itemHeight)
+        private void DrawCheckBox(in RegionalRenderingContext context, bool isChecked, bool isCurrentlyItem)
         {
-            if (_strokeStyle == null)
-            {
-                context.AntialiasMode = D2D1AntialiasMode.PerPrimitive;
-                _strokeStyle = context.GetFactory()!.CreateStrokeStyle(new D2D1StrokeStyleProperties() { DashCap = D2D1CapStyle.Round, StartCap = D2D1CapStyle.Round, EndCap = D2D1CapStyle.Round });
-                context.AntialiasMode = D2D1AntialiasMode.Aliased;
-            }
             D2D1Brush[] brushes = _checkBoxBrushes;
             D2D1Brush? backBrush = null;
             if (isChecked)
@@ -279,30 +281,46 @@ namespace ConcreteUI.Controls
             }
             if (backBrush is null)
                 return;
-            RectF renderingBounds = RectF.FromXYWH(bounds.X + gap, bounds.Y + gap, itemHeight - gap, itemHeight - gap);
-            context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
-            RenderBackground(context);
+            float borderWidth = context.DefaultBorderWidth;
+            float buttonWidth = context.Size.Height - borderWidth * 2;
+            RectF renderingBounds = RectF.FromXYWH(borderWidth, borderWidth, buttonWidth, buttonWidth);
+            using RenderingClipToken token = context.PushPixelAlignedClip(ref renderingBounds, D2D1AntialiasMode.Aliased);
             if (isChecked)
             {
                 RenderBackground(context, backBrush);
-                context.Transform = new Matrix3x2() { Translation = new Vector2(renderingBounds.X, renderingBounds.Y), M11 = 1f, M22 = 1f };
-                D2D1StrokeStyle strokeStyle = _strokeStyle;
-                D2D1Resource checkSign = UIElementHelper.GetOrCreateCheckSign(ref _checkSign, context, strokeStyle, renderingBounds);
-                if (checkSign is D2D1GeometryRealization geometryRealization && context is D2D1DeviceContext1 context1)
-                    context1.DrawGeometryRealization(geometryRealization, brushes[(int)CheckBoxBrush.MarkBrush]);
-                else if (checkSign is D2D1Geometry geometry)
-                    context.DrawGeometry(geometry, brushes[(int)CheckBoxBrush.MarkBrush], 2.0f, strokeStyle);
-                context.Transform = Matrix3x2.Identity;
+                D2D1DeviceContext deviceContext = context.DeviceContext;
+                D2D1StrokeStyle? strokeStyle = _strokeStyle;
+                (D2D1AntialiasMode antialiasModeBefore, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
+                try
+                {
+                    if (strokeStyle is null)
+                    {
+                        _strokeStyle = strokeStyle = deviceContext.GetFactory()!.CreateStrokeStyle(new D2D1StrokeStyleProperties()
+                        {
+                            DashCap = D2D1CapStyle.Round,
+                            StartCap = D2D1CapStyle.Round,
+                            EndCap = D2D1CapStyle.Round
+                        });
+                    }
+                    D2D1Resource checkSign = UIElementHelper.GetOrCreateCheckSign(ref _checkSign, deviceContext, strokeStyle, renderingBounds);
+                    if (checkSign is D2D1GeometryRealization geometryRealization && deviceContext is D2D1DeviceContext1 deviceContext1)
+                        deviceContext1.DrawGeometryRealization(geometryRealization, brushes[(int)CheckBoxBrush.MarkBrush]);
+                    else if (checkSign is D2D1Geometry geometry)
+                        context.DrawGeometry(geometry, brushes[(int)CheckBoxBrush.MarkBrush], 2.0f, strokeStyle);
+                }
+                finally
+                {
+                    deviceContext.AntialiasMode = antialiasModeBefore;
+                }
             }
             else
             {
                 RenderBackground(context);
-                context.DrawRectangle(GraphicsUtils.AdjustRectangleFAsBorderBounds(renderingBounds, lineWidth), backBrush, lineWidth);
+                context.DrawBorder(renderingBounds, backBrush);
             }
-            context.PopAxisAlignedClip();
         }
 
-        private void DrawRadioBox(in D2D1DeviceContext context, in RectF bounds, bool isChecked, bool isCurrentlyItem, float gap, float lineWidth, float itemHeight)
+        private void DrawRadioBox(in RegionalRenderingContext context, bool isChecked, bool isCurrentlyItem)
         {
             D2D1Brush[] brushes = _checkBoxBrushes;
             D2D1Brush? backBrush = null;
@@ -327,26 +345,32 @@ namespace ConcreteUI.Controls
             }
             if (backBrush is null)
                 return;
-            RectF renderingBounds = RectF.FromXYWH(bounds.X + gap, bounds.Y + gap, itemHeight - gap * 2, itemHeight - gap * 2);
-            context.AntialiasMode = D2D1AntialiasMode.PerPrimitive;
-            context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
-            context.Transform = new Matrix3x2() { Translation = new Vector2(renderingBounds.X, renderingBounds.Y), M11 = 1, M22 = 1 };
-            PointF centerPoint = new PointF(renderingBounds.Width * 0.5f, renderingBounds.Height * 0.5f);
-            float width = centerPoint.X - lineWidth * 2.0f;
-            context.DrawEllipse(new D2D1Ellipse(centerPoint, width, width), backBrush, lineWidth * 2.0f);
-            if (isChecked)
+            RectF renderingBounds = RectF.FromXYWH(PointF.Empty, context.Size);
+            renderingBounds.Width = renderingBounds.Height;
+            D2D1DeviceContext deviceContext = context.DeviceContext;
+            (D2D1AntialiasMode andtialiasModeBefore, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
+            try
             {
-                width -= lineWidth * 2.0f;
-                context.FillEllipse(new D2D1Ellipse(centerPoint, width, width), backBrush);
+                using RenderingClipToken token = context.PushPixelAlignedClip(ref renderingBounds, D2D1AntialiasMode.Aliased);
+                PointF centerPoint = new PointF(renderingBounds.Width * 0.5f, renderingBounds.Height * 0.5f);
+                float borderWidth = context.DefaultBorderWidth;
+                float width = centerPoint.X - borderWidth * 2.0f;
+                context.DrawEllipse(new D2D1Ellipse(centerPoint, width, width), backBrush, borderWidth * 2.0f);
+                if (isChecked)
+                {
+                    width -= borderWidth * 2.0f;
+                    context.FillEllipse(new D2D1Ellipse(centerPoint, width, width), backBrush);
+                }
             }
-            context.Transform = Matrix3x2.Identity;
-            context.AntialiasMode = D2D1AntialiasMode.Aliased;
-            context.PopAxisAlignedClip();
+            finally
+            {
+                deviceContext.AntialiasMode = andtialiasModeBefore;
+            }
         }
 
         private void RecalculateHeight()
         {
-            SurfaceSize = new Size(0, Items.Count * _itemHeight);
+            SurfaceSize = new Size(0, MathI.Ceiling(Items.Count * _itemHeight) + UIConstants.ElementMargin);
             Update();
         }
 
@@ -458,9 +482,9 @@ namespace ConcreteUI.Controls
             SequenceHelper.Clear(_brushes);
         }
 
-        protected override void OnScrollBarUpButtonClicked() => Scrolling(-_itemHeight);
+        protected override void OnScrollBarUpButtonClicked() => Scrolling(-MathI.Ceiling(_itemHeight));
 
-        protected override void OnScrollBarDownButtonClicked() => Scrolling(_itemHeight);
+        protected override void OnScrollBarDownButtonClicked() => Scrolling(MathI.Ceiling(_itemHeight));
 
         [Inline(InlineBehavior.Remove)]
         private bool GetCheckStateCore(int index) => _stateVectorList[index];

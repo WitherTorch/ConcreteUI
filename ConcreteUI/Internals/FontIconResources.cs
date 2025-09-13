@@ -3,11 +3,9 @@ using System.Collections.Concurrent;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
-using ConcreteUI.Graphics.Native.Direct2D;
+using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Utils;
-
-using InlineMethod;
 
 namespace ConcreteUI.Internals
 {
@@ -115,32 +113,32 @@ namespace ConcreteUI.Internals
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderMaximizeButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+        public void RenderMaximizeButton(IRenderingContext context, in RectangleF rect, D2D1Brush brush)
             => _maxIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderRestoreButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+        public void RenderRestoreButton(IRenderingContext context, in RectangleF rect, D2D1Brush brush)
             => _restoreIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderMinimizeButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+        public void RenderMinimizeButton(IRenderingContext context, in RectangleF rect, D2D1Brush brush)
             => _minIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderCloseButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+        public void RenderCloseButton(IRenderingContext context, in RectangleF rect, D2D1Brush brush)
             => _closeIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawDropDownButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+        public void DrawDropDownButton(in RegionalRenderingContext context, in RectangleF rect, D2D1Brush brush)
             => _comboBoxDropdownIconDict.GetOrAdd(rect.Height - UIConstants.ElementMargin,
                 GetComboBoxDropDownIcon)?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawScrollBarUpButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+        public void DrawScrollBarUpButton(in RegionalRenderingContext context, in RectangleF rect, D2D1Brush brush)
             => _scrollUpIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawScrollBarDownButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+        public void DrawScrollBarDownButton(in RegionalRenderingContext context, in RectangleF rect, D2D1Brush brush)
             => _scrollDownIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
+using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 
 namespace ConcreteUI.Controls
@@ -21,6 +22,6 @@ namespace ConcreteUI.Controls
 
         UIElement? LastChild { get; }
 
-        void RenderChildBackground(UIElement child, D2D1DeviceContext context);
+        void RenderChildBackground(UIElement child, in RegionalRenderingContext context);
     }
 }

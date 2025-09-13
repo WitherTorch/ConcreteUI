@@ -26,9 +26,9 @@ namespace ConcreteUI.Window
         private readonly List<WeakReference<CoreWindow>> _childrenReferenceList = new List<WeakReference<CoreWindow>>();
         private readonly CoreWindow? _parent;
         private uint _dpi = 96;
-        private float _dpiScaleFactor = 1.0f; // 螢幕DPI / 96
-        private float _windowScaleFactor = 1.0f; //  96 / 螢幕DPI
-        private BitVector64 titleBarStates = ulong.MaxValue;
+        private float _pointsPerPixel = 1.0f; // 螢幕DPI / 96
+        private float _pixelsPerPoint = 1.0f; //  96 / 螢幕DPI
+        private BitVector64 _titleBarStates = ulong.MaxValue;
         #endregion
 
         #region Events
@@ -71,18 +71,18 @@ namespace ConcreteUI.Window
         public CoreWindow? Parent => _parent;
         public IThemeContext? CurrentTheme => _resourceProvider?.ThemeContext;
         public uint Dpi => _dpi;
-        public float DpiScaleFactor => _dpiScaleFactor;
-        public float WindowScaleFactor => _windowScaleFactor;
+        public float DpiScaleFactor => _pointsPerPixel;
+        public float WindowScaleFactor => _pixelsPerPoint;
 
         public new RectangleF Bounds
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (RectangleF)ScalingPixelToLogical((Rect)base.Bounds, _windowScaleFactor);
+            get => (RectangleF)ScalingPixelToLogical((Rect)base.Bounds, _pixelsPerPoint);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => base.Bounds = (Rectangle)ScalingLogicalToPixel((RectF)value, _dpiScaleFactor);
+            set => base.Bounds = (Rectangle)ScalingLogicalToPixel((RectF)value, _pointsPerPixel);
         }
 
-        public new RectangleF ClientBounds => (RectangleF)ScalingPixelToLogical((Rect)base.ClientBounds, _windowScaleFactor);
+        public new RectangleF ClientBounds => (RectangleF)ScalingPixelToLogical((Rect)base.ClientBounds, _pixelsPerPoint);
         public new PointF Location => Bounds.Location;
         public new SizeF Size => Bounds.Size;
         public new SizeF ClientSize => ClientBounds.Size;
@@ -144,10 +144,10 @@ namespace ConcreteUI.Window
                 }
                 else
                 {
-                    bool state = titleBarStates[2];
+                    bool state = _titleBarStates[2];
                     if (state == value)
                         return;
-                    titleBarStates[2] = value;
+                    _titleBarStates[2] = value;
 
                     Update();
                 }
@@ -191,10 +191,10 @@ namespace ConcreteUI.Window
                 }
                 else
                 {
-                    bool state = titleBarStates[1];
+                    bool state = _titleBarStates[1];
                     if (state == value)
                         return;
-                    titleBarStates[1] = value;
+                    _titleBarStates[1] = value;
 
                     Update();
                 }
@@ -238,10 +238,10 @@ namespace ConcreteUI.Window
                 }
                 else
                 {
-                    bool state = titleBarStates[0];
+                    bool state = _titleBarStates[0];
                     if (state == value)
                         return;
-                    titleBarStates[0] = value;
+                    _titleBarStates[0] = value;
 
                     Update();
                 }

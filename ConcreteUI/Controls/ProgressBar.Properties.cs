@@ -6,16 +6,16 @@ namespace ConcreteUI.Controls
 {
     partial class ProgressBar
     {
-        public float Value
+        public double Value
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _value;
             set
             {
-                float oldValue = _value;
+                double oldValue = _value;
                 if (oldValue == value)
                     return;
-                value = MathHelper.Clamp(value, 0.0f, _maximium);
+                value = MathHelper.Clamp(value, 0.0, _maximium);
                 if (oldValue == value)
                     return;
                 _value = value;
@@ -23,13 +23,13 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public float Maximium
+        public double Maximium
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _maximium;
             set
             {
-                if (_maximium == value || value <= 0)
+                if (_maximium == value || value <= 0.0)
                     return;
                 _maximium = value;
                 Update();

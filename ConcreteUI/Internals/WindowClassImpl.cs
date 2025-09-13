@@ -16,8 +16,9 @@ using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Internals
 {
-    internal sealed class WindowClassImpl
+    internal sealed partial class WindowClassImpl
     {
+
         private static readonly LazyTiny<WindowClassImpl> _instanceLazy =
             new LazyTiny<WindowClassImpl>(CreateInstance, LazyThreadSafetyMode.ExecutionAndPublication);
 
@@ -47,12 +48,10 @@ namespace ConcreteUI.Internals
                     cbSize = UnsafeHelper.SizeOf<WindowClassEx>(),
                     style = ClassStyles.ClassDC,
                     hInstance = hInstance,
+                    lpfnWndProc = GetWndProcPointer(),
                     lpszClassName = className,
                     hbrBackground = Gdi32.CreateSolidBrush(0x00000000)
                 };
-                IL.PushInRef(in clazz);
-                IL.Emit.Ldftn(new MethodRef(typeof(WindowClassImpl), nameof(ProcessWindowMessage)));
-                IL.Emit.Stfld(new FieldRef(typeof(WindowClassEx), nameof(WindowClassEx.lpfnWndProc)));
 
                 ushort atom = User32.RegisterClassExW(&clazz);
                 if (atom == 0)
@@ -61,8 +60,10 @@ namespace ConcreteUI.Internals
             }
         }
 
+        private static unsafe partial delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint> GetWndProcPointer();
+
 #if NET8_0_OR_GREATER
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
 #endif
         private static unsafe nint ProcessWindowMessage(IntPtr hwnd, uint message, nint wParam, nint lParam)
         {

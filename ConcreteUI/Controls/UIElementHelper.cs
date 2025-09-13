@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -40,60 +41,103 @@ namespace ConcreteUI.Controls
         [Inline(InlineBehavior.Keep, export: true)]
         public static void ApplyTheme(IThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes, [InlineParameter] int length)
         {
+            if (length <= 0)
+                return;
+            ref D2D1Brush? brushRef = ref brushes[0];
             for (int i = 0; i < length; i++)
-                ApplyTheme(provider, ref brushes[i], nodes[i]);
+                ApplyTheme(provider, ref UnsafeHelper.AddTypedOffset(ref brushRef, i), nodes[i]);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
         public static void ApplyTheme(IThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes, string nodePrefix, [InlineParameter] int length)
         {
+            if (length <= 0)
+                return;
+            ref D2D1Brush? brushRef = ref brushes[0];
             for (int i = 0; i < length; i++)
-                ApplyTheme(provider, ref brushes[i], nodePrefix + "." + nodes[i]);
+                ApplyTheme(provider, ref UnsafeHelper.AddTypedOffset(ref brushRef, i), nodePrefix + "." + nodes[i]);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
         public static void ApplyTheme(IThemeResourceProvider provider, ref D2D1Brush? brush, string node)
             => DisposeHelper.SwapDispose(ref brush, provider.TryGetBrush(node, out D2D1Brush? result) ? result.Clone() : null);
 
-        public static void ApplyTheme(IThemeResourceProvider provider, IEnumerable<UIElement> elements)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void ApplyTheme<TEnumerable>(IThemeResourceProvider provider, TEnumerable elements)
+            where TEnumerable : IEnumerable<UIElement>
         {
-            switch (elements)
+            UIElement[] array;
+            int length;
+
+            if (typeof(TEnumerable) == typeof(UIElement[]) || elements is UIElement[])
+                goto Array;
+            if (typeof(TEnumerable) == typeof(UnwrappableList<UIElement>) || elements is UnwrappableList<UIElement>)
+                goto UnwrappableList;
+            if (typeof(TEnumerable) == typeof(ObservableList<UIElement>) || elements is ObservableList<UIElement>)
+                goto ObservableList;
+            if (typeof(TEnumerable) == typeof(IList<UIElement>) || elements is IList<UIElement>)
+                goto List;
+
+            goto Fallback;
+
+        Array:
+            array = UnsafeHelper.As<TEnumerable, UIElement[]>(elements);
+            length = array.Length;
+            goto ArrayLike;
+
+        UnwrappableList:
+            UnwrappableList<UIElement> unwrappableList = UnsafeHelper.As<TEnumerable, UnwrappableList<UIElement>>(elements);
+            array = unwrappableList.Unwrap();
+            length = unwrappableList.Count;
+            goto ArrayLike;
+
+        ObservableList:
+            IList<UIElement> underlyingList = UnsafeHelper.As<TEnumerable, ObservableList<UIElement>>(elements).GetUnderlyingList();
+            elements = UnsafeHelper.As<IList<UIElement>, TEnumerable>(underlyingList);
+            if (underlyingList is UIElement[])
+                goto Array;
+            if (underlyingList is UnwrappableList<UIElement>)
+                goto UnwrappableList;
+            if (underlyingList is ObservableList<UIElement>)
+                goto ObservableList;
+            goto List;
+
+        ArrayLike:
+            if (length <= 0)
+                return;
+            ref UIElement elementRef = ref array[0];
+            for (nint i = length - 1; i >= 0; i--)
             {
-                case UIElement[] _array:
-                    ApplyTheme(provider, _array);
-                    break;
-                case UnwrappableList<UIElement> _list:
-                    ApplyTheme(provider, _list);
-                    break;
-                case ObservableList<UIElement> _list:
-                    ApplyTheme(provider, _list.GetUnderlyingList());
-                    break;
-                default:
-                    ApplyThemeCore(provider, elements);
-                    break;
+                UIElement element = UnsafeHelper.AddTypedOffset(ref elementRef, i);
+                if (element is null)
+                    continue;
+                element.ApplyTheme(provider);
             }
-        }
+            return;
 
-        [Inline(InlineBehavior.Keep, export: true)]
-        public static void ApplyTheme(IThemeResourceProvider provider, UIElement[] elements)
-            => ApplyTheme(provider, elements, elements.Length);
+        List:
+            IList<UIElement> list = UnsafeHelper.As<TEnumerable, IList<UIElement>>(elements);
+            length = list.Count;
+            if (length <= 0)
+                return;
+            for (int i = length - 1; i >= 0; i--)
+            {
+                UIElement element = list[i];
+                if (element is null)
+                    continue;
+                element.ApplyTheme(provider);
+            }
+            return;
 
-        [Inline(InlineBehavior.Keep, export: true)]
-        public static void ApplyTheme(IThemeResourceProvider provider, UnwrappableList<UIElement> elements)
-            => ApplyTheme(provider, elements.Unwrap(), elements.Count);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ApplyTheme(IThemeResourceProvider provider, UIElement[] elements, int length)
-        {
-            for (int i = 0; i < length; i++)
-                elements[i]?.ApplyTheme(provider);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void ApplyThemeCore(IThemeResourceProvider provider, IEnumerable<UIElement> elements)
-        {
-            foreach (UIElement element in elements)
-                element?.ApplyTheme(provider);
+        Fallback:
+            using IEnumerator<UIElement> enumerator = elements.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                UIElement element = enumerator.Current;
+                if (element is null)
+                    continue;
+                element.ApplyTheme(provider);
+            }
         }
 
         public static D2D1Resource GetOrCreateCheckSign(ref D2D1Resource? checkSign, D2D1DeviceContext context, D2D1StrokeStyle strokeStyle, in RectF renderingBounds)
@@ -122,74 +166,98 @@ namespace ConcreteUI.Controls
             return checkSign;
         }
 
-        public static void RenderElements(DirtyAreaCollector collector, IEnumerable<UIElement> elements, bool ignoreNeedRefresh)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void RenderElements<TEnumerable>(D2D1DeviceContext context, DirtyAreaCollector collector, float pointPerPixel,
+            TEnumerable elements, bool ignoreNeedRefresh) where TEnumerable : IEnumerable<UIElement>
         {
-            switch (elements)
-            {
-                case UIElement[] _array:
-                    RenderElements(collector, _array, ignoreNeedRefresh);
-                    break;
-                case UnwrappableList<UIElement> _list:
-                    RenderElements(collector, _list, ignoreNeedRefresh);
-                    break;
-                case ObservableList<UIElement> _list:
-                    RenderElements(collector, _list.GetUnderlyingList(), ignoreNeedRefresh);
-                    break;
-                default:
-                    RenderElementsCore(collector, elements, ignoreNeedRefresh);
-                    break;
-            }
-        }
+            UIElement[] array;
+            int length;
 
-        [Inline(InlineBehavior.Remove)]
-        public static void RenderElementsCore(DirtyAreaCollector collector, IEnumerable<UIElement> elements, bool ignoreNeedRefresh)
-        {
-            IEnumerator<UIElement> enumerator = elements.GetEnumerator();
+            if (typeof(TEnumerable) == typeof(UIElement[]) || elements is UIElement[])
+                goto Array;
+            if (typeof(TEnumerable) == typeof(UnwrappableList<UIElement>) || elements is UnwrappableList<UIElement>)
+                goto UnwrappableList;
+            if (typeof(TEnumerable) == typeof(ObservableList<UIElement>) || elements is ObservableList<UIElement>)
+                goto ObservableList;
+            if (typeof(TEnumerable) == typeof(IList<UIElement>) || elements is IList<UIElement>)
+                goto List;
+
+            goto Fallback;
+
+        Array:
+            array = UnsafeHelper.As<TEnumerable, UIElement[]>(elements);
+            length = array.Length;
+            goto ArrayLike;
+
+        UnwrappableList:
+            UnwrappableList<UIElement> unwrappableList = UnsafeHelper.As<TEnumerable, UnwrappableList<UIElement>>(elements);
+            array = unwrappableList.Unwrap();
+            length = unwrappableList.Count;
+            goto ArrayLike;
+
+        ObservableList:
+            IList<UIElement> underlyingList = UnsafeHelper.As<TEnumerable, ObservableList<UIElement>>(elements).GetUnderlyingList();
+            elements = UnsafeHelper.As<IList<UIElement>, TEnumerable>(underlyingList);
+            if (underlyingList is UIElement[])
+                goto Array;
+            if (underlyingList is UnwrappableList<UIElement>)
+                goto UnwrappableList;
+            if (underlyingList is ObservableList<UIElement>)
+                goto ObservableList;
+            goto List;
+
+        ArrayLike:
+            if (length <= 0)
+                return;
+            ref UIElement elementRef = ref array[0];
+            for (nint i = length - 1; i >= 0; i--)
+            {
+                UIElement element = UnsafeHelper.AddTypedOffset(ref elementRef, i);
+                if (element is null)
+                    continue;
+                RenderElement(context, collector, pointPerPixel, element, ignoreNeedRefresh);
+            }
+            return;
+
+        List:
+            IList<UIElement> list = UnsafeHelper.As<TEnumerable, IList<UIElement>>(elements);
+            length = list.Count;
+            if (length <= 0)
+                return;
+            for (int i = length - 1; i >= 0; i--)
+            {
+                UIElement element = list[i];
+                if (element is null)
+                    continue;
+                RenderElement(context, collector, pointPerPixel, element, ignoreNeedRefresh);
+            }
+            return;
+
+        Fallback:
+            using IEnumerator<UIElement> enumerator = elements.GetEnumerator();
             while (enumerator.MoveNext())
             {
                 UIElement element = enumerator.Current;
                 if (element is null)
                     continue;
-                RenderElement(collector, element, ignoreNeedRefresh);
-            }
-            enumerator.Dispose();
-        }
-
-        [Inline(InlineBehavior.Keep, export: true)]
-        public static void RenderElements(DirtyAreaCollector collector, UIElement[] elements, bool ignoreNeedRefresh)
-            => RenderElements(collector, elements, elements.Length, ignoreNeedRefresh);
-
-        [Inline(InlineBehavior.Keep, export: true)]
-        public static void RenderElements(DirtyAreaCollector collector, UnwrappableList<UIElement> elements, bool ignoreNeedRefresh)
-            => RenderElements(collector, elements.Unwrap(), elements.Count, ignoreNeedRefresh);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void RenderElements(DirtyAreaCollector collector, UIElement[] elements, int length, bool ignoreNeedRefresh)
-        {
-            for (int i = 0; i < length; i++)
-            {
-                UIElement element = elements[i];
-                if (element is null)
-                    continue;
-                RenderElement(collector, element, ignoreNeedRefresh);
+                RenderElement(context, collector, pointPerPixel, element, ignoreNeedRefresh);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void RenderElement(DirtyAreaCollector collector, UIElement element, bool ignoreNeedRefresh)
+        public static void RenderElement(D2D1DeviceContext context, DirtyAreaCollector collector, float pointPerPixel,
+            UIElement element, bool ignoreNeedRefresh)
         {
-            IReadOnlyCollection<UIElement>? children = (element as IContainerElement)?.Children;
             if (ignoreNeedRefresh || element.NeedRefresh() || collector.IsEmptyInstance)
             {
-                element.Render(collector);
-                if (children is null)
-                    return;
-                RenderElements(DirtyAreaCollector.Empty, children, ignoreNeedRefresh: true);
-                return;
+                using (RegionalRenderingContext renderingContext =
+                    RegionalRenderingContext.Create(context, collector, pointPerPixel, (RectF)element.Bounds, D2D1AntialiasMode.Aliased, out _))
+                    element.Render(renderingContext);
+                collector = DirtyAreaCollector.Empty;
             }
-            if (children is null)
+            if (element is not IContainerElement container)
                 return;
-            RenderElements(collector, children, ignoreNeedRefresh: ignoreNeedRefresh);
+            RenderElements(context, collector, pointPerPixel, container.Children, ignoreNeedRefresh);
         }
     }
 }
