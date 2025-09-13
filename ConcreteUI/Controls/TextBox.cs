@@ -157,24 +157,19 @@ namespace ConcreteUI.Controls
             {
                 _borderBrushIndex = (int)Brush.BorderFocusedBrush;
                 bool enabled = Enabled;
-                _caretState = true;
-                _caretTimer.Change(500, 500);
                 if (_imeEnabled && enabled)
-                {
                     _ime?.Attach(this);
-                }
             }
             else
             {
                 _borderBrushIndex = (int)Brush.BorderBrush;
-                _caretTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 _ime?.Detach(this);
                 _compositionRange.Length = 0;
                 _selectionRange.Length = 0;
                 if (!_multiLine)
                     ViewportPoint = Point.Empty;
             }
-            Update();
+            UpdateCaretIndex(_caretIndex);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -915,6 +910,8 @@ namespace ConcreteUI.Controls
             _caretState = true;
             if (Enabled && _focused)
                 _caretTimer.Change(500, 500);
+            else
+                _caretTimer.Change(Timeout.Infinite, Timeout.Infinite);
             CalculateCurrentViewportPoint();
             Update(updateFlags);
         }
