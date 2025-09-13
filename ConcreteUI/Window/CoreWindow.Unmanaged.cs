@@ -610,22 +610,20 @@ namespace ConcreteUI.Window
             }
 
         Normal:
-            _baseLineWidth = _pixelsPerPoint = _pointsPerPixel = 1.0f;
+            _pixelsPerPoint = 1.0f;
+            _pointsPerPixel = 1.0f;
+            _dpi = 96;
+            goto Tail;
 
         NeedAmplified:
-            float dpiScaleFactor = newDpi / 96.0f;
-            float windowScaleFactor = 96.0f / newDpi;
-            _pointsPerPixel = dpiScaleFactor;
-            _pixelsPerPoint = windowScaleFactor;
-            if (dpiScaleFactor > 1f)
-            {
-                float factor = MathF.Round(dpiScaleFactor - float.Epsilon);
-                _baseLineWidth = windowScaleFactor * factor;
-            }
-            else
-                _baseLineWidth = windowScaleFactor;
-
+            float pointsPerPixel = newDpi / 96.0f;
+            float pixelsPerPoint = 96.0f / newDpi;
+            _pointsPerPixel = pointsPerPixel;
+            _pixelsPerPoint = pixelsPerPoint;
             _dpi = newDpi;
+            goto Tail;
+
+        Tail:
             OnDpiChanged();
         }
 

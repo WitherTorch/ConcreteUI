@@ -85,7 +85,6 @@ namespace ConcreteUI.Window
         private RenderingController? _controller;
         private UIElement? _focusElement;
         private IThemeResourceProvider? _resourceProvider;
-        private float _baseLineWidth = 1.0f;
         private bool isShown, isInitializingElements;
         private long _updateFlags = Booleans.TrueLong;
         #endregion
@@ -244,8 +243,6 @@ namespace ConcreteUI.Window
         public IThemeResourceProvider? GetThemeResourceProvider() => InterlockedHelper.Read(ref _resourceProvider);
 
         public float GetPointsPerPixel() => _pointsPerPixel;
-
-        public float GetBaseLineWidth() => _baseLineWidth;
         #endregion
 
         #region Abstract Methods

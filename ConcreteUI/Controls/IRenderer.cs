@@ -11,8 +11,6 @@ namespace ConcreteUI.Controls
 
         float GetPointsPerPixel();
 
-        float GetBaseLineWidth();
-
         void RenderElementBackground(UIElement element, in RegionalRenderingContext context);
 
         ToolTip? GetToolTip();
