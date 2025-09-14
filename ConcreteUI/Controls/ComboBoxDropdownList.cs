@@ -9,6 +9,7 @@ using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
+using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
@@ -50,7 +51,7 @@ namespace ConcreteUI.Controls
             _selectedIndex = -1;
             LeftVariable = parent.LeftReference;
             RightVariable = parent.RightReference;
-            TopVariable = parent.BottomReference - MathI.Ceiling(RenderingHelper.GetDefaultBorderWidth(window.GetPointsPerPixel()));
+            TopVariable = new DefaultTopVariable(this);
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
@@ -130,16 +131,21 @@ namespace ConcreteUI.Controls
             int selectedIndex = SelectedIndex;
             D2D1Brush[] brushes = _brushes;
             D2D1Brush textBrush;
+            float pointsPerPixel = context.PointsPerPixel;
             float borderWidth = context.DefaultBorderWidth;
             float itemLeft = borderWidth,
-                textLeft = itemLeft + 5 + context.DefaultBorderWidth,
-                itemTop = -offsetY,
-                itemRight = renderSize.Width - borderWidth;
+                textLeft = RenderingHelper.RoundInPixel(borderWidth + 5, pointsPerPixel),
+                itemTop = RenderingHelper.RoundInPixel(-offsetY, pointsPerPixel),
+                itemRight = RenderingHelper.RoundInPixel(renderSize.Width - borderWidth, pointsPerPixel),
+                itemWIdth = itemRight - itemLeft;
             textBrush = brushes[(int)Brush.TextBrush];
+            ref DWriteTextLayout layoutArrayRef = ref layouts[0];
             for (int i = startIndex; i <= endIndex; i++)
             {
                 RectF itemBounds = new RectF(itemLeft, itemTop, itemRight, itemTop + itemHeight);
-                using RenderingClipToken clipToken = context.PushPixelAlignedClip(ref itemBounds, D2D1AntialiasMode.Aliased);
+                using RegionalRenderingContext clipContext = context.WithAxisAlignedClip(itemBounds, D2D1AntialiasMode.Aliased);
+                if (itemBounds.IsEmpty)
+                    break;
 
                 D2D1Brush activeTextBrush;
                 if (i == selectedIndex)
@@ -150,10 +156,10 @@ namespace ConcreteUI.Controls
                 }
                 else
                     activeTextBrush = textBrush;
-                DWriteTextLayout layout = layouts[i];
-                layout.MaxWidth = itemBounds.Width;
-                layout.MaxHeight = itemBounds.Height;
-                context.DrawTextLayout(new PointF(textLeft, itemTop), layout, activeTextBrush, D2D1DrawTextOptions.Clip);
+                DWriteTextLayout layout = UnsafeHelper.AddTypedOffset(ref layoutArrayRef, i);
+                layout.MaxWidth = itemWIdth;
+                layout.MaxHeight = itemHeight;
+                clipContext.DrawTextLayout(new PointF(textLeft, 0), layout, activeTextBrush, D2D1DrawTextOptions.None);
                 itemTop = itemBounds.Bottom;
             }
             DisposeHelper.NullSwapOrDispose(ref _layouts, layouts);
@@ -243,6 +249,24 @@ namespace ConcreteUI.Controls
                 DisposeHelper.DisposeAll(_brushes);
             }
             SequenceHelper.Clear(_brushes);
+        }
+
+        private sealed class DefaultTopVariable : LayoutVariable
+        {
+            private readonly WeakReference<ComboBoxDropdownList> _ownerRef;
+
+            public DefaultTopVariable(ComboBoxDropdownList owner)
+            {
+                _ownerRef = new WeakReference<ComboBoxDropdownList>(owner);
+            }
+
+            public override int Compute(in LayoutVariableManager manager)
+            {
+                if (!_ownerRef.TryGetTarget(out ComboBoxDropdownList? owner))
+                    return 0;
+                int val = manager.GetComputedValue(owner._parent, LayoutProperty.Bottom);
+                return val - MathI.Ceiling(RenderingHelper.GetDefaultBorderWidth(owner._window.GetPointsPerPixel()));
+            }
         }
     }
 }

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
@@ -138,32 +136,6 @@ namespace ConcreteUI.Controls
                     continue;
                 element.ApplyTheme(provider);
             }
-        }
-
-        public static D2D1Resource GetOrCreateCheckSign(ref D2D1Resource? checkSign, D2D1DeviceContext context, D2D1StrokeStyle strokeStyle, in RectF renderingBounds)
-        {
-            if (checkSign is not null)
-                return checkSign;
-            D2D1PathGeometry geometry = context.GetFactory()!.CreatePathGeometry();
-            D2D1GeometrySink sink = geometry.Open();
-            float unit = (renderingBounds.Width - 2) / 7f;
-            sink.BeginFigure(new PointF(1 + unit, 1 + unit * 3), D2D1FigureBegin.Filled);
-            sink.AddLine(new PointF(1 + unit * 3, 1 + unit * 5));
-            sink.AddLine(new PointF(1 + unit * 6, 1 + unit * 2));
-            sink.EndFigure(D2D1FigureEnd.Open);
-            sink.Close();
-            if (context is D2D1DeviceContext1 context1)
-            {
-                checkSign = context1.CreateStrokedGeometryRealization(
-                    geometry: geometry,
-                    flatteningTolerance: D2D1.ComputeFlatteningTolerance(Matrix3x2.Identity, dpiX: 96f, dpiY: 96f, 4.0f),
-                    strokeWidth: 2.0f,
-                    strokeStyle: strokeStyle);
-                geometry.Dispose();
-            }
-            else
-                checkSign = geometry;
-            return checkSign;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

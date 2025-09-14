@@ -24,7 +24,7 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class ListBox : ScrollableElementBase
+    public sealed partial class ListBox : ScrollableElementBase, IDpiAwareEvents
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -50,7 +50,7 @@ namespace ConcreteUI.Controls
         private readonly ObservableList<string> _items;
 
         private D2D1StrokeStyle? _strokeStyle;
-        private D2D1Resource? _checkSign;
+        private D2D1PathGeometry? _checkSign;
         private DWriteTextFormat? _format;
         private string _checkBoxThemePrefix;
         private string? _fontName;
@@ -131,18 +131,13 @@ namespace ConcreteUI.Controls
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             base.ApplyThemeCore(provider);
-            _fontName = provider.FontName;
+            string fontName = provider.FontName;
+            _fontName = fontName;
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
             UIElementHelper.ApplyTheme(provider, _checkBoxBrushes, _checkBoxBrushNames, _checkBoxThemePrefix, (int)CheckBoxBrush._Last);
             DisposeHelper.SwapDisposeInterlocked(ref _format);
             Interlocked.Exchange(ref _recalcFormat, Booleans.TrueLong);
-            using DWriteTextFormat textFormat = SharedResources.DWriteFactory.CreateTextFormat(_fontName, _fontSize);
-            textFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
-            Interlocked.Exchange(ref _itemHeight,
-                RenderingHelper.CeilingInPixel(GraphicsUtils.MeasureTextHeight("Ty", textFormat) + 2, Renderer.GetPointsPerPixel()));
-            DisposeHelper.SwapDisposeInterlocked(ref _checkSign);
-            RecalculateHeight();
-            Update();
+            OnDpiChangedCore(fontName, Renderer.GetPointsPerPixel());
         }
 
         protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
@@ -154,6 +149,21 @@ namespace ConcreteUI.Controls
             DWriteTextFormat textFormat = SharedResources.DWriteFactory.CreateTextFormat(NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
             textFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
             return textFormat;
+        }
+
+        public void OnDpiChanged(in DpiChangedEventArgs args)
+        {
+            string? fontName = _fontName;
+            if (fontName is null)
+                return;
+            OnDpiChangedCore(fontName, args.PointsPerPixel);
+        }
+
+        private void OnDpiChangedCore(string fontName, float pointsPerPixel)
+        {
+            Interlocked.Exchange(ref _itemHeight,
+                RenderingHelper.CeilingInPixel(FontHeightHelper.GetFontHeight(fontName, _fontSize) + 2, pointsPerPixel));
+            RecalculateHeight();
         }
 
         private void Items_Updated(object? sender, EventArgs e) => RecalculateHeight();
@@ -201,6 +211,7 @@ namespace ConcreteUI.Controls
             itemLeftEdge = RenderingHelper.RoundInPixel(itemLeftEdge, pointsPerPixel);
             textLeftEdge = RenderingHelper.RoundInPixel(textLeftEdge, pointsPerPixel) - itemLeftEdge;
             itemTopEdge = RenderingHelper.RoundInPixel(itemTopEdge, pointsPerPixel);
+            float itemWidth = itemRightEdge - itemLeftEdge;
             // itemRightEdge 無須做 round 操作，因為 renderSize.Width 與 borderWidth 均已對齊 pixel
 
             BitList stateVectorList = _stateVectorList;
@@ -210,19 +221,19 @@ namespace ConcreteUI.Controls
             {
                 string item = items[i];
                 RectF itemBounds = new RectF(itemLeftEdge, itemTopEdge, itemRightEdge, itemTopEdge + itemHeight);
-                using RegionalRenderingContext itemContext = context.WithPixelAlignedClip(ref itemBounds, D2D1AntialiasMode.Aliased);
+                using RegionalRenderingContext itemContext = context.WithAxisAlignedClip(itemBounds, D2D1AntialiasMode.Aliased);
                 switch (mode)
                 {
                     case ListBoxMode.None:
                         if (StringHelper.IsNullOrWhiteSpace(item))
                             break;
-                        itemContext.DrawText(item, format, RectF.FromXYWH(new PointF(textLeftEdge, 0), itemContext.Size), textBrush, D2D1DrawTextOptions.Clip, DWriteMeasuringMode.Natural);
+                        itemContext.DrawText(item, format, RectF.FromXYWH(textLeftEdge, 0, itemWidth, itemHeight), textBrush, D2D1DrawTextOptions.Clip, DWriteMeasuringMode.Natural);
                         break;
                     case ListBoxMode.Any:
-                        DrawRadioBox(in itemContext, stateVectorList[i], selectedIndex == i);
+                        DrawRadioBox(in itemContext, itemHeight, stateVectorList[i], selectedIndex == i);
                         goto case ListBoxMode.None;
                     case ListBoxMode.Some:
-                        DrawCheckBox(in itemContext, stateVectorList[i], selectedIndex == i);
+                        DrawCheckBox(in itemContext, itemHeight, stateVectorList[i], selectedIndex == i);
                         goto case ListBoxMode.None;
                 }
                 itemTopEdge += itemHeight;
@@ -231,96 +242,15 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        private void DrawCheckBox(in RegionalRenderingContext context, bool isChecked, bool isCurrentlyItem)
+        private void DrawCheckBox(in RegionalRenderingContext context, float itemHeight, bool checkState, bool isCurrentlyItem)
         {
-            D2D1Brush[] brushes = _checkBoxBrushes;
-            D2D1Brush? backBrush = null;
-            if (isChecked)
-            {
-                if (isCurrentlyItem)
-                {
-                    switch (_buttonState)
-                    {
-                        case ButtonTriState.None:
-                            backBrush = brushes[(int)CheckBoxBrush.BorderCheckedBrush];
-                            break;
-                        case ButtonTriState.Hovered:
-                            backBrush = brushes[(int)CheckBoxBrush.BorderHoveredCheckedBrush];
-                            break;
-                        case ButtonTriState.Pressed:
-                            backBrush = brushes[(int)CheckBoxBrush.BorderPressedCheckedBrush];
-                            break;
-                    }
-                }
-                else
-                {
-                    backBrush = brushes[(int)CheckBoxBrush.BorderCheckedBrush];
-                }
-            }
-            else
-            {
-                if (isCurrentlyItem)
-                {
-                    switch (_buttonState)
-                    {
-                        case ButtonTriState.None:
-                            backBrush = brushes[(int)CheckBoxBrush.BorderBrush];
-                            break;
-                        case ButtonTriState.Hovered:
-                            backBrush = brushes[(int)CheckBoxBrush.BorderHoveredBrush];
-                            break;
-                        case ButtonTriState.Pressed:
-                            backBrush = brushes[(int)CheckBoxBrush.BorderPressedBrush];
-                            break;
-                    }
-                }
-                else
-                {
-                    backBrush = brushes[(int)CheckBoxBrush.BorderBrush];
-                }
-            }
-            if (backBrush is null)
-                return;
-            float borderWidth = context.DefaultBorderWidth;
-            float buttonWidth = context.Size.Height - borderWidth * 2;
-            RectF renderingBounds = RectF.FromXYWH(borderWidth, borderWidth, buttonWidth, buttonWidth);
-            using RenderingClipToken token = context.PushPixelAlignedClip(ref renderingBounds, D2D1AntialiasMode.Aliased);
-            if (isChecked)
-            {
-                RenderBackground(context, backBrush);
-                D2D1DeviceContext deviceContext = context.DeviceContext;
-                D2D1StrokeStyle? strokeStyle = _strokeStyle;
-                (D2D1AntialiasMode antialiasModeBefore, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
-                try
-                {
-                    if (strokeStyle is null)
-                    {
-                        _strokeStyle = strokeStyle = deviceContext.GetFactory()!.CreateStrokeStyle(new D2D1StrokeStyleProperties()
-                        {
-                            DashCap = D2D1CapStyle.Round,
-                            StartCap = D2D1CapStyle.Round,
-                            EndCap = D2D1CapStyle.Round
-                        });
-                    }
-                    D2D1Resource checkSign = UIElementHelper.GetOrCreateCheckSign(ref _checkSign, deviceContext, strokeStyle, renderingBounds);
-                    if (checkSign is D2D1GeometryRealization geometryRealization && deviceContext is D2D1DeviceContext1 deviceContext1)
-                        deviceContext1.DrawGeometryRealization(geometryRealization, brushes[(int)CheckBoxBrush.MarkBrush]);
-                    else if (checkSign is D2D1Geometry geometry)
-                        context.DrawGeometry(geometry, brushes[(int)CheckBoxBrush.MarkBrush], 2.0f, strokeStyle);
-                }
-                finally
-                {
-                    deviceContext.AntialiasMode = antialiasModeBefore;
-                }
-            }
-            else
-            {
-                RenderBackground(context);
-                context.DrawBorder(renderingBounds, backBrush);
-            }
+            RectF renderingBounds = CheckBox.GetCheckBoxRenderingBounds(in context, itemHeight);
+            using RenderingClipToken token = context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
+            CheckBox.DrawCheckBox(context, _checkBoxBrushes, ref _checkSign, ref _strokeStyle, renderingBounds, checkState,
+                isCurrentlyItem ? _buttonState : ButtonTriState.None);
         }
 
-        private void DrawRadioBox(in RegionalRenderingContext context, bool isChecked, bool isCurrentlyItem)
+        private void DrawRadioBox(in RegionalRenderingContext context, float itemHeight, bool isChecked, bool isCurrentlyItem)
         {
             D2D1Brush[] brushes = _checkBoxBrushes;
             D2D1Brush? backBrush = null;
@@ -345,8 +275,7 @@ namespace ConcreteUI.Controls
             }
             if (backBrush is null)
                 return;
-            RectF renderingBounds = RectF.FromXYWH(PointF.Empty, context.Size);
-            renderingBounds.Width = renderingBounds.Height;
+            RectF renderingBounds = RectF.FromXYWH(PointF.Empty, new SizeF(itemHeight, itemHeight));
             D2D1DeviceContext deviceContext = context.DeviceContext;
             (D2D1AntialiasMode andtialiasModeBefore, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
             try

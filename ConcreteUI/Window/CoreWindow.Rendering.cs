@@ -336,6 +336,13 @@ namespace ConcreteUI.Window
             UIElementHelper.OnCharacterInputForElements(GetBackgroundElements(), ref args);
         }
 
+        protected virtual void OnDpiChangedForElements(in DpiChangedEventArgs args)
+        {
+            UIElementHelper.OnDpiChangedForElements(GetOverlayElements(), in args);
+            UIElementHelper.OnDpiChangedForElements(GetRenderingElements(), in args);
+            UIElementHelper.OnDpiChangedForElements(GetBackgroundElements(), in args);
+        }
+
         protected virtual unsafe void RecalculateLayout(in SizeF windowSize, bool callRecalculatePageLayout)
         {
             if (_windowMaterial == WindowMaterial.Integrated)
@@ -624,15 +631,19 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Remove)]
-        private void OnDpiChangedRenderingPart()
+        private void ChangeDpi_RenderingPart(uint dpi, float pointsPerPixel, float pixelsPerPoint)
         {
             SwapChainGraphicsHost? host = _host;
             if (host is null || host.IsDisposed)
                 return;
-            D2D1DeviceContext context = host.GetDeviceContext();
-            uint dpi = Dpi;
-            context.Dpi = new PointF(dpi, dpi);
-            UpdateCore(_controller);
+            RenderingController? controller = _controller;
+            if (controller is null)
+                return;
+            controller.Lock();
+            controller.WaitForRendering();
+            host.GetDeviceContext().Dpi = new PointF(dpi, dpi);
+            OnDpiChangedForElements(new DpiChangedEventArgs(dpi, pointsPerPixel, pixelsPerPoint));
+            controller.Unlock();
         }
 
         [Inline(InlineBehavior.Remove)]

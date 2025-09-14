@@ -42,11 +42,7 @@ namespace ConcreteUI.Window
             OnWindowStateChangedRenderingPart(args);
         }
 
-        protected virtual void OnDpiChanged()
-        {
-            DpiChanged?.Invoke(this, EventArgs.Empty);
-            OnDpiChangedRenderingPart();
-        }
+        protected virtual void OnDpiChanged() => DpiChanged?.Invoke(this, EventArgs.Empty);
 
         protected virtual void OnMouseDown(ref MouseInteractEventArgs args)
             => OnMouseDownForElements(ref args);

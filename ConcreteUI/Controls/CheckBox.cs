@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.SymbolStore;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
 using ConcreteUI.Graphics;
+using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.Direct2D.Geometry;
@@ -22,6 +24,8 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
+    delegate void RenderBackgroundDelegate<TElement>(TElement element, in RegionalRenderingContext context) where TElement : UIElement;
+
     public sealed partial class CheckBox : UIElement, IDisposable, IMouseInteractEvents
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
@@ -43,7 +47,7 @@ namespace ConcreteUI.Controls
         private string _text;
         private D2D1StrokeStyle? _strokeStyle;
         private DWriteTextLayout? _layout;
-        private D2D1Resource? _checkSign;
+        private D2D1PathGeometry? _checkSign;
 
         private ButtonTriState _buttonState;
         private long _redrawTypeRaw, _rawUpdateFlags;
@@ -198,66 +202,56 @@ namespace ConcreteUI.Controls
 
         private void DrawCheckBox(in RegionalRenderingContext context)
         {
-            bool checkState = _checkState;
-            D2D1Brush[] brushes = _brushes;
-            D2D1Brush? backBrush = null;
+            RectF renderingBounds = GetCheckBoxRenderingBounds(in context, context.Size.Height);
+            using RenderingClipToken token = context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
+            if (context.HasDirtyCollector)
+            {
+                RenderBackground(in context);
+                context.MarkAsDirty(renderingBounds);
+            }
+            DrawCheckBox(context, _brushes, ref _checkSign, ref _strokeStyle, renderingBounds, _checkState, _buttonState);
+        }
+
+        public static RectF GetCheckBoxRenderingBounds(in RegionalRenderingContext context, float itemHeight)
+        {
+            float pointsPerPixel = context.PointsPerPixel;
+            float borderWidth = context.DefaultBorderWidth;
+            float buttonWidth = RenderingHelper.RoundInPixel(itemHeight, pointsPerPixel) - borderWidth * 2;
+            return RectF.FromXYWH(borderWidth, borderWidth, buttonWidth, buttonWidth);
+        }
+
+        public static void DrawCheckBox(in RegionalRenderingContext context, D2D1Brush?[] brushes,
+            ref D2D1PathGeometry? checkSign, ref D2D1StrokeStyle? strokeStyle, in RectF renderingBounds,
+            bool checkState, ButtonTriState hoverState)
+        {
+            if (hoverState > ButtonTriState.Pressed)
+                return;
+            D2D1Brush? backBrush;
             if (checkState)
-            {
-                switch (_buttonState)
-                {
-                    case ButtonTriState.None:
-                        backBrush = brushes[(int)Brush.BorderCheckedBrush];
-                        break;
-                    case ButtonTriState.Hovered:
-                        backBrush = brushes[(int)Brush.BorderHoveredCheckedBrush];
-                        break;
-                    case ButtonTriState.Pressed:
-                        backBrush = brushes[(int)Brush.BorderPressedCheckedBrush];
-                        break;
-                }
-            }
+                backBrush = UnsafeHelper.AddTypedOffset(ref brushes[(int)Brush.BorderCheckedBrush], (nuint)hoverState);
             else
-            {
-                switch (_buttonState)
-                {
-                    case ButtonTriState.None:
-                        backBrush = brushes[(int)Brush.BorderBrush];
-                        break;
-                    case ButtonTriState.Hovered:
-                        backBrush = brushes[(int)Brush.BorderHoveredBrush];
-                        break;
-                    case ButtonTriState.Pressed:
-                        backBrush = brushes[(int)Brush.BorderPressedBrush];
-                        break;
-                }
-            }
+                backBrush = UnsafeHelper.AddTypedOffset(ref brushes[(int)Brush.BorderBrush], (nuint)hoverState);
             if (backBrush is null)
                 return;
-            RectF renderingBounds = RectF.FromXYWH(PointF.Empty, context.Size);
-            renderingBounds.Width = renderingBounds.Height;
-            using RenderingClipToken token = context.PushPixelAlignedClip(ref renderingBounds, D2D1AntialiasMode.Aliased);
+
             if (checkState)
             {
-                RenderBackground(context, backBrush);
+                context.FillRectangle(renderingBounds, backBrush);
                 D2D1DeviceContext deviceContext = context.DeviceContext;
+                strokeStyle ??= deviceContext.GetFactory()!.CreateStrokeStyle(new D2D1StrokeStyleProperties()
+                    {
+                        DashCap = D2D1CapStyle.Round,
+                        StartCap = D2D1CapStyle.Round,
+                        EndCap = D2D1CapStyle.Round
+                    });
+                checkSign ??= CreateCheckSign(deviceContext, renderingBounds.Height);
                 (D2D1AntialiasMode antialiasModeBefore, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
                 try
                 {
-                    D2D1StrokeStyle? strokeStyle = _strokeStyle;
-                    if (strokeStyle is null)
-                    {
-                        _strokeStyle = strokeStyle = deviceContext.GetFactory()!.CreateStrokeStyle(new D2D1StrokeStyleProperties()
-                        {
-                            DashCap = D2D1CapStyle.Round,
-                            StartCap = D2D1CapStyle.Round,
-                            EndCap = D2D1CapStyle.Round
-                        });
-                    }
-                    D2D1Resource checkSign = UIElementHelper.GetOrCreateCheckSign(ref _checkSign, deviceContext, strokeStyle, renderingBounds);
-                    if (checkSign is D2D1GeometryRealization geometryRealization && deviceContext is D2D1DeviceContext1 deviceContext1)
-                        deviceContext1.DrawGeometryRealization(geometryRealization, brushes[(int)Brush.MarkBrush]);
-                    else if (checkSign is D2D1Geometry geometry)
-                        context.DrawGeometry(geometry, brushes[(int)Brush.MarkBrush], 2.0f, strokeStyle);
+                    D2D1Brush? markBrush = brushes[(int)Brush.MarkBrush];
+                    if (markBrush is null)
+                        return;
+                    context.DrawGeometry(checkSign, markBrush, 2.0f, strokeStyle);
                 }
                 finally
                 {
@@ -266,10 +260,31 @@ namespace ConcreteUI.Controls
             }
             else
             {
-                RenderBackground(context);
-                context.DrawBorder(renderingBounds, backBrush);
+                float strokeWidth = RenderingHelper.GetDefaultBorderWidth(context.PointsPerPixel);
+                context.DrawRectangle(GetBorderRectCore(renderingBounds, strokeWidth), backBrush, strokeWidth);
             }
-            context.MarkAsDirty(renderingBounds);
+        }
+
+        private static RectF GetBorderRectCore(in RectF rect, float strokeWidth)
+        {
+            float unit = strokeWidth * 0.5f;
+            return new RectF(rect.Left + unit, rect.Top + unit,
+                rect.Right - unit, rect.Bottom - unit);
+        }
+
+        private static D2D1PathGeometry CreateCheckSign(D2D1DeviceContext context, float iconHeight)
+        {
+            D2D1PathGeometry geometry = context.GetFactory()!.CreatePathGeometry();
+            using (D2D1GeometrySink sink = geometry.Open())
+            {
+                float unit = iconHeight / 7f;
+                sink.BeginFigure(new PointF(1 + unit, 1 + unit * 3), D2D1FigureBegin.Filled);
+                sink.AddLine(new PointF(1 + unit * 3, 1 + unit * 5));
+                sink.AddLine(new PointF(1 + unit * 6, 1 + unit * 2));
+                sink.EndFigure(D2D1FigureEnd.Open);
+                sink.Close();
+            }
+            return geometry;
         }
 
         public void OnMouseMove(in MouseNotifyEventArgs args)

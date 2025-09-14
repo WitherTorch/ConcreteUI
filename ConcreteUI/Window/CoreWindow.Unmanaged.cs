@@ -598,6 +598,7 @@ namespace ConcreteUI.Window
         {
             _borderWidthInPixels = User32.GetSystemMetrics(SystemMetric.SM_CXBORDER) + User32.GetSystemMetrics(SystemMetric.SM_CXPADDEDBORDER);
 
+            float pixelsPerPoint, pointsPerPixel;
             switch (newDpi)
             {
                 case 0:
@@ -610,20 +611,20 @@ namespace ConcreteUI.Window
             }
 
         Normal:
-            _pixelsPerPoint = 1.0f;
-            _pointsPerPixel = 1.0f;
-            _dpi = 96;
+            pixelsPerPoint = 1.0f;
+            pointsPerPixel = 1.0f;
             goto Tail;
 
         NeedAmplified:
-            float pointsPerPixel = newDpi / 96.0f;
-            float pixelsPerPoint = 96.0f / newDpi;
-            _pointsPerPixel = pointsPerPixel;
-            _pixelsPerPoint = pixelsPerPoint;
-            _dpi = newDpi;
+            pointsPerPixel = newDpi / 96.0f;
+            pixelsPerPoint = 96.0f / newDpi;
             goto Tail;
 
         Tail:
+            _pointsPerPixel = pointsPerPixel;
+            _pixelsPerPoint = pixelsPerPoint;
+            _dpi = newDpi;
+            ChangeDpi_RenderingPart(newDpi, pointsPerPixel, pixelsPerPoint);
             OnDpiChanged();
         }
 
