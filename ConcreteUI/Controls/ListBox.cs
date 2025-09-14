@@ -9,7 +9,6 @@ using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
-using ConcreteUI.Graphics.Native.Direct2D.Geometry;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
@@ -49,8 +48,6 @@ namespace ConcreteUI.Controls
         private readonly BitList _stateVectorList;
         private readonly ObservableList<string> _items;
 
-        private D2D1StrokeStyle? _strokeStyle;
-        private D2D1PathGeometry? _checkSign;
         private DWriteTextFormat? _format;
         private string _checkBoxThemePrefix;
         private string? _fontName;
@@ -244,9 +241,8 @@ namespace ConcreteUI.Controls
 
         private void DrawCheckBox(in RegionalRenderingContext context, float itemHeight, bool checkState, bool isCurrentlyItem)
         {
-            RectF renderingBounds = CheckBox.GetCheckBoxRenderingBounds(in context, itemHeight);
-            using RenderingClipToken token = context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
-            CheckBox.DrawCheckBox(context, _checkBoxBrushes, ref _checkSign, ref _strokeStyle, renderingBounds, checkState,
+            RectangleF renderingBounds = CheckBox.GetCheckBoxRenderingBounds(in context, itemHeight);
+            CheckBox.DrawCheckBox(context, _checkBoxBrushes, renderingBounds, checkState,
                 isCurrentlyItem ? _buttonState : ButtonTriState.None);
         }
 
@@ -301,12 +297,6 @@ namespace ConcreteUI.Controls
         {
             SurfaceSize = new Size(0, MathI.Ceiling(Items.Count * _itemHeight) + UIConstants.ElementMargin);
             Update();
-        }
-
-        public override void OnSizeChanged()
-        {
-            DisposeHelper.SwapDisposeInterlocked(ref _checkSign);
-            base.OnSizeChanged();
         }
 
         public override void OnMouseMove(in MouseNotifyEventArgs args)
@@ -403,8 +393,6 @@ namespace ConcreteUI.Controls
             base.DisposeCore(disposing);
             if (disposing)
             {
-                DisposeHelper.SwapDisposeInterlocked(ref _strokeStyle);
-                DisposeHelper.SwapDisposeInterlocked(ref _checkSign);
                 DisposeHelper.SwapDisposeInterlocked(ref _format);
                 DisposeHelper.DisposeAll(_brushes);
             }

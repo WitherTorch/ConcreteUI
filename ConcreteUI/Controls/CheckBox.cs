@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.SymbolStore;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -9,7 +8,6 @@ using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
-using ConcreteUI.Graphics.Native.Direct2D.Geometry;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
 using ConcreteUI.Layout;
@@ -24,9 +22,7 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    delegate void RenderBackgroundDelegate<TElement>(TElement element, in RegionalRenderingContext context) where TElement : UIElement;
-
-    public sealed partial class CheckBox : UIElement, IDisposable, IMouseInteractEvents
+    public sealed partial class CheckBox : UIElement, IMouseInteractEvents, IDisposable
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -40,14 +36,14 @@ namespace ConcreteUI.Controls
             "fore"
         };
 
+        private static ulong _checkSignDictVersion;
+
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
         private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[2];
 
         private string? _fontName;
         private string _text;
-        private D2D1StrokeStyle? _strokeStyle;
         private DWriteTextLayout? _layout;
-        private D2D1PathGeometry? _checkSign;
 
         private ButtonTriState _buttonState;
         private long _redrawTypeRaw, _rawUpdateFlags;
@@ -87,11 +83,7 @@ namespace ConcreteUI.Controls
             Update(RedrawType.RedrawAllContent);
         }
 
-        public override void OnSizeChanged()
-        {
-            DisposeHelper.SwapDisposeInterlocked(ref _checkSign);
-            Update();
-        }
+        public override void OnSizeChanged() => Update();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override void Update() => Update(RedrawType.RedrawAllContent);
@@ -202,26 +194,25 @@ namespace ConcreteUI.Controls
 
         private void DrawCheckBox(in RegionalRenderingContext context)
         {
-            RectF renderingBounds = GetCheckBoxRenderingBounds(in context, context.Size.Height);
-            using RenderingClipToken token = context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
+            RectangleF renderingBounds = GetCheckBoxRenderingBounds(in context, context.Size.Height);
             if (context.HasDirtyCollector)
             {
+                using RenderingClipToken token = context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
                 RenderBackground(in context);
                 context.MarkAsDirty(renderingBounds);
             }
-            DrawCheckBox(context, _brushes, ref _checkSign, ref _strokeStyle, renderingBounds, _checkState, _buttonState);
+            DrawCheckBox(context, _brushes, renderingBounds, _checkState, _buttonState);
         }
 
-        public static RectF GetCheckBoxRenderingBounds(in RegionalRenderingContext context, float itemHeight)
+        public static RectangleF GetCheckBoxRenderingBounds(in RegionalRenderingContext context, float itemHeight)
         {
             float pointsPerPixel = context.PointsPerPixel;
             float borderWidth = context.DefaultBorderWidth;
             float buttonWidth = RenderingHelper.RoundInPixel(itemHeight, pointsPerPixel) - borderWidth * 2;
-            return RectF.FromXYWH(borderWidth, borderWidth, buttonWidth, buttonWidth);
+            return new RectangleF(borderWidth, borderWidth, buttonWidth, buttonWidth);
         }
 
-        public static void DrawCheckBox(in RegionalRenderingContext context, D2D1Brush?[] brushes,
-            ref D2D1PathGeometry? checkSign, ref D2D1StrokeStyle? strokeStyle, in RectF renderingBounds,
+        public static void DrawCheckBox(in RegionalRenderingContext context, D2D1Brush?[] brushes, in RectangleF renderingBounds,
             bool checkState, ButtonTriState hoverState)
         {
             if (hoverState > ButtonTriState.Pressed)
@@ -237,26 +228,10 @@ namespace ConcreteUI.Controls
             if (checkState)
             {
                 context.FillRectangle(renderingBounds, backBrush);
-                D2D1DeviceContext deviceContext = context.DeviceContext;
-                strokeStyle ??= deviceContext.GetFactory()!.CreateStrokeStyle(new D2D1StrokeStyleProperties()
-                    {
-                        DashCap = D2D1CapStyle.Round,
-                        StartCap = D2D1CapStyle.Round,
-                        EndCap = D2D1CapStyle.Round
-                    });
-                checkSign ??= CreateCheckSign(deviceContext, renderingBounds.Height);
-                (D2D1AntialiasMode antialiasModeBefore, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
-                try
-                {
-                    D2D1Brush? markBrush = brushes[(int)Brush.MarkBrush];
-                    if (markBrush is null)
-                        return;
-                    context.DrawGeometry(checkSign, markBrush, 2.0f, strokeStyle);
-                }
-                finally
-                {
-                    deviceContext.AntialiasMode = antialiasModeBefore;
-                }
+                D2D1Brush? markBrush = brushes[(int)Brush.MarkBrush];
+                if (markBrush is null)
+                    return;
+                FontIconResources.Instance.DrawCheckMark(context, renderingBounds, markBrush);
             }
             else
             {
@@ -270,21 +245,6 @@ namespace ConcreteUI.Controls
             float unit = strokeWidth * 0.5f;
             return new RectF(rect.Left + unit, rect.Top + unit,
                 rect.Right - unit, rect.Bottom - unit);
-        }
-
-        private static D2D1PathGeometry CreateCheckSign(D2D1DeviceContext context, float iconHeight)
-        {
-            D2D1PathGeometry geometry = context.GetFactory()!.CreatePathGeometry();
-            using (D2D1GeometrySink sink = geometry.Open())
-            {
-                float unit = iconHeight / 7f;
-                sink.BeginFigure(new PointF(1 + unit, 1 + unit * 3), D2D1FigureBegin.Filled);
-                sink.AddLine(new PointF(1 + unit * 3, 1 + unit * 5));
-                sink.AddLine(new PointF(1 + unit * 6, 1 + unit * 2));
-                sink.EndFigure(D2D1FigureEnd.Open);
-                sink.Close();
-            }
-            return geometry;
         }
 
         public void OnMouseMove(in MouseNotifyEventArgs args)
@@ -331,8 +291,6 @@ namespace ConcreteUI.Controls
             _disposed = true;
             if (disposing)
             {
-                DisposeHelper.SwapDisposeInterlocked(ref _checkSign);
-                DisposeHelper.SwapDisposeInterlocked(ref _strokeStyle);
                 DisposeHelper.SwapDisposeInterlocked(ref _layout);
                 DisposeHelper.DisposeAll(_brushes);
             }
