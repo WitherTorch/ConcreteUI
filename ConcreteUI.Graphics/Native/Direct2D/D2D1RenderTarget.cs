@@ -318,6 +318,34 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             return new D2D1RadialGradientBrush(nativePointer, ReferenceType.Owned);
         }
 
+        /// <inheritdoc cref="CreateLayer(SizeF*)"/>
+        [Inline(InlineBehavior.Keep, export: true)]
+        public D2D1Layer CreateLayer() => CreateLayer(null);
+
+        /// <inheritdoc cref="CreateLayer(SizeF*)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public D2D1Layer CreateLayer(SizeF size) => CreateLayer(&size);
+
+        /// <summary>
+        /// Creates a layer resource that can be used on any target and which will resize
+        /// under the covers if necessary.
+        /// </summary>
+        /// <param name="size">
+        /// The resolution independent minimum size hint for the layer resource. <br/>
+        /// Specify this to prevent unwanted reallocation of the layer backing store. <br/>
+        /// The size is in DIPs, but, it is unaffected by the current world transform. <br/>
+        /// If the size is unspecified, the returned resource is a placeholder and
+        /// the backing store will be allocated to be the minimum size that can hold the content when the layer is pushed.
+        /// </param>
+        public D2D1Layer CreateLayer(SizeF* size)
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateLayer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, SizeF*, void**, int>)functionPointer)(nativePointer, size, &nativePointer);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new D2D1Layer(nativePointer, ReferenceType.Owned);
+        }
+
         /// <summary>
         /// Create a D2D mesh.
         /// </summary>
@@ -560,6 +588,51 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetTextAntialiasMode);
             return ((delegate* unmanaged[Stdcall]<void*, D2D1TextAntialiasMode>)functionPointer)(nativePointer);
+        }
+
+        /// <inheritdoc cref="PushLayer(D2D1LayerParametersNative*, D2D1Layer?)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void PushLayer(in D2D1LayerParameters layerParameters, D2D1Layer? layer)
+            => PushLayer(layerParameters.ToNative(), layer);
+
+        /// <inheritdoc cref="PushLayer(D2D1LayerParametersNative*, D2D1Layer?)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void PushLayer(in D2D1LayerParametersNative layerParameters, D2D1Layer? layer)
+            => PushLayer(UnsafeHelper.AsPointerIn(in layerParameters), layer);
+
+        /// <summary>
+        /// Start a layer of drawing calls.
+        /// </summary>
+        /// <remarks>
+        /// The way in which the layer must be resolved is specified first as well as the logical resource that stores the layer parameters. <br/>
+        /// The supplied layer resource might grow if the specified content cannot fit inside it. <br/>
+        /// The layer will grow monotonically on each axis. 
+        /// </remarks>
+        /// <param name="layerParameters">
+        /// The content bounds, geometric mask, opacity, opacity mask, and antialiasing options for the layer.
+        /// </param>
+        /// <param name="layer">
+        /// The layer that receives subsequent drawing operations. <br/>
+        /// If a <see langword="null"/> is provided, then a layer resource will be allocated automatically. (Only for Windows 8 or greater)
+        /// </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void PushLayer(D2D1LayerParametersNative* layerParameters, D2D1Layer? layer)
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.PushLayer);
+            ((delegate* unmanaged[Stdcall]<void*, D2D1LayerParametersNative*, void*, void>)functionPointer)(
+                nativePointer, layerParameters, layer is null ? null : layer.NativePointer);
+        }
+
+        /// <summary>
+        /// Ends a layer that was defined with particular layer resources.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void PopLayer()
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.PopLayer);
+            ((delegate* unmanaged[Stdcall]<void*, void>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]

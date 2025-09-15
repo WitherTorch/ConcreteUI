@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Drawing;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using ConcreteUI.Graphics.Native.Direct2D.Brushes;
+using ConcreteUI.Graphics.Native.Direct2D.Geometry;
 using ConcreteUI.Graphics.Native.DXGI;
 
 using WitherTorch.Common.Windows.Structures;
@@ -15,7 +18,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// This specifies the options while simultaneously creating the device, factory,
     /// and device context.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public struct D2D1CreationProperties
     {
         /// <summary>
@@ -29,7 +32,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// <summary>
     /// Describes the pixel format and dpi of a bitmap.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public struct D2D1BitmapProperties
     {
         public D2D1PixelFormat PixelFormat;
@@ -54,7 +57,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// <summary>
     /// Extended bitmap properties.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public unsafe struct D2D1BitmapProperties1
     {
         public D2D1PixelFormat PixelFormat;
@@ -101,7 +104,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public readonly struct D2D1ColorF : IEquatable<D2D1ColorF>
     {
         private readonly float _r, _g, _b, _a;
@@ -166,7 +169,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// <summary>
     /// Contains the dimensions and corner radii of a rounded rectangle.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public struct D2D1RoundedRectangle
     {
         public RectF Rect;
@@ -184,7 +187,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// <summary>
     /// Contains the center point, x-radius, and y-radius of an ellipse.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public struct D2D1Ellipse
     {
         public PointF Point;
@@ -202,7 +205,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// <summary>
     /// Describes a triangle.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public struct D2D1Triangle
     {
         public PointF Point1;
@@ -220,7 +223,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// <summary>
     /// Properties, aside from the width, that allow geometric penning to be specified.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public struct D2D1StrokeStyleProperties
     {
         public D2D1CapStyle StartCap;
@@ -235,7 +238,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// <summary>
     /// Describes mapped memory from the <see cref="D2D1Bitmap1.Map(D2D1MapOptions)"/> API.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public unsafe struct D2D1MappedRect
     {
         public uint Pitch;
@@ -247,7 +250,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// information, remoting options, and Direct3D support requirements for a render
     /// target.
     /// </summary>    
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public struct D2D1RenderTargetProperties
     {
         public D2D1RenderTargetType Type;
@@ -256,5 +259,129 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         public float DpiY;
         public D2D1RenderTargetUsages Usages;
         public D2D1FeatureLevel MinLevel;
+    }
+
+    /// <inheritdoc cref="D2D1LayerParametersNative"/>
+    [StructLayout(LayoutKind.Auto)]
+    public struct D2D1LayerParameters
+    {
+        /// <inheritdoc cref="D2D1LayerParametersNative.ContentBounds"/>
+        public RectF ContentBounds;
+        /// <inheritdoc cref="D2D1LayerParametersNative.GeometricMask"/>
+        public D2D1Geometry? GeometricMask;
+        /// <inheritdoc cref="D2D1LayerParametersNative.MaskAntialiasMode"/>
+        public D2D1AntialiasMode MaskAntialiasMode;
+        /// <inheritdoc cref="D2D1LayerParametersNative.MaskTransform"/>
+        public Matrix3x2 MaskTransform;
+        /// <inheritdoc cref="D2D1LayerParametersNative.Opacity"/>
+        public float Opacity;
+        /// <inheritdoc cref="D2D1LayerParametersNative.OpacityBrush"/>
+        public D2D1Brush? OpacityBrush;
+        /// <inheritdoc cref="D2D1LayerParametersNative.LayerOptions"/>
+        public D2D1LayerOptions LayerOptions;
+
+        public D2D1LayerParameters()
+        {
+            ContentBounds = RectF.Infinite;
+            GeometricMask = null;
+            MaskAntialiasMode = D2D1AntialiasMode.PerPrimitive;
+            MaskTransform = Matrix3x2.Identity;
+            Opacity = 1.0f;
+            OpacityBrush = null;
+            LayerOptions = D2D1LayerOptions.None;
+        }
+
+        public D2D1LayerParameters(RectF contentBounds, D2D1Geometry? geometricMask,
+            D2D1AntialiasMode maskAntialiasMode, Matrix3x2 maskTransform, float opacity,
+            D2D1Brush? opacityBrush, D2D1LayerOptions layerOptions)
+        {
+            ContentBounds = contentBounds;
+            GeometricMask = geometricMask;
+            MaskAntialiasMode = maskAntialiasMode;
+            MaskTransform = maskTransform;
+            Opacity = opacity;
+            OpacityBrush = opacityBrush;
+            LayerOptions = layerOptions;
+        }
+
+        public readonly unsafe D2D1LayerParametersNative ToNative()
+        {
+            D2D1Geometry? geometryMask = GeometricMask;
+            D2D1Brush? opacityBrush = OpacityBrush;
+            return new D2D1LayerParametersNative(
+                contentBounds: ContentBounds,
+                geometricMask: geometryMask is null ? null : geometryMask.NativePointer,
+                maskAntialiasMode: MaskAntialiasMode,
+                maskTransform: MaskTransform,
+                opacity: Opacity,
+                opacityBrush: opacityBrush is null ? null : opacityBrush.NativePointer,
+                layerOptions: LayerOptions);
+        }
+    }
+
+    /// <summary>
+    /// Contains the content bounds, mask information, opacity settings, and other
+    /// options for a layer resource.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    public unsafe struct D2D1LayerParametersNative
+    {
+        /// <summary>
+        /// The rectangular clip that will be applied to the layer. The clip is affected by the world transform.<br/>
+        /// Content outside of the content bounds will not render.
+        /// </summary>
+        public RectF ContentBounds;
+        /// <summary>
+        /// A general mask that can be optionally applied to the content. <br/>
+        /// Content not inside the fill of the mask will not be rendered.
+        /// </summary>
+        public void* GeometricMask;
+        /// <summary>
+        /// Specifies whether the mask should be aliased or antialiased.
+        /// </summary>
+        public D2D1AntialiasMode MaskAntialiasMode;
+        /// <summary>
+        /// An additional transform that may be applied to the mask in addition to the
+        /// current world transform.
+        /// </summary>
+        public Matrix3x2 MaskTransform;
+        /// <summary>
+        /// The opacity with which all of the content in the layer will be blended back to
+        /// the target when the layer is popped.
+        /// </summary>
+        public float Opacity;
+        /// <summary>
+        /// An additional brush that can be applied to the layer. <br/>
+        /// Only the opacity channel is sampled from this brush and multiplied both with the layer content and the over-all layer opacity.
+        /// </summary>
+        public void* OpacityBrush;
+        /// <summary>
+        /// Specifies if ClearType will be rendered into the layer.
+        /// </summary>
+        public D2D1LayerOptions LayerOptions;
+
+        public D2D1LayerParametersNative()
+        {
+            ContentBounds = RectF.Infinite;
+            GeometricMask = null;
+            MaskAntialiasMode = D2D1AntialiasMode.PerPrimitive;
+            MaskTransform = Matrix3x2.Identity;
+            Opacity = 1.0f;
+            OpacityBrush = null;
+            LayerOptions = D2D1LayerOptions.None;
+        }
+
+        public D2D1LayerParametersNative(RectF contentBounds, void* geometricMask,
+            D2D1AntialiasMode maskAntialiasMode, Matrix3x2 maskTransform, float opacity,
+            void* opacityBrush, D2D1LayerOptions layerOptions)
+        {
+            ContentBounds = contentBounds;
+            GeometricMask = geometricMask;
+            MaskAntialiasMode = maskAntialiasMode;
+            MaskTransform = maskTransform;
+            Opacity = opacity;
+            OpacityBrush = opacityBrush;
+            LayerOptions = layerOptions;
+        }
     }
 }

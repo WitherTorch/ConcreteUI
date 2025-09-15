@@ -544,4 +544,23 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         /// </summary>
         Level_10 = D3DFeatureLevel.Level_10_0,
     }
+
+    /// <summary>
+    /// Specified options that can be applied when a layer resource is applied to create a layer.
+    /// </summary>
+    public enum D2D1LayerOptions : uint
+    {
+        None = 0x00000000,
+
+        /// <summary>
+        /// The layer will render correctly for ClearType text. <br/>
+        /// </summary>
+        /// <remarks>
+        /// If the render target was set to ClearType previously, the layer will continue to render ClearType. <br/>
+        /// If the render target was set to ClearType and this option is not specified, the render target will be set to render gray-scale until the layer is popped.<br/>
+        /// The caller can override this default by calling <see cref="D2D1RenderTarget.AntialiasMode"/> while within the layer. <br/>
+        /// This flag is slightly slower than the default.
+        /// </remarks>
+        InitializeForClearType = 0x00000001,
+    }
 }

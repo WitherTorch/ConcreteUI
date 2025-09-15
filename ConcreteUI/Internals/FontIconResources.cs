@@ -7,7 +7,7 @@ using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Utils;
 
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Internals
 {
@@ -18,6 +18,7 @@ namespace ConcreteUI.Internals
         private readonly FontIcon? _maxIcon, _restoreIcon, _minIcon, _closeIcon, _scrollUpIcon, _scrollDownIcon;
         private readonly Dictionary<float, FontIcon> _comboBoxDropdownIconDict, _checkMarkIconDict;
 
+        private nuint _comboBoxDropdownIconDictVersion, _checkMarkIconDictVersion;
         private bool _disposed;
 
         public static FontIconResources Instance => _instance;
@@ -111,20 +112,24 @@ namespace ConcreteUI.Internals
             return null;
         }
 
-        private static unsafe FontIcon? GetOrCreateIcon(Dictionary<float, FontIcon> dict, float layoutHeight, 
+        private static unsafe FontIcon? GetOrCreateIcon(Dictionary<float, FontIcon> dict, ref nuint versionRef, float layoutHeight,
             delegate* managed<float, FontIcon?> createFunc)
         {
             if (layoutHeight < float.Epsilon)
                 return null;
-            lock (dict)
+            OptimisticLock.Enter(ref versionRef, out nuint currentVersion);
+            do
             {
                 if (dict.TryGetValue(layoutHeight, out FontIcon? result))
                     return result;
                 result = createFunc(layoutHeight);
-                if (result is not null)
-                    dict.Add(layoutHeight, result);
-                return result;
-            }
+                if (result is null)
+                    return null;
+                dict.Add(layoutHeight, result);
+                if (OptimisticLock.TryLeave(ref versionRef, ref currentVersion))
+                    return result;
+                result.Dispose();
+            } while (true);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -145,8 +150,8 @@ namespace ConcreteUI.Internals
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void DrawDropDownButton(in RegionalRenderingContext context, in RectangleF rect, D2D1Brush brush)
-            => GetOrCreateIcon(_comboBoxDropdownIconDict, rect.Height - UIConstants.ElementMargin,
-                &CreateComboBoxDropDownIcon)?.Render(context, rect, brush);
+            => GetOrCreateIcon(_comboBoxDropdownIconDict, ref _comboBoxDropdownIconDictVersion,
+                rect.Height - UIConstants.ElementMargin, &CreateComboBoxDropDownIcon)?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void DrawScrollBarUpButton(in RegionalRenderingContext context, in RectangleF rect, D2D1Brush brush)
@@ -158,8 +163,8 @@ namespace ConcreteUI.Internals
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void DrawCheckMark(in RegionalRenderingContext context, in RectangleF rect, D2D1Brush brush)
-            => GetOrCreateIcon(_checkMarkIconDict, rect.Height,
-                &CreateCheckMarkIcon)?.Render(context, rect.Location, brush);
+            => GetOrCreateIcon(_checkMarkIconDict, ref _checkMarkIconDictVersion,
+                rect.Height, &CreateCheckMarkIcon)?.Render(context, rect.Location, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Dispose(bool disposing)

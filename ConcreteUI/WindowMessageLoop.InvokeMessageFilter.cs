@@ -25,7 +25,7 @@ namespace ConcreteUI
         {
             private readonly SwapQueue<IInvokeClosure> _invokeClosureQueue = new SwapQueue<IInvokeClosure>();
 
-            private int _readBarrier, _writeBarrier;
+            private int _readBarrier;
 
             public InvokeMessageFilter() => _readBarrier = 0;
 
@@ -33,10 +33,8 @@ namespace ConcreteUI
             public void AddInvoke(IInvokeClosure closure)
             {
                 Queue<IInvokeClosure> queue = _invokeClosureQueue.Value;
-                OptimisticLock.Enter(ref _writeBarrier);
-                Thread.BeginCriticalRegion();
-                queue.Enqueue(closure);
-                Thread.EndCriticalRegion();
+                lock (queue)
+                    queue.Enqueue(closure);
             }
 
             public bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)

@@ -412,18 +412,17 @@ namespace ConcreteUI.Window
         [Inline]
         private bool RenderCore(bool force, bool resized)
         {
-            bool isSizeChanged = false;
             SwapChainGraphicsHost? host = _host;
+            if (host is null || host.IsDisposed)
+                return false;
             if (resized)
             {
-                if (host is null || host.IsDisposed)
-                    return false;
-                isSizeChanged = force = true;
-                Size size = base.ClientSize;
+                force = true;
+                Size size = RawClientSize;
                 host.Resize(size);
                 RecalculateLayout(ScalingPixelToLogical(size, _pixelsPerPoint), true);
             }
-            D2D1DeviceContext? deviceContext = host?.GetDeviceContext();
+            D2D1DeviceContext? deviceContext = host.GetDeviceContext();
             if (deviceContext is null || deviceContext.IsDisposed)
                 return true;
             DirtyAreaCollector? rawCollector = force ? null : _collector;
@@ -433,7 +432,7 @@ namespace ConcreteUI.Window
             if (!pageRect.IsValid)
                 return true;
             RenderPage(deviceContext, collector, pageRect, force);
-            host!.Flush();
+            host.Flush();
             if (rawCollector is null)
             {
                 if (ConcreteSettings.UseDebugMode)
@@ -443,12 +442,15 @@ namespace ConcreteUI.Window
                 }
                 return host.TryPresent();
             }
-            if (ConcreteSettings.UseDebugMode)
+            else
             {
-                rawCollector.Present(_pointsPerPixel);
-                return true;
+                if (ConcreteSettings.UseDebugMode)
+                {
+                    rawCollector.Present(_pointsPerPixel);
+                    return true;
+                }
+                return rawCollector.TryPresent(_pointsPerPixel);
             }
-            return rawCollector.TryPresent(_pointsPerPixel);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

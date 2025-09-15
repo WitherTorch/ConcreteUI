@@ -36,8 +36,6 @@ namespace ConcreteUI.Controls
             "fore"
         };
 
-        private static ulong _checkSignDictVersion;
-
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
         private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[2];
 
