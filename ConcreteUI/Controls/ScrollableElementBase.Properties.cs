@@ -20,7 +20,7 @@ namespace ConcreteUI.Controls
                 _enabled = value;
 
                 OnEnableChanged(value);
-                Update(UpdateFlags.RecalcLayout);
+                Update(ScrollableElementUpdateFlags.RecalcLayout);
             }
         }
 
@@ -34,7 +34,7 @@ namespace ConcreteUI.Controls
                     return;
                 _drawWhenDisabled = value;
 
-                Update();
+                Update(ScrollableElementUpdateFlags.All);
             }
         }
 
@@ -49,7 +49,7 @@ namespace ConcreteUI.Controls
                     return;
                 _scrollBarType = value;
 
-                Update(UpdateFlags.RecalcLayout);
+                Update(ScrollableElementUpdateFlags.RecalcLayout);
             }
         }
 
@@ -63,7 +63,7 @@ namespace ConcreteUI.Controls
                 if (_surfaceSize == value)
                     return;
                 _surfaceSize = value;
-                Update(UpdateFlags.RecalcLayout);
+                Update(ScrollableElementUpdateFlags.RecalcLayout);
             }
         }
 
@@ -97,7 +97,7 @@ namespace ConcreteUI.Controls
                 if (_viewportPoint == value)
                     return;
                 _viewportPoint = value;
-                Update(UpdateFlags.RecalcScrollBar | UpdateFlags.TriggerViewportPointChanged | UpdateFlags.All);
+                Update(ScrollableElementUpdateFlags.RecalcScrollBar | ScrollableElementUpdateFlags.TriggerViewportPointChanged | ScrollableElementUpdateFlags.All);
             }
         }
 

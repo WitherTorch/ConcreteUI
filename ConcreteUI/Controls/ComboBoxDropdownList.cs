@@ -231,7 +231,7 @@ namespace ConcreteUI.Controls
             {
                 _selectedIndex = -1;
             }
-            Update(UpdateFlags.Content);
+            Update(ScrollableElementUpdateFlags.Content);
         }
 
         public override void Scrolling(int scrollStep) => base.Scrolling(scrollStep / 4);

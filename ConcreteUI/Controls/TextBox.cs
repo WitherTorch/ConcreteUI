@@ -189,14 +189,14 @@ namespace ConcreteUI.Controls
         protected override void Update()
         {
             InterlockedHelper.Exchange(ref _rawUpdateFlags, (long)RenderObjectUpdateFlags.FlagsAllTrue);
-            Update(UpdateFlags.Content);
+            Update(ScrollableElementUpdateFlags.All);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Update(RenderObjectUpdateFlags flags)
         {
             InterlockedHelper.Or(ref _rawUpdateFlags, (long)flags);
-            Update(UpdateFlags.Content);
+            Update(ScrollableElementUpdateFlags.All);
         }
 
         [Inline(InlineBehavior.Remove)]

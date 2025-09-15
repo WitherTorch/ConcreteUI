@@ -53,7 +53,7 @@ namespace ConcreteUI.Controls
             _drawWhenDisabled = false;
             _hasScrollBar = false;
             _disposed = false;
-            _updateFlagsRaw = (ulong)UpdateFlags._NormalFlagAllTrue;
+            _updateFlagsRaw = (ulong)ScrollableElementUpdateFlags._NormalFlagAllTrue;
             _oldSurfaceSize = Size.Empty;
             _repeatingTimer = new Timer(RepeatingTimer_Tick, null, Timeout.Infinite, Timeout.Infinite);
             _scrollBarThemePrefix = scrollBarThemePrefix.ToLowerAscii();
@@ -68,10 +68,10 @@ namespace ConcreteUI.Controls
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
             => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, _scrollBarThemePrefix, (int)Brush._Last);
 
-        protected override void Update() => Update(UpdateFlags.All);
+        protected override void Update() => Update(ScrollableElementUpdateFlags.Content);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void Update(UpdateFlags flags)
+        protected void Update(ScrollableElementUpdateFlags flags)
         {
             InterlockedHelper.Or(ref _updateFlagsRaw, (ulong)flags);
             UpdateCore();
@@ -79,14 +79,14 @@ namespace ConcreteUI.Controls
 
         public override bool NeedRefresh()
         {
-            if (_updateFlagsRaw != (long)UpdateFlags.None)
+            if (_updateFlagsRaw != (long)ScrollableElementUpdateFlags.None)
                 return true;
-            return InterlockedHelper.Read(ref _updateFlagsRaw) != (ulong)UpdateFlags.None;
+            return InterlockedHelper.Read(ref _updateFlagsRaw) != (ulong)ScrollableElementUpdateFlags.None;
         }
 
         [Inline(InlineBehavior.Remove)]
-        private UpdateFlags GetUpdateFlagsAndReset()
-            => (UpdateFlags)InterlockedHelper.Exchange(ref _updateFlagsRaw, (ulong)UpdateFlags.None);
+        private ScrollableElementUpdateFlags GetUpdateFlagsAndReset()
+            => (ScrollableElementUpdateFlags)InterlockedHelper.Exchange(ref _updateFlagsRaw, (ulong)ScrollableElementUpdateFlags.None);
 
         protected abstract bool RenderContent(in RegionalRenderingContext context, D2D1Brush backBrush);
 
@@ -116,10 +116,10 @@ namespace ConcreteUI.Controls
 
         protected override bool RenderCore(in RegionalRenderingContext context)
         {
-            UpdateFlags updateFlags = GetUpdateFlagsAndReset();
+            ScrollableElementUpdateFlags updateFlags = GetUpdateFlagsAndReset();
             if (!context.HasDirtyCollector)
-                updateFlags |= UpdateFlags.All;
-            else if (updateFlags == UpdateFlags.None)
+                updateFlags |= ScrollableElementUpdateFlags.All;
+            else if (updateFlags == ScrollableElementUpdateFlags.None)
                 return true;
 
             Rect bounds = Bounds;
@@ -127,15 +127,15 @@ namespace ConcreteUI.Controls
             bool enabled = _enabled;
             bool drawWhenDisabled = _drawWhenDisabled;
 
-            if ((updateFlags & UpdateFlags.RecalcLayout) == UpdateFlags.RecalcLayout)
-                updateFlags = (updateFlags & ~UpdateFlags.RecalcLayout) | RecalculateLayout(bounds);
+            if ((updateFlags & ScrollableElementUpdateFlags.RecalcLayout) == ScrollableElementUpdateFlags.RecalcLayout)
+                updateFlags = (updateFlags & ~ScrollableElementUpdateFlags.RecalcLayout) | RecalculateLayout(bounds);
 
             bool hasScrollBar = _hasScrollBar;
-            bool triggerViewportPointChanged = (updateFlags & UpdateFlags.TriggerViewportPointChanged) == UpdateFlags.TriggerViewportPointChanged;
-            bool recalcScrollBar = (updateFlags & UpdateFlags.RecalcScrollBar) == UpdateFlags.RecalcScrollBar;
-            bool redrawAll = (updateFlags & UpdateFlags.All) == UpdateFlags.All;
-            bool redrawScrollBar = (updateFlags & UpdateFlags.ScrollBar) == UpdateFlags.ScrollBar;
-            bool redrawContent = (updateFlags & UpdateFlags.Content) == UpdateFlags.Content;
+            bool triggerViewportPointChanged = (updateFlags & ScrollableElementUpdateFlags.TriggerViewportPointChanged) == ScrollableElementUpdateFlags.TriggerViewportPointChanged;
+            bool recalcScrollBar = (updateFlags & ScrollableElementUpdateFlags.RecalcScrollBar) == ScrollableElementUpdateFlags.RecalcScrollBar;
+            bool redrawAll = (updateFlags & ScrollableElementUpdateFlags.All) == ScrollableElementUpdateFlags.All;
+            bool redrawScrollBar = (updateFlags & ScrollableElementUpdateFlags.ScrollBar) == ScrollableElementUpdateFlags.ScrollBar;
+            bool redrawContent = (updateFlags & ScrollableElementUpdateFlags.Content) == ScrollableElementUpdateFlags.Content;
             bool redrawContentResult = false;
 
             if (redrawAll)
@@ -221,7 +221,7 @@ namespace ConcreteUI.Controls
                 OnViewportPointChanged();
             if (redrawContentResult)
             {
-                InterlockedHelper.Or(ref _updateFlagsRaw, (long)UpdateFlags.Content);
+                InterlockedHelper.Or(ref _updateFlagsRaw, (long)ScrollableElementUpdateFlags.Content);
                 return false;
             }
             return true;
@@ -240,13 +240,13 @@ namespace ConcreteUI.Controls
             };
         }
 
-        public override void OnSizeChanged() => Update(UpdateFlags.RecalcLayout);
+        public override void OnSizeChanged() => Update(ScrollableElementUpdateFlags.RecalcLayout);
 
-        public override void OnLocationChanged() => Update(UpdateFlags.RecalcLayout);
+        public override void OnLocationChanged() => Update(ScrollableElementUpdateFlags.RecalcLayout);
 
         public virtual void OnViewportPointChanged() { }
 
-        private UpdateFlags RecalculateLayout(in Rect bounds)
+        private ScrollableElementUpdateFlags RecalculateLayout(in Rect bounds)
         {
             Rect contentBounds = bounds;
             Size oldSurfaceSize = _oldSurfaceSize;
@@ -289,11 +289,11 @@ namespace ConcreteUI.Controls
             else
                 viewportPoint = new Point(MathHelper.Clamp(viewportPoint.X, 0, maxX), MathHelper.Clamp(viewportPoint.Y, 0, maxY));
 
-            UpdateFlags result = hasScrollBar ? (UpdateFlags.RecalcScrollBar | UpdateFlags.All) : UpdateFlags.Content;
+            ScrollableElementUpdateFlags result = hasScrollBar ? (ScrollableElementUpdateFlags.RecalcScrollBar | ScrollableElementUpdateFlags.All) : ScrollableElementUpdateFlags.Content;
             if (_viewportPoint != viewportPoint)
             {
                 _viewportPoint = viewportPoint;
-                result |= UpdateFlags.TriggerViewportPointChanged;
+                result |= ScrollableElementUpdateFlags.TriggerViewportPointChanged;
             }
 
             return result;
@@ -346,14 +346,14 @@ namespace ConcreteUI.Controls
         public void ScrollToStart()
         {
             _viewportPoint.Y = 0;
-            Update(UpdateFlags.RecalcScrollBar | UpdateFlags.All);
+            Update(ScrollableElementUpdateFlags.RecalcScrollBar | ScrollableElementUpdateFlags.All);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ScrollToEnd()
         {
             _viewportPoint.Y = MathHelper.Max(_surfaceSize.Height - _contentBounds.Height, 0);
-            Update(UpdateFlags.RecalcScrollBar | UpdateFlags.All);
+            Update(ScrollableElementUpdateFlags.RecalcScrollBar | ScrollableElementUpdateFlags.All);
         }
 
         private void MoveScrollBarButtonY(int movementY)
@@ -375,7 +375,7 @@ namespace ConcreteUI.Controls
                     viewPortY = 0;
                 }
                 _viewportPoint.Y = viewPortY;
-                Update(UpdateFlags.RecalcScrollBar | UpdateFlags.All);
+                Update(ScrollableElementUpdateFlags.RecalcScrollBar | ScrollableElementUpdateFlags.All);
             }
         }
 
@@ -401,7 +401,7 @@ namespace ConcreteUI.Controls
 
                 _scrollButtonState = ButtonTriState.Pressed;
                 _pinY = args.Y;
-                Update(UpdateFlags.ScrollBar);
+                Update(ScrollableElementUpdateFlags.ScrollBar);
                 return;
             }
 
@@ -410,7 +410,7 @@ namespace ConcreteUI.Controls
                 args.Handle();
 
                 _scrollUpButtonState = ButtonTriState.Pressed;
-                Update(UpdateFlags.ScrollBar);
+                Update(ScrollableElementUpdateFlags.ScrollBar);
                 OnScrollBarUpButtonClicked();
                 _repeatingAction = OnScrollBarUpButtonClicked;
                 _repeatingTimer.Change(SystemParameters.KeyboardDelay, SystemParameters.KeyboardSpeed);
@@ -422,7 +422,7 @@ namespace ConcreteUI.Controls
                 args.Handle();
 
                 _scrollDownButtonState = ButtonTriState.Pressed;
-                Update(UpdateFlags.ScrollBar);
+                Update(ScrollableElementUpdateFlags.ScrollBar);
                 OnScrollBarDownButtonClicked();
                 _repeatingAction = OnScrollBarDownButtonClicked;
                 _repeatingTimer.Change(SystemParameters.KeyboardDelay, SystemParameters.KeyboardSpeed);
@@ -451,7 +451,7 @@ namespace ConcreteUI.Controls
                     updateScrollBar = true;
                 }
                 if (updateScrollBar)
-                    Update(UpdateFlags.ScrollBar);
+                    Update(ScrollableElementUpdateFlags.ScrollBar);
                 if (_repeatingTimer is not null)
                 {
                     _repeatingTimer.Change(Timeout.Infinite, Timeout.Infinite);
@@ -523,7 +523,7 @@ namespace ConcreteUI.Controls
                     }
                 }
                 if (updateScrollBar)
-                    Update(UpdateFlags.ScrollBar);
+                    Update(ScrollableElementUpdateFlags.ScrollBar);
             }
         }
 

@@ -5,7 +5,7 @@ namespace ConcreteUI.Controls
     partial class ScrollableElementBase
     {
         [Flags]
-        protected enum UpdateFlags : ulong
+        protected enum ScrollableElementUpdateFlags : ulong
         {
             None = 0b000,
             Content = 0b001,
