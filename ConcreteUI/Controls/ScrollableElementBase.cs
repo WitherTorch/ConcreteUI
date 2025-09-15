@@ -38,7 +38,8 @@ namespace ConcreteUI.Controls
         private Action? _repeatingAction;
         private Point _viewportPoint;
         private Size _surfaceSize, _oldSurfaceSize;
-        private Rect _contentBounds, _scrollBarBounds, _scrollBarScrollButtonBounds, _scrollBarUpButtonBounds, _scrollBarDownButtonBounds;
+        private Rect _contentBounds, _scrollBarBounds;
+        private RectF _scrollBarScrollButtonBounds, _scrollBarUpButtonBounds, _scrollBarDownButtonBounds;
         private ButtonTriState _scrollButtonState, _scrollUpButtonState, _scrollDownButtonState;
         private ScrollBarType _scrollBarType;
         private ulong _updateFlagsRaw;
@@ -169,9 +170,9 @@ namespace ConcreteUI.Controls
                 if (recalcScrollBar)
                     RecalculateScrollBarButton();
                 Rect scrollBarBoundsRaw = _scrollBarBounds;
-                Rect scrollButtonBoundsRaw = _scrollBarScrollButtonBounds;
-                Rect upButtonBoundsRaw = _scrollBarUpButtonBounds;
-                Rect downButtonBoundsRaw = _scrollBarDownButtonBounds;
+                RectF scrollButtonBoundsRaw = _scrollBarScrollButtonBounds;
+                RectF upButtonBoundsRaw = _scrollBarUpButtonBounds;
+                RectF downButtonBoundsRaw = _scrollBarDownButtonBounds;
 
                 RectF scrollBarBounds = new RectF(scrollBarBoundsRaw.Left - bounds.Left, scrollBarBoundsRaw.Top - bounds.Top,
                     scrollBarBoundsRaw.Right - bounds.Left, scrollBarBoundsRaw.Bottom - bounds.Top);
@@ -197,8 +198,13 @@ namespace ConcreteUI.Controls
                     (D2D1AntialiasMode antialiasModeBefore, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
                     try
                     {
-                        context.FillRoundedRectangle(new D2D1RoundedRectangle() { RadiusX = 3, RadiusY = 3, Rect = scrollButtonBounds },
-                            GetButtonStateBrush(_scrollButtonState));
+                        float gap = RenderingHelper.CeilingInPixel((UIConstantsPrivate.ScrollBarWidth - UIConstantsPrivate.ScrollBarScrollButtonWidth) * 0.5f, pointsPerPixel);
+                        context.FillRoundedRectangle(new D2D1RoundedRectangle()
+                        {
+                            RadiusX = 3,
+                            RadiusY = 3,
+                            Rect = new RectF(scrollButtonBounds.Left + gap, scrollButtonBounds.Top, scrollButtonBounds.Right - gap, scrollButtonBounds.Bottom)
+                        }, GetButtonStateBrush(_scrollButtonState));
                         FontIconResources resources = FontIconResources.Instance;
                         resources.DrawScrollBarUpButton(context, (RectangleF)upButtonBounds, GetButtonStateBrush(_scrollUpButtonState));
                         resources.DrawScrollBarDownButton(context, (RectangleF)downButtonBounds, GetButtonStateBrush(_scrollDownButtonState));
@@ -305,18 +311,17 @@ namespace ConcreteUI.Controls
             Rect bounds = Bounds;
             Rect contentBounds = _contentBounds;
             Rect scrollBarBounds = new Rect(contentBounds.Right, contentBounds.Top, contentBounds.Right + UIConstantsPrivate.ScrollBarWidth, contentBounds.Bottom);
-            int X = scrollBarBounds.X;
-            int X2 = X + (UIConstantsPrivate.ScrollBarWidth - UIConstantsPrivate.ScrollBarScrollButtonWidth) / 2;
-            _scrollBarUpButtonBounds = Rect.FromXYWH(X, scrollBarBounds.Y, UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth);
-            _scrollBarDownButtonBounds = Rect.FromXYWH(X, scrollBarBounds.Bottom - UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth);
-            int scrollBarMaxHeight = _scrollBarDownButtonBounds.Top - _scrollBarUpButtonBounds.Bottom;
+            int baseX = scrollBarBounds.X;
+            _scrollBarUpButtonBounds = RectF.FromXYWH(baseX, scrollBarBounds.Y, UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth);
+            _scrollBarDownButtonBounds = RectF.FromXYWH(baseX, scrollBarBounds.Bottom - UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth);
+            float scrollBarMaxHeight = _scrollBarDownButtonBounds.Top - _scrollBarUpButtonBounds.Bottom;
             int surfaceHeight = _surfaceSize.Height;
             if (surfaceHeight == 0) surfaceHeight = 1;
             double surfaceHeightPerBarHeight = scrollBarMaxHeight < surfaceHeight ? scrollBarMaxHeight * 1.0 / surfaceHeight : 1.0;
-            int height = MathHelper.Max(MathI.Ceiling(bounds.Height * surfaceHeightPerBarHeight), 10);
+            float height = MathHelper.Max((float)(bounds.Height * surfaceHeightPerBarHeight), 10.0f);
             surfaceHeightPerBarHeight = (scrollBarMaxHeight - height) * 1.0 / (surfaceHeight - bounds.Height);
-            int Y = _scrollBarUpButtonBounds.Bottom + MathI.Ceiling(_viewportPoint.Y * surfaceHeightPerBarHeight);
-            _scrollBarScrollButtonBounds = Rect.FromXYWH(X2, Y, UIConstantsPrivate.ScrollBarScrollButtonWidth, height);
+            float Y = _scrollBarUpButtonBounds.Bottom + (float)(_viewportPoint.Y * surfaceHeightPerBarHeight);
+            _scrollBarScrollButtonBounds = RectF.FromXYWH(baseX, Y, UIConstantsPrivate.ScrollBarWidth, height);
             _scrollBarBounds = scrollBarBounds;
         }
 
