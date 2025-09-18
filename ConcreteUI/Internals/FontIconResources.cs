@@ -16,9 +16,8 @@ namespace ConcreteUI.Internals
         private static readonly FontIconResources _instance = new FontIconResources();
 
         private readonly FontIcon? _maxIcon, _restoreIcon, _minIcon, _closeIcon, _scrollUpIcon, _scrollDownIcon;
-        private readonly Dictionary<float, FontIcon> _comboBoxDropdownIconDict, _checkMarkIconDict;
+        private readonly OptimisticLock<Dictionary<float, FontIcon>> _comboBoxDropdownIconDict, _checkMarkIconDict;
 
-        private nuint _comboBoxDropdownIconDictVersion, _checkMarkIconDictVersion;
         private bool _disposed;
 
         public static FontIconResources Instance => _instance;
@@ -32,8 +31,8 @@ namespace ConcreteUI.Internals
             _closeIcon = GetCloseIcon(factory);
             _scrollUpIcon = GetScrollUpIcon(factory);
             _scrollDownIcon = GetScrollDownIcon(factory);
-            _comboBoxDropdownIconDict = new Dictionary<float, FontIcon>();
-            _checkMarkIconDict = new Dictionary<float, FontIcon>();
+            _comboBoxDropdownIconDict = OptimisticLock.Create<Dictionary<float, FontIcon>>();
+            _checkMarkIconDict = OptimisticLock.Create<Dictionary<float, FontIcon>>();
         }
 
         private static FontIcon? GetMaxIcon(FontIconFactory factory)
@@ -112,24 +111,26 @@ namespace ConcreteUI.Internals
             return null;
         }
 
-        private static unsafe FontIcon? GetOrCreateIcon(Dictionary<float, FontIcon> dict, ref nuint versionRef, float layoutHeight,
+        private static unsafe FontIcon? GetOrCreateIcon(OptimisticLock<Dictionary<float, FontIcon>> dictWithLock, float layoutHeight,
             delegate* managed<float, FontIcon?> createFunc)
         {
             if (layoutHeight < float.Epsilon)
                 return null;
-            OptimisticLock.Enter(ref versionRef, out nuint currentVersion);
-            do
+            StrongBox<FontIcon?> resultBox = new StrongBox<FontIcon?>();
+            if (dictWithLock.Read(dict => dict.TryGetValue(layoutHeight, out resultBox.Value)))
+                return resultBox.Value;
+            FontIcon? result = createFunc(layoutHeight);
+            if (result is not null)
             {
-                if (dict.TryGetValue(layoutHeight, out FontIcon? result))
-                    return result;
-                result = createFunc(layoutHeight);
-                if (result is null)
-                    return null;
-                dict.Add(layoutHeight, result);
-                if (OptimisticLock.TryLeave(ref versionRef, ref currentVersion))
-                    return result;
-                result.Dispose();
-            } while (true);
+                dictWithLock.Write(dict =>
+                {
+                    if (!dict.TryGetValue(layoutHeight, out FontIcon? oldItem))
+                        oldItem = null;
+                    dict[layoutHeight] = result;
+                    oldItem?.Dispose();
+                });
+            }
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -150,7 +151,7 @@ namespace ConcreteUI.Internals
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void DrawDropDownButton(in RegionalRenderingContext context, in RectangleF rect, D2D1Brush brush)
-            => GetOrCreateIcon(_comboBoxDropdownIconDict, ref _comboBoxDropdownIconDictVersion,
+            => GetOrCreateIcon(_comboBoxDropdownIconDict,
                 rect.Height - UIConstants.ElementMargin, &CreateComboBoxDropDownIcon)?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -163,7 +164,7 @@ namespace ConcreteUI.Internals
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void DrawCheckMark(in RegionalRenderingContext context, in RectangleF rect, D2D1Brush brush)
-            => GetOrCreateIcon(_checkMarkIconDict, ref _checkMarkIconDictVersion,
+            => GetOrCreateIcon(_checkMarkIconDict,
                 rect.Height, &CreateCheckMarkIcon)?.Render(context, rect.Location, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -180,7 +181,7 @@ namespace ConcreteUI.Internals
                 _closeIcon?.Dispose();
                 _scrollUpIcon?.Dispose();
                 _scrollDownIcon?.Dispose();
-                _comboBoxDropdownIconDict.Clear();
+                _comboBoxDropdownIconDict.Value.Clear();
             }
         }
 
