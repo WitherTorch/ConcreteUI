@@ -12,58 +12,97 @@ namespace ConcreteUI.Graphics.Helpers
         public static float GetDefaultBorderWidth(float pointsPerPixel)
             => MathF.Round(pointsPerPixel) / pointsPerPixel;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float FloorInPixel(float valueInPoints, float pointsPerPixel)
+        {
+            if (pointsPerPixel == 1.0f)
+                return valueInPoints;
+            return FloorInPixelCore(valueInPoints, pointsPerPixel);
+        }
+
+        public static PointF FloorInPixel(PointF valueInPoints, float pointsPerPixel)
+        {
+            if (pointsPerPixel == 1.0f)
+                return valueInPoints;
+            float x = FloorInPixelCore(valueInPoints.X, pointsPerPixel);
+            float y = FloorInPixelCore(valueInPoints.Y, pointsPerPixel);
+            return new PointF(x, y);
+        }
+
+        public static RectF FloorInPixel(in RectF valueInPoints, float pointsPerPixel)
+        {
+            if (pointsPerPixel == 1.0f)
+                return valueInPoints;
+            float left = FloorInPixelCore(valueInPoints.Left, pointsPerPixel);
+            float top = FloorInPixelCore(valueInPoints.Top, pointsPerPixel);
+            float right = FloorInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pointsPerPixel);
+            float bottom = FloorInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pointsPerPixel);
+            return new RectF(left, top, right, bottom);
+        }
+
+        public static float CeilingInPixel(float valueInPoints, float pointsPerPixel)
+        {
+            if (pointsPerPixel == 1.0f)
+                return valueInPoints;
+            return CeilingInPixelCore(valueInPoints, pointsPerPixel);
+        }
+
+        public static PointF CeilingInPixel(PointF valueInPoints, float pointsPerPixel)
+        {
+            if (pointsPerPixel == 1.0f)
+                return valueInPoints;
+            float x = CeilingInPixelCore(valueInPoints.X, pointsPerPixel);
+            float y = CeilingInPixelCore(valueInPoints.Y, pointsPerPixel);
+            return new PointF(x, y);
+        }
+
+        public static RectF CeilingInPixel(in RectF valueInPoints, float pointsPerPixel)
+        {
+            if (pointsPerPixel == 1.0f)
+                return valueInPoints;
+            float left = CeilingInPixelCore(valueInPoints.Left, pointsPerPixel);
+            float top = CeilingInPixelCore(valueInPoints.Top, pointsPerPixel);
+            float right = CeilingInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pointsPerPixel);
+            float bottom = CeilingInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pointsPerPixel);
+            return new RectF(left, top, right, bottom);
+        }
+
+        public static float RoundInPixel(float valueInPoints, float pointsPerPixel)
+        {
+            if (pointsPerPixel == 1.0f)
+                return valueInPoints;
+            return RoundInPixelCore(valueInPoints, pointsPerPixel);
+        }
+
+        public static PointF RoundInPixel(PointF valueInPoints, float pointsPerPixel)
+        {
+            if (pointsPerPixel == 1.0f)
+                return valueInPoints;
+            float x = RoundInPixelCore(valueInPoints.X, pointsPerPixel);
+            float y = RoundInPixelCore(valueInPoints.Y, pointsPerPixel);
+            return new PointF(x, y);
+        }
+
+        public static RectF RoundInPixel(in RectF valueInPoints, float pointsPerPixel)
+        {
+            if (pointsPerPixel == 1.0f)
+                return valueInPoints;
+            float left = RoundInPixelCore(valueInPoints.Left, pointsPerPixel);
+            float top = RoundInPixelCore(valueInPoints.Top, pointsPerPixel);
+            float right = RoundInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pointsPerPixel);
+            float bottom = RoundInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pointsPerPixel);
+            return new RectF(left, top, right, bottom);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float FloorInPixelCore(float  valueInPoints, float pointsPerPixel)
             => MathF.Floor(valueInPoints / pointsPerPixel) * pointsPerPixel;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PointF FloorInPixel(PointF valueInPoints, float pointsPerPixel)
-            => new PointF(FloorInPixel(valueInPoints.X, pointsPerPixel), FloorInPixel(valueInPoints.Y, pointsPerPixel));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RectF FloorInPixel(in RectF valueInPoints, float pointsPerPixel)
-        {
-            float left = FloorInPixel(valueInPoints.Left, pointsPerPixel);
-            float top = FloorInPixel(valueInPoints.Top, pointsPerPixel);
-            float right = FloorInPixel(valueInPoints.Right + (left - valueInPoints.Left), pointsPerPixel);
-            float bottom = FloorInPixel(valueInPoints.Bottom + (top - valueInPoints.Top), pointsPerPixel);
-            return new RectF(left, top, right, bottom);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float CeilingInPixel(float valueInPoints, float pointsPerPixel)
+        private static float CeilingInPixelCore(float  valueInPoints, float pointsPerPixel)
             => MathF.Ceiling(valueInPoints / pointsPerPixel) * pointsPerPixel;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PointF CeilingInPixel(PointF valueInPoints, float pointsPerPixel)
-            => new PointF(CeilingInPixel(valueInPoints.X, pointsPerPixel), CeilingInPixel(valueInPoints.Y, pointsPerPixel));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RectF CeilingInPixel(in RectF valueInPoints, float pointsPerPixel)
-        {
-            float left = CeilingInPixel(valueInPoints.Left, pointsPerPixel);
-            float top = CeilingInPixel(valueInPoints.Top, pointsPerPixel);
-            float right = CeilingInPixel(valueInPoints.Right + (left - valueInPoints.Left), pointsPerPixel);
-            float bottom = CeilingInPixel(valueInPoints.Bottom + (top - valueInPoints.Top), pointsPerPixel);
-            return new RectF(left, top, right, bottom);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float RoundInPixel(float valueInPoints, float pointsPerPixel)
+        private static float RoundInPixelCore(float  valueInPoints, float pointsPerPixel)
             => MathF.Round(valueInPoints / pointsPerPixel) * pointsPerPixel;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PointF RoundInPixel(PointF valueInPoints, float pointsPerPixel)
-            => new PointF(RoundInPixel(valueInPoints.X, pointsPerPixel), RoundInPixel(valueInPoints.Y, pointsPerPixel));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RectF RoundInPixel(in RectF valueInPoints, float pointsPerPixel)
-        {
-            float left = RoundInPixel(valueInPoints.Left, pointsPerPixel);
-            float top = RoundInPixel(valueInPoints.Top, pointsPerPixel);
-            float right = RoundInPixel(valueInPoints.Right + (left - valueInPoints.Left), pointsPerPixel);
-            float bottom = RoundInPixel(valueInPoints.Bottom + (top - valueInPoints.Top), pointsPerPixel);
-            return new RectF(left, top, right, bottom);
-        }
     }
 }
