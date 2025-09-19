@@ -7,8 +7,6 @@ using ConcreteUI.Internals;
 using ConcreteUI.Window;
 
 using WitherTorch.Common;
-using WitherTorch.Common.Buffers;
-using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Threading;
 
@@ -23,7 +21,7 @@ namespace ConcreteUI
     {
         private class InvokeMessageFilter : IWindowMessageFilter
         {
-            private readonly SwapQueue<IInvokeClosure> _invokeClosureQueue = new SwapQueue<IInvokeClosure>();
+            private readonly Swapable<Queue<IInvokeClosure>> _invokeClosureQueue = Swapable.CreateQueue<IInvokeClosure>(optimistic: true);
 
             private int _readBarrier;
 
