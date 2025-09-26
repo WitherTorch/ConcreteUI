@@ -7,8 +7,6 @@ using ConcreteUI.Controls;
 
 using InlineMethod;
 
-using LocalsInit;
-
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
@@ -164,6 +162,8 @@ namespace ConcreteUI.Layout
 
             foreach ((UIElement element, LayoutVariable?[] variables) in elementDict)
             {
+                Exception innerException;
+
                 Rectangle bounds = default;
                 int* values = (int*)&bounds;
 
@@ -178,7 +178,15 @@ namespace ConcreteUI.Layout
                         hasNull = true;
                         continue;
                     }
-                    values[i] = variableManager.GetComputedValue(variable);
+                    try
+                    {
+                        values[i] = variableManager.GetComputedValue(variable);
+                    }
+                    catch (Exception ex)
+                    {
+                        innerException = ex;
+                        goto FailedWithException;
+                    }
                 }
                 for (nuint i = (nuint)LayoutProperty.Width; i <= (nuint)LayoutProperty.Height; i++)
                 {
@@ -188,7 +196,15 @@ namespace ConcreteUI.Layout
                         hasNull = true;
                         continue;
                     }
-                    values[i - 2] = variableManager.GetComputedValue(variable);
+                    try
+                    {
+                        values[i - 2] = variableManager.GetComputedValue(variable);
+                    }
+                    catch (Exception ex)
+                    {
+                        innerException = ex;
+                        goto FailedWithException;
+                    }
                 }
 
                 if (hasNull)
@@ -198,8 +214,10 @@ namespace ConcreteUI.Layout
                         LayoutVariable? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
                         if (variable is not null)
                             continue;
-                        LayoutVariable leftVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i + 2) ?? throw new InvalidOperationException();
-                        LayoutVariable rightVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i + 4) ?? throw new InvalidOperationException();
+                        LayoutVariable? leftVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i + 2);
+                        LayoutVariable? rightVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i + 4);
+                        if (leftVariable is null || rightVariable is null)
+                            goto Failed;
                         values[i] = variableManager.GetComputedValue(leftVariable) - variableManager.GetComputedValue(rightVariable);
                     }
                     for (nuint i = (nuint)LayoutProperty.Width; i <= (nuint)LayoutProperty.Height; i++)
@@ -207,12 +225,21 @@ namespace ConcreteUI.Layout
                         LayoutVariable? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
                         if (variable is not null)
                             continue;
-                        LayoutVariable leftVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i - 2) ?? throw new InvalidOperationException();
-                        LayoutVariable rightVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i - 4) ?? throw new InvalidOperationException();
+                        LayoutVariable? leftVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i - 2);
+                        LayoutVariable? rightVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i - 4);
+                        if (leftVariable is null || rightVariable is null)
+                            goto Failed;
                         values[i - 2] = variableManager.GetComputedValue(leftVariable) - variableManager.GetComputedValue(rightVariable);
                     }
                 }
                 element.Bounds = bounds;
+                continue;
+
+            Failed:
+                throw new InvalidOperationException($"Failed to calculate layout for {element}!");
+
+            FailedWithException:
+                throw new InvalidOperationException($"Failed to calculate layout for {element}!", innerException);
             }
 
             elementDict.Clear();
