@@ -20,14 +20,6 @@ namespace ConcreteUI.Native
 
         [SuppressGCTransition]
         [DllImport(GDI32_DLL)]
-        public static extern partial IntPtr GetDC(IntPtr hWnd);
-
-        [SuppressGCTransition]
-        [DllImport(GDI32_DLL)]
-        public static extern partial int ReleaseDC(IntPtr hWnd, IntPtr hDC);
-
-        [SuppressGCTransition]
-        [DllImport(GDI32_DLL)]
         public static extern partial int GetDeviceCaps(IntPtr hdc, int index);
     }
 }

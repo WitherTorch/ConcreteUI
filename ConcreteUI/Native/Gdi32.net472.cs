@@ -17,12 +17,6 @@ namespace ConcreteUI.Native
         public static extern partial bool DeleteObject(IntPtr handle);
 
         [DllImport(GDI32_DLL)]
-        public static extern partial IntPtr GetDC(IntPtr hWnd);
-
-        [DllImport(GDI32_DLL)]
-        public static extern partial int ReleaseDC(IntPtr hWnd, IntPtr hDC);
-
-        [DllImport(GDI32_DLL)]
         public static extern partial int GetDeviceCaps(IntPtr hdc, int index);
     }
 }

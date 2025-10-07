@@ -37,7 +37,7 @@ namespace ConcreteUI.Native
                     return dpi;
                 if (hr == Constants.E_NOTIMPL)
                 {
-                    IntPtr hdc = Gdi32.GetDC(hWnd);
+                    IntPtr hdc = GetDC(hWnd);
                     if (hdc == IntPtr.Zero)
                         return 0;
                     try
@@ -47,7 +47,7 @@ namespace ConcreteUI.Native
                     }
                     finally
                     {
-                        Gdi32.ReleaseDC(hWnd, hdc);
+                        ReleaseDC(hWnd, hdc);
                     }
                 }
                 return 0;
@@ -271,6 +271,12 @@ namespace ConcreteUI.Native
 
         [DllImport(USER32_DLL)]
         public static extern int GetLastError();
+
+        [DllImport(USER32_DLL)]
+        public static extern IntPtr GetDC(IntPtr hWnd);
+
+        [DllImport(USER32_DLL)]
+        public static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool SetWindowText(IntPtr handle, string text)
