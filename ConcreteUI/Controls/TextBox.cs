@@ -449,7 +449,7 @@ namespace ConcreteUI.Controls
             DWriteHitTestMetrics rangeMetrics = layout.HitTestTextRange(MathHelper.MakeUnsigned(caretIndex), 0, 0, 0)[0];
             float pointsPerPixel = Renderer.GetPointsPerPixel();
             RectF selectionBounds = RenderingHelper.RoundInPixel(RectF.FromXYWH(
-                layoutPoint.X + rangeMetrics.Left - 0.5f, layoutPoint.Y + rangeMetrics.Top, 1.0f, rangeMetrics.Height),
+                layoutPoint.X + rangeMetrics.Left, layoutPoint.Y + rangeMetrics.Top, 1.0f, rangeMetrics.Height),
                 pointsPerPixel);
             context.FillRectangle(selectionBounds, _brushes[(int)Brush.ForeBrush]);
         }
