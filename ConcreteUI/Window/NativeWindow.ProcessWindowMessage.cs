@@ -159,7 +159,7 @@ namespace ConcreteUI.Window
                 IntPtr handle = _handleLazy.Value;
                 if (handle == IntPtr.Zero)
                     return true;
-                if (!WindowClassImpl.Instance.UnregisterWindowUnsafe(handle, this))
+                if (!WindowClassImpl.Instance.TryUnregisterWindowUnsafe(handle, this))
                     DebugHelper.Throw();
                 CancellationTokenSource? dialogTokenSource = InterlockedHelper.Exchange(ref _dialogTokenSource, null);
                 if (dialogTokenSource is not null)

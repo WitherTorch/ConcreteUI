@@ -7,8 +7,6 @@ using System.Threading;
 using ConcreteUI.Native;
 using ConcreteUI.Window;
 
-using InlineIL;
-
 using InlineMethod;
 
 using WitherTorch.Common.Helpers;
@@ -24,7 +22,7 @@ namespace ConcreteUI.Internals
 
         public static WindowClassImpl Instance => _instanceLazy.Value;
 
-        private readonly Dictionary<IntPtr, WeakReference<IHwndOwner>> _hwndOwnerDict;
+        private readonly OptimisticLock<Dictionary<IntPtr, WeakReference<IHwndOwner>>> _hwndOwnerDictWithLock;
         private readonly IntPtr _hInstance;
         private readonly ushort _atom;
 
@@ -32,7 +30,7 @@ namespace ConcreteUI.Internals
         {
             _atom = atom;
             _hInstance = hInstance;
-            _hwndOwnerDict = new Dictionary<nint, WeakReference<IHwndOwner>>();
+            _hwndOwnerDictWithLock = OptimisticLock.Create(new Dictionary<IntPtr, WeakReference<IHwndOwner>>());
         }
 
         public ushort Atom => _atom;
@@ -73,88 +71,62 @@ namespace ConcreteUI.Internals
             return User32.DefWindowProcW(hwnd, message, wParam, lParam);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryRegisterWindow(IHwndOwner owner)
-        {
-            Dictionary<IntPtr, WeakReference<IHwndOwner>> dict = _hwndOwnerDict;
-            lock (dict)
-            {
-                IntPtr handle = owner.Handle;
-                if (handle == IntPtr.Zero || CheckExists(dict, handle))
-                    return false;
-                dict[handle] = new WeakReference<IHwndOwner>(owner);
-                return true;
-            }
-        }
+            => TryRegisterWindowUnsafe(owner.Handle, owner);
 
         public bool TryRegisterWindowUnsafe(IntPtr handle, IHwndOwner owner)
         {
             if (handle == IntPtr.Zero)
                 return false;
-            Dictionary<IntPtr, WeakReference<IHwndOwner>> dict = _hwndOwnerDict;
-            lock (dict)
-            {
-                if (CheckExists(dict, handle))
-                    return false;
-                dict[handle] = new WeakReference<IHwndOwner>(owner);
-            }
+
+            OptimisticLock<Dictionary<nint, WeakReference<IHwndOwner>>> dictWithLock = _hwndOwnerDictWithLock;
+            if (dictWithLock.Read(dict => CheckExists(dict, handle)))
+                return false;
+            WeakReference<IHwndOwner> ownerRef = new WeakReference<IHwndOwner>(owner);
+            dictWithLock.Write(dict => dict[handle] = ownerRef);
             return true;
         }
 
-        public bool UnregisterWindow(IHwndOwner owner)
-        {
-            Dictionary<IntPtr, WeakReference<IHwndOwner>> dict = _hwndOwnerDict;
-            lock (dict)
-            {
-                IntPtr handle = owner.Handle;
-                if (handle == IntPtr.Zero || !CheckExists(dict, handle, owner))
-                    return false;
-                dict[handle] = new WeakReference<IHwndOwner>(owner);
-                return true;
-            }
-        }
+        public bool TryUnregisterWindow(IHwndOwner owner)
+            => TryUnregisterWindowUnsafe(owner.Handle, owner);
 
-        public bool UnregisterWindowUnsafe(IntPtr handle, IHwndOwner owner)
+        public bool TryUnregisterWindowUnsafe(IntPtr handle, IHwndOwner owner)
         {
             if (handle == IntPtr.Zero)
                 return false;
-            Dictionary<IntPtr, WeakReference<IHwndOwner>> dict = _hwndOwnerDict;
-            lock (dict)
-            {
-                if (!CheckExists(dict, handle, owner))
-                    return false;
-                dict.Remove(handle);
-            }
+
+            OptimisticLock<Dictionary<nint, WeakReference<IHwndOwner>>> dictWithLock = _hwndOwnerDictWithLock;
+            if (dictWithLock.Read(dict => !CheckExists(dict, handle, owner)))
+                return false;
+            dictWithLock.Write(dict => dict.Remove(handle));
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
-            Dictionary<IntPtr, WeakReference<IHwndOwner>> dict = _hwndOwnerDict;
-            WeakReference<IHwndOwner>? ownerRef;
-            lock (dict)
-            {
-                if (!dict.TryGetValue(hwnd, out ownerRef))
-                    goto Failed;
-            }
-            if (ownerRef.TryGetTarget(out IHwndOwner? owner) && owner is not null && owner.TryProcessWindowMessage(hwnd, message, wParam, lParam, out result))
+            WeakReference<IHwndOwner>? ownerRef = _hwndOwnerDictWithLock.Read(
+                dict => dict.TryGetValue(hwnd, out WeakReference<IHwndOwner>? result) ? result : null);
+
+            if (ownerRef is not null && ownerRef.TryGetTarget(out IHwndOwner? owner) && 
+                owner is not null && owner.TryProcessWindowMessage(hwnd, message, wParam, lParam, out result))
                 return true;
 
-            Failed:
             result = 0;
             return false;
         }
 
-        [Inline(InlineBehavior.Remove)]
-        private static bool CheckExists(Dictionary<IntPtr, WeakReference<IHwndOwner>> dict, nint handle)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool CheckExists(Dictionary<IntPtr, WeakReference<IHwndOwner>> dict, IntPtr handle)
         {
             return dict.TryGetValue(handle, out WeakReference<IHwndOwner>? ownerRef) &&
                     ownerRef.TryGetTarget(out IHwndOwner? oldOwner) &&
                     oldOwner is not null && oldOwner.Handle == handle;
         }
 
-        [Inline(InlineBehavior.Remove)]
-        private static bool CheckExists(Dictionary<IntPtr, WeakReference<IHwndOwner>> dict, nint handle, IHwndOwner owner)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool CheckExists(Dictionary<IntPtr, WeakReference<IHwndOwner>> dict, IntPtr handle, IHwndOwner owner)
         {
             return dict.TryGetValue(handle, out WeakReference<IHwndOwner>? ownerRef) &&
                     ownerRef.TryGetTarget(out IHwndOwner? oldOwner) &&
