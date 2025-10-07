@@ -18,9 +18,8 @@ using WitherTorch.Common.Windows.Structures;
 namespace ConcreteUI.Native
 {
     [SuppressUnmanagedCodeSecurity]
-    internal static unsafe class User32
+    internal static unsafe partial class User32
     {
-        private const string USER32_DLL = "user32.dll";
         private static readonly void*[] _pointers = MethodImportHelper.GetImportedMethodPointers(USER32_DLL,
             nameof(GetDpiForWindow));
 
@@ -55,228 +54,81 @@ namespace ConcreteUI.Native
             return ((delegate* unmanaged[Stdcall]<IntPtr, uint>)pointer)(hWnd);
         }
 
-        [DllImport(USER32_DLL)]
-        public static extern int GetSystemMetrics(SystemMetric smIndex);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool GetWindowRect(IntPtr hWnd, Rect* lpRect);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool GetClientRect(IntPtr hWnd, Rect* lpRect);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool ScreenToClient(IntPtr hWnd, Point* lpPoint);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool SetWindowTextW(IntPtr hWnd, char* lpString);
-
-        [DllImport(USER32_DLL)]
-        public static extern int SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int Width, int Height, WindowPositionFlags flags);
-
-        [DllImport(USER32_DLL)]
-        public static extern int GetWindowThreadProcessId(IntPtr hWnd, int* lpdwProcessId);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool GetWindowPlacement(IntPtr hWnd, WindowPlacement* lpwndpl);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool IsIconic(IntPtr hWnd);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool IsZoomed(IntPtr hWnd);
-
-        [DllImport(USER32_DLL)]
-        public static extern IntPtr GetKeyboardLayout(uint idThread);
-
-        [DllImport(USER32_DLL)]
-        public static extern uint GetDoubleClickTime();
-
-        [DllImport(USER32_DLL)]
-        public static extern bool CreateCaret(IntPtr hWnd, IntPtr hBitmap, int nWidth, int nHeight);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool DestroyCaret();
-
-        [DllImport(USER32_DLL)]
-        public static extern bool SetCaretPos(int x, int y);
-
-        [DllImport(USER32_DLL)]
-        public static extern int GetWindowCompositionAttribute(IntPtr hWnd, WindowCompositionAttributeData* data);
-
-        [DllImport(USER32_DLL)]
-        public static extern int SetWindowCompositionAttribute(IntPtr hWnd, WindowCompositionAttributeData* data);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool SystemParametersInfoW(uint uiAction, uint uiParam, void* pvParam, uint fWinIni);
-
-        [DllImport(USER32_DLL)]
-        public static extern IntPtr CreateWindowExW(WindowExtendedStyles dwExStyle, char* lpClassName, char* lpWindowName,
+        public static partial int GetSystemMetrics(SystemMetric smIndex);
+        public static partial bool GetWindowRect(IntPtr hWnd, Rect* lpRect);
+        public static partial bool GetClientRect(IntPtr hWnd, Rect* lpRect);
+        public static partial bool ScreenToClient(IntPtr hWnd, Point* lpPoint);
+        public static partial bool SetWindowTextW(IntPtr hWnd, char* lpString);
+        public static partial int SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int Width, int Height, WindowPositionFlags flags);
+        public static partial int GetWindowThreadProcessId(IntPtr hWnd, int* lpdwProcessId);
+        public static partial bool GetWindowPlacement(IntPtr hWnd, WindowPlacement* lpwndpl);
+        public static partial bool IsIconic(IntPtr hWnd);
+        public static partial bool IsZoomed(IntPtr hWnd);
+        public static partial IntPtr GetKeyboardLayout(uint idThread);
+        public static partial uint GetDoubleClickTime();
+        public static partial bool CreateCaret(IntPtr hWnd, IntPtr hBitmap, int nWidth, int nHeight);
+        public static partial bool DestroyCaret();
+        public static partial bool SetCaretPos(int x, int y);
+        public static partial int GetWindowCompositionAttribute(IntPtr hWnd, WindowCompositionAttributeData* data);
+        public static partial int SetWindowCompositionAttribute(IntPtr hWnd, WindowCompositionAttributeData* data);
+        public static partial bool SystemParametersInfoW(uint uiAction, uint uiParam, void* pvParam, uint fWinIni);
+        public static partial IntPtr CreateWindowExW(WindowExtendedStyles dwExStyle, char* lpClassName, char* lpWindowName,
             WindowStyles dwStyle, int X, int Y, int nWidth, int nHeight, IntPtr hWndParent, IntPtr hMenu, IntPtr hInstance, void* lpParam);
-
-        [DllImport(USER32_DLL)]
-        public static extern ushort RegisterClassExW(WindowClassEx* windowClass);
-
-        [DllImport(USER32_DLL)]
-        public static extern nint DefWindowProcW(IntPtr hWnd, WindowMessage msg, nint wParam, nint lParam);
-
-        [DllImport(USER32_DLL)]
-        public static extern nint DefWindowProcW(IntPtr hWnd, uint msg, nint wParam, nint lParam);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool ShowWindow(IntPtr hWnd, ShowWindowCommands nCmdShow);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool EnableWindow(IntPtr hWnd, bool bEnable);
-
-        [DllImport(USER32_DLL)]
-        public static extern IntPtr GetWindow(IntPtr hWnd, GetWindowCommand uCmd);
-
-        [DllImport(USER32_DLL)]
-        public static extern IntPtr GetActiveWindow();
-
-        [DllImport(USER32_DLL)]
-        public static extern IntPtr SetActiveWindow(IntPtr hWnd);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool IsWindowVisible(IntPtr hWnd);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool DestroyWindow(IntPtr hWnd);
-
-        [DllImport(USER32_DLL)]
-        public static extern uint RegisterWindowMessageW(char* lpString);
-
-        [DllImport(USER32_DLL)]
-        public static extern nint SendMessageW(IntPtr hWnd, WindowMessage message, nint wParam, nint lParam);
-
-        [DllImport(USER32_DLL)]
-        public static extern nint SendMessageW(IntPtr hWnd, uint message, nint wParam, nint lParam);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool PostMessageW(IntPtr hWnd, WindowMessage message, nint wParam, nint lParam);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool PostMessageW(IntPtr hWnd, uint message, nint wParam, nint lParam);
-
-        [DllImport(USER32_DLL)]
-        public static extern void PostQuitMessage(int nExitCode);
-
-        [DllImport(USER32_DLL)]
-        public static extern SysBool GetMessageW(PumpingMessage* lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool PeekMessageW(PumpingMessage* lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax, PeekMessageOptions wRemoveMsg);
-
-        [DllImport(USER32_DLL)]
-        public static extern SysBool TranslateMessage(PumpingMessage* lpMsg);
-
-        [DllImport(USER32_DLL)]
-        public static extern nint DispatchMessageW(PumpingMessage* lpMsg);
-
-        [DllImport(USER32_DLL)]
-        public static extern IntPtr LoadImageW(IntPtr hInstance, char* name, Win32ImageType type, int cx, int cy, LoadOrCopyImageOptions fuLoad);
-
-        [DllImport(USER32_DLL)]
-        public static extern IntPtr CopyIcon(IntPtr hIcon);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool DestroyCursor(IntPtr hCursor);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool DestroyIcon(IntPtr hIcon);
-
-        [DllImport(USER32_DLL)]
-        public static extern IntPtr SetCursor(IntPtr hCursor);
-
-        [DllImport(USER32_DLL)]
-        public static extern int GetWindowTextLengthW(IntPtr hWnd);
-
-        [DllImport(USER32_DLL)]
-        public static extern int GetWindowTextW(IntPtr hWnd, char* lpString, int maxCount);
-
-        [DllImport(USER32_DLL)]
-        public static extern nint GetWindowLongPtrW(IntPtr hWnd, int nIndex);
-
-        [DllImport(USER32_DLL)]
-        public static extern nint SetWindowLongPtrW(IntPtr hWnd, int nIndex, nint dwNewLong);
-
-        [DllImport(USER32_DLL)]
-        public static extern IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool OpenClipboard(IntPtr hWndNewOwner);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool EmptyClipboard();
-
-        [DllImport(USER32_DLL)]
-        public static extern bool CloseClipboard();
-
-        [DllImport(USER32_DLL)]
-        public static extern IntPtr GetClipboardData(ClipboardFormat uFormat);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool IsClipboardFormatAvailable(ClipboardFormat format);
-
-        [DllImport(USER32_DLL)]
-        public static extern IntPtr SetClipboardData(ClipboardFormat format, IntPtr hMem);
-
-        [DllImport(USER32_DLL)]
-        public static extern short GetAsyncKeyState(VirtualKey vKey);
-
-        [DllImport(USER32_DLL)]
-        public static extern short GetKeyState(VirtualKey vKey);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool GetCursorPos(Point* lpPoint);
-
-        [DllImport(USER32_DLL)]
-        public static extern IntPtr MonitorFromWindow(IntPtr hWnd, GetMonitorFlags dwFlags);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool GetMonitorInfoW(IntPtr hMonitor, MonitorInfo* lpmi);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool GetUpdateRect(IntPtr hWnd, Rect* lpRect, bool bErase);
-
-        [DllImport(USER32_DLL)]
-        public static extern IntPtr BeginPaint(IntPtr hWnd, PaintStruct* lpPaint);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool EndPaint(IntPtr hWnd, PaintStruct* lpPaint);
-
-        [DllImport(USER32_DLL)]
-        public static extern DialogResult MessageBoxW(IntPtr hWnd, char* lpText, char* lpCaption, MessageBoxFlags uType);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool PostThreadMessageW(uint idThread, WindowMessage msg, nint wParam, nint lParam);
-
-        [DllImport(USER32_DLL)]
-        public static extern uint MsgWaitForMultipleObjects(uint nCount, IntPtr* pHandles, bool fWaitAll, uint dwMilliseconds, QueueStatusFlags dwWakeMask);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool PostThreadMessageW(uint idThread, uint msg, nint wParam, nint lParam);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool InSendMessage();
-
-        [DllImport(USER32_DLL)]
-        public static extern bool ReplyMessage(nint lResult);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool SetCapture(IntPtr hWnd);
-
-        [DllImport(USER32_DLL)]
-        public static extern bool ReleaseCapture();
-
-        [DllImport(USER32_DLL)]
-        public static extern int GetLastError();
-
-        [DllImport(USER32_DLL)]
-        public static extern IntPtr GetDC(IntPtr hWnd);
-
-        [DllImport(USER32_DLL)]
-        public static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+        public static partial ushort RegisterClassExW(WindowClassEx* windowClass);
+        public static partial nint DefWindowProcW(IntPtr hWnd, WindowMessage msg, nint wParam, nint lParam);
+        public static partial nint DefWindowProcW(IntPtr hWnd, uint msg, nint wParam, nint lParam);
+        public static partial bool ShowWindow(IntPtr hWnd, ShowWindowCommands nCmdShow);
+        public static partial bool EnableWindow(IntPtr hWnd, bool bEnable);
+        public static partial IntPtr GetWindow(IntPtr hWnd, GetWindowCommand uCmd);
+        public static partial IntPtr GetActiveWindow();
+        public static partial IntPtr SetActiveWindow(IntPtr hWnd);
+        public static partial bool IsWindowVisible(IntPtr hWnd);
+        public static partial bool DestroyWindow(IntPtr hWnd);
+        public static partial uint RegisterWindowMessageW(char* lpString);
+        public static partial nint SendMessageW(IntPtr hWnd, WindowMessage message, nint wParam, nint lParam);
+        public static partial nint SendMessageW(IntPtr hWnd, uint message, nint wParam, nint lParam);
+        public static partial bool PostMessageW(IntPtr hWnd, WindowMessage message, nint wParam, nint lParam);
+        public static partial bool PostMessageW(IntPtr hWnd, uint message, nint wParam, nint lParam);
+        public static partial void PostQuitMessage(int nExitCode);
+        public static partial SysBool GetMessageW(PumpingMessage* lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
+        public static partial bool PeekMessageW(PumpingMessage* lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax, PeekMessageOptions wRemoveMsg);
+        public static partial SysBool TranslateMessage(PumpingMessage* lpMsg);
+        public static partial nint DispatchMessageW(PumpingMessage* lpMsg);
+        public static partial IntPtr LoadImageW(IntPtr hInstance, char* name, Win32ImageType type, int cx, int cy, LoadOrCopyImageOptions fuLoad);
+        public static partial IntPtr CopyIcon(IntPtr hIcon);
+        public static partial bool DestroyCursor(IntPtr hCursor);
+        public static partial bool DestroyIcon(IntPtr hIcon);
+        public static partial IntPtr SetCursor(IntPtr hCursor);
+        public static partial int GetWindowTextLengthW(IntPtr hWnd);
+        public static partial int GetWindowTextW(IntPtr hWnd, char* lpString, int maxCount);
+        public static partial nint GetWindowLongPtrW(IntPtr hWnd, int nIndex);
+        public static partial nint SetWindowLongPtrW(IntPtr hWnd, int nIndex, nint dwNewLong);
+        public static partial IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
+        public static partial bool OpenClipboard(IntPtr hWndNewOwner);
+        public static partial bool EmptyClipboard();
+        public static partial bool CloseClipboard();
+        public static partial IntPtr GetClipboardData(ClipboardFormat uFormat);
+        public static partial bool IsClipboardFormatAvailable(ClipboardFormat format);
+        public static partial IntPtr SetClipboardData(ClipboardFormat format, IntPtr hMem);
+        public static partial short GetAsyncKeyState(VirtualKey vKey);
+        public static partial short GetKeyState(VirtualKey vKey);
+        public static partial bool GetCursorPos(Point* lpPoint);
+        public static partial IntPtr MonitorFromWindow(IntPtr hWnd, GetMonitorFlags dwFlags);
+        public static partial bool GetMonitorInfoW(IntPtr hMonitor, MonitorInfo* lpmi);
+        public static partial bool GetUpdateRect(IntPtr hWnd, Rect* lpRect, bool bErase);
+        public static partial IntPtr BeginPaint(IntPtr hWnd, PaintStruct* lpPaint);
+        public static partial bool EndPaint(IntPtr hWnd, PaintStruct* lpPaint);
+        public static partial DialogResult MessageBoxW(IntPtr hWnd, char* lpText, char* lpCaption, MessageBoxFlags uType);
+        public static partial bool PostThreadMessageW(uint idThread, WindowMessage msg, nint wParam, nint lParam);
+        public static partial uint MsgWaitForMultipleObjects(uint nCount, IntPtr* pHandles, bool fWaitAll, uint dwMilliseconds, QueueStatusFlags dwWakeMask);
+        public static partial bool PostThreadMessageW(uint idThread, uint msg, nint wParam, nint lParam);
+        public static partial bool InSendMessage();
+        public static partial bool ReplyMessage(nint lResult);
+        public static partial bool SetCapture(IntPtr hWnd);
+        public static partial bool ReleaseCapture();
+        public static partial int GetLastError();
+        public static partial IntPtr GetDC(IntPtr hWnd);
+        public static partial int ReleaseDC(IntPtr hWnd, IntPtr hDC);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool SetWindowText(IntPtr handle, string text)

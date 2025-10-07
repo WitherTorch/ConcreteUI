@@ -13,6 +13,9 @@ namespace ConcreteUI.Graphics.Native.WIC
     {
         private const string WINDOWS_CODEC_DLL = "WindowsCodecs.dll";
 
+#if NET8_0_OR_GREATER
+        [SuppressGCTransition]
+#endif
         [DllImport(WINDOWS_CODEC_DLL)]
         public static extern int WICConvertBitmapSource(Guid* dstFormat, void* pISrc, void** ppIDst);
 
