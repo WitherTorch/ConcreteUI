@@ -45,6 +45,10 @@ namespace ConcreteUI.Native
         [SuppressGCTransition]
         [DllImport(KERNEL32_DLL)]
         public static extern partial bool CloseHandle(IntPtr hObject);
+
+        [SuppressGCTransition]
+        [DllImport(KERNEL32_DLL)]
+        public static extern partial int GetLastError();
     }
 }
 #endif

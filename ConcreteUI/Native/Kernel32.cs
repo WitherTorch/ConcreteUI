@@ -13,5 +13,6 @@ namespace ConcreteUI.Native
         public static partial IntPtr CreateWaitableTimerW(void* lpTimerAttributes, bool bManualReset, char* lpTimerName);
         public static partial bool SetWaitableTimer(IntPtr hTimer, long* lpDueTime, nint lPeriod, void* pfnCompletionRoutine, void* lpArgToCompletionRoutine, bool fResume);
         public static partial bool CloseHandle(IntPtr hObject);
+        public static partial int GetLastError();
     }
 }

@@ -126,7 +126,6 @@ namespace ConcreteUI.Native
         public static partial bool ReplyMessage(nint lResult);
         public static partial bool SetCapture(IntPtr hWnd);
         public static partial bool ReleaseCapture();
-        public static partial int GetLastError();
         public static partial IntPtr GetDC(IntPtr hWnd);
         public static partial int ReleaseDC(IntPtr hWnd, IntPtr hDC);
 

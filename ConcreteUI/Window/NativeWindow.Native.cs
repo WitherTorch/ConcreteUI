@@ -40,7 +40,7 @@ namespace ConcreteUI.Window
                 hInstance: windowClass.HInstance,
                 lpParam: null);
             if (result == IntPtr.Zero)
-                Marshal.ThrowExceptionForHR(User32.GetLastError());
+                Marshal.ThrowExceptionForHR(Kernel32.GetLastError());
             return result;
         }
 

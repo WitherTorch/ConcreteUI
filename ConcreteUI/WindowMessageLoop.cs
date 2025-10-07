@@ -129,14 +129,14 @@ namespace ConcreteUI
                 MessageLoopExceptionEventHandler? eventHandler = ExceptionCaught;
                 if (eventHandler is not null)
                 {
-                    Exception? exception = Marshal.GetExceptionForHR(User32.GetLastError());
+                    Exception? exception = Marshal.GetExceptionForHR(Kernel32.GetLastError());
                     if (exception is not null)
                         eventHandler.Invoke(null, new MessageLoopExceptionEventArgs(exception));
                 }
             }
             else
             {
-                Marshal.ThrowExceptionForHR(User32.GetLastError());
+                Marshal.ThrowExceptionForHR(Kernel32.GetLastError());
             }
             return -1;
         }
@@ -193,7 +193,7 @@ namespace ConcreteUI
                             }
                             break;
                         case uint.MaxValue:
-                            Marshal.ThrowExceptionForHR(User32.GetLastError());
+                            Marshal.ThrowExceptionForHR(Kernel32.GetLastError());
                             return;
                         default:
                             throw new InvalidOperationException("Invalid state!");

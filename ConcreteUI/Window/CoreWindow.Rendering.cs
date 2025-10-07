@@ -362,7 +362,7 @@ namespace ConcreteUI.Window
                 {
                     Rect windowRect;
                     if (!User32.GetWindowRect(handle, &windowRect))
-                        Marshal.ThrowExceptionForHR(User32.GetLastError());
+                        Marshal.ThrowExceptionForHR(Kernel32.GetLastError());
                     if (!Screen.TryGetScreenInfoFromHwnd(handle, out ScreenInfo screenInfo))
                         screenInfo = default;
                     Rect workingArea = screenInfo.WorkingArea;

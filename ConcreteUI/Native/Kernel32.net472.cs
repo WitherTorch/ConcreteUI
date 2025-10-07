@@ -36,6 +36,9 @@ namespace ConcreteUI.Native
 
         [DllImport(KERNEL32_DLL)]
         public static extern partial bool CloseHandle(IntPtr hObject);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern partial int GetLastError();
     }
 }
 #endif

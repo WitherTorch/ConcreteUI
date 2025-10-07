@@ -78,7 +78,7 @@ namespace ConcreteUI.Window
                     return Rectangle.Empty;
                 Rect clientBounds;
                 if (!User32.GetClientRect(handle, &clientBounds))
-                    Marshal.ThrowExceptionForHR(User32.GetLastError());
+                    Marshal.ThrowExceptionForHR(Kernel32.GetLastError());
                 return (Rectangle)clientBounds;
             }
         }
@@ -94,7 +94,7 @@ namespace ConcreteUI.Window
                     return Size.Empty;
                 Rect clientBounds;
                 if (!User32.GetClientRect(handle, &clientBounds))
-                    Marshal.ThrowExceptionForHR(User32.GetLastError());
+                    Marshal.ThrowExceptionForHR(Kernel32.GetLastError());
                 return clientBounds.Size;
             }
         }

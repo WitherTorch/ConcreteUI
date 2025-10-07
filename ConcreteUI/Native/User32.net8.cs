@@ -35,23 +35,18 @@ namespace ConcreteUI.Native
         [DllImport(USER32_DLL)]
         public static extern partial int SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int Width, int Height, WindowPositionFlags flags);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial int GetWindowThreadProcessId(IntPtr hWnd, int* lpdwProcessId);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool GetWindowPlacement(IntPtr hWnd, WindowPlacement* lpwndpl);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool IsIconic(IntPtr hWnd);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool IsZoomed(IntPtr hWnd);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial IntPtr GetKeyboardLayout(uint idThread);
 
@@ -59,15 +54,12 @@ namespace ConcreteUI.Native
         [DllImport(USER32_DLL)]
         public static extern partial uint GetDoubleClickTime();
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool CreateCaret(IntPtr hWnd, IntPtr hBitmap, int nWidth, int nHeight);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool DestroyCaret();
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool SetCaretPos(int x, int y);
 
@@ -79,7 +71,6 @@ namespace ConcreteUI.Native
         [DllImport(USER32_DLL)]
         public static extern partial int SetWindowCompositionAttribute(IntPtr hWnd, WindowCompositionAttributeData* data);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool SystemParametersInfoW(uint uiAction, uint uiParam, void* pvParam, uint fWinIni);
 
@@ -103,26 +94,21 @@ namespace ConcreteUI.Native
         [DllImport(USER32_DLL)]
         public static extern partial bool EnableWindow(IntPtr hWnd, bool bEnable);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial IntPtr GetWindow(IntPtr hWnd, GetWindowCommand uCmd);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial IntPtr GetActiveWindow();
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial IntPtr SetActiveWindow(IntPtr hWnd);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool IsWindowVisible(IntPtr hWnd);
 
         [DllImport(USER32_DLL)]
         public static extern partial bool DestroyWindow(IntPtr hWnd);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial uint RegisterWindowMessageW(char* lpString);
 
@@ -132,22 +118,18 @@ namespace ConcreteUI.Native
         [DllImport(USER32_DLL)]
         public static extern partial nint SendMessageW(IntPtr hWnd, uint message, nint wParam, nint lParam);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool PostMessageW(IntPtr hWnd, WindowMessage message, nint wParam, nint lParam);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool PostMessageW(IntPtr hWnd, uint message, nint wParam, nint lParam);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial void PostQuitMessage(int nExitCode);
 
         [DllImport(USER32_DLL)]
         public static extern partial SysBool GetMessageW(PumpingMessage* lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool PeekMessageW(PumpingMessage* lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax, PeekMessageOptions wRemoveMsg);
 
@@ -157,23 +139,18 @@ namespace ConcreteUI.Native
         [DllImport(USER32_DLL)]
         public static extern partial nint DispatchMessageW(PumpingMessage* lpMsg);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial IntPtr LoadImageW(IntPtr hInstance, char* name, Win32ImageType type, int cx, int cy, LoadOrCopyImageOptions fuLoad);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial IntPtr CopyIcon(IntPtr hIcon);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool DestroyCursor(IntPtr hCursor);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool DestroyIcon(IntPtr hIcon);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial IntPtr SetCursor(IntPtr hCursor);
 
@@ -183,11 +160,9 @@ namespace ConcreteUI.Native
         [DllImport(USER32_DLL)]
         public static extern partial int GetWindowTextW(IntPtr hWnd, char* lpString, int maxCount);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial nint GetWindowLongPtrW(IntPtr hWnd, int nIndex);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial nint SetWindowLongPtrW(IntPtr hWnd, int nIndex, nint dwNewLong);
 
@@ -203,81 +178,62 @@ namespace ConcreteUI.Native
         [DllImport(USER32_DLL)]
         public static extern partial bool CloseClipboard();
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial IntPtr GetClipboardData(ClipboardFormat uFormat);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool IsClipboardFormatAvailable(ClipboardFormat format);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial IntPtr SetClipboardData(ClipboardFormat format, IntPtr hMem);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial short GetAsyncKeyState(VirtualKey vKey);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial short GetKeyState(VirtualKey vKey);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool GetCursorPos(Point* lpPoint);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial IntPtr MonitorFromWindow(IntPtr hWnd, GetMonitorFlags dwFlags);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool GetMonitorInfoW(IntPtr hMonitor, MonitorInfo* lpmi);
 
         [DllImport(USER32_DLL)]
         public static extern partial bool GetUpdateRect(IntPtr hWnd, Rect* lpRect, bool bErase);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial IntPtr BeginPaint(IntPtr hWnd, PaintStruct* lpPaint);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool EndPaint(IntPtr hWnd, PaintStruct* lpPaint);
 
         [DllImport(USER32_DLL)]
         public static extern partial DialogResult MessageBoxW(IntPtr hWnd, char* lpText, char* lpCaption, MessageBoxFlags uType);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool PostThreadMessageW(uint idThread, WindowMessage msg, nint wParam, nint lParam);
 
         [DllImport(USER32_DLL)]
         public static extern partial uint MsgWaitForMultipleObjects(uint nCount, IntPtr* pHandles, bool fWaitAll, uint dwMilliseconds, QueueStatusFlags dwWakeMask);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool PostThreadMessageW(uint idThread, uint msg, nint wParam, nint lParam);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool InSendMessage();
 
         [DllImport(USER32_DLL)]
         public static extern partial bool ReplyMessage(nint lResult);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool SetCapture(IntPtr hWnd);
 
-        [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial bool ReleaseCapture();
-
-        [SuppressGCTransition]
-        [DllImport(USER32_DLL)]
-        public static extern partial int GetLastError();
 
         [SuppressGCTransition]
         [DllImport(USER32_DLL)]

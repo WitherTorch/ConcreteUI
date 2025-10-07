@@ -231,9 +231,6 @@ namespace ConcreteUI.Native
         public static extern partial bool ReleaseCapture();
 
         [DllImport(USER32_DLL)]
-        public static extern partial int GetLastError();
-
-        [DllImport(USER32_DLL)]
         public static extern partial IntPtr GetDC(IntPtr hWnd);
 
         [DllImport(USER32_DLL)]

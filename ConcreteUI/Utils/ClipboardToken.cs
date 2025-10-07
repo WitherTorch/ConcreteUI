@@ -16,7 +16,7 @@ namespace ConcreteUI.Utils
         public ClipboardToken()
         {
             if (!User32.OpenClipboard(IntPtr.Zero))
-                Marshal.ThrowExceptionForHR(User32.GetLastError());
+                Marshal.ThrowExceptionForHR(Kernel32.GetLastError());
         }
 
         public static bool TryAcquire(int millisecondsTimeout, out ClipboardToken result)

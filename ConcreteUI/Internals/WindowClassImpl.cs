@@ -55,7 +55,7 @@ namespace ConcreteUI.Internals
 
                 ushort atom = User32.RegisterClassExW(&clazz);
                 if (atom == 0)
-                    Marshal.ThrowExceptionForHR(User32.GetLastError());
+                    Marshal.ThrowExceptionForHR(Kernel32.GetLastError());
                 return new WindowClassImpl(atom, hInstance);
             }
         }

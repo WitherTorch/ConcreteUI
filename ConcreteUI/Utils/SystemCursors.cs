@@ -254,9 +254,9 @@ namespace ConcreteUI.Utils
                         handle = User32.LoadImageW(IntPtr.Zero, (char*)32512, Win32ImageType.Cursor, 0, 0,
                             LoadOrCopyImageOptions.DefaultSize | LoadOrCopyImageOptions.DefaultColor | LoadOrCopyImageOptions.Shared);
                         if (handle == IntPtr.Zero)
-                            Marshal.ThrowExceptionForHR(User32.GetLastError());
+                            Marshal.ThrowExceptionForHR(Kernel32.GetLastError());
                     }
-                    Marshal.ThrowExceptionForHR(User32.GetLastError());
+                    Marshal.ThrowExceptionForHR(Kernel32.GetLastError());
                 }
                 return new Win32ImageHandle(handle, Win32ImageType.Cursor, ownsHandle: false);
             }
