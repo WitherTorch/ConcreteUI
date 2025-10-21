@@ -103,6 +103,6 @@ namespace ConcreteUI.Graphics.Helpers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static float RoundInPixelCore(float  valueInPoints, float pointsPerPixel)
-            => MathF.Round(valueInPoints / pointsPerPixel) * pointsPerPixel;
+            => MathF.Round(valueInPoints / pointsPerPixel, MidpointRounding.AwayFromZero) * pointsPerPixel;
     }
 }
