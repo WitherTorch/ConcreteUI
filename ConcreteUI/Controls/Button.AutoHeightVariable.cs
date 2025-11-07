@@ -22,7 +22,10 @@ namespace ConcreteUI.Controls
             {
                 if (!_reference.TryGetTarget(out Button? element))
                     return 0;
-                return MathI.Ceiling(FontHeightHelper.GetFontHeight(NullSafetyHelper.ThrowIfNull(element._fontName), element._fontSize)) + UIConstants.ElementMargin;
+                string? fontName = element._fontName;
+                if (fontName is null)
+                    return 0;
+                return MathI.Ceiling(FontHeightHelper.GetFontHeight(fontName, element._fontSize)) + UIConstants.ElementMargin;
             }
         }
     }

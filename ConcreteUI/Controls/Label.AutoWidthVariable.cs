@@ -23,8 +23,11 @@ namespace ConcreteUI.Controls
             {
                 if (!_reference.TryGetTarget(out Label? element))
                     return 0;
+                string? fontName = element._fontName;
+                if (fontName is null)
+                    return 0;
                 using DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(element._text,
-                    NullSafetyHelper.ThrowIfNull(element._fontName), element._alignment, element._fontSize);
+                    element._fontName, element._alignment, element._fontSize);
                 return MathI.Ceiling(layout.GetMetrics().Width);
             }
         }

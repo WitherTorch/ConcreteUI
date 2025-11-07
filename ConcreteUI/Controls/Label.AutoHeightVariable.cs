@@ -25,8 +25,10 @@ namespace ConcreteUI.Controls
             {
                 if (!_reference.TryGetTarget(out Label? element))
                     return 0;
+                string? fontName = element._fontName;
+                if (fontName is null)
+                    return 0;
                 float fontSize = element._fontSize;
-                string fontName = NullSafetyHelper.ThrowIfNull(element._fontName);
                 string text = element._text;
                 if (text.Contains('\n') && manager.GetVariable(element, LayoutProperty.Width) is AutoWidthVariable autoVariable)
                 {

@@ -29,7 +29,9 @@ namespace ConcreteUI.Controls
 
             private static float ComputeCore(TextBox element, in LayoutVariableManager manager)
             {
-                string fontName = NullSafetyHelper.ThrowIfNull(element._fontName);
+                string? fontName = element._fontName;
+                if (fontName is null)
+                    return 0;
                 float fontSize = element._fontSize;
                 if (element._multiLine)
                 {

@@ -7,8 +7,6 @@ using System.Threading;
 using ConcreteUI.Native;
 using ConcreteUI.Window;
 
-using InlineMethod;
-
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Threading;
 

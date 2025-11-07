@@ -3,7 +3,7 @@
 namespace ConcreteUI.Native
 {
     [Flags]
-    public enum WindowPositionFlags
+    public enum WindowPositionFlags : uint
     {
         SwapWithAsyncWindowPos = 0x4000,
         SwapWithDefererase = 0x2000,
