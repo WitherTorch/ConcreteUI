@@ -83,7 +83,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             DXGISwapChainDescription desc;
             void* nativePointer = NativePointer;
-            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetBuffer);
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDesc);
             int hr = ((delegate* unmanaged[Stdcall]<void*, DXGISwapChainDescription*, int>)functionPointer)(nativePointer, &desc);
             ThrowHelper.ThrowExceptionForHR(hr);
             return desc;
