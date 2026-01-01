@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -424,6 +425,11 @@ namespace ConcreteUI.Graphics
 
             _context.Transform = _originalTransform;
             _clipToken.Dispose();
+        }
+
+        public object PushAxisAlignedClip(Rect itemBounds)
+        {
+            throw new NotImplementedException();
         }
     }
 }
