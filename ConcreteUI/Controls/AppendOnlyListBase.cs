@@ -4,6 +4,7 @@ using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 
+using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
@@ -56,8 +57,11 @@ namespace ConcreteUI.Controls
             Rect bounds = ContentBounds;
             int viewportY = MathHelper.Max(ViewportPoint.Y, 0);
             int renderLeft = 0, renderRight = bounds.Width, boundsHeight = bounds.Height;
-            foreach ((TItem item, int itemTop, int itemHeight) in _itemStore.EnumerateItems(viewportY, boundsHeight))
+            using PooledList<(TItem item, int itemTop, int itemHeight)> list = new PooledList<(TItem item, int itemTop, int itemHeight)>();
+            _itemStore.EnumerateItemsToList(viewportY, boundsHeight, list);
+            for (int i = 0, count = list.Count; i < count; i++)
             {
+                (TItem item, int itemTop, int itemHeight) = list[i];
                 int renderTop = itemTop - viewportY;
                 int renderBottom = renderTop + itemHeight;
                 RectF itemBounds = new RectF(renderLeft, renderTop, renderRight, renderBottom);

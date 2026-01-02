@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
@@ -71,14 +70,14 @@ namespace ConcreteUI.Controls
                     goto Failed;
                 lock (_syncLock)
                     return TryGetItemCore(height, out item, out itemTop, out itemHeight);
-            Failed:
+                Failed:
                 item = default;
                 itemHeight = 0;
                 itemTop = 0;
                 return false;
             }
 
-            public IEnumerable<(TItem item, int itemTop, int itemHeight)> EnumerateItems(int baseY, int height)
+            public int EnumerateItemsToList(int baseY, int height, IList<(TItem item, int itemTop, int itemHeight)> list)
             {
                 if (baseY < 0 || height < 0 || IsDisposed)
                     goto Failed;
@@ -86,9 +85,9 @@ namespace ConcreteUI.Controls
                 if (endY < 0)
                     goto Failed;
                 lock (_syncLock)
-                    return EnumerateItemsCore(baseY, endY);
-            Failed:
-                return Enumerable.Empty<(TItem item, int itemTop, int itemHeight)>();
+                    return EnumerateItemsCore(baseY, endY, list);
+                Failed:
+                return 0;
             }
 
             private void AppendCore(TItem item)
@@ -211,7 +210,7 @@ namespace ConcreteUI.Controls
                 return false;
             }
 
-            private IEnumerable<(TItem item, int itemTop, int itemHeight)> EnumerateItemsCore(int startY, int endY)
+            private int EnumerateItemsCore(int startY, int endY, IList<(TItem item, int itemTop, int itemHeight)> list)
             {
                 IAppendOnlyCollection<int>? keys = _keys;
                 IAppendOnlyCollection<TItem>? values = _values;
@@ -244,16 +243,24 @@ namespace ConcreteUI.Controls
                 if (endIndex >= count)
                     endIndex = count - 1;
 
+                int result = endIndex - startIndex + 1;
+                if (list is CustomListBase<(TItem item, int itemTop, int itemHeight)> customList)
+                    customList.EnsureCapacity(customList.Count + result);
+#if NET8_0_OR_GREATER
+                else if (list is List<(TItem item, int itemTop, int itemHeight)> normalList)
+                    normalList.EnsureCapacity(normalList.Count + result);
+#endif
                 int key = 0;
-                for (int i = startIndex; i <= endIndex; i++)
+                for (int i = startIndex, j = 0; i <= endIndex; i++, j++)
                 {
                     int newKey = keys[i];
-                    yield return (values[i], key, newKey - key);
+                    list.Add((values[i], key, newKey - key));
                     key = newKey;
                 }
 
+                return result;
             Failed:
-                yield break;
+                return 0;
             }
 
             private void DisposeCore()
