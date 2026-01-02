@@ -55,26 +55,21 @@ namespace ConcreteUI.Controls
 
             Rect bounds = ContentBounds;
             int viewportY = MathHelper.Max(ViewportPoint.Y, 0);
-            ItemStore itemStore = _itemStore;
             int renderLeft = 0, renderRight = bounds.Width, boundsHeight = bounds.Height;
-            while (itemStore.TryGetItem(viewportY, out TItem? item, out int itemTop, out int itemHeight))
+            foreach ((TItem item, int itemTop, int itemHeight) in _itemStore.EnumerateItems(viewportY, boundsHeight))
             {
                 int renderTop = itemTop - viewportY;
                 int renderBottom = renderTop + itemHeight;
-                RenderItem(in context, new RectF(renderLeft, renderTop, renderRight, renderBottom), item);
-                if (renderBottom >= boundsHeight)
-                    break;
-                viewportY = itemTop + itemHeight + 1;
+                RectF itemBounds = new RectF(renderLeft, renderTop, renderRight, renderBottom);
+                using RegionalRenderingContext clipContext = context.WithAxisAlignedClip(itemBounds, D2D1AntialiasMode.Aliased);
+                RenderItem(in clipContext, item, itemBounds.Size);
             }
 
             return true;
         }
 
-        protected virtual void RenderItem(in RegionalRenderingContext context, RectF itemBounds, TItem item)
-        {
-            using RegionalRenderingContext clipContext = context.WithPixelAlignedClip(itemBounds, D2D1AntialiasMode.Aliased, out _);
-            item.Render(clipContext, itemBounds.Size);
-        }
+        protected virtual void RenderItem(in RegionalRenderingContext context, TItem item, SizeF renderSize) 
+            => item.Render(context, renderSize);
 
         private void ItemStore_HeightChanged(ItemStore sender, int height)
         {

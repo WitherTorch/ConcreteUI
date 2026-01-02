@@ -241,7 +241,7 @@ namespace ConcreteUI.Controls
                 return false;
             }
 
-            public IEnumerable<(TItem item, int itemTop, int itemHeight)> EnumerateItems(int startY, int endY)
+            private IEnumerable<(TItem item, int itemTop, int itemHeight)> EnumerateItemsCore(int startY, int endY)
             {
                 IAppendOnlyCollection<int>? keys = _keys;
                 IAppendOnlyCollection<TItem>? values = _values;
@@ -274,9 +274,12 @@ namespace ConcreteUI.Controls
                 if (endIndex >= count)
                     endIndex = count - 1;
 
+                int key = 0;
                 for (int i = startIndex; i <= endIndex; i++)
                 {
-
+                    int newKey = keys[i];
+                    yield return (values[i], key, newKey - key);
+                    key = newKey;
                 }
 
             Failed:
