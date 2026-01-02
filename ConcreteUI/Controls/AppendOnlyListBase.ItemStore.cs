@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Threading;
 
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
@@ -17,7 +16,7 @@ namespace ConcreteUI.Controls
         {
             private readonly IAppendOnlyCollection<int> _keys;
             private readonly IAppendOnlyCollection<TItem> _values;
-            private readonly SemaphoreSlim _semaphore;
+            private readonly object _syncLock;
 
             private ulong _disposed;
 
@@ -29,7 +28,7 @@ namespace ConcreteUI.Controls
             {
                 _keys = keys;
                 _values = values;
-                _semaphore = new SemaphoreSlim(1, 1);
+                _syncLock = new object();
             }
 
             public static ItemStore CreateLimited(int capacity)
@@ -46,68 +45,32 @@ namespace ConcreteUI.Controls
             {
                 if (IsDisposed)
                     return;
-                SemaphoreSlim semaphore = _semaphore;
-                if (!TryWait(semaphore))
-                    return;
-                try
-                {
+                lock (_syncLock)
                     AppendCore(item);
-                }
-                finally
-                {
-                    TryRelease(semaphore);
-                }
             }
 
             public void Clear()
             {
                 if (IsDisposed)
                     return;
-                SemaphoreSlim semaphore = _semaphore;
-                if (!TryWait(semaphore))
-                    return;
-                try
-                {
+                lock (_syncLock)
                     ClearCore();
-                }
-                finally
-                {
-                    TryRelease(semaphore);
-                }
             }
 
             public void RecalculateAll(bool force)
             {
                 if (IsDisposed)
                     return;
-                SemaphoreSlim semaphore = _semaphore;
-                if (!TryWait(semaphore))
-                    return;
-                try
-                {
+                lock (_syncLock)
                     RecalculateAllCore(force, triggerEvent: true);
-                }
-                finally
-                {
-                    TryRelease(semaphore);
-                }
             }
 
             public bool TryGetItem(int height, [NotNullWhen(true)] out TItem? item, out int itemTop, out int itemHeight)
             {
                 if (height < 0 || IsDisposed)
                     goto Failed;
-                SemaphoreSlim semaphore = _semaphore;
-                if (!TryWait(semaphore))
-                    goto Failed;
-                try
-                {
+                lock (_syncLock)
                     return TryGetItemCore(height, out item, out itemTop, out itemHeight);
-                }
-                finally
-                {
-                    TryRelease(semaphore);
-                }
             Failed:
                 item = default;
                 itemHeight = 0;
@@ -122,43 +85,10 @@ namespace ConcreteUI.Controls
                 int endY = baseY + height;
                 if (endY < 0)
                     goto Failed;
-                SemaphoreSlim semaphore = _semaphore;
-                if (!TryWait(semaphore))
-                    goto Failed;
-                try
-                {
+                lock (_syncLock)
                     return EnumerateItemsCore(baseY, endY);
-                }
-                finally
-                {
-                    TryRelease(semaphore);
-                }
             Failed:
                 return Enumerable.Empty<(TItem item, int itemTop, int itemHeight)>();
-            }
-
-            private static bool TryWait(SemaphoreSlim semaphore)
-            {
-                try
-                {
-                    semaphore.Wait();
-                }
-                catch (ObjectDisposedException)
-                {
-                    return false;
-                }
-                return true;
-            }
-
-            private static void TryRelease(SemaphoreSlim semaphore)
-            {
-                try
-                {
-                    semaphore.Release();
-                }
-                catch (ObjectDisposedException)
-                {
-                }
             }
 
             private void AppendCore(TItem item)
@@ -330,9 +260,7 @@ namespace ConcreteUI.Controls
             {
                 if (InterlockedHelper.Exchange(ref _disposed, ulong.MaxValue) != 0UL)
                     return;
-                SemaphoreSlim semaphore = _semaphore;
-                semaphore.Wait();
-                try
+                lock (_syncLock)
                 {
                     IAppendOnlyCollection<int> keys = _keys;
                     IAppendOnlyCollection<TItem> values = _values;
@@ -341,11 +269,6 @@ namespace ConcreteUI.Controls
                     foreach (TItem value in _values)
                         value.Dispose();
                     values.Clear();
-                }
-                finally
-                {
-                    semaphore.Release();
-                    semaphore.Dispose();
                 }
             }
 
