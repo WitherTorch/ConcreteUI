@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 
 using WitherTorch.Common.Collections;
+using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
@@ -18,9 +19,11 @@ namespace ConcreteUI.Controls
             private readonly IAppendOnlyCollection<TItem> _values;
             private readonly SemaphoreSlim _semaphore;
 
-            private bool _disposed;
+            private ulong _disposed;
 
             public event HeightChangedEventHandler? HeightChanged;
+
+            public bool IsDisposed => InterlockedHelper.Read(ref _disposed) != 0UL;
 
             private ItemStore(IAppendOnlyCollection<int> keys, IAppendOnlyCollection<TItem> values)
             {
@@ -41,86 +44,121 @@ namespace ConcreteUI.Controls
 
             public void Append(TItem item)
             {
+                if (IsDisposed)
+                    return;
                 SemaphoreSlim semaphore = _semaphore;
-                semaphore.Wait();
+                if (!TryWait(semaphore))
+                    return;
                 try
                 {
                     AppendCore(item);
                 }
                 finally
                 {
-                    semaphore.Release();
+                    TryRelease(semaphore);
                 }
             }
 
             public void Clear()
             {
+                if (IsDisposed)
+                    return;
                 SemaphoreSlim semaphore = _semaphore;
-                semaphore.Wait();
+                if (!TryWait(semaphore))
+                    return;
                 try
                 {
                     ClearCore();
                 }
                 finally
                 {
-                    semaphore.Release();
+                    TryRelease(semaphore);
                 }
             }
 
             public void RecalculateAll(bool force)
             {
+                if (IsDisposed)
+                    return;
                 SemaphoreSlim semaphore = _semaphore;
-                semaphore.Wait();
+                if (!TryWait(semaphore))
+                    return;
                 try
                 {
                     RecalculateAllCore(force);
                 }
                 finally
                 {
-                    semaphore.Release();
+                    TryRelease(semaphore);
                 }
             }
 
             public bool TryGetItem(int height, [NotNullWhen(true)] out TItem? item, out int itemTop, out int itemHeight)
             {
-                if (height < 0)
-                {
-                    item = default;
-                    itemHeight = 0;
-                    itemTop = 0;
-                    return false;
-                }
+                if (height < 0 || IsDisposed)
+                    goto Failed;
                 SemaphoreSlim semaphore = _semaphore;
-                semaphore.Wait();
+                if (!TryWait(semaphore))
+                    goto Failed;
                 try
                 {
                     return TryGetItemCore(height, out item, out itemTop, out itemHeight);
                 }
                 finally
                 {
-                    semaphore.Release();
+                    TryRelease(semaphore);
                 }
+            Failed:
+                item = default;
+                itemHeight = 0;
+                itemTop = 0;
+                return false;
             }
 
             public IEnumerable<(TItem item, int itemTop, int itemHeight)> EnumerateItems(int baseY, int height)
             {
-                if (baseY < 0 || height < 0)
+                if (baseY < 0 || height < 0 || IsDisposed)
                     goto Failed;
                 int endY = baseY + height;
                 if (endY < 0)
                     goto Failed;
                 SemaphoreSlim semaphore = _semaphore;
-                semaphore.Wait();
+                if (!TryWait(semaphore))
+                    goto Failed;
                 try
                 {
                     return EnumerateItemsCore(baseY, endY);
                 }
                 finally
                 {
-                    semaphore.Release();
+                    TryRelease(semaphore);
                 }
             Failed:
                 return Enumerable.Empty<(TItem item, int itemTop, int itemHeight)>();
+            }
+
+            private static bool TryWait(SemaphoreSlim semaphore)
+            {
+                try
+                {
+                    semaphore.Wait();
+                }
+                catch (ObjectDisposedException)
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            private static void TryRelease(SemaphoreSlim semaphore)
+            {
+                try
+                {
+                    semaphore.Release();
+                }
+                catch (ObjectDisposedException)
+                {
+                }
             }
 
             private void AppendCore(TItem item)
@@ -288,32 +326,30 @@ namespace ConcreteUI.Controls
 
             private void DisposeCore()
             {
-                if (_disposed)
+                if (InterlockedHelper.Exchange(ref _disposed, ulong.MaxValue) != 0UL)
                     return;
-                _disposed = true;
-
-                IAppendOnlyCollection<int> keys = _keys;
-                IAppendOnlyCollection<TItem> values = _values;
-
-                keys.Clear();
-                foreach (TItem value in _values)
-                    value.Dispose();
-                values.Clear();
-            }
-
-            public void Dispose()
-            {
                 SemaphoreSlim semaphore = _semaphore;
                 semaphore.Wait();
                 try
                 {
-                    DisposeCore();
+                    IAppendOnlyCollection<int> keys = _keys;
+                    IAppendOnlyCollection<TItem> values = _values;
+
+                    keys.Clear();
+                    foreach (TItem value in _values)
+                        value.Dispose();
+                    values.Clear();
                 }
                 finally
                 {
                     semaphore.Release();
                     semaphore.Dispose();
                 }
+            }
+
+            public void Dispose()
+            {
+                DisposeCore();
                 GC.SuppressFinalize(this);
             }
         }
