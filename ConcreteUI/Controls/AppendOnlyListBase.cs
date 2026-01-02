@@ -57,7 +57,7 @@ namespace ConcreteUI.Controls
             Rect bounds = ContentBounds;
             int viewportY = MathHelper.Max(ViewportPoint.Y, 0);
             int renderLeft = 0, renderRight = bounds.Width, boundsHeight = bounds.Height;
-            using PooledList<(TItem item, int itemTop, int itemHeight)> list = new PooledList<(TItem item, int itemTop, int itemHeight)>();
+            using PooledList<(TItem item, int itemTop, int itemHeight)> list = new PooledList<(TItem item, int itemTop, int itemHeight)>(capacity: 0);
             _itemStore.EnumerateItemsToList(viewportY, boundsHeight, list);
             for (int i = 0, count = list.Count; i < count; i++)
             {
