@@ -85,7 +85,7 @@ namespace ConcreteUI.Controls
                     return;
                 try
                 {
-                    RecalculateAllCore(force);
+                    RecalculateAllCore(force, triggerEvent: true);
                 }
                 finally
                 {
@@ -195,7 +195,7 @@ namespace ConcreteUI.Controls
                         key = keys[i];
                         if (key < keyHead) // KeyList is broken, need rebuild keys
                         {
-                            RecalculateAllCore(force: true);
+                            RecalculateAllCore(force: true, triggerEvent: false);
                             break;
                         }
                         key -= keyHead;
@@ -216,7 +216,7 @@ namespace ConcreteUI.Controls
                 HeightChanged?.Invoke(this, 0);
             }
 
-            private void RecalculateAllCore(bool force)
+            private void RecalculateAllCore(bool force, bool triggerEvent)
             {
                 IAppendOnlyCollection<int>? keys = _keys;
                 IAppendOnlyCollection<TItem>? values = _values;
@@ -249,6 +249,8 @@ namespace ConcreteUI.Controls
                         keys.Append(key);
                     }
                 }
+                if (triggerEvent)
+                    HeightChanged?.Invoke(this, key);
             }
 
             private bool TryGetItemCore(int height, [NotNullWhen(true)] out TItem? item, out int itemTop, out int itemHeight)
@@ -259,7 +261,7 @@ namespace ConcreteUI.Controls
                 int count = keys.Count;
                 if (count != values.Count)
                 {
-                    RecalculateAllCore(force: true);
+                    RecalculateAllCore(force: true, triggerEvent: true);
                     count = keys.Count;
                 }
                 int index = keys.BinarySearch(height);
@@ -287,7 +289,7 @@ namespace ConcreteUI.Controls
                 int count = keys.Count;
                 if (count != values.Count)
                 {
-                    RecalculateAllCore(force: true);
+                    RecalculateAllCore(force: true, triggerEvent: true);
                     count = keys.Count;
                 }
 
