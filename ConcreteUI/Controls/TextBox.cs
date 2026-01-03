@@ -34,7 +34,7 @@ namespace ConcreteUI.Controls
     public sealed partial class TextBox : ScrollableElementBase, IIMEControl, IMouseInteractEvents, IMouseNotifyEvents, IKeyEvents, ICharacterEvents, ICursorPredicator
     {
         private static readonly char[] LineSeparators = Environment.NewLine.ToCharArray();
-        private static readonly LazyTiny<GraphemeInfo> EmptyGraphemeInfoLazy = 
+        private static readonly LazyTiny<GraphemeInfo> EmptyGraphemeInfoLazy =
             new LazyTiny<GraphemeInfo>(new GraphemeInfo(string.Empty, Array.Empty<int>()));
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -442,11 +442,19 @@ namespace ConcreteUI.Controls
             context.DrawTextLayout(point, layout, foreBrush, D2D1DrawTextOptions.EnableColorFont);
         }
 
-        private void DrawCaret(in RegionalRenderingContext context, DWriteTextLayout layout, PointF layoutPoint, int caretIndex)
+        private unsafe void DrawCaret(in RegionalRenderingContext context, DWriteTextLayout layout, PointF layoutPoint, int caretIndex)
         {
             if (!_caretState)
                 return;
-            DWriteHitTestMetrics rangeMetrics = layout.HitTestTextRange(MathHelper.MakeUnsigned(caretIndex), 0, 0, 0)[0];
+            DWriteHitTestMetrics rangeMetrics;
+            uint returnCount;
+            int hr = layout.TryHitTestTextRange(MathHelper.MakeUnsigned(caretIndex), 0, 0, 0, &rangeMetrics, 1, &returnCount);
+            if (ConcreteSettings.UseDebugMode)
+                ThrowHelper.ThrowExceptionForHR(hr);
+            else if (hr < 0)
+                return;
+            if (returnCount < 1)
+                return;
             float pointsPerPixel = Renderer.GetPointsPerPixel();
             RectF selectionBounds = RenderingHelper.RoundInPixel(RectF.FromXYWH(
                 layoutPoint.X + rangeMetrics.Left, layoutPoint.Y + rangeMetrics.Top, 1.0f, rangeMetrics.Height),
@@ -581,6 +589,27 @@ namespace ConcreteUI.Controls
             if (!_focused || !Enabled)
                 return;
             KeyUp?.Invoke(this, ref args);
+            if (args.Handled)
+                return;
+            switch (args.Key)
+            {
+                case VirtualKey.Applications:
+                case VirtualKey.F10 when Keys.IsKeyPressed(VirtualKey.Shift):
+                    MouseNotifyEventHandler? eventHandlers = RequestContextMenu;
+                    if (eventHandlers is not null)
+                    {
+                        Point location = ContentBounds.Location;
+                        Point viewportPoint = ViewportPoint;
+                        Point layoutPoint = new Point(location.X - viewportPoint.X, location.Y - viewportPoint.Y);
+                        using (DWriteTextLayout layout = CreateVirtualTextLayout())
+                        {
+                            layout.HitTestTextPosition(MathHelper.MakeUnsigned(_caretIndex), isTrailingHit: true, out float pointX, out float pointY);
+                            location = new Point(layoutPoint.X + MathI.Round(pointX), layoutPoint.Y + MathI.Round(pointY));
+                        }
+                        eventHandlers.Invoke(this, new MouseNotifyEventArgs(location, MouseButtons.RightButton));
+                    }
+                    break;
+            }
         }
         #endregion
 
