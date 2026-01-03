@@ -10,6 +10,7 @@ namespace ConcreteUI.Controls
     partial class AppendOnlyListBase<TItem>
     {
         protected delegate void HeightChangedEventHandler(ItemStore sender, int height);
+        protected delegate void ItemRemovedEventHandler(ItemStore sender, TItem item);
 
         protected sealed class ItemStore : IDisposable
         {
@@ -20,6 +21,7 @@ namespace ConcreteUI.Controls
             private ulong _disposed;
 
             public event HeightChangedEventHandler? HeightChanged;
+            public event ItemRemovedEventHandler? ItemRemoved;
 
             public bool IsDisposed => InterlockedHelper.Read(ref _disposed) != 0UL;
 
@@ -77,6 +79,76 @@ namespace ConcreteUI.Controls
                 return false;
             }
 
+            public bool TryGetHeight(TItem item, out int itemTop, out int itemHeight)
+            {
+                if (IsDisposed)
+                    goto Failed;
+                lock (_syncLock)
+                    return TryGetHeightCore_EqualityCompare(item, EqualityComparer<TItem>.Default, out itemTop, out itemHeight);
+                Failed:
+                itemHeight = 0;
+                itemTop = 0;
+                return false;
+            }
+
+            public bool TryGetHeight(TItem item, bool useBinarySearch, out int itemTop, out int itemHeight)
+            {
+                if (IsDisposed)
+                    goto Failed;
+                lock (_syncLock)
+                {
+                    if (useBinarySearch)
+                        return TryGetHeightCore_BinarySearch(item, null, out itemTop, out itemHeight);
+                    else
+                        return TryGetHeightCore_EqualityCompare(item, EqualityComparer<TItem>.Default, out itemTop, out itemHeight);
+                }
+            Failed:
+                itemHeight = 0;
+                itemTop = 0;
+                return false;
+            }
+
+            public bool TryGetHeight(TItem item, bool useBinarySearch, IComparer<TItem> comparer, out int itemTop, out int itemHeight)
+            {
+                if (IsDisposed)
+                    goto Failed;
+                lock (_syncLock)
+                {
+                    if (useBinarySearch)
+                        return TryGetHeightCore_BinarySearch(item, comparer, out itemTop, out itemHeight);
+                    else
+                        return TryGetHeightCore_Compare(item, comparer, out itemTop, out itemHeight);
+                }
+            Failed:
+                itemHeight = 0;
+                itemTop = 0;
+                return false;
+            }
+
+            public bool TryGetHeight(TItem item, IEqualityComparer<TItem> comparer, out int itemTop, out int itemHeight)
+            {
+                if (IsDisposed)
+                    goto Failed;
+                lock (_syncLock)
+                    return TryGetHeightCore_EqualityCompare(item, comparer, out itemTop, out itemHeight);
+                Failed:
+                itemHeight = 0;
+                itemTop = 0;
+                return false;
+            }
+
+            public bool TryGetHeight(TItem item, IComparer<TItem> comparer, out int itemTop, out int itemHeight)
+            {
+                if (IsDisposed)
+                    goto Failed;
+                lock (_syncLock)
+                    return TryGetHeightCore_Compare(item, comparer, out itemTop, out itemHeight);
+                Failed:
+                itemHeight = 0;
+                itemTop = 0;
+                return false;
+            }
+
             public int EnumerateItemsToList(int baseY, int height, IList<(TItem item, int itemTop, int itemHeight)> list)
             {
                 if (baseY < 0 || height < 0 || IsDisposed)
@@ -114,8 +186,13 @@ namespace ConcreteUI.Controls
                 if (height < 0)
                     throw new InvalidOperationException("The item's height cannot be negative!");
                 int key = referenceKey + height;
-                values.Append(item);
-                if (keys.Capacity <= count)
+                int capacity = values.Capacity;
+                if (capacity < count)
+                {
+                    // WTF?
+                    throw new InvalidOperationException("The capacity of the list cannot lower than the count of the list!");
+                }
+                else if (capacity == count)
                 {
                     int keyHead = keys[0];
                     keys.Append(key);
@@ -130,10 +207,15 @@ namespace ConcreteUI.Controls
                         key -= keyHead;
                         keys[i] = key;
                     }
+                    TItem headValue = values[0];
+                    values.Append(item);
+                    ItemRemoved?.Invoke(this, headValue);
+                    headValue.Dispose();
                 }
                 else
                 {
                     keys.Append(key);
+                    values.Append(item);
                 }
                 HeightChanged?.Invoke(this, key);
             }
@@ -207,6 +289,122 @@ namespace ConcreteUI.Controls
                 item = default;
                 itemHeight = 0;
                 itemTop = 0;
+                return false;
+            }
+
+            private bool TryGetHeightCore_EqualityCompare<TEqualityComparer>(TItem item, TEqualityComparer comparer, out int itemTop, out int itemHeight)
+                where TEqualityComparer : IEqualityComparer<TItem>
+            {
+                IAppendOnlyCollection<int>? keys = _keys;
+                IAppendOnlyCollection<TItem>? values = _values;
+
+                int count = keys.Count;
+                if (count != values.Count)
+                {
+                    RecalculateAllCore(force: true, triggerEvent: true);
+                    count = keys.Count;
+                }
+                if (count == 0)
+                    goto Failed;
+
+                if (comparer.Equals(values[0], item))
+                {
+                    itemTop = 0;
+                    itemHeight = keys[0];
+                    return true;
+                }
+
+                for (int i = 1; i < count; i++)
+                {
+                    if (!comparer.Equals(values[i], item))
+                        continue;
+                    itemTop = keys[i - 1];
+                    itemHeight = keys[i] - itemTop;
+                    return true;
+                }
+
+                goto Failed;
+            Failed:
+                itemTop = 0;
+                itemHeight = 0;
+                return false;
+            }
+
+            private bool TryGetHeightCore_Compare<TComparer>(TItem item, TComparer comparer, out int itemTop, out int itemHeight)
+                where TComparer : IComparer<TItem>
+            {
+                IAppendOnlyCollection<int>? keys = _keys;
+                IAppendOnlyCollection<TItem>? values = _values;
+
+                int count = keys.Count;
+                if (count != values.Count)
+                {
+                    RecalculateAllCore(force: true, triggerEvent: true);
+                    count = keys.Count;
+                }
+                if (count == 0)
+                    goto Failed;
+
+                if (comparer.Compare(values[0], item) == 0)
+                {
+                    itemTop = 0;
+                    itemHeight = keys[0];
+                    return true;
+                }
+
+                for (int i = 1; i < count; i++)
+                {
+                    if (comparer.Compare(values[i], item) != 0)
+                        continue;
+                    itemTop = keys[i - 1];
+                    itemHeight = keys[i] - itemTop;
+                    return true;
+                }
+
+                goto Failed;
+            Failed:
+                itemTop = 0;
+                itemHeight = 0;
+                return false;
+            }
+
+            private bool TryGetHeightCore_BinarySearch(TItem item, IComparer<TItem>? comparer, out int itemTop, out int itemHeight)
+            {
+                IAppendOnlyCollection<int>? keys = _keys;
+                IAppendOnlyCollection<TItem>? values = _values;
+
+                int count = keys.Count;
+                if (count != values.Count)
+                {
+                    RecalculateAllCore(force: true, triggerEvent: true);
+                    count = keys.Count;
+                }
+                if (count == 0)
+                    goto Failed;
+
+                int index;
+                if (comparer is null)
+                    index = values.BinarySearch(item);
+                else
+                    index = values.BinarySearch(item, comparer);
+                if (index < 0 || index >= count)
+                    goto Failed;
+
+                if (index == 0)
+                {
+                    itemTop = 0;
+                    itemHeight = keys[index];
+                }
+                else
+                {
+                    itemTop = keys[index - 1];
+                    itemHeight = keys[index] - itemTop;
+                }
+                return true;
+
+            Failed:
+                itemTop = 0;
+                itemHeight = 0;
                 return false;
             }
 
