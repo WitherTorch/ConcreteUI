@@ -79,6 +79,8 @@ namespace ConcreteUI.Window
                 WindowMessage.Paint => HandlePaint(),
                 WindowMessage.EraseBackground => HandleEraseBackground(out result),
                 WindowMessage.ShowWindow => HandleShowWindow(wParam: wParam, lParam: lParam),
+                WindowMessage.SystemKeyDown => HandleSystemKeyDown(handle, wParam: wParam, lParam: lParam, out result),
+                WindowMessage.SystemKeyUp => HandleSystemKeyUp(handle, wParam: wParam, lParam: lParam, out result),
                 _ => false,
             };
         }
@@ -312,6 +314,26 @@ namespace ConcreteUI.Window
             if (wParam != 0 && lParam == 0 && (InterlockedHelper.Or(ref _windowFlags, 0b10) & 0b10) != 0b10)
                 WindowMessageLoop.InvokeAsync(() => OnShown(EventArgs.Empty));
             return false;
+        }
+
+        private bool HandleSystemKeyDown(IntPtr hwnd, nint wParam, nint lParam, out nint result)
+        {
+            if (wParam != (nint)VirtualKey.F10)
+            {
+                result = 0;
+                return false;
+            }
+            return TryProcessSystemWindowMessage(hwnd, WindowMessage.KeyDown, wParam, lParam, out result);
+        }
+
+        private bool HandleSystemKeyUp(IntPtr hwnd, nint wParam, nint lParam, out nint result)
+        {
+            if (wParam != (nint)VirtualKey.F10)
+            {
+                result = 0;
+                return false;
+            }
+            return TryProcessSystemWindowMessage(hwnd, WindowMessage.KeyUp, wParam, lParam, out result);
         }
 
         private static bool HandleEraseBackground(out nint result)
