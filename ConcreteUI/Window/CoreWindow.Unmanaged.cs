@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
@@ -34,7 +34,7 @@ namespace ConcreteUI.Window
         private nint _beforeHitTest;
         private MouseButtons _lastMouseDownButtons;
         private int _borderWidthInPixels;
-        private bool _isMaximized, _isCreateByDefaultX, _isCreateByDefaultY;
+        private bool _isMaximized, _isCreateByDefaultX, _isCreateByDefaultY, _hasMouseCapture;
         #endregion
 
         #region Special Fields
@@ -260,8 +260,16 @@ namespace ConcreteUI.Window
                         buttons &= ~oldButtons;
                         if (buttons == MouseButtons.None)
                             goto default;
-                        if (oldButtons == MouseButtons.None)
+                        if (_hasMouseCapture)
+                        {
+                            _hasMouseCapture = false;
+                            User32.ReleaseCapture();
+                        }
+                        else
+                        {
+                            _hasMouseCapture = true;
                             User32.SetCapture(hwnd);
+                        }
                         MouseInteractEventArgs args = new MouseInteractEventArgs(
                             point: ScalingPixelToLogical(point, _pixelsPerPoint),
                             buttons: buttons);
@@ -281,8 +289,11 @@ namespace ConcreteUI.Window
                         MouseButtons buttons = ((MouseButtons)wParam) & MouseButtons._Mask;
                         MouseButtons oldButtons = ReferenceHelper.Exchange(ref _lastMouseDownButtons, buttons);
                         (buttons, oldButtons) = (oldButtons & ~buttons, buttons);
-                        if (oldButtons == MouseButtons.None)
+                        if (_hasMouseCapture)
+                        {
+                            _hasMouseCapture = false;
                             User32.ReleaseCapture();
+                        }
                         if (buttons == MouseButtons.None)
                             goto default;
                         MouseNotifyEventArgs args = new MouseNotifyEventArgs(
