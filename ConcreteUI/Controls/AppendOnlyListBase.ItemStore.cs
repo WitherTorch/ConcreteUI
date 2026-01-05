@@ -11,6 +11,7 @@ namespace ConcreteUI.Controls
     {
         protected delegate void HeightChangedEventHandler(ItemStore sender, int height);
         protected delegate void ItemRemovedEventHandler(ItemStore sender, TItem item);
+        protected delegate void ItemsRemovedEventHandler(ItemStore sender, IEnumerable<TItem> item);
 
         protected sealed class ItemStore : IDisposable
         {
@@ -22,6 +23,7 @@ namespace ConcreteUI.Controls
 
             public event HeightChangedEventHandler? HeightChanged;
             public event ItemRemovedEventHandler? ItemRemoved;
+            public event ItemsRemovedEventHandler? ItemsRemoved;
 
             public bool IsDisposed => InterlockedHelper.Read(ref _disposed) != 0UL;
 
@@ -48,6 +50,14 @@ namespace ConcreteUI.Controls
                     return;
                 lock (_syncLock)
                     AppendCore(item);
+            }
+
+            public void Append(IEnumerable<TItem> items)
+            {
+                if (IsDisposed)
+                    return;
+                lock (_syncLock)
+                    AppendCore(items);
             }
 
             public void Clear()
@@ -162,7 +172,83 @@ namespace ConcreteUI.Controls
                 return 0;
             }
 
-            private void AppendCore(TItem item)
+            private void AppendCore(TItem item) => HeightChanged?.Invoke(this, AppendCoreInternal(item));
+
+            private void AppendCore(IEnumerable<TItem> items)
+            {
+                switch (items)
+                {
+                    case TItem[] array:
+                        AppendCoreInternal(array, array.Length);
+                        break;
+                    case UnwrappableList<TItem> list:
+                        AppendCoreInternal(list.Unwrap(), list.Count);
+                        break;
+                    case IList<TItem> list:
+                        AppendCoreInternal(list);
+                        break;
+                    case IReadOnlyList<TItem> list:
+                        AppendCoreInternal(list);
+                        break;
+                    default:
+                        AppendCoreInternal(items);
+                        break;
+                }
+            }
+
+            private void AppendCoreInternal(TItem[] items, int count)
+            {
+                if (count <= 0)
+                    return;
+                ref TItem itemRef = ref items[0];
+                int key, i = 0;
+                do
+                {
+                    key = AppendCoreInternal(UnsafeHelper.AddTypedOffset(ref itemRef, i));
+                } while (++i < count);
+                HeightChanged?.Invoke(this, key);
+            }
+
+            private void AppendCoreInternal(IList<TItem> items)
+            {
+                int count = items.Count;
+                if (count <= 0)
+                    return;
+                int key, i = 0;
+                do
+                {
+                    key = AppendCoreInternal(items[i]);
+                } while (++i < count);
+                HeightChanged?.Invoke(this, key);
+            }
+
+            private void AppendCoreInternal(IReadOnlyList<TItem> items)
+            {
+                int count = items.Count;
+                if (count <= 0)
+                    return;
+                int key, i = 0;
+                do
+                {
+                    key = AppendCoreInternal(items[i]);
+                } while (++i < count);
+                HeightChanged?.Invoke(this, key);
+            }
+
+            private void AppendCoreInternal(IEnumerable<TItem> items)
+            {
+                using IEnumerator<TItem> enumerator = items.GetEnumerator();
+                if (!enumerator.MoveNext())
+                    return;
+                int key;
+                do
+                {
+                    key = AppendCoreInternal(enumerator.Current);
+                } while (enumerator.MoveNext());
+                HeightChanged?.Invoke(this, key);
+            }
+
+            private int AppendCoreInternal(TItem item)
             {
                 IAppendOnlyCollection<int>? keys = _keys;
                 IAppendOnlyCollection<TItem>? values = _values;
@@ -217,7 +303,7 @@ namespace ConcreteUI.Controls
                     keys.Append(key);
                     values.Append(item);
                 }
-                HeightChanged?.Invoke(this, key);
+                return key;
             }
 
             private void ClearCore()

@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+using System.Collections.Generic;
+using System.Drawing;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -34,9 +35,15 @@ namespace ConcreteUI.Controls
             StickBottom = true;
         }
 
-        protected void Append(TItem item)
+        protected virtual void Append(TItem item)
         {
             _itemStore.Append(item);
+            Update();
+        }
+
+        protected virtual void Append(IEnumerable<TItem> items)
+        {
+            _itemStore.Append(items);
             Update();
         }
 
@@ -72,7 +79,7 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        protected virtual void RenderItem(in RegionalRenderingContext context, TItem item, SizeF renderSize) 
+        protected virtual void RenderItem(in RegionalRenderingContext context, TItem item, SizeF renderSize)
             => item.Render(context, renderSize);
 
         private void ItemStore_HeightChanged(ItemStore sender, int height)
