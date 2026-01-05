@@ -448,6 +448,12 @@ namespace ConcreteUI.Window
                         result = hitTest == HitTestValue.NoWhere ? (nint)HitTestValue.Client : (nint)hitTest;
                     }
                     break;
+                case WindowMessage.SetText:
+                    {
+                        InterlockedHelper.Or(ref _updateFlags, (long)UpdateFlags.ChangeTitle);
+                        Update();
+                    }
+                    goto Transfer;
                 default:
                     goto Transfer;
             }
