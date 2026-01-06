@@ -11,7 +11,6 @@ namespace ConcreteUI.Controls
     {
         protected delegate void HeightChangedEventHandler(ItemStore sender, int height);
         protected delegate void ItemRemovedEventHandler(ItemStore sender, TItem item);
-        protected delegate void ItemsRemovedEventHandler(ItemStore sender, IEnumerable<TItem> item);
 
         protected sealed class ItemStore : IDisposable
         {
@@ -23,7 +22,6 @@ namespace ConcreteUI.Controls
 
             public event HeightChangedEventHandler? HeightChanged;
             public event ItemRemovedEventHandler? ItemRemoved;
-            public event ItemsRemovedEventHandler? ItemsRemoved;
 
             public bool IsDisposed => InterlockedHelper.Read(ref _disposed) != 0UL;
 
