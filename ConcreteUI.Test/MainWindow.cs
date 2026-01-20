@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -68,7 +68,7 @@ namespace ConcreteUI.Test
             }
         }
 
-        protected override IEnumerable<UIElement> GetRenderingElements(int pageIndex)
+        protected override IEnumerable<UIElement> GetActiveElements(int pageIndex)
             => _elementLists[pageIndex];
 
         protected override void InitializeElements()
