@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Utils;
@@ -16,8 +15,8 @@ namespace ConcreteUI.Controls
 
         public static void OnMouseDownForElement(UIElement element, ref MouseInteractEventArgs args)
         {
-            if (element is IContainerElement containerElement)
-                OnMouseDownForElements(containerElement.Children, ref args);
+            if (element is IElementContainer container)
+                OnMouseDownForElements(container.GetElements(), ref args);
             if (!args.Handled && element is IMouseInteractEvents mouseInteractEvents && element.Bounds.Contains(args.Location))
             {
                 mouseInteractEvents.OnMouseDown(ref args);
@@ -36,8 +35,8 @@ namespace ConcreteUI.Controls
 
         public static void OnMouseUpForElement(UIElement element, in MouseNotifyEventArgs args)
         {
-            if (element is IContainerElement containerElement)
-                OnMouseUpForElements(containerElement.Children, in args);
+            if (element is IElementContainer container)
+                OnMouseUpForElements(container.GetElements(), in args);
             if (element is IMouseEvents mouseEvents)
                 mouseEvents.OnMouseUp(in args);
         }
@@ -48,8 +47,8 @@ namespace ConcreteUI.Controls
 
         public static void OnMouseMoveForElement(UIElement element, in MouseNotifyEventArgs args, ref SystemCursorType? cursorType)
         {
-            if (element is IContainerElement containerElement)
-                OnMouseMoveForElements(containerElement.Children, in args, ref cursorType);
+            if (element is IElementContainer container)
+                OnMouseMoveForElements(container.GetElements(), in args, ref cursorType);
             if (element is IMouseEvents mouseEvents)
                 mouseEvents.OnMouseMove(in args);
             if (cursorType is null && element is ICursorPredicator predicator)
@@ -63,9 +62,9 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnMouseScrollForElement(UIElement element, ref MouseInteractEventArgs args)
         {
-            if (element is IContainerElement containerElement)
+            if (element is IElementContainer container)
             {
-                OnMouseScrollForElements(containerElement.Children, ref args);
+                OnMouseScrollForElements(container.GetElements(), ref args);
                 if (args.Handled)
                     return;
             }

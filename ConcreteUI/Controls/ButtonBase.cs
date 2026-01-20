@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 using ConcreteUI.Utils;
 
@@ -6,7 +6,7 @@ using WitherTorch.Common.Extensions;
 
 namespace ConcreteUI.Controls
 {
-    public abstract partial class ButtonBase : UIElement, IMouseInteractEvents
+    public abstract partial class ButtonBase : DisposableUIElementBase, IMouseInteractEvents
     {
         private ButtonTriState _pressState;
         private bool _enabled, _isPressed;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -19,7 +19,7 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public abstract partial class ScrollableElementBase : UIElement, IDisposable, IMouseInteractEvents, IMouseScrollEvent
+    public abstract partial class ScrollableElementBase : DisposableUIElementBase, IMouseInteractEvents, IMouseScrollEvent
     {
         protected const string DefaultPrefixForScrollBar = "app.scrollBar";
 
@@ -44,7 +44,7 @@ namespace ConcreteUI.Controls
         private ScrollBarType _scrollBarType;
         private ulong _updateFlagsRaw;
         private float _pinY;
-        private bool _enabled, _drawWhenDisabled, _hasScrollBar, _stickBottom, _disposed;
+        private bool _enabled, _drawWhenDisabled, _hasScrollBar, _stickBottom;
 
         protected ScrollableElementBase(IRenderer renderer, string themePrefix) : this(renderer, themePrefix, DefaultPrefixForScrollBar) { }
 
@@ -53,7 +53,6 @@ namespace ConcreteUI.Controls
             _enabled = true;
             _drawWhenDisabled = false;
             _hasScrollBar = false;
-            _disposed = false;
             _updateFlagsRaw = (ulong)ScrollableElementUpdateFlags._NormalFlagAllTrue;
             _oldSurfaceSize = Size.Empty;
             _repeatingTimer = new Timer(RepeatingTimer_Tick, null, Timeout.Infinite, Timeout.Infinite);
@@ -532,33 +531,12 @@ namespace ConcreteUI.Controls
             }
         }
 
-        private void Dispose(bool disposing)
-        {
-            if (_disposed)
-                return;
-            _disposed = true;
-            DisposeCore(disposing);
-        }
-
-        protected virtual void DisposeCore(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
             if (disposing)
-            {
                 DisposeHelper.DisposeAll(_brushes);
-            }
             _repeatingTimer.Dispose();
             SequenceHelper.Clear(_brushes);
-        }
-
-        ~ScrollableElementBase()
-        {
-            Dispose(disposing: false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }

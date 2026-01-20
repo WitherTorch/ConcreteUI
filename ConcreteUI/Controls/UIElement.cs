@@ -1,11 +1,9 @@
-﻿using System;
-using System.Diagnostics;
+using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
 using ConcreteUI.Graphics;
-using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Layout;
 using ConcreteUI.Layout.Internals;
@@ -33,7 +31,7 @@ namespace ConcreteUI.Controls
         private readonly IRenderer _renderer;
         private readonly int _identifier;
 
-        private IContainerElement? _parent;
+        private IElementContainer? _parent;
         private IThemeContext? _themeContext;
         private Rectangle _bounds;
         private string _themePrefix;
@@ -133,13 +131,8 @@ namespace ConcreteUI.Controls
 
         protected void RenderBackground(in RegionalRenderingContext context)
         {
-            IContainerElement? parent = _parent;
-            if (parent is null)
-            {
-                _renderer.RenderElementBackground(this, in context);
-                return;
-            }
-            parent.RenderChildBackground(this, in context);
+            IElementContainer parent = InterlockedHelper.Read(ref _parent) ?? _renderer;
+            parent.RenderBackground(this, in context);
         }
 
         protected void RenderBackground(in RegionalRenderingContext context, D2D1Brush backBrush)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -23,7 +23,7 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class ComboBox : UIElement, IDisposable, IMouseInteractEvents
+    public sealed partial class ComboBox : DisposableUIElementBase, IMouseInteractEvents
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -49,7 +49,7 @@ namespace ConcreteUI.Controls
         private long _rawUpdateFlags;
         private float _fontSize;
         private int _selectedIndex, _dropDownListVisibleCount;
-        private bool _isPressed, _hovered, _enabled, _disposed;
+        private bool _isPressed, _hovered, _enabled;
 
         public ComboBox(CoreWindow window) : base(window, "app.comboBox")
         {
@@ -247,28 +247,14 @@ namespace ConcreteUI.Controls
             ItemClicked?.Invoke(this, EventArgs.Empty);
         }
 
-        private void Dispose(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
-            if (_disposed)
-                return;
-            _disposed = true;
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _layout);
                 DisposeHelper.DisposeAll(_brushes);
             }
             SequenceHelper.Clear(_brushes);
-        }
-
-        ~ComboBox()
-        {
-            Dispose(disposing: false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }

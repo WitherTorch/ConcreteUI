@@ -1,4 +1,3 @@
-﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -19,7 +18,7 @@ using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class Label : UIElement, IDisposable
+    public sealed partial class Label : DisposableUIElementBase
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -37,7 +36,7 @@ namespace ConcreteUI.Controls
         private DWriteFontStyle _fontStyle;
         private long _rawUpdateFlags;
         private float _fontSize;
-        private bool _wordWrap, _disposed;
+        private bool _wordWrap;
 
         public Label(IRenderer renderer) : base(renderer, "app.label")
         {
@@ -132,28 +131,14 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        private void Dispose(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
-            if (_disposed)
-                return;
-            _disposed = true;
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _layout);
                 DisposeHelper.DisposeAll(_brushes);
             }
             SequenceHelper.Clear(_brushes);
-        }
-
-        ~Label()
-        {
-            Dispose(disposing: false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }

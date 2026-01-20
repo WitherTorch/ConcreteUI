@@ -1,17 +1,15 @@
-﻿using System.Drawing;
+using System.Drawing;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Theme;
 
 namespace ConcreteUI.Controls
 {
-    public interface IRenderer : IRenderingControl
+    public interface IRenderer : IRenderingControl, IElementContainer
     {
         bool IsInitializingElements();
 
         float GetPointsPerPixel();
-
-        void RenderElementBackground(UIElement element, in RegionalRenderingContext context);
 
         ToolTip? GetToolTip();
 

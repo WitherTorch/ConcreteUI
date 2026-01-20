@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
@@ -23,7 +23,7 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class GroupBox : UIElement, IDisposable, IContainerElement
+    public sealed partial class GroupBox : DisposableUIElementBase, IElementContainer
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -42,7 +42,6 @@ namespace ConcreteUI.Controls
         private string _title, _text;
         private long _redrawTypeRaw, _rawUpdateFlags;
         private int _titleHeight;
-        private bool _disposed;
 
         public GroupBox(IRenderer renderer) : base(renderer, "app.groupBox")
         {
@@ -67,6 +66,12 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LayoutVariable GetContentLayoutReference(LayoutProperty property)
             => _contentLayoutReferences[(int)property].Value;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IEnumerable<UIElement> GetElements() => _children;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IEnumerable<UIElement> GetActiveElements() => ElementContainerDefaults.GetActiveElements(this);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddChild(UIElement element) => _children.Add(element);
@@ -97,7 +102,7 @@ namespace ConcreteUI.Controls
             Update(RenderObjectUpdateFlags.Format, RedrawType.RedrawAllContent);
         }
 
-        public void RenderChildBackground(UIElement child, in RegionalRenderingContext context)
+        public void RenderBackground(UIElement element, in RegionalRenderingContext context)
             => RenderBackground(context, _brushes[(int)Brush.BackBrush]);
 
         private void Children_BeforeAdded(object? sender, BeforeListAddOrRemoveEventArgs<UIElement> e)
@@ -278,11 +283,8 @@ namespace ConcreteUI.Controls
         [Inline(InlineBehavior.Remove)]
         private int GetTextTopCore(int y) => y + InterlockedHelper.Read(ref _titleHeight);
 
-        private void Dispose(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
-            if (_disposed)
-                return;
-            _disposed = true;
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
@@ -313,17 +315,6 @@ namespace ConcreteUI.Controls
                 }
             }
             children.Clear();
-        }
-
-        ~GroupBox()
-        {
-            Dispose(disposing: false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }

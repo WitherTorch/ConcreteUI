@@ -1,10 +1,16 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace ConcreteUI.Controls
 {
     partial class PopupPanel
     {
+        public bool IsDisposed
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _collection.IsDisposed;
+        }
+
         public IReadOnlyCollection<UIElement> Children
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace ConcreteUI.Controls
@@ -12,8 +12,8 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnDpiChangedForElement(UIElement element, in DpiChangedEventArgs args)
         {
-            if (element is IContainerElement containerElement)
-                OnDpiChangedForElements(containerElement.Children, in args);
+            if (element is IElementContainer container)
+                OnDpiChangedForElements(container.GetElements(), in args);
             if (element is IDpiAwareEvents keyEvents)
                 keyEvents.OnDpiChanged(in args);
         }

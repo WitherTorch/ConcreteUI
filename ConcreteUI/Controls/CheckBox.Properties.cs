@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System;
 using WitherTorch.Common.Helpers;
 using ConcreteUI.Layout;

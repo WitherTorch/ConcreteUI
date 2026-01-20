@@ -1,4 +1,3 @@
-﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -19,7 +18,7 @@ using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class Button : ButtonBase, IDisposable
+    public sealed partial class Button : ButtonBase
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -39,7 +38,6 @@ namespace ConcreteUI.Controls
         private string? _fontName;
         private string _text;
 
-        private bool _disposed;
         private float _fontSize;
         private long _rawUpdateFlags;
 
@@ -150,28 +148,14 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        private void Dispose(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
-            if (_disposed)
-                return;
-            _disposed = true;
             if (disposing)
             {
                 DisposeHelper.SwapDispose(ref _layout);
                 DisposeHelper.DisposeAll(_brushes);
             }
             SequenceHelper.Clear(_brushes);
-        }
-
-        ~Button()
-        {
-            Dispose(disposing: false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }

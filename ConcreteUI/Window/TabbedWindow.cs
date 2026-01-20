@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Threading;
 
@@ -56,6 +56,7 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Properties
+        public override int PageCount => _menuTitles.Length;
 
         public RectF[] MenuBarButtonBounds => NullSafetyHelper.ThrowIfNull(InterlockedHelper.Read(ref _menuBarButtonRects));
         #endregion

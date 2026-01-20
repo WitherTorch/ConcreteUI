@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using WitherTorch.Common.Extensions;
@@ -7,7 +7,7 @@ namespace ConcreteUI.Controls
 {
     partial class PopupContainer
     {
-        public IReadOnlyCollection<UIElement> Children => _children.GetUnderlyingList().AsReadOnlyList();
+        public bool IsDisposed => _disposed;
 
         public UIElement? FirstChild
         {

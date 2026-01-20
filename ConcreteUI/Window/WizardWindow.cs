@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -117,7 +117,7 @@ namespace ConcreteUI.Window
             Interlocked.Exchange(ref _updateFlags, -1L);
         }
 
-        public override void RenderElementBackground(UIElement element, in RegionalRenderingContext context)
+        public override void RenderBackground(UIElement element, in RegionalRenderingContext context)
         {
             ClearDC(context.DeviceContext);
         }

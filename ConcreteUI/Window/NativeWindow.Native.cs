@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -7,6 +7,7 @@ using System.Threading;
 using ConcreteUI.Internals;
 using ConcreteUI.Native;
 
+using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Window
@@ -69,25 +70,6 @@ namespace ConcreteUI.Window
         protected bool IsWindowDestroyed()
             => InterlockedHelper.Read(ref _windowFlags) == UnsafeHelper.GetMaxValue<nuint>();
 
-        ~NativeWindow() => Dispose(disposing: false);
-
-        public void Dispose()
-        {
-            Thread.MemoryBarrier();
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (_disposed)
-                return;
-            _disposed = true;
-            if (disposing)
-                Thread.MemoryBarrier();
-
-            DisposeCore(disposing);
-        }
 
         protected virtual void DisposeCore(bool disposing)
         {
@@ -105,5 +87,18 @@ namespace ConcreteUI.Window
             User32.DestroyWindow(handle);
         }
 
+        bool ISafeDisposable.MarkAsDisposed() => ReferenceHelper.Exchange(ref _disposed, true);
+
+        void ISafeDisposable.DisposeCore(bool disposing)
+        {
+            if (disposing)
+                Thread.MemoryBarrier();
+
+            DisposeCore(disposing);
+        }
+
+        ~NativeWindow() => SafeDisposableDefaults.Finalize(this);
+
+        public void Dispose() => SafeDisposableDefaults.Dispose(this);
     }
 }

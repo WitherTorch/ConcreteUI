@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace ConcreteUI.Controls
@@ -12,9 +12,9 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnKeyDownForElement(UIElement element, ref KeyInteractEventArgs args)
         {
-            if (element is IContainerElement containerElement)
+            if (element is IElementContainer container)
             {
-                OnKeyDownForElements(containerElement.Children, ref args);
+                OnKeyDownForElements(container.GetElements(), ref args);
                 if (args.Handled)
                     return;
             }
@@ -29,9 +29,9 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnKeyUpForElement(UIElement element, ref KeyInteractEventArgs args)
         {
-            if (element is IContainerElement containerElement)
+            if (element is IElementContainer container)
             {
-                OnKeyUpForElements(containerElement.Children, ref args);
+                OnKeyUpForElements(container.GetElements(), ref args);
                 if (args.Handled)
                     return;
             }
@@ -46,9 +46,9 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnCharacterInputForElement(UIElement element, ref CharacterInteractEventArgs args)
         {
-            if (element is IContainerElement containerElement)
+            if (element is IElementContainer container)
             {
-                OnCharacterInputForElements(containerElement.Children, ref args);
+                OnCharacterInputForElements(container.GetElements(), ref args);
                 if (args.Handled)
                     return;
             }

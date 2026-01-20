@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -160,7 +160,7 @@ namespace ConcreteUI.Window
                 deviceContext.Dpi = new PointF(dpi, dpi);
             _deviceContext = deviceContext;
 
-            ChangeBackgroundElement(new ToolTip(this, element => GetRenderingElements().Contains(element)));
+            ChangeBackgroundElement(new ToolTip(this, element => GetActiveElements().Contains(element)));
             isInitializingElements = true;
             InitializeElements();
             isInitializingElements = false;
@@ -224,7 +224,7 @@ namespace ConcreteUI.Window
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RenderingController? GetRenderingController() => _controller;
 
-        public virtual void RenderElementBackground(UIElement element, in RegionalRenderingContext context)
+        public virtual void RenderBackground(UIElement element, in RegionalRenderingContext context)
             => context.Clear(_windowBaseColor);
 
         void IRenderingControl.Render(RenderingFlags flags)
@@ -243,14 +243,23 @@ namespace ConcreteUI.Window
         public IThemeResourceProvider? GetThemeResourceProvider() => InterlockedHelper.Read(ref _resourceProvider);
 
         public float GetPointsPerPixel() => _pointsPerPixel;
+
+        IEnumerable<UIElement> IElementContainer.GetElements() => GetActiveElements();
+
+        IEnumerable<UIElement> IElementContainer.GetActiveElements() => GetActiveElements();
         #endregion
 
         #region Abstract Methods
         protected abstract void InitializeElements();
-        protected abstract IEnumerable<UIElement> GetRenderingElements();
+
+        protected abstract IEnumerable<UIElement> GetActiveElements();
         #endregion
 
         #region Virtual Methods
+        public virtual IEnumerable<UIElement> GetElements() => GetActiveElements()
+            .Concat(GetOverlayElements())
+            .Concat(GetBackgroundElements());
+
         protected virtual void ApplyThemeCore(IThemeResourceProvider provider)
         {
             _clearDCColor = provider.TryGetColor(ThemeConstants.ClearDCColorNode, out D2D1ColorF color) ? color : default;
@@ -267,7 +276,7 @@ namespace ConcreteUI.Window
         {
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
-                elements = GetRenderingElements();
+                elements = GetActiveElements();
             UIElementHelper.OnMouseDownForElements(elements, ref args);
             UIElementHelper.OnMouseDownForElements(GetBackgroundElements(), ref args);
         }
@@ -277,7 +286,7 @@ namespace ConcreteUI.Window
             SystemCursorType? cursorType = null;
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
-                elements = GetRenderingElements();
+                elements = GetActiveElements();
             UIElementHelper.OnMouseMoveForElements(elements, args, ref cursorType);
             UIElementHelper.OnMouseMoveForElements(GetBackgroundElements(), args, ref cursorType);
             Cursor = SystemCursors.GetSystemCursor(cursorType.GetValueOrDefault(SystemCursorType.Default));
@@ -287,7 +296,7 @@ namespace ConcreteUI.Window
         {
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
-                elements = GetRenderingElements();
+                elements = GetActiveElements();
             UIElementHelper.OnMouseUpForElements(elements, args);
             UIElementHelper.OnMouseUpForElements(GetBackgroundElements(), args);
         }
@@ -296,7 +305,7 @@ namespace ConcreteUI.Window
         {
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
-                elements = GetRenderingElements();
+                elements = GetActiveElements();
             UIElementHelper.OnMouseScrollForElements(elements, ref args);
             if (args.Handled)
                 return;
@@ -307,7 +316,7 @@ namespace ConcreteUI.Window
         {
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
-                elements = GetRenderingElements();
+                elements = GetActiveElements();
             UIElementHelper.OnKeyDownForElements(elements, ref args);
             if (args.Handled)
                 return;
@@ -318,7 +327,7 @@ namespace ConcreteUI.Window
         {
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
-                elements = GetRenderingElements();
+                elements = GetActiveElements();
             UIElementHelper.OnKeyUpForElements(elements, ref args);
             if (args.Handled)
                 return;
@@ -329,7 +338,7 @@ namespace ConcreteUI.Window
         {
             IEnumerable<UIElement> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
-                elements = GetRenderingElements();
+                elements = GetActiveElements();
             UIElementHelper.OnCharacterInputForElements(elements, ref args);
             if (args.Handled)
                 return;
@@ -339,7 +348,7 @@ namespace ConcreteUI.Window
         protected virtual void OnDpiChangedForElements(in DpiChangedEventArgs args)
         {
             UIElementHelper.OnDpiChangedForElements(GetOverlayElements(), in args);
-            UIElementHelper.OnDpiChangedForElements(GetRenderingElements(), in args);
+            UIElementHelper.OnDpiChangedForElements(GetActiveElements(), in args);
             UIElementHelper.OnDpiChangedForElements(GetBackgroundElements(), in args);
         }
 
@@ -395,7 +404,7 @@ namespace ConcreteUI.Window
         {
             Rect flooredPageRect = (Rect)pageRect;
             LayoutEngine layoutEngine = RentLayoutEngine();
-            layoutEngine.RecalculateLayout(flooredPageRect, GetRenderingElements());
+            layoutEngine.RecalculateLayout(flooredPageRect, GetActiveElements());
             layoutEngine.RecalculateLayout(flooredPageRect, GetOverlayElements());
             ReturnLayoutEngine(layoutEngine);
         }
@@ -471,7 +480,7 @@ namespace ConcreteUI.Window
                 RenderOnceContent(deviceContext, collector, pageRect);
             }
             float pointPerPixel = _pointsPerPixel;
-            UIElementHelper.RenderElements(deviceContext, collector, pointPerPixel, GetRenderingElements(), ignoreNeedRefresh: force);
+            UIElementHelper.RenderElements(deviceContext, collector, pointPerPixel, GetActiveElements(), ignoreNeedRefresh: force);
             UIElementHelper.RenderElements(deviceContext, collector, pointPerPixel, GetOverlayElements(), ignoreNeedRefresh: force || collector.HasAnyDirtyArea());
         }
 
@@ -950,50 +959,88 @@ namespace ConcreteUI.Window
                 DisposeHelper.SwapDisposeInterlocked(ref _controller);
                 DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
                 DisposeHelper.SwapDisposeInterlocked(ref _host);
-                DisposeHelper.DisposeAllWeak(_overlayElementList.Unwrap());
-                DisposeHelper.DisposeAllWeak(_backgroundElementList.Unwrap());
                 DisposeHelper.DisposeAll(_brushes);
+                DisposeElements(GetElements());
             }
             _overlayElementList.Clear();
             _backgroundElementList.Clear();
             SequenceHelper.Clear(_brushes);
         }
 
-        protected static void DisposeElements(UIElement[][] elements_array)
+        private static void DisposeElements(IEnumerable<UIElement> elements)
         {
-            if (elements_array is null) return;
-            for (int i = 0, count = elements_array.Length; i < count; i++)
+            switch (elements)
             {
-                DisposeElements(elements_array[i]);
+                case UIElement[] array:
+                    DisposeElementsCore(array, array.Length);
+                    return;
+                case IList<UIElement> list:
+                    DisposeElementsCore(list);
+                    return;
+                case ICollection<UIElement> collection:
+                    DisposeElementsCore(collection);
+                    return;
+                default:
+                    DisposeElementsCore(elements);
+                    return;
             }
         }
 
-        [Inline]
-        protected static void DisposeElements(UIElement[] elements)
+        private static void DisposeElementsCore(UIElement[] elements, int length)
         {
-            if (elements is null) return;
-            for (int i = 0, count = elements.Length; i < count; i++)
+            if (length <= 0)
+                return;
+            ref UIElement elementRef = ref elements[0];
+            for (int i = 0; i < length; i++)
+                (UnsafeHelper.AddTypedOffset(ref elementRef, i) as IDisposable)?.Dispose();
+        }
+
+        private static void DisposeElementsCore(IList<UIElement> elements)
+        {
+            switch (elements)
             {
-                UIElement element = elements[i];
-                if (element is IDisposable disposableElement)
-                {
-                    disposableElement.Dispose();
-                }
+                case UnwrappableList<UIElement> list:
+                    DisposeElementsCore(list.Unwrap(), list.Count);
+                    return;
+                case ObservableList<UIElement> list:
+                    {
+                        IList<UIElement> underlyingList = list.GetUnderlyingList();
+                        if (ReferenceEquals(underlyingList, list))
+                            return;
+                        DisposeElementsCore(list);
+                    }
+                    return;
+                default:
+                    {
+                        int count = elements.Count;
+                        if (count <= 0)
+                            return;
+                        for (int i = 0; i < count; i++)
+                            (elements[i] as IDisposable)?.Dispose();
+                    }
+                    return;
             }
         }
 
-        [Inline]
-        protected static void DisposeElements(IList<UIElement> elements)
+        private static void DisposeElementsCore(ICollection<UIElement> elements)
         {
-            if (elements is null) return;
-            for (int i = 0, count = elements.Count; i < count; i++)
+            int count = elements.Count;
+            if (count <= 0)
+                return;
+            using IEnumerator<UIElement> enumerator = elements.GetEnumerator();
+            enumerator.MoveNext();
+            for (int i = 0; i < count; i++)
             {
-                UIElement element = elements[i];
-                if (element is IDisposable disposableElement)
-                {
-                    disposableElement.Dispose();
-                }
+                (enumerator.Current as IDisposable)?.Dispose();
+                if (!enumerator.MoveNext())
+                    break;
             }
+        }
+
+        private static void DisposeElementsCore(IEnumerable<UIElement> elements)
+        {
+            foreach (UIElement element in elements)
+                (element as IDisposable)?.Dispose();
         }
         #endregion
     }

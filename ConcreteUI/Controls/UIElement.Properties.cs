@@ -1,4 +1,4 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Layout;
@@ -25,15 +25,14 @@ namespace ConcreteUI.Controls
             get => _renderer;
         }
 
-        public IContainerElement? Parent
+        public IElementContainer? Parent
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _parent;
+            get => InterlockedHelper.Read(ref _parent);
             set
             {
-                if (_parent == value)
+                if (InterlockedHelper.CompareExchange(ref _parent, value, null) is not null)
                     return;
-                _parent = value;
                 Update();
             }
         }

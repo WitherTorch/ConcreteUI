@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Threading;
 
@@ -11,13 +11,14 @@ using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
+using WitherTorch.Common;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class ContextMenu : PopupElementBase, IDisposable, IKeyEvents
+    public sealed partial class ContextMenu : PopupElementBase, ISafeDisposable, IKeyEvents
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -203,11 +204,8 @@ namespace ConcreteUI.Controls
             //Do nothing
         }
 
-        private void Dispose(bool disposing)
+        private void DisposeCore(bool disposing)
         {
-            if (_disposed)
-                return;
-            _disposed = true;
             DWriteTextLayout[]? layouts = InterlockedHelper.Read(ref _layouts);
             if (disposing)
             {
@@ -219,15 +217,12 @@ namespace ConcreteUI.Controls
             SequenceHelper.Clear(_brushes);
         }
 
-        ~ContextMenu()
-        {
-            Dispose(disposing: false);
-        }
+        bool ISafeDisposable.MarkAsDisposed() => ReferenceHelper.Exchange(ref _disposed, true);
 
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
+        void ISafeDisposable.DisposeCore(bool disposing) => DisposeCore(disposing);
+
+        ~ContextMenu() => SafeDisposableDefaults.Finalize(this);
+
+        public void Dispose() => SafeDisposableDefaults.Dispose(this);
     }
 }

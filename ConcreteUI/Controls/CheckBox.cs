@@ -1,4 +1,3 @@
-﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -22,7 +21,7 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class CheckBox : UIElement, IMouseInteractEvents, IDisposable
+    public sealed partial class CheckBox : DisposableUIElementBase, IMouseInteractEvents
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -46,7 +45,7 @@ namespace ConcreteUI.Controls
         private ButtonTriState _buttonState;
         private long _redrawTypeRaw, _rawUpdateFlags;
         private float _fontSize;
-        private bool _checkState, _isPressed, _disposed;
+        private bool _checkState, _isPressed;
 
         public CheckBox(IRenderer renderer) : base(renderer, "app.checkBox")
         {
@@ -282,28 +281,14 @@ namespace ConcreteUI.Controls
             Update(RedrawType.RedrawCheckBox);
         }
 
-        private void Dispose(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
-            if (_disposed)
-                return;
-            _disposed = true;
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _layout);
                 DisposeHelper.DisposeAll(_brushes);
             }
             SequenceHelper.Clear(_brushes);
-        }
-
-        ~CheckBox()
-        {
-            Dispose(disposing: false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }

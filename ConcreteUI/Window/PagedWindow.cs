@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -23,6 +23,8 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Properties
+        public abstract int PageCount { get; }
+
         public int CurrentPage
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -65,11 +67,15 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Override Methods
-        protected override IEnumerable<UIElement> GetRenderingElements()
+        protected override IEnumerable<UIElement> GetActiveElements()
         {
             int pageIndex = _pageIndex;
-            return pageIndex < 0 ? Enumerable.Empty<UIElement>() : GetRenderingElements(pageIndex);
+            return pageIndex < 0 ? Enumerable.Empty<UIElement>() : GetActiveElements(pageIndex);
         }
+
+        public override IEnumerable<UIElement> GetElements() => EnumerableAllActiveElements()
+            .Concat(GetOverlayElements())
+            .Concat(GetBackgroundElements());
 
         protected override void RecalculatePageLayout(in RectF pageRect)
         {
@@ -100,14 +106,14 @@ namespace ConcreteUI.Window
         {
             Rect flooredPageRect = (Rect)pageRect;
             LayoutEngine layoutEngine = RentLayoutEngine();
-            layoutEngine.RecalculateLayout(flooredPageRect, GetRenderingElements(pageIndex));
+            layoutEngine.RecalculateLayout(flooredPageRect, GetActiveElements(pageIndex));
             layoutEngine.RecalculateLayout(flooredPageRect, GetOverlayElements());
             ReturnLayoutEngine(layoutEngine);
         }
         #endregion
 
         #region Abstract Methods
-        protected abstract IEnumerable<UIElement> GetRenderingElements(int pageIndex);
+        protected abstract IEnumerable<UIElement> GetActiveElements(int pageIndex);
         #endregion
 
         #region Normal Methods
@@ -136,6 +142,16 @@ namespace ConcreteUI.Window
             _recalcState.InterlockedSet(pageIndex, false);
             isPageChanged = true;
             Update();
+        }
+
+        private IEnumerable<UIElement> EnumerableAllActiveElements()
+        {
+            int pageCount = PageCount;
+            for (int i = 0; i < pageCount; i++)
+            {
+                foreach (UIElement element in GetActiveElements(i))
+                    yield return element;
+            }
         }
         #endregion
     }

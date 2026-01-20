@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
@@ -8,12 +9,13 @@ using ConcreteUI.Window;
 
 using InlineMethod;
 
+using WitherTorch.Common;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class PopupContainer : PopupElementBase, IContainerElement
+    public sealed partial class PopupContainer : PopupElementBase, IElementContainer
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -38,15 +40,26 @@ namespace ConcreteUI.Controls
                 child.ApplyTheme(provider);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IEnumerable<UIElement> GetElements() => _children;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IEnumerable<UIElement> GetActiveElements() => ElementContainerDefaults.GetActiveElements(this);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddChild(UIElement element) => _children.Add(element);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddChildren(params UIElement[] elements) => _children.AddRange(elements);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddChildren(IEnumerable<UIElement> elements) => _children.AddRange(elements);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveChild(UIElement element) => _children.Remove(element);
 
-        public void RenderChildBackground(UIElement child, in RegionalRenderingContext context)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void RenderBackground(UIElement element, in RegionalRenderingContext context)
             => RenderBackground(context, _brushes[(int)Brush.BackBrush]);
 
         protected override bool RenderCore(in RegionalRenderingContext context)
@@ -58,26 +71,10 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        ~PopupContainer()
-        {
-            DisposeCore(disposing: false);
-        }
-
-        public void Dispose()
-        {
-            DisposeCore(disposing: true);
-            GC.SuppressFinalize(this);
-        }
-
         private void DisposeCore(bool disposing)
         {
-            if (_disposed)
-                return;
-            _disposed = true;
             if (disposing)
-            {
                 DisposeHelper.DisposeAll(_brushes);
-            }
             SequenceHelper.Clear(_brushes);
             DisposeChildren(disposing);
         }
@@ -103,5 +100,13 @@ namespace ConcreteUI.Controls
             }
             children.Clear();
         }
+
+        bool ISafeDisposable.MarkAsDisposed() => ReferenceHelper.Exchange(ref _disposed, true);
+
+        void ISafeDisposable.DisposeCore(bool disposing) => DisposeCore(disposing);
+
+        ~PopupContainer() => SafeDisposableDefaults.Finalize(this);
+
+        public void Dispose() => SafeDisposableDefaults.Dispose(this);
     }
 }

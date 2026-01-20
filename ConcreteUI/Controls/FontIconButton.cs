@@ -1,4 +1,3 @@
-﻿using System;
 using System.Drawing;
 using System.Threading;
 
@@ -7,11 +6,12 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
+using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class FontIconButton : ButtonBase, IDisposable
+    public sealed partial class FontIconButton : ButtonBase, ISafeDisposable
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -23,12 +23,10 @@ namespace ConcreteUI.Controls
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
 
         private FontIcon? _icon;
-        private bool _disposed;
 
         public FontIconButton(IRenderer renderer) : base(renderer, "app.fontIconButton")
         {
             _icon = null;
-            _disposed = false;
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
@@ -60,28 +58,14 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        private void Dispose(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
-            if (_disposed)
-                return;
-            _disposed = true;
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _icon);
                 DisposeHelper.DisposeAll(_brushes);
             }
             SequenceHelper.Clear(_brushes);
-        }
-
-        ~FontIconButton()
-        {
-            Dispose(disposing: false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -89,8 +89,8 @@ namespace ConcreteUI.Layout
                 computeDict[variable] = new StrongBox<int?>(null);
             }
             _elementDict[element] = contextsLazy.GetValueDirectly();
-            if (element is IContainerElement containerElement)
-                QueueElements(containerElement.Children);
+            if (element is IElementContainer container)
+                QueueElements(container.GetElements());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

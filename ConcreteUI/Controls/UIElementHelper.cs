@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -227,9 +227,9 @@ namespace ConcreteUI.Controls
                     element.Render(renderingContext);
                 collector = DirtyAreaCollector.Empty;
             }
-            if (element is not IContainerElement container)
+            if (element is not IElementContainer container)
                 return;
-            RenderElements(context, collector, pointPerPixel, container.Children, ignoreNeedRefresh);
+            RenderElements(context, collector, pointPerPixel, container.GetActiveElements(), ignoreNeedRefresh);
         }
     }
 }

@@ -1,19 +1,27 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
+using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
     public sealed partial class PopupPanel
     {
-        private sealed class OneUIElementCollection : IReadOnlyCollection<UIElement>, IDisposable
+        private sealed class OneUIElementCollection : IReadOnlyCollection<UIElement>, ISafeDisposable
         {
             private readonly PopupPanel _owner;
 
             private UIElement? _element;
+            private bool _disposed;
+
+            public bool IsDisposed
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _disposed;
+            }
 
             public OneUIElementCollection(PopupPanel owner)
             {
@@ -58,18 +66,13 @@ namespace ConcreteUI.Controls
                 return new Enumerator(element);
             }
 
-            ~OneUIElementCollection()
-            {
-                DisposeCore();
-            }
+            bool ISafeDisposable.MarkAsDisposed() => ReferenceHelper.Exchange(ref _disposed, true);
 
-            public void Dispose()
-            {
-                DisposeCore();
-                GC.SuppressFinalize(this);
-            }
+            void ISafeDisposable.DisposeCore(bool disposing) => DisposeHelper.SwapDisposeWeak(ref _element);
 
-            private void DisposeCore() => DisposeHelper.SwapDisposeWeak(ref _element);
+            ~OneUIElementCollection() => SafeDisposableDefaults.Finalize(this);
+
+            public void Dispose() => SafeDisposableDefaults.Dispose(this);
 
             private sealed class Enumerator : IEnumerator<UIElement>
             {

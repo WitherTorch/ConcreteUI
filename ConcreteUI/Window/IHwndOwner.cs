@@ -1,8 +1,8 @@
-﻿using System;
+using WitherTorch.Common;
 
 namespace ConcreteUI.Window
 {
-    public interface IHwndOwner : IWindowMessageFilter, IDisposable
+    public interface IHwndOwner : IWindowMessageFilter, ISafeDisposable
     {
         public nint Handle { get; }
     }

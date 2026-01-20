@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
@@ -37,8 +37,6 @@ namespace ConcreteUI.Controls
                 Update(RenderObjectUpdateFlags.Text, RedrawType.RedrawText);
             }
         }
-
-        public IReadOnlyCollection<UIElement> Children => _children.GetUnderlyingList().AsReadOnlyList();
 
         public UIElement? FirstChild
         {
