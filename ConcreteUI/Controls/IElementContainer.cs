@@ -12,9 +12,9 @@ namespace ConcreteUI.Controls
 {
     public interface IElementContainer : ISafeDisposable
     {
-        IEnumerable<UIElement> GetElements();
+        IEnumerable<UIElement?> GetElements();
 
-        IEnumerable<UIElement> GetActiveElements()
+        IEnumerable<UIElement?> GetActiveElements()
 #if NET8_0_OR_GREATER
             => ElementContainerDefaults.GetActiveElements(this);
 #else
@@ -32,7 +32,7 @@ namespace ConcreteUI.Controls
     {
         [Inline(InlineBehavior.Keep, export: false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IEnumerable<UIElement> GetActiveElements<T>(T container) where T : IElementContainer
+        public static IEnumerable<UIElement?> GetActiveElements<T>(T container) where T : IElementContainer
             => container.GetElements();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -40,7 +40,7 @@ namespace ConcreteUI.Controls
         {
             if (!disposing)
                 return;
-            foreach (UIElement element in container.GetElements())
+            foreach (UIElement? element in container.GetElements())
             {
                 if (element is not IDisposable disposableElement)
                     continue;

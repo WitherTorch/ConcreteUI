@@ -68,10 +68,10 @@ namespace ConcreteUI.Controls
             => _contentLayoutReferences[(int)property].Value;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<UIElement> GetElements() => _children;
+        public IEnumerable<UIElement?> GetElements() => _children;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<UIElement> GetActiveElements() => ElementContainerDefaults.GetActiveElements(this);
+        public IEnumerable<UIElement?> GetActiveElements() => ElementContainerDefaults.GetActiveElements(this);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddChild(UIElement element) => _children.Add(element);

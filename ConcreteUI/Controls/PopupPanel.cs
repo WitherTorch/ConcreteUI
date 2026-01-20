@@ -24,10 +24,10 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<UIElement> GetElements() => _collection;
+        public IEnumerable<UIElement?> GetElements() => _collection;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<UIElement> GetElementsForRender() => ElementContainerDefaults.GetActiveElements(this);
+        public IEnumerable<UIElement?> GetElementsForRender() => ElementContainerDefaults.GetActiveElements(this);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddChild(UIElement? element) => _collection.Value ??= element;

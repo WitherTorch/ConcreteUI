@@ -10,10 +10,10 @@ namespace ConcreteUI.Controls
     partial class UIElementHelper
     {
         public static unsafe void OnMouseDownForElements<TEnumerable>(TEnumerable elements, ref MouseInteractEventArgs args)
-            where TEnumerable : IEnumerable<UIElement>
+            where TEnumerable : IEnumerable<UIElement?>
             => DoHybridEventForElements(elements, ref args, &OnMouseDownForElement);
 
-        public static void OnMouseDownForElement(UIElement element, ref MouseInteractEventArgs args)
+        public static void OnMouseDownForElement(UIElement? element, ref MouseInteractEventArgs args)
         {
             if (element is IElementContainer container)
                 OnMouseDownForElements(container.GetElements(), ref args);
@@ -30,10 +30,10 @@ namespace ConcreteUI.Controls
         }
 
         public static unsafe void OnMouseUpForElements<TEnumerable>(TEnumerable elements, in MouseNotifyEventArgs args)
-            where TEnumerable : IEnumerable<UIElement>
+            where TEnumerable : IEnumerable<UIElement?>
             => DoNotifyEventForElements(elements, in args, &OnMouseUpForElement);
 
-        public static void OnMouseUpForElement(UIElement element, in MouseNotifyEventArgs args)
+        public static void OnMouseUpForElement(UIElement? element, in MouseNotifyEventArgs args)
         {
             if (element is IElementContainer container)
                 OnMouseUpForElements(container.GetElements(), in args);
@@ -42,10 +42,10 @@ namespace ConcreteUI.Controls
         }
 
         public static unsafe void OnMouseMoveForElements<TEnumerable>(TEnumerable elements, in MouseNotifyEventArgs args, ref SystemCursorType? cursorType)
-            where TEnumerable : IEnumerable<UIElement>
+            where TEnumerable : IEnumerable<UIElement?>
             => DoHybridEventForElements(elements, in args, ref cursorType, &OnMouseMoveForElement);
 
-        public static void OnMouseMoveForElement(UIElement element, in MouseNotifyEventArgs args, ref SystemCursorType? cursorType)
+        public static void OnMouseMoveForElement(UIElement? element, in MouseNotifyEventArgs args, ref SystemCursorType? cursorType)
         {
             if (element is IElementContainer container)
                 OnMouseMoveForElements(container.GetElements(), in args, ref cursorType);
@@ -56,11 +56,11 @@ namespace ConcreteUI.Controls
         }
 
         public static unsafe void OnMouseScrollForElements<TEnumerable>(TEnumerable elements, ref MouseInteractEventArgs args)
-            where TEnumerable : IEnumerable<UIElement>
+            where TEnumerable : IEnumerable<UIElement?>
             => DoInteractEventForElements(elements, ref args, &OnMouseScrollForElement);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void OnMouseScrollForElement(UIElement element, ref MouseInteractEventArgs args)
+        public static void OnMouseScrollForElement(UIElement? element, ref MouseInteractEventArgs args)
         {
             if (element is IElementContainer container)
             {

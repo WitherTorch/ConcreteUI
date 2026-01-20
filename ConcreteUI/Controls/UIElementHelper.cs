@@ -140,51 +140,51 @@ namespace ConcreteUI.Controls
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void RenderElements<TEnumerable>(D2D1DeviceContext context, DirtyAreaCollector collector, float pointPerPixel,
-            TEnumerable elements, bool ignoreNeedRefresh) where TEnumerable : IEnumerable<UIElement>
+            TEnumerable elements, bool ignoreNeedRefresh) where TEnumerable : IEnumerable<UIElement?>
         {
-            UIElement[] array;
+            UIElement?[] array;
             int length;
 
-            if (typeof(TEnumerable) == typeof(UIElement[]) || elements is UIElement[])
+            if (typeof(TEnumerable) == typeof(UIElement?[]) || elements is UIElement?[])
                 goto Array;
-            if (typeof(TEnumerable) == typeof(UnwrappableList<UIElement>) || elements is UnwrappableList<UIElement>)
+            if (typeof(TEnumerable) == typeof(UnwrappableList<UIElement?>) || elements is UnwrappableList<UIElement?>)
                 goto UnwrappableList;
-            if (typeof(TEnumerable) == typeof(ObservableList<UIElement>) || elements is ObservableList<UIElement>)
+            if (typeof(TEnumerable) == typeof(ObservableList<UIElement?>) || elements is ObservableList<UIElement?>)
                 goto ObservableList;
-            if (typeof(TEnumerable) == typeof(IList<UIElement>) || elements is IList<UIElement>)
+            if (typeof(TEnumerable) == typeof(IList<UIElement?>) || elements is IList<UIElement?>)
                 goto List;
 
             goto Fallback;
 
         Array:
-            array = UnsafeHelper.As<TEnumerable, UIElement[]>(elements);
+            array = UnsafeHelper.As<TEnumerable, UIElement?[]>(elements);
             length = array.Length;
             goto ArrayLike;
 
         UnwrappableList:
-            UnwrappableList<UIElement> unwrappableList = UnsafeHelper.As<TEnumerable, UnwrappableList<UIElement>>(elements);
+            UnwrappableList<UIElement?> unwrappableList = UnsafeHelper.As<TEnumerable, UnwrappableList<UIElement?>>(elements);
             array = unwrappableList.Unwrap();
             length = unwrappableList.Count;
             goto ArrayLike;
 
         ObservableList:
-            IList<UIElement> underlyingList = UnsafeHelper.As<TEnumerable, ObservableList<UIElement>>(elements).GetUnderlyingList();
-            elements = UnsafeHelper.As<IList<UIElement>, TEnumerable>(underlyingList);
-            if (underlyingList is UIElement[])
+            IList<UIElement?> underlyingList = UnsafeHelper.As<TEnumerable, ObservableList<UIElement?>>(elements).GetUnderlyingList();
+            elements = UnsafeHelper.As<IList<UIElement?>, TEnumerable>(underlyingList);
+            if (underlyingList is UIElement?[])
                 goto Array;
-            if (underlyingList is UnwrappableList<UIElement>)
+            if (underlyingList is UnwrappableList<UIElement?>)
                 goto UnwrappableList;
-            if (underlyingList is ObservableList<UIElement>)
+            if (underlyingList is ObservableList<UIElement?>)
                 goto ObservableList;
             goto List;
 
         ArrayLike:
             if (length <= 0)
                 return;
-            ref UIElement elementRef = ref array[0];
+            ref UIElement? elementRef = ref array[0];
             for (nint i = length - 1; i >= 0; i--)
             {
-                UIElement element = UnsafeHelper.AddTypedOffset(ref elementRef, i);
+                UIElement? element = UnsafeHelper.AddTypedOffset(ref elementRef, i);
                 if (element is null)
                     continue;
                 RenderElement(context, collector, pointPerPixel, element, ignoreNeedRefresh);
@@ -192,13 +192,13 @@ namespace ConcreteUI.Controls
             return;
 
         List:
-            IList<UIElement> list = UnsafeHelper.As<TEnumerable, IList<UIElement>>(elements);
+            IList<UIElement?> list = UnsafeHelper.As<TEnumerable, IList<UIElement?>>(elements);
             length = list.Count;
             if (length <= 0)
                 return;
             for (int i = length - 1; i >= 0; i--)
             {
-                UIElement element = list[i];
+                UIElement? element = list[i];
                 if (element is null)
                     continue;
                 RenderElement(context, collector, pointPerPixel, element, ignoreNeedRefresh);
@@ -206,10 +206,10 @@ namespace ConcreteUI.Controls
             return;
 
         Fallback:
-            using IEnumerator<UIElement> enumerator = elements.GetEnumerator();
+            using IEnumerator<UIElement?> enumerator = elements.GetEnumerator();
             while (enumerator.MoveNext())
             {
-                UIElement element = enumerator.Current;
+                UIElement? element = enumerator.Current;
                 if (element is null)
                     continue;
                 RenderElement(context, collector, pointPerPixel, element, ignoreNeedRefresh);

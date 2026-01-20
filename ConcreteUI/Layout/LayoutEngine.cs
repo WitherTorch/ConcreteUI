@@ -21,14 +21,14 @@ namespace ConcreteUI.Layout
         private readonly TreeDictionary<LayoutVariable, StrongBox<int?>> _computeDict = new();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void QueueElements(IEnumerable<UIElement> elements)
+        private void QueueElements(IEnumerable<UIElement?> elements)
         {
             switch (elements)
             {
-                case UIElement[] _array:
+                case UIElement?[] _array:
                     QueueElements(_array);
                     break;
-                case UnwrappableList<UIElement> _list:
+                case UnwrappableList<UIElement?> _list:
                     QueueElements(_list);
                     break;
                 default:
@@ -38,12 +38,12 @@ namespace ConcreteUI.Layout
         }
 
         [Inline(InlineBehavior.Remove)]
-        private void QueueElementsCore(IEnumerable<UIElement> elements)
+        private void QueueElementsCore(IEnumerable<UIElement?> elements)
         {
-            IEnumerator<UIElement> enumerator = elements.GetEnumerator();
+            IEnumerator<UIElement?> enumerator = elements.GetEnumerator();
             while (enumerator.MoveNext())
             {
-                UIElement element = enumerator.Current;
+                UIElement? element = enumerator.Current;
                 if (element is null)
                     continue;
                 QueueElement(element);
@@ -52,19 +52,19 @@ namespace ConcreteUI.Layout
         }
 
         [Inline(InlineBehavior.Remove)]
-        private void QueueElements(UnwrappableList<UIElement> list)
+        private void QueueElements(UnwrappableList<UIElement?> list)
             => QueueElements(list.Unwrap(), list.Count);
 
         [Inline(InlineBehavior.Remove)]
-        private void QueueElements(UIElement[] elements)
+        private void QueueElements(UIElement?[] elements)
             => QueueElements(elements, elements.Length);
 
         [Inline(InlineBehavior.Remove)]
-        private void QueueElements(UIElement[] elements, int length)
+        private void QueueElements(UIElement?[] elements, int length)
         {
             for (int i = 0; i < length; i++)
             {
-                UIElement element = elements[i];
+                UIElement? element = elements[i];
                 if (element is null)
                     continue;
                 QueueElement(element);
@@ -103,7 +103,7 @@ namespace ConcreteUI.Layout
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void RecalculateLayout(in Rect pageRect, UIElement[] elements)
+        public unsafe void RecalculateLayout(in Rect pageRect, UIElement?[] elements)
         {
             if (elements is null || !pageRect.IsValid)
                 return;
@@ -111,16 +111,16 @@ namespace ConcreteUI.Layout
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void RecalculateLayout(in Rect pageRect, IEnumerable<UIElement> elements)
+        public unsafe void RecalculateLayout(in Rect pageRect, IEnumerable<UIElement?> elements)
         {
             if (elements is null || !pageRect.IsValid)
                 return;
             switch (elements)
             {
-                case UIElement[] array:
+                case UIElement?[] array:
                     RecalculateLayoutCore(pageRect, array, array.Length);
                     break;
-                case UnwrappableList<UIElement> list:
+                case UnwrappableList<UIElement?> list:
                     RecalculateLayoutCore(pageRect, list.Unwrap(), list.Count);
                     break;
                 default:
@@ -130,7 +130,7 @@ namespace ConcreteUI.Layout
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void RecalculateLayoutCore(in Rect pageRect, UIElement[] elements, int length)
+        private unsafe void RecalculateLayoutCore(in Rect pageRect, UIElement?[] elements, int length)
         {
             if (length <= 0 || !ArrayHelper.HasNonNullItem(elements))
                 return;
@@ -139,10 +139,10 @@ namespace ConcreteUI.Layout
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void RecalculateLayoutCore(in Rect pageRect, IEnumerable<UIElement> elements)
+        private unsafe void RecalculateLayoutCore(in Rect pageRect, IEnumerable<UIElement?> elements)
         {
             bool hasAnyItems = false;
-            foreach (UIElement element in elements)
+            foreach (UIElement? element in elements)
             {
                 if (element is null)
                     return;

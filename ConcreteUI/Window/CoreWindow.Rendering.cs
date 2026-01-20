@@ -244,21 +244,21 @@ namespace ConcreteUI.Window
 
         public float GetPointsPerPixel() => _pointsPerPixel;
 
-        IEnumerable<UIElement> IElementContainer.GetElements() => GetActiveElements();
+        IEnumerable<UIElement?> IElementContainer.GetElements() => GetActiveElements();
 
-        IEnumerable<UIElement> IElementContainer.GetActiveElements() => GetActiveElements();
+        IEnumerable<UIElement?> IElementContainer.GetActiveElements() => GetActiveElements();
         #endregion
 
         #region Abstract Methods
         protected abstract void InitializeElements();
 
-        protected abstract IEnumerable<UIElement> GetActiveElements();
+        protected abstract IEnumerable<UIElement?> GetActiveElements();
         #endregion
 
         #region Virtual Methods
-        public virtual IEnumerable<UIElement> GetElements() => GetActiveElements()
-            .Concat(GetOverlayElements())
-            .Concat(GetBackgroundElements());
+        public virtual IEnumerable<UIElement?> GetElements() => GetActiveElements()
+            .ConcatOptimized(GetOverlayElements())
+            .ConcatOptimized(GetBackgroundElements());
 
         protected virtual void ApplyThemeCore(IThemeResourceProvider provider)
         {
@@ -274,7 +274,7 @@ namespace ConcreteUI.Window
 
         protected virtual void OnMouseDownForElements(ref MouseInteractEventArgs args)
         {
-            IEnumerable<UIElement> elements = GetOverlayElements();
+            IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetActiveElements();
             UIElementHelper.OnMouseDownForElements(elements, ref args);
@@ -284,7 +284,7 @@ namespace ConcreteUI.Window
         protected virtual void OnMouseMoveForElements(in MouseNotifyEventArgs args)
         {
             SystemCursorType? cursorType = null;
-            IEnumerable<UIElement> elements = GetOverlayElements();
+            IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetActiveElements();
             UIElementHelper.OnMouseMoveForElements(elements, args, ref cursorType);
@@ -294,7 +294,7 @@ namespace ConcreteUI.Window
 
         protected virtual void OnMouseUpForElements(in MouseNotifyEventArgs args)
         {
-            IEnumerable<UIElement> elements = GetOverlayElements();
+            IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetActiveElements();
             UIElementHelper.OnMouseUpForElements(elements, args);
@@ -303,7 +303,7 @@ namespace ConcreteUI.Window
 
         protected virtual void OnMouseScrollForElements(ref MouseInteractEventArgs args)
         {
-            IEnumerable<UIElement> elements = GetOverlayElements();
+            IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetActiveElements();
             UIElementHelper.OnMouseScrollForElements(elements, ref args);
@@ -314,7 +314,7 @@ namespace ConcreteUI.Window
 
         protected virtual void OnKeyDownForElements(ref KeyInteractEventArgs args)
         {
-            IEnumerable<UIElement> elements = GetOverlayElements();
+            IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetActiveElements();
             UIElementHelper.OnKeyDownForElements(elements, ref args);
@@ -325,7 +325,7 @@ namespace ConcreteUI.Window
 
         protected virtual void OnKeyUpForElements(ref KeyInteractEventArgs args)
         {
-            IEnumerable<UIElement> elements = GetOverlayElements();
+            IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetActiveElements();
             UIElementHelper.OnKeyUpForElements(elements, ref args);
@@ -336,7 +336,7 @@ namespace ConcreteUI.Window
 
         protected virtual void OnCharacterInputForElements(ref CharacterInteractEventArgs args)
         {
-            IEnumerable<UIElement> elements = GetOverlayElements();
+            IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetActiveElements();
             UIElementHelper.OnCharacterInputForElements(elements, ref args);
@@ -967,17 +967,17 @@ namespace ConcreteUI.Window
             SequenceHelper.Clear(_brushes);
         }
 
-        private static void DisposeElements(IEnumerable<UIElement> elements)
+        private static void DisposeElements(IEnumerable<UIElement?> elements)
         {
             switch (elements)
             {
-                case UIElement[] array:
+                case UIElement?[] array:
                     DisposeElementsCore(array, array.Length);
                     return;
-                case IList<UIElement> list:
+                case IList<UIElement?> list:
                     DisposeElementsCore(list);
                     return;
-                case ICollection<UIElement> collection:
+                case ICollection<UIElement?> collection:
                     DisposeElementsCore(collection);
                     return;
                 default:
@@ -986,25 +986,25 @@ namespace ConcreteUI.Window
             }
         }
 
-        private static void DisposeElementsCore(UIElement[] elements, int length)
+        private static void DisposeElementsCore(UIElement?[] elements, int length)
         {
             if (length <= 0)
                 return;
-            ref UIElement elementRef = ref elements[0];
+            ref UIElement? elementRef = ref elements[0];
             for (int i = 0; i < length; i++)
                 (UnsafeHelper.AddTypedOffset(ref elementRef, i) as IDisposable)?.Dispose();
         }
 
-        private static void DisposeElementsCore(IList<UIElement> elements)
+        private static void DisposeElementsCore(IList<UIElement?> elements)
         {
             switch (elements)
             {
-                case UnwrappableList<UIElement> list:
+                case UnwrappableList<UIElement?> list:
                     DisposeElementsCore(list.Unwrap(), list.Count);
                     return;
-                case ObservableList<UIElement> list:
+                case ObservableList<UIElement?> list:
                     {
-                        IList<UIElement> underlyingList = list.GetUnderlyingList();
+                        IList<UIElement?> underlyingList = list.GetUnderlyingList();
                         if (ReferenceEquals(underlyingList, list))
                             return;
                         DisposeElementsCore(list);
@@ -1022,12 +1022,12 @@ namespace ConcreteUI.Window
             }
         }
 
-        private static void DisposeElementsCore(ICollection<UIElement> elements)
+        private static void DisposeElementsCore(ICollection<UIElement?> elements)
         {
             int count = elements.Count;
             if (count <= 0)
                 return;
-            using IEnumerator<UIElement> enumerator = elements.GetEnumerator();
+            using IEnumerator<UIElement?> enumerator = elements.GetEnumerator();
             enumerator.MoveNext();
             for (int i = 0; i < count; i++)
             {
@@ -1037,9 +1037,9 @@ namespace ConcreteUI.Window
             }
         }
 
-        private static void DisposeElementsCore(IEnumerable<UIElement> elements)
+        private static void DisposeElementsCore(IEnumerable<UIElement?> elements)
         {
-            foreach (UIElement element in elements)
+            foreach (UIElement? element in elements)
                 (element as IDisposable)?.Dispose();
         }
         #endregion

@@ -9,6 +9,7 @@ using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.Structures;
 
@@ -67,15 +68,15 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Override Methods
-        protected override IEnumerable<UIElement> GetActiveElements()
+        protected override IEnumerable<UIElement?> GetActiveElements()
         {
             int pageIndex = _pageIndex;
             return pageIndex < 0 ? Enumerable.Empty<UIElement>() : GetActiveElements(pageIndex);
         }
 
-        public override IEnumerable<UIElement> GetElements() => EnumerableAllActiveElements()
-            .Concat(GetOverlayElements())
-            .Concat(GetBackgroundElements());
+        public override IEnumerable<UIElement?> GetElements() => EnumerateActiveElementsInAllPages()
+            .ConcatOptimized(GetOverlayElements())
+            .ConcatOptimized(GetBackgroundElements());
 
         protected override void RecalculatePageLayout(in RectF pageRect)
         {
@@ -110,10 +111,20 @@ namespace ConcreteUI.Window
             layoutEngine.RecalculateLayout(flooredPageRect, GetOverlayElements());
             ReturnLayoutEngine(layoutEngine);
         }
+
+        protected virtual IEnumerable<UIElement?> EnumerateActiveElementsInAllPages()
+        {
+            int pageCount = PageCount;
+            for (int i = 0; i < pageCount; i++)
+            {
+                foreach (UIElement? element in GetActiveElements(i))
+                    yield return element;
+            }
+        }
         #endregion
 
         #region Abstract Methods
-        protected abstract IEnumerable<UIElement> GetActiveElements(int pageIndex);
+        protected abstract IEnumerable<UIElement?> GetActiveElements(int pageIndex);
         #endregion
 
         #region Normal Methods
@@ -142,16 +153,6 @@ namespace ConcreteUI.Window
             _recalcState.InterlockedSet(pageIndex, false);
             isPageChanged = true;
             Update();
-        }
-
-        private IEnumerable<UIElement> EnumerableAllActiveElements()
-        {
-            int pageCount = PageCount;
-            for (int i = 0; i < pageCount; i++)
-            {
-                foreach (UIElement element in GetActiveElements(i))
-                    yield return element;
-            }
         }
         #endregion
     }
