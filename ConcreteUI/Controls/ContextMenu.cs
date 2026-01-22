@@ -18,7 +18,7 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class ContextMenu : PopupElementBase, ISafeDisposable, IKeyEvents
+    public sealed partial class ContextMenu : PopupElementBase, ICheckableDisposable, IKeyEvents
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -206,6 +206,9 @@ namespace ConcreteUI.Controls
 
         private void DisposeCore(bool disposing)
         {
+            if (ReferenceHelper.Exchange(ref _disposed, true))
+                return;
+
             DWriteTextLayout[]? layouts = InterlockedHelper.Read(ref _layouts);
             if (disposing)
             {
@@ -217,12 +220,12 @@ namespace ConcreteUI.Controls
             SequenceHelper.Clear(_brushes);
         }
 
-        bool ISafeDisposable.MarkAsDisposed() => ReferenceHelper.Exchange(ref _disposed, true);
+        ~ContextMenu() => DisposeCore(disposing: false);
 
-        void ISafeDisposable.DisposeCore(bool disposing) => DisposeCore(disposing);
-
-        ~ContextMenu() => SafeDisposableDefaults.Finalize(this);
-
-        public void Dispose() => SafeDisposableDefaults.Dispose(this);
+        public void Dispose()
+        {
+            DisposeCore(disposing: true);
+            GC.SuppressFinalize(this);
+        }
     }
 }

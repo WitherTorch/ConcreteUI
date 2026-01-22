@@ -7,8 +7,6 @@ namespace ConcreteUI.Controls
 {
     public interface IRenderer : IRenderingControl, IElementContainer
     {
-        bool IsInitializingElements();
-
         float GetPointsPerPixel();
 
         ToolTip? GetToolTip();

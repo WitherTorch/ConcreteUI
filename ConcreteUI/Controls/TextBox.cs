@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -33,7 +33,6 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class TextBox : ScrollableElementBase, IIMEControl, IMouseInteractEvents, IMouseNotifyEvents, IKeyEvents, ICharacterEvents, ICursorPredicator
     {
-        private static readonly char[] LineSeparators = Environment.NewLine.ToCharArray();
         private static readonly LazyTiny<GraphemeInfo> EmptyGraphemeInfoLazy =
             new LazyTiny<GraphemeInfo>(new GraphemeInfo(string.Empty, Array.Empty<int>()));
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
@@ -172,17 +171,14 @@ namespace ConcreteUI.Controls
             UpdateCaretIndex(_caretIndex);
         }
 
-        [Inline(InlineBehavior.Remove)]
-        private string FixString(string value)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public string FixString(string value)
         {
             if (value is null)
                 return string.Empty;
             if (_multiLine)
                 return value;
-            char[] separators = LineSeparators;
-            if (!value.ContainsAny(separators))
-                return value;
-            return value.Split(separators, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
+            return StringHelper.GetStringForFirstNonEmptyLine(value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -466,7 +462,7 @@ namespace ConcreteUI.Controls
         {
             text = FixString(text);
 
-            if (Renderer.IsInitializingElements())
+            if (!IsRenderedOnce)
             {
                 _text = text;
                 InterlockedHelper.Exchange(ref _textGraphemeInfoLazy, new LazyTiny<GraphemeInfo>(

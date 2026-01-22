@@ -13,7 +13,6 @@ using ConcreteUI.Window;
 
 using InlineMethod;
 
-using WitherTorch.Common;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Threading;
@@ -35,7 +34,7 @@ namespace ConcreteUI.Controls
         private IThemeContext? _themeContext;
         private Rectangle _bounds;
         private string _themePrefix;
-        private long _requestRedraw;
+        private ulong _requestRedraw;
 
         public UIElement(IRenderer renderer, string themePrefix)
         {
@@ -44,6 +43,7 @@ namespace ConcreteUI.Controls
             _identifier = InterlockedHelper.GetAndIncrement(ref _identifierGenerator);
             _themePrefix = themePrefix.ToLowerAscii();
             _layoutReferences = CreateLayoutReferenceLazies();
+            _requestRedraw = ulong.MaxValue;
         }
 
         private LazyTiny<LayoutVariable>[] CreateLayoutReferenceLazies()
@@ -96,22 +96,19 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual void Update()
         {
-            Interlocked.Exchange(ref _requestRedraw, Booleans.TrueLong);
+            const ulong RequestRedrawBit = 0b01;
+
+            if (CheckIsRenderedOnce(InterlockedHelper.Or(ref _requestRedraw, RequestRedrawBit)))
+                return;
             UpdateCore();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void UpdateCore()
-        {
-            IRenderer renderer = Renderer;
-            if (renderer.IsInitializingElements())
-                return;
-            renderer.GetRenderingController()?.RequestUpdate(false);
-        }
+        protected void UpdateCore() => _renderer.GetRenderingController()?.RequestUpdate(false);
 
         public virtual void Render(in RegionalRenderingContext context) => Render(in context, markDirty: true);
 
-        public virtual void Render(in RegionalRenderingContext context, bool markDirty)
+        public void Render(in RegionalRenderingContext context, bool markDirty)
         {
             SemaphoreSlim semaphore = _semaphore;
             semaphore.Wait();
@@ -160,15 +157,17 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual bool NeedRefresh()
-        {
-            if (_requestRedraw.IsTrue())
-                return true;
-            return Interlocked.Read(ref _requestRedraw).IsTrue();
-        }
+        public virtual bool NeedRefresh() => InterlockedHelper.Read(ref _requestRedraw) != 0UL;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void ResetNeedRefreshFlag() => Interlocked.Exchange(ref _requestRedraw, Booleans.FalseLong);
+        protected void ResetNeedRefreshFlag() => InterlockedHelper.Exchange(ref _requestRedraw, 0UL);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool CheckIsRenderedOnce(ulong requestRedraw)
+        {
+            const ulong FirstTimeRenderBit = 0b10;
+            return (requestRedraw & FirstTimeRenderBit) == 0UL;
+        }
 
         protected abstract bool RenderCore(in RegionalRenderingContext context);
 

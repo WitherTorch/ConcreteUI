@@ -25,6 +25,12 @@ namespace ConcreteUI.Controls
             get => _renderer;
         }
 
+        public bool IsRenderedOnce
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => CheckIsRenderedOnce(InterlockedHelper.Read(ref _requestRedraw));
+        }
+
         public IElementContainer? Parent
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

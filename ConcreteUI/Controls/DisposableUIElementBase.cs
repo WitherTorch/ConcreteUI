@@ -1,9 +1,11 @@
+using System;
+
 using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
-    public abstract class DisposableUIElementBase : UIElement, ISafeDisposable
+    public abstract class DisposableUIElementBase : UIElement, ICheckableDisposable
     {
         private bool _disposed;
 
@@ -17,12 +19,19 @@ namespace ConcreteUI.Controls
 
         protected abstract void DisposeCore(bool disposing);
 
-        bool ISafeDisposable.MarkAsDisposed() => ReferenceHelper.Exchange(ref _disposed, true);
+        private void Dispose(bool disposing)
+        {
+            if (ReferenceHelper.Exchange(ref _disposed, true))
+                return;
+            DisposeCore(disposing);
+        }
 
-        void ISafeDisposable.DisposeCore(bool disposing) => DisposeCore(disposing);
+        ~DisposableUIElementBase() => Dispose(disposing: false);
 
-        ~DisposableUIElementBase() => SafeDisposableDefaults.Finalize(this);
-
-        public void Dispose() => SafeDisposableDefaults.Dispose(this);
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
     }
 }

@@ -7,7 +7,6 @@ using System.Threading;
 using ConcreteUI.Internals;
 using ConcreteUI.Native;
 
-using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Window
@@ -87,18 +86,21 @@ namespace ConcreteUI.Window
             User32.DestroyWindow(handle);
         }
 
-        bool ISafeDisposable.MarkAsDisposed() => ReferenceHelper.Exchange(ref _disposed, true);
-
-        void ISafeDisposable.DisposeCore(bool disposing)
+        private void Dispose(bool disposing)
         {
+            if (ReferenceHelper.Exchange(ref _disposed, true))
+                return;
             if (disposing)
                 Thread.MemoryBarrier();
-
             DisposeCore(disposing);
         }
 
-        ~NativeWindow() => SafeDisposableDefaults.Finalize(this);
+        ~NativeWindow() => Dispose(disposing: false);
 
-        public void Dispose() => SafeDisposableDefaults.Dispose(this);
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
     }
 }

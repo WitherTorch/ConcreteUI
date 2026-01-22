@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
+using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Window;
 
@@ -15,7 +16,7 @@ using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class PopupContainer : PopupElementBase, IElementContainer
+    public sealed partial class PopupContainer : PopupElementBase, IElementContainer, IDisposable
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -73,40 +74,20 @@ namespace ConcreteUI.Controls
 
         private void DisposeCore(bool disposing)
         {
+            if (ReferenceHelper.Exchange(ref _disposed, true))
+                return;
             if (disposing)
                 DisposeHelper.DisposeAll(_brushes);
             SequenceHelper.Clear(_brushes);
-            DisposeChildren(disposing);
+            ListHelper.CleanAllWeak<UIElement, ObservableList<UIElement>>(_children, disposing);
         }
 
-        [Inline(InlineBehavior.Remove)]
-        private void DisposeChildren(bool disposing)
+        ~PopupContainer() => DisposeCore(disposing: false);
+
+        public void Dispose()
         {
-            IList<UIElement> children = _children.GetUnderlyingList();
-            if (disposing)
-            {
-                int count = children.Count;
-                if (children is UnwrappableList<UIElement> castedList)
-                {
-                    UIElement[] childrenArray = castedList.Unwrap();
-                    for (int i = 0; i < count; i++)
-                        (childrenArray[i] as IDisposable)?.Dispose();
-                }
-                else
-                {
-                    foreach (UIElement child in children)
-                        (child as IDisposable)?.Dispose();
-                }
-            }
-            children.Clear();
+            DisposeCore(disposing: true);
+            GC.SuppressFinalize(this);
         }
-
-        bool ISafeDisposable.MarkAsDisposed() => ReferenceHelper.Exchange(ref _disposed, true);
-
-        void ISafeDisposable.DisposeCore(bool disposing) => DisposeCore(disposing);
-
-        ~PopupContainer() => SafeDisposableDefaults.Finalize(this);
-
-        public void Dispose() => SafeDisposableDefaults.Dispose(this);
     }
 }

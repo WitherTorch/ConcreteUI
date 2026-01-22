@@ -10,7 +10,7 @@ namespace ConcreteUI.Controls
 {
     public sealed partial class PopupPanel
     {
-        private sealed class OneUIElementCollection : IReadOnlyCollection<UIElement>, ISafeDisposable
+        private sealed class OneUIElementCollection : IReadOnlyCollection<UIElement>, ICheckableDisposable
         {
             private readonly PopupPanel _owner;
 
@@ -66,13 +66,20 @@ namespace ConcreteUI.Controls
                 return new Enumerator(element);
             }
 
-            bool ISafeDisposable.MarkAsDisposed() => ReferenceHelper.Exchange(ref _disposed, true);
+            private void Dispose(bool disposing)
+            {
+                if (ReferenceHelper.Exchange(ref _disposed, true))
+                    return;
+                DisposeHelper.SwapDisposeWeak(ref _element);
+            }
 
-            void ISafeDisposable.DisposeCore(bool disposing) => DisposeHelper.SwapDisposeWeak(ref _element);
+            ~OneUIElementCollection() => Dispose(disposing: false);
 
-            ~OneUIElementCollection() => SafeDisposableDefaults.Finalize(this);
-
-            public void Dispose() => SafeDisposableDefaults.Dispose(this);
+            public void Dispose()
+            {
+                Dispose(disposing: true);
+                GC.SuppressFinalize(this);
+            }
 
             private sealed class Enumerator : IEnumerator<UIElement>
             {

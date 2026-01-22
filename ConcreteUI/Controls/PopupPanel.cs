@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -12,11 +11,9 @@ using WitherTorch.Common.Extensions;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class PopupPanel : PopupElementBase, IElementContainer
+    public sealed partial class PopupPanel : PopupElementBase, IElementContainer, ICheckableDisposable
     {
         private readonly OneUIElementCollection _collection;
-
-        bool ISafeDisposable.IsDisposed => _collection.IsDisposed;
 
         public PopupPanel(CoreWindow window) : base(window, string.Empty)
         {
@@ -45,11 +42,6 @@ namespace ConcreteUI.Controls
                 collection.Value = null;
         }
 
-        public void Dispose()
-        {
-            _collection.Dispose();
-        }
-
         protected override void ApplyThemeCore(IThemeResourceProvider provider) => _collection.Value?.ApplyTheme(provider);
 
         protected override bool RenderCore(in RegionalRenderingContext context) => true;
@@ -60,10 +52,6 @@ namespace ConcreteUI.Controls
 
         IEnumerable<UIElement> IElementContainer.GetActiveElements() => _collection;
 
-        bool ISafeDisposable.MarkAsDisposed() => false;
-
-        void ISafeDisposable.DisposeCore(bool disposing) => _collection.Dispose();
-
-        void IDisposable.Dispose() => SafeDisposableDefaults.Dispose(this);
+        public void Dispose() => _collection.Dispose();
     }
 }

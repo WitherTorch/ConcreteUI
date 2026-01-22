@@ -292,29 +292,7 @@ namespace ConcreteUI.Controls
                 DisposeHelper.DisposeAll(_brushes);
             }
             SequenceHelper.Clear(_brushes);
-            DisposeChildren(disposing);
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private void DisposeChildren(bool disposing)
-        {
-            IList<UIElement> children = _children.GetUnderlyingList();
-            if (disposing)
-            {
-                int count = children.Count;
-                if (children is UnwrappableList<UIElement> castedList)
-                {
-                    UIElement[] childrenArray = castedList.Unwrap();
-                    for (int i = 0; i < count; i++)
-                        (childrenArray[i] as IDisposable)?.Dispose();
-                }
-                else
-                {
-                    foreach (UIElement child in children)
-                        (child as IDisposable)?.Dispose();
-                }
-            }
-            children.Clear();
+            ListHelper.CleanAllWeak<UIElement, ObservableList<UIElement>>(_children, disposing);
         }
     }
 }

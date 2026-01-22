@@ -6,12 +6,11 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
-using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class FontIconButton : ButtonBase, ISafeDisposable
+    public sealed partial class FontIconButton : ButtonBase
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {

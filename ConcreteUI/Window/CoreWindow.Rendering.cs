@@ -85,7 +85,7 @@ namespace ConcreteUI.Window
         private RenderingController? _controller;
         private UIElement? _focusElement;
         private IThemeResourceProvider? _resourceProvider;
-        private bool isShown, isInitializingElements;
+        private bool _isShown;
         private long _updateFlags = Booleans.TrueLong;
         #endregion
 
@@ -161,9 +161,7 @@ namespace ConcreteUI.Window
             _deviceContext = deviceContext;
 
             ChangeBackgroundElement(new ToolTip(this, element => GetActiveElements().Contains(element)));
-            isInitializingElements = true;
             InitializeElements();
-            isInitializingElements = false;
             ApplyTheme(parent is null ?
                 ThemeResourceProvider.CreateResourceProvider(deviceContext, ThemeManager.CurrentTheme, material) :
                 parent._resourceProvider!.Clone());
@@ -238,13 +236,9 @@ namespace ConcreteUI.Window
 
         ToolTip? IRenderer.GetToolTip() => GetBackgroundElement<ToolTip>();
 
-        bool IRenderer.IsInitializingElements() => isInitializingElements;
-
         public IThemeResourceProvider? GetThemeResourceProvider() => InterlockedHelper.Read(ref _resourceProvider);
 
         public float GetPointsPerPixel() => _pointsPerPixel;
-
-        IEnumerable<UIElement?> IElementContainer.GetElements() => GetActiveElements();
 
         IEnumerable<UIElement?> IElementContainer.GetActiveElements() => GetActiveElements();
         #endregion
@@ -624,7 +618,7 @@ namespace ConcreteUI.Window
 
         private void UpdateFirstTime()
         {
-            isShown = true;
+            _isShown = true;
             RenderingController controller = new RenderingController(this);
             _controller = controller;
             UpdateCoreUnchecked(controller);
@@ -695,14 +689,14 @@ namespace ConcreteUI.Window
 
         protected void Update()
         {
-            if (!isShown)
+            if (!_isShown)
                 return;
             UpdateCore(_controller);
         }
 
         protected void Refresh()
         {
-            if (!isShown)
+            if (!_isShown)
                 return;
             _controller?.RequestUpdate(false);
         }
