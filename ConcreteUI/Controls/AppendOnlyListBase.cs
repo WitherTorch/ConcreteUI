@@ -13,16 +13,16 @@ namespace ConcreteUI.Controls
 {
     public abstract partial class AppendOnlyListBase<TItem> : ScrollableElementBase where TItem : IAppendOnlyListItem<TItem>
     {
-        protected readonly ItemStore _itemStore;
+        protected readonly AppendOnlyListItemStore<TItem> _itemStore;
 
-        protected AppendOnlyListBase(IRenderer renderer, string themePrefix, ItemStore itemStore) : base(renderer, themePrefix)
+        protected AppendOnlyListBase(IRenderer renderer, string themePrefix, AppendOnlyListItemStore<TItem> itemStore) : base(renderer, themePrefix)
         {
             _itemStore = itemStore;
             itemStore.HeightChanged += ItemStore_HeightChanged;
             Initialize();
         }
 
-        protected AppendOnlyListBase(IRenderer renderer, string themePrefix, string scrollBarThemePrefix, ItemStore itemStore) : base(renderer, themePrefix, scrollBarThemePrefix)
+        protected AppendOnlyListBase(IRenderer renderer, string themePrefix, string scrollBarThemePrefix, AppendOnlyListItemStore<TItem> itemStore) : base(renderer, themePrefix, scrollBarThemePrefix)
         {
             _itemStore = itemStore;
             itemStore.HeightChanged += ItemStore_HeightChanged;
@@ -82,7 +82,7 @@ namespace ConcreteUI.Controls
         protected virtual void RenderItem(in RegionalRenderingContext context, TItem item, SizeF renderSize)
             => item.Render(context, renderSize);
 
-        private void ItemStore_HeightChanged(ItemStore sender, int height)
+        private void ItemStore_HeightChanged(object? sender, int height)
         {
             SurfaceSize = new Size(0, height);
         }
