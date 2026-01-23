@@ -98,7 +98,7 @@ namespace ConcreteUI.Controls
         {
             const ulong RequestRedrawBit = 0b01;
 
-            if (CheckIsRenderedOnce(InterlockedHelper.Or(ref _requestRedraw, RequestRedrawBit)))
+            if (!CheckIsRenderedOnce(InterlockedHelper.Or(ref _requestRedraw, RequestRedrawBit)))
                 return;
             UpdateCore();
         }
