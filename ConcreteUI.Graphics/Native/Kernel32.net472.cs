@@ -1,7 +1,9 @@
-﻿#if NET472_OR_GREATER
+#if NET472_OR_GREATER
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
+
+using WitherTorch.Common.Buffers;
 
 namespace ConcreteUI.Graphics.Native
 {
@@ -20,13 +22,22 @@ namespace ConcreteUI.Graphics.Native
         public static extern partial void GetSystemTimeAsFileTime(long* lpSystemTimeAsFileTime);
 
         [DllImport(KERNEL32_DLL)]
+        public static extern partial IntPtr CreateEventW(void* lpEventAttributes, bool bManualReset, bool bInitialState, char* lpName);
+
+        [DllImport(KERNEL32_DLL)]
         public static extern partial IntPtr CreateWaitableTimerW(void* lpTimerAttributes, bool bManualReset, char* lpTimerName);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern partial bool SetEvent(IntPtr hEvent);
 
         [DllImport(KERNEL32_DLL)]
         public static extern partial bool SetWaitableTimer(IntPtr hTimer, long* lpDueTime, nint lPeriod, void* pfnCompletionRoutine, void* lpArgToCompletionRoutine, bool fResume);
 
         [DllImport(KERNEL32_DLL)]
         public static extern partial uint WaitForSingleObject(IntPtr hHandle, int dwMilliseconds);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern partial uint WaitForMultipleObjects(uint nCount, IntPtr* lpHandles, bool bWaitAll, int dwMilliseconds);
 
         [DllImport(KERNEL32_DLL)]
         public static extern partial bool CloseHandle(IntPtr hObject);

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -21,12 +21,12 @@ namespace ConcreteUI.Graphics
 
             private readonly RenderingController _controller;
             private readonly Thread _thread;
-            private readonly AutoResetEvent _trigger;
             private readonly ManualResetEvent _exitTrigger;
 
-            private bool _disposed;
-            private uint _framesPerSecond;
+            private IntPtr _triggerEventHandle;
             private long _nativeTicksPerFrameCycle;
+            private uint _framesPerSecond;
+            private bool _disposed;
 
             [LocalsInit(false)]
             unsafe static RenderingThread()
@@ -37,7 +37,7 @@ namespace ConcreteUI.Graphics
                 NativeTicksPerSecond = frequency;
             }
 
-            public RenderingThread(RenderingController controller, uint framesPerSecond)
+            public unsafe RenderingThread(RenderingController controller, uint framesPerSecond)
             {
                 _controller = controller;
                 _thread = new Thread(ThreadLoop)
@@ -45,7 +45,6 @@ namespace ConcreteUI.Graphics
                     IsBackground = true,
                     Priority = ThreadPriority.AboveNormal
                 };
-                _trigger = new AutoResetEvent(false);
                 _exitTrigger = new ManualResetEvent(false);
                 _framesPerSecond = framesPerSecond;
                 _nativeTicksPerFrameCycle = NativeTicksPerSecond / framesPerSecond;
@@ -66,56 +65,54 @@ namespace ConcreteUI.Graphics
 
             public void DoRender()
             {
-                AutoResetEvent trigger = _trigger;
-                if (trigger.SafeWaitHandle.IsClosed)
+                IntPtr handle = InterlockedHelper.Read(ref _triggerEventHandle);
+                if (handle == IntPtr.Zero)
                     return;
-                try
-                {
-                    trigger.Set();
-                }
-                catch (Exception)
-                {
-                }
+                Kernel32.SetEvent(handle);
             }
 
             public void Stop()
             {
                 Interlocked.Exchange(ref _nativeTicksPerFrameCycle, -1);
-                AutoResetEvent trigger = _trigger;
-                if (trigger.SafeWaitHandle.IsClosed)
+                IntPtr handle = InterlockedHelper.Read(ref _triggerEventHandle);
+                if (handle == IntPtr.Zero)
                     return;
-                try
-                {
-                    trigger.Set();
-                }
-                catch (ObjectDisposedException)
-                {
-                }
+                Kernel32.SetEvent(handle);
             }
 
             private unsafe void ThreadLoop()
             {
                 ThreadHelper.SetCurrentThreadName("Concrete UI Rendering Thread #" + InterlockedHelper.GetAndIncrement(ref _idCounter).ToString("D"));
                 RenderingController controller = _controller;
-                AutoResetEvent trigger = _trigger;
                 ManualResetEvent exitTrigger = _exitTrigger;
-                IntPtr sleepTimer = Kernel32.CreateWaitableTimerW(null, false, null);
-                do
+                IntPtr triggerEventHandle = Kernel32.CreateEventW(null, bManualReset: false, bInitialState: false, null);
+                InterlockedHelper.CompareExchange(ref _triggerEventHandle, triggerEventHandle, IntPtr.Zero);
+                try
                 {
-                    trigger.WaitOne(Timeout.Infinite, exitContext: true);
-                    long frameCycle = Interlocked.Read(ref _nativeTicksPerFrameCycle);
-                    if (frameCycle < 0L)
-                        break;
-                    frameCycle += GetSystemTimeInNativeTicks();
-                    Thread.MemoryBarrier();
-                    controller.RenderCore();
-                    Kernel32.SetWaitableTimer(sleepTimer, &frameCycle, 0, null, null, false);
-                    Kernel32.WaitForSingleObject(sleepTimer, Timeout.Infinite);
-                } while (true);
-                Kernel32.CloseHandle(sleepTimer);
-                trigger.Dispose();
-                exitTrigger.Set();
-                exitTrigger.Dispose();
+                    Kernel32.WaitForSingleObject(triggerEventHandle, dwMilliseconds: Timeout.Infinite);
+
+                    IntPtr sleepTimer = Kernel32.CreateWaitableTimerW(null, false, null);
+                    IntPtr* waitHandles = stackalloc IntPtr[2] { triggerEventHandle, sleepTimer };
+                    do
+                    {
+                        long frameCycle = Interlocked.Read(ref _nativeTicksPerFrameCycle);
+                        if (frameCycle < 0L)
+                            break;
+                        frameCycle += GetSystemTimeInNativeTicks();
+                        Thread.MemoryBarrier();
+                        controller.RenderCore();
+                        Kernel32.SetWaitableTimer(sleepTimer, &frameCycle, 0, null, null, false);
+                        Kernel32.WaitForMultipleObjects(2u, waitHandles, bWaitAll: true, dwMilliseconds: Timeout.Infinite);
+                    } while (true);
+                    Kernel32.CloseHandle(sleepTimer);
+                }
+                finally
+                {
+                    InterlockedHelper.CompareExchange(ref _triggerEventHandle, IntPtr.Zero, triggerEventHandle);
+                    Kernel32.CloseHandle(triggerEventHandle);
+                    exitTrigger.Set();
+                    exitTrigger.Dispose();
+                }
             }
 
             [LocalsInit(false)]
