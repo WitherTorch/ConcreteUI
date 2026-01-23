@@ -92,9 +92,7 @@ namespace ConcreteUI.Graphics
                 try
                 {
                     Kernel32.WaitForSingleObject(triggerEventHandle, dwMilliseconds: Timeout.Infinite);
-
                     IntPtr sleepTimer = Kernel32.CreateWaitableTimerW(null, false, null);
-                    IntPtr* waitHandles = stackalloc IntPtr[2] { triggerEventHandle, sleepTimer };
                     do
                     {
                         long frameCycle = Interlocked.Read(ref _nativeTicksPerFrameCycle);
@@ -104,7 +102,8 @@ namespace ConcreteUI.Graphics
                         Thread.MemoryBarrier();
                         controller.RenderCore();
                         Kernel32.SetWaitableTimer(sleepTimer, &frameCycle, 0, null, null, false);
-                        Kernel32.WaitForMultipleObjects(2u, waitHandles, bWaitAll: true, dwMilliseconds: Timeout.Infinite);
+                        Kernel32.WaitForSingleObject(sleepTimer, dwMilliseconds: Timeout.Infinite);
+                        Kernel32.WaitForSingleObject(triggerEventHandle, dwMilliseconds: Timeout.Infinite);
                     } while (true);
                     Kernel32.CloseHandle(sleepTimer);
                 }
@@ -154,7 +153,7 @@ namespace ConcreteUI.Graphics
                 if (ReferenceHelper.Exchange(ref _disposed, true))
                     return;
                 Stop();
-                WaitForExit(200);
+                WaitForExit(50);
             }
 
             public void Dispose()

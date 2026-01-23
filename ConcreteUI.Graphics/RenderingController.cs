@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 
 using ConcreteUI.Graphics.Native;
+using ConcreteUI.Graphics.Native.Direct2D;
 
 using LocalsInit;
 

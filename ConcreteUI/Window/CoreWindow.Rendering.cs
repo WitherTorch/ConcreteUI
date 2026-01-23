@@ -198,17 +198,6 @@ namespace ConcreteUI.Window
             SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
             SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
             SystemEvents.SessionSwitch -= SystemEvents_SessionSwitch;
-
-            RenderingController? controller = _controller;
-            if (controller is not null)
-            {
-                controller.Stop();
-                controller.WaitForExit(500);
-            }
-
-            SwapChainGraphicsHost? host = _host;
-            if (host is not null && !host.IsDisposed)
-                host.EndDraw();
         }
         #endregion
 
@@ -954,19 +943,24 @@ namespace ConcreteUI.Window
         #region Disposing
         protected override void DisposeCore(bool disposing)
         {
-            base.DisposeCore(disposing);
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider);
                 DisposeHelper.SwapDisposeInterlocked(ref _controller);
+                SwapChainGraphicsHost? host = InterlockedHelper.Exchange(ref _host, null);
+                if (host is not null && !host.IsDisposed)
+                {
+                    host.EndDraw();
+                    host.Dispose();
+                }
                 DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
-                DisposeHelper.SwapDisposeInterlocked(ref _host);
                 DisposeHelper.DisposeAll(_brushes);
                 DisposeElements(GetElements());
             }
             _overlayElementList.Clear();
             _backgroundElementList.Clear();
             SequenceHelper.Clear(_brushes);
+            base.DisposeCore(disposing);
         }
 
         private static void DisposeElements(IEnumerable<UIElement?> elements)
