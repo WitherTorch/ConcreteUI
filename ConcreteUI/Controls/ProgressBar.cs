@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 
 using ConcreteUI.Graphics;
@@ -7,6 +7,7 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Theme;
 
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
@@ -42,7 +43,7 @@ namespace ConcreteUI.Controls
             double percentage = _value / _maximium;
             RenderBackground(context, brushes[(int)Brush.BackBrush]);
             context.FillRectangle(
-                new RectF(0, 0, RenderingHelper.RoundInPixel((float)(renderSize.Width * percentage), context.PointsPerPixel), renderSize.Height),
+                new RectF(0, 0, RenderingHelper.RoundInPixel((float)(renderSize.Width * percentage), context.PointsPerPixel.X), renderSize.Height),
                 brushes[(int)Brush.ForeBrush]);
             context.DrawBorder(brushes[(int)Brush.BorderBrush]);
             return true;

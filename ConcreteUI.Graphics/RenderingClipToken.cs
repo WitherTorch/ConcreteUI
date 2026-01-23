@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Graphics
 {

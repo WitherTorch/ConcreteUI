@@ -1,9 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Controls;
+using ConcreteUI.Internals;
 using ConcreteUI.Native;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
@@ -12,7 +14,6 @@ using InlineMethod;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Window
 {
@@ -25,9 +26,9 @@ namespace ConcreteUI.Window
         #region Fields
         private readonly List<WeakReference<CoreWindow>> _childrenReferenceList = new List<WeakReference<CoreWindow>>();
         private readonly CoreWindow? _parent;
-        private uint _dpi = 96;
-        private float _pointsPerPixel = 1.0f; // 螢幕DPI / 96
-        private float _pixelsPerPoint = 1.0f; //  96 / 螢幕DPI
+        private PointU _dpi = SystemConstants.DefaultDpi;
+        private Vector2 _pointsPerPixel = Vector2.One; // 螢幕DPI / 96
+        private Vector2 _pixelsPerPoint = Vector2.One; //  96 / 螢幕DPI
         private BitVector64 _titleBarStates = ulong.MaxValue;
         #endregion
 
@@ -66,9 +67,9 @@ namespace ConcreteUI.Window
         #region Properties
         public CoreWindow? Parent => _parent;
         public IThemeContext? CurrentTheme => _resourceProvider?.ThemeContext;
-        public uint Dpi => _dpi;
-        public float DpiScaleFactor => _pointsPerPixel;
-        public float WindowScaleFactor => _pixelsPerPoint;
+        public PointU Dpi => _dpi;
+        public Vector2 DpiScaleFactor => _pointsPerPixel;
+        public Vector2 WindowScaleFactor => _pixelsPerPoint;
 
         public new RectangleF Bounds
         {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -11,7 +11,7 @@ using ConcreteUI.Graphics.Native.Direct2D.Geometry;
 using ConcreteUI.Graphics.Native.DirectWrite;
 
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Graphics
 {
@@ -23,7 +23,7 @@ namespace ConcreteUI.Graphics
         private readonly RenderingClipToken _clipToken;
         private readonly Matrix3x2 _originalTransform;
         private readonly PointF _offsetPoint;
-        private readonly float _pointsPerPixel;
+        private readonly Vector2 _pointsPerPixel;
         private readonly bool _isPixelAligned;
 
         private bool _disposed;
@@ -41,18 +41,21 @@ namespace ConcreteUI.Graphics
         public readonly float DefaultBorderWidth
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => RenderingHelper.GetDefaultBorderWidth(_pointsPerPixel);
+            get => RenderingHelper.GetDefaultBorderWidth(_pointsPerPixel.X);
         }
 
-        public readonly float PointsPerPixel => _pointsPerPixel;
+        public readonly Vector2 PointsPerPixel => _pointsPerPixel;
 
         public readonly bool HasDirtyCollector => !_collector.IsEmptyInstance;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private RegionalRenderingContext(scoped in RegionalRenderingContext original)
+        private RegionalRenderingContext(scoped in RegionalRenderingContext original) : this(in original, original._collector) { }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private RegionalRenderingContext(scoped in RegionalRenderingContext original, DirtyAreaCollector collector)
         {
             _context = original._context;
-            _collector = original._collector;
+            _collector = collector;
             _clipToken = original._clipToken;
             _offsetPoint = original._offsetPoint;
             _pointsPerPixel = original._pointsPerPixel;
@@ -62,7 +65,7 @@ namespace ConcreteUI.Graphics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private RegionalRenderingContext(D2D1DeviceContext context, DirtyAreaCollector collector, float pointsPerPixel,
+        private RegionalRenderingContext(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pointsPerPixel,
             scoped in RectF clipRect, D2D1AntialiasMode antialiasMode, bool isPixelAligned)
         {
             _context = context;
@@ -81,7 +84,7 @@ namespace ConcreteUI.Graphics
             _disposed = false;
         }
 
-        public static RegionalRenderingContext Create(D2D1DeviceContext context, DirtyAreaCollector collector, float pointsPerPixel,
+        public static RegionalRenderingContext Create(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pointsPerPixel,
             in RectF clipRect, D2D1AntialiasMode antialiasMode, out RectF actualClipRect)
         {
             actualClipRect = RenderingHelper.RoundInPixel(in clipRect, pointsPerPixel);
@@ -305,7 +308,7 @@ namespace ConcreteUI.Graphics
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly RegionalRenderingContext WithEmptyDirtyCollector()
-            => _collector.IsEmptyInstance ? this : new RegionalRenderingContext(this);
+            => _collector.IsEmptyInstance ? this : new RegionalRenderingContext(this, DirtyAreaCollector.Empty);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly RegionalRenderingContext WithAxisAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode)
@@ -341,7 +344,7 @@ namespace ConcreteUI.Graphics
         {
             if (_isPixelAligned)
             {
-                strokeWidth = RenderingHelper.GetDefaultBorderWidth(_pointsPerPixel);
+                strokeWidth = RenderingHelper.GetDefaultBorderWidth(_pointsPerPixel.X);
                 return GetBorderRectCore(RectF.FromXYWH(PointF.Empty, Size), strokeWidth);
             }
             return GetBorderRect(RectF.FromXYWH(PointF.Empty, Size), out strokeWidth);
@@ -349,8 +352,8 @@ namespace ConcreteUI.Graphics
 
         public readonly RectF GetBorderRect(in RectF rect, out float strokeWidth)
         {
-            float pointsPerPixel = _pointsPerPixel;
-            strokeWidth = RenderingHelper.GetDefaultBorderWidth(pointsPerPixel);
+            Vector2 pointsPerPixel = _pointsPerPixel;
+            strokeWidth = RenderingHelper.GetDefaultBorderWidth(pointsPerPixel.X);
             if (_isPixelAligned)
                 return GetBorderRectCore(RenderingHelper.RoundInPixel(in rect, pointsPerPixel), strokeWidth);
             return TranslateAreaToLocal(GetBorderRectCore(

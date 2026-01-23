@@ -1,7 +1,6 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using ConcreteUI.Graphics;
@@ -10,8 +9,8 @@ using ConcreteUI.Window;
 
 using InlineMethod;
 
-using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Extensions;
+using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
@@ -20,38 +19,55 @@ namespace ConcreteUI.Native
     [SuppressUnmanagedCodeSecurity]
     internal static unsafe partial class User32
     {
-        private static readonly void*[] _pointers = MethodImportHelper.GetImportedMethodPointers(USER32_DLL,
-            nameof(GetDpiForWindow));
+        private static readonly void*[] _pointers =
+            MethodImportHelper.GetImportedMethodPointers(USER32_DLL, "GetDpiForWindow");
 
-        public static uint GetDpiForWindow(IntPtr hWnd)
+        public static bool TryGetDpiForWindow(IntPtr hWnd, out uint dpiX, out uint dpiY)
         {
             void* pointer = _pointers[0];
-            if (pointer == null)
+            if (pointer != null)
             {
-                IntPtr hMonitor = MonitorFromWindow(hWnd, GetMonitorFlags.DefaultToNearest);
-                if (hMonitor == IntPtr.Zero)
-                    return 0;
-                int hr = ShCore.GetDpiForMonitor(hMonitor, MonitorDpiType.EffectiveDpi, out uint dpi, out _); // Fallback 1 : GetDpiForMonitor (Windows 8.1 or greater)
-                if (hr >= 0)
-                    return dpi;
-                if (hr == Constants.E_NOTIMPL)
-                {
-                    IntPtr hdc = GetDC(hWnd);
-                    if (hdc == IntPtr.Zero)
-                        return 0;
-                    try
-                    {
-                        const int LOGPIXELSX = 88;
-                        return (uint)Gdi32.GetDeviceCaps(hdc, LOGPIXELSX); // Fallback 2 : GetDeviceCaps (Vista or greater)
-                    }
-                    finally
-                    {
-                        ReleaseDC(hWnd, hdc);
-                    }
-                }
-                return 0;
+                dpiX = ((delegate* unmanaged[Stdcall]<IntPtr, uint>)pointer)(hWnd);
+                goto ReturnSame;
             }
-            return ((delegate* unmanaged[Stdcall]<IntPtr, uint>)pointer)(hWnd);
+
+            IntPtr hMonitor = MonitorFromWindow(hWnd, GetMonitorFlags.DefaultToNearest);
+            if (hMonitor == IntPtr.Zero)
+                goto Failed;
+            int hr = ShCore.GetDpiForMonitor(hMonitor, MonitorDpiType.EffectiveDpi, out dpiX, out dpiY); // Fallback 1 : GetDpiForMonitor (Windows 8.1 or greater)
+            if (hr >= 0)
+                goto Return;
+            if (hr == Constants.E_NOTIMPL)
+            {
+                IntPtr hdc = GetDC(hWnd);
+                if (hdc == IntPtr.Zero)
+                    goto Failed;
+                try
+                {
+                    // Fallback 2 : GetDeviceCaps (Vista or greater)
+                    const int LOGPIXELSX = 88;
+                    const int LOGPIXELSY = 90;
+                    dpiX = (uint)Gdi32.GetDeviceCaps(hdc, LOGPIXELSX);
+                    dpiY = (uint)Gdi32.GetDeviceCaps(hdc, LOGPIXELSY);
+                    goto Return;
+                }
+                finally
+                {
+                    ReleaseDC(hWnd, hdc);
+                }
+            }
+
+        ReturnSame:
+            dpiY = dpiX;
+            goto Return;
+
+        Return:
+            return true;
+
+        Failed:
+            dpiX = 0;
+            dpiY = 0;
+            return false;
         }
 
         public static partial int GetSystemMetrics(SystemMetric smIndex);

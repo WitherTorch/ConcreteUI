@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Controls;
@@ -17,7 +18,6 @@ using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Window
 {
@@ -127,7 +127,8 @@ namespace ConcreteUI.Window
             {
                 case WindowMessage.DpiChanged:
                     {
-                        ChangeDpi(wParam.GetWords().HighWord);
+                        (ushort dpiX, ushort dpiY) = wParam.GetWords();
+                        ChangeDpi(dpiX, dpiY);
                         if (lParam != 0)
                         {
                             Rect clientRect = UnsafeHelper.ReadUnaligned<Rect>((void*)lParam);
@@ -388,7 +389,7 @@ namespace ConcreteUI.Window
                     Update();
                     goto default;
                 case WindowMessage.DisplayChange:
-                    ChangeDpi(User32.GetDpiForWindow(hwnd));
+                    UpdateDpi(hwnd);
                     _controller?.UpdateMonitorFpsStatus();
                     Update();
                     goto default;
@@ -444,8 +445,8 @@ namespace ConcreteUI.Window
                                     Rect clientRect = lpParams->rcNewWindow;
                                     int metrics_paddedBorder = User32.GetSystemMetrics(SystemMetric.SM_CXPADDEDBORDER);
                                     int yBorder = User32.GetSystemMetrics(SystemMetric.SM_CYFRAME) + metrics_paddedBorder;
-                                    float dpiScaleFactor = _pointsPerPixel;
-                                    clientRect.Bottom -= yBorder + (dpiScaleFactor == 1.0f ? 1 : MathI.Ceiling(1 * dpiScaleFactor));
+                                    float factorY = _pointsPerPixel.Y;
+                                    clientRect.Bottom -= yBorder + (factorY == 1.0f ? 1 : MathI.Ceiling(1 * factorY));
                                     lpParams->rcNewWindow = clientRect;
                                 }
                             }
@@ -610,16 +611,47 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Normal Methods
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ChangeDpi(uint newDpi)
+        private void UpdateDpi(IntPtr handle)
+        {
+            if (!User32.TryGetDpiForWindow(handle, out uint dpiX, out uint dpiY))
+            {
+                dpiX = SystemConstants.DefaultDpiX;
+                dpiY = SystemConstants.DefaultDpiY;
+            }
+            ChangeDpi(dpiX, dpiY);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ChangeDpi(uint dpiX, uint dpiY)
         {
             _borderWidthInPixels = User32.GetSystemMetrics(SystemMetric.SM_CXBORDER) + User32.GetSystemMetrics(SystemMetric.SM_CXPADDEDBORDER);
 
-            float pixelsPerPoint, pointsPerPixel;
-            switch (newDpi)
+            dpiX = MathHelper.Min(dpiX, SystemConstants.Float32IntegerLimit);
+            dpiY = MathHelper.Min(dpiY, SystemConstants.Float32IntegerLimit);
+            CalculateDpi(dpiX, out float pointsPerPixelX, out float pixelsPerPointX);
+            CalculateDpi(dpiY, out float pointsPerPixelY, out float pixelsPerPointY);
+
+            Vector2 pointsPerPixel = new Vector2(pointsPerPixelX, pointsPerPixelY);
+            Vector2 pixelsPerPoint = new Vector2(pixelsPerPointX, pixelsPerPointY);
+            PointU dpi = new PointU(dpiX, dpiX);
+
+            _pointsPerPixel = pointsPerPixel;
+            _pixelsPerPoint = pixelsPerPoint;
+            _dpi = dpi;
+
+            ChangeDpi_RenderingPart(dpi, pointsPerPixel, pixelsPerPoint);
+            OnDpiChanged();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void CalculateDpi(uint dpi, out float pointsPerPixel, out float pixelsPerPoint)
+        {
+            switch (dpi)
             {
                 case 0:
-                    newDpi = 96;
+                    dpi = 96;
                     goto Normal;
                 case 96:
                     goto Normal;
@@ -630,19 +662,12 @@ namespace ConcreteUI.Window
         Normal:
             pixelsPerPoint = 1.0f;
             pointsPerPixel = 1.0f;
-            goto Tail;
+            return;
 
         NeedAmplified:
-            pointsPerPixel = newDpi / 96.0f;
-            pixelsPerPoint = 96.0f / newDpi;
-            goto Tail;
-
-        Tail:
-            _pointsPerPixel = pointsPerPixel;
-            _pixelsPerPoint = pixelsPerPoint;
-            _dpi = newDpi;
-            ChangeDpi_RenderingPart(newDpi, pointsPerPixel, pixelsPerPoint);
-            OnDpiChanged();
+            pointsPerPixel = dpi / 96.0f;
+            pixelsPerPoint = 96.0f / dpi;
+            return;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -666,7 +691,8 @@ namespace ConcreteUI.Window
             bool hasMaximum = titleBarStates[2];
             float clientX = clientPoint.X;
             float clientY = clientPoint.Y;
-            float drawingBorderWidth = _borderWidthInPoints;
+            float borderWidthInPointsX = _borderWidthInPointsX;
+            float borderWidthInPointsY = _borderWidthInPointsY;
             float titleRightLoc;
             RectF minRect = _minRect;
             RectF maxRect = _maxRect;
@@ -677,7 +703,7 @@ namespace ConcreteUI.Window
                 titleRightLoc = maxRect.X;
             else
                 titleRightLoc = closeRect.X;
-            if (clientX < titleRightLoc && clientY <= _titleBarRect.Bottom && clientY >= drawingBorderWidth && clientX >= drawingBorderWidth)
+            if (clientX < titleRightLoc && clientY <= _titleBarRect.Bottom && clientX >= borderWidthInPointsX && clientY >= borderWidthInPointsY)
             {
                 return HitTestValue.Caption;
             }
@@ -737,9 +763,9 @@ namespace ConcreteUI.Window
             User32.SetWindowPos(handle, IntPtr.Zero,
                             WindowPositionFlags.SwapWithFrameChanged | WindowPositionFlags.SwapWithNoZOrder);
 
-            ChangeDpi(User32.GetDpiForWindow(handle));
-            float dpiScaleFactor = _pointsPerPixel;
-            if (dpiScaleFactor == 1.0f)
+            UpdateDpi(handle);
+            (float factorX, float factorY) = _pointsPerPixel;
+            if (factorX == 1.0f && factorY == 1.0f)
                 goto InitRenderObj;
 
             Rectangle bounds = RawBounds;
@@ -748,8 +774,8 @@ namespace ConcreteUI.Window
                 goto InitRenderObj;
 
             Point location = bounds.Location;
-            size.Width = MathI.Ceiling(size.Width * dpiScaleFactor);
-            size.Height = MathI.Ceiling(size.Height * dpiScaleFactor);
+            size.Width = MathI.Ceiling(size.Width * factorX);
+            size.Height = MathI.Ceiling(size.Height * factorY);
 
             if (_isCreateByDefaultX)
                 location.X -= (bounds.Width - size.Width) / 2;
@@ -827,77 +853,80 @@ namespace ConcreteUI.Window
 
         #region Inline Macros
         [Inline(InlineBehavior.Remove)]
-        private static Size ScalingLogicalToPixel(SizeF original, float dpiScaleFactor)
+        private static Size ScalingLogicalToPixel(SizeF original, Vector2 pointsPerPixel)
         {
-            if (dpiScaleFactor == 1.0f)
-                return new Size(MathI.Floor(original.Width), MathI.Floor(original.Height));
-            else
-                return new Size(MathI.Floor(original.Width * dpiScaleFactor), MathI.Floor(original.Height * dpiScaleFactor));
+            (float factorX, float factorY) = pointsPerPixel;
+            return new Size(MathI.Floor(original.Width * factorX), MathI.Floor(original.Height * factorY));
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static SizeF ScalingPixelToLogical(Size original, float windowScaleFactor)
+        private static SizeF ScalingPixelToLogical(Size original, Vector2 pixelsPerPoint)
         {
-            if (windowScaleFactor == 1.0f)
+            (float factorX, float factorY) = pixelsPerPoint;
+            if (factorX == 1.0f && factorY == 1.0f)
                 return original;
             else
-                return new SizeF(original.Width * windowScaleFactor, original.Height * windowScaleFactor);
+                return new SizeF(original.Width * factorX, original.Height * factorY);
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static Point ScalingPixelToLogical(Point original, float windowScaleFactor)
+        private static Point ScalingPixelToLogical(Point original, Vector2 pixelsPerPoint)
         {
-            if (windowScaleFactor == 1.0f)
+            (float factorX, float factorY) = pixelsPerPoint;
+            if (factorX == 1.0f && factorY == 1.0f)
                 return original;
             else
-                return new Point(MathI.Floor(original.X * windowScaleFactor), MathI.Floor(original.Y * windowScaleFactor));
+                return new Point(MathI.Floor(original.X * factorX), MathI.Floor(original.Y * factorY));
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static PointF ScalingPixelToLogical(PointF original, float windowScaleFactor)
+        private static PointF ScalingPixelToLogical(PointF original, Vector2 pixelsPerPoint)
         {
-            if (windowScaleFactor == 1.0f)
+            (float factorX, float factorY) = pixelsPerPoint;
+            if (factorX == 1.0f && factorY == 1.0f)
                 return original;
             else
-                return new PointF(original.X * windowScaleFactor, original.Y * windowScaleFactor);
+                return new PointF(original.X * factorX, original.Y * factorY);
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static Rect ScalingLogicalToPixel(RectF original, float dpiScaleFactor)
+        private static Rect ScalingLogicalToPixel(RectF original, Vector2 pointsPerPixel)
         {
-            if (dpiScaleFactor == 1.0f)
+            (float factorX, float factorY) = pointsPerPixel;
+            if (factorX == 1.0f && factorY == 1.0f)
                 return (Rect)original;
-            return new Rect(top: MathI.FloorPositive(original.Top * dpiScaleFactor),
-                left: MathI.FloorPositive(original.Left * dpiScaleFactor),
-                right: MathI.Ceiling(original.Right * dpiScaleFactor),
-                bottom: MathI.Ceiling(original.Bottom * dpiScaleFactor));
+            return new Rect(left: MathI.FloorPositive(original.Left * factorX),
+                top: MathI.FloorPositive(original.Top * factorY),
+                right: MathI.Ceiling(original.Right * factorX),
+                bottom: MathI.Ceiling(original.Bottom * factorY));
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static RectF ScalingPixelToLogical(Rect original, float windowScaleFactor)
+        private static RectF ScalingPixelToLogical(Rect original, Vector2 pixelsPerPoint)
         {
-            if (windowScaleFactor == 1.0f)
+            (float factorX, float factorY) = pixelsPerPoint;
+            if (factorX == 1.0f && factorY == 1.0f)
                 return (RectF)original;
-            return new RectF(top: original.Top * windowScaleFactor,
-                left: original.Left * windowScaleFactor,
-                right: original.Right * windowScaleFactor,
-                bottom: original.Bottom * windowScaleFactor);
+            return new RectF(left: original.Left * factorX,
+                top: original.Top * factorY,
+                right: original.Right * factorX,
+                bottom: original.Bottom * factorY);
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static Size AdjustSize(Size original, SizeF min, SizeF max, float dpiScaleFactor)
+        private static Size AdjustSize(Size original, SizeF min, SizeF max, Vector2 pixelsPerPoint)
         {
             if (max == SizeF.Empty)
             {
                 if (min == SizeF.Empty)
                     return original;
-                return Max(original, ScalingLogicalToPixel(min, dpiScaleFactor));
+                return Max(original, ScalingLogicalToPixel(min, pixelsPerPoint));
             }
             else
             {
                 if (min == SizeF.Empty)
-                    return Min(original, ScalingLogicalToPixel(min, dpiScaleFactor));
-                return Clamp(original, ScalingLogicalToPixel(min, dpiScaleFactor), ScalingLogicalToPixel(min, dpiScaleFactor));
+                    return Min(original, ScalingLogicalToPixel(min, pixelsPerPoint));
+                return Clamp(original, ScalingLogicalToPixel(min, pixelsPerPoint), ScalingLogicalToPixel(min, pixelsPerPoint));
             }
         }
 

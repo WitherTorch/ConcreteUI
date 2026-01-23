@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Drawing;
 
 using ConcreteUI.Native;
 
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Utils
 {

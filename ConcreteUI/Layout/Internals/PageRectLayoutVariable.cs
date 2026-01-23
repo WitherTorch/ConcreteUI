@@ -1,6 +1,6 @@
-﻿using ConcreteUI.Controls;
+using ConcreteUI.Controls;
 
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Layout.Internals
 {

@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -25,9 +26,9 @@ using LocalsInit;
 using WitherTorch.Common;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Structures;
 using WitherTorch.Common.Text;
 using WitherTorch.Common.Threading;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
@@ -275,7 +276,7 @@ namespace ConcreteUI.Controls
             => SetRenderingProperties(layout, ContentBounds.Size, Renderer.GetPointsPerPixel(), _multiLine);
 
         [Inline(InlineBehavior.Remove)]
-        private void SetRenderingProperties(DWriteTextLayout layout, SizeF size, float pointsPerPixel, bool multiLine)
+        private void SetRenderingProperties(DWriteTextLayout layout, SizeF size, Vector2 pointsPerPixel, bool multiLine)
         {
             if (multiLine)
                 SetRenderingPropertiesForMultiLine(layout, size.Width, pointsPerPixel);
@@ -284,18 +285,18 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SetRenderingPropertiesForMultiLine(DWriteTextLayout layout, float maxWidth, float pointsPerPixel)
+        private void SetRenderingPropertiesForMultiLine(DWriteTextLayout layout, float maxWidth, Vector2 pointsPerPixel)
         {
-            layout.MaxWidth = RenderingHelper.CeilingInPixel(MathHelper.Max(maxWidth, 0.0f), pointsPerPixel);
+            layout.MaxWidth = RenderingHelper.CeilingInPixel(MathHelper.Max(maxWidth, 0.0f), pointsPerPixel.X);
             layout.MaxHeight = float.PositiveInfinity;
             layout.WordWrapping = DWriteWordWrapping.EmergencyBreak;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SetRenderingPropertiesForSingleLine(DWriteTextLayout layout, float maxHeight, float pointsPerPixel)
+        private void SetRenderingPropertiesForSingleLine(DWriteTextLayout layout, float maxHeight, Vector2 pointsPerPixel)
         {
             layout.MaxWidth = float.PositiveInfinity;
-            layout.MaxHeight = RenderingHelper.CeilingInPixel(MathHelper.Max(maxHeight, 0.0f), pointsPerPixel);
+            layout.MaxHeight = RenderingHelper.CeilingInPixel(MathHelper.Max(maxHeight, 0.0f), pointsPerPixel.Y);
             layout.WordWrapping = DWriteWordWrapping.EmergencyBreak;
         }
 
@@ -403,7 +404,7 @@ namespace ConcreteUI.Controls
                 int length = metricsArray is null ? 0 : metricsArray.Length;
                 if (length > 0)
                 {
-                    float pointsPerPixel = Renderer.GetPointsPerPixel();
+                    Vector2 pointsPerPixel = Renderer.GetPointsPerPixel();
                     for (int i = 0; i < length; i++)
                     {
                         DWriteHitTestMetrics rangeMetrics = metricsArray![i];
@@ -451,7 +452,7 @@ namespace ConcreteUI.Controls
                 return;
             if (returnCount < 1)
                 return;
-            float pointsPerPixel = Renderer.GetPointsPerPixel();
+            Vector2 pointsPerPixel = Renderer.GetPointsPerPixel();
             RectF selectionBounds = RenderingHelper.RoundInPixel(RectF.FromXYWH(
                 layoutPoint.X + rangeMetrics.Left, layoutPoint.Y + rangeMetrics.Top, 1.0f, rangeMetrics.Height),
                 pointsPerPixel);

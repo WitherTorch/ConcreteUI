@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -17,7 +18,7 @@ using InlineMethod;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
@@ -203,9 +204,9 @@ namespace ConcreteUI.Controls
 
         public static RectangleF GetCheckBoxRenderingBounds(in RegionalRenderingContext context, float itemHeight)
         {
-            float pointsPerPixel = context.PointsPerPixel;
+            Vector2 pointsPerPixel = context.PointsPerPixel;
             float borderWidth = context.DefaultBorderWidth;
-            float buttonWidth = RenderingHelper.RoundInPixel(itemHeight, pointsPerPixel) - borderWidth * 2;
+            float buttonWidth = RenderingHelper.RoundInPixel(itemHeight, pointsPerPixel.Y) - borderWidth * 2;
             return new RectangleF(borderWidth, borderWidth, buttonWidth, buttonWidth);
         }
 
@@ -232,16 +233,8 @@ namespace ConcreteUI.Controls
             }
             else
             {
-                float strokeWidth = RenderingHelper.GetDefaultBorderWidth(context.PointsPerPixel);
-                context.DrawRectangle(GetBorderRectCore(renderingBounds, strokeWidth), backBrush, strokeWidth);
+                context.DrawRectangle(context.GetBorderRect(renderingBounds, out float strokeWidth), backBrush, strokeWidth);
             }
-        }
-
-        private static RectF GetBorderRectCore(in RectF rect, float strokeWidth)
-        {
-            float unit = strokeWidth * 0.5f;
-            return new RectF(rect.Left + unit, rect.Top + unit,
-                rect.Right - unit, rect.Bottom - unit);
         }
 
         public void OnMouseMove(in MouseNotifyEventArgs args)

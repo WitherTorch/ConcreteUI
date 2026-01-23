@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -19,7 +20,7 @@ using WitherTorch.Common;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
@@ -156,10 +157,10 @@ namespace ConcreteUI.Controls
             OnDpiChangedCore(fontName, args.PointsPerPixel);
         }
 
-        private void OnDpiChangedCore(string fontName, float pointsPerPixel)
+        private void OnDpiChangedCore(string fontName, Vector2 pointsPerPixel)
         {
             Interlocked.Exchange(ref _itemHeight,
-                RenderingHelper.CeilingInPixel(FontHeightHelper.GetFontHeight(fontName, _fontSize) + 2, pointsPerPixel));
+                RenderingHelper.CeilingInPixel(FontHeightHelper.GetFontHeight(fontName, _fontSize) + 2, pointsPerPixel.Y));
             RecalculateHeight();
         }
 
@@ -198,16 +199,16 @@ namespace ConcreteUI.Controls
             int currentTop = ViewportPoint.Y;
             int startIndex = (int)(currentTop / itemHeight);
             int endIndex = MathI.Ceiling((currentTop + renderSize.Height) / itemHeight);
-            float pointsPerPixel = context.PointsPerPixel;
+            Vector2 pointsPerPixel = context.PointsPerPixel;
             float borderWidth = context.DefaultBorderWidth;
 
             float itemLeftEdge = borderWidth + 2;
             float textLeftEdge = mode == ListBoxMode.None ? itemLeftEdge : itemLeftEdge * 2 + itemHeight;
             float itemTopEdge = startIndex * itemHeight - currentTop + borderWidth + 2;
             float itemRightEdge = renderSize.Width - borderWidth;
-            itemLeftEdge = RenderingHelper.RoundInPixel(itemLeftEdge, pointsPerPixel);
-            textLeftEdge = RenderingHelper.RoundInPixel(textLeftEdge, pointsPerPixel) - itemLeftEdge;
-            itemTopEdge = RenderingHelper.RoundInPixel(itemTopEdge, pointsPerPixel);
+            itemLeftEdge = RenderingHelper.RoundInPixel(itemLeftEdge, pointsPerPixel.X);
+            textLeftEdge = RenderingHelper.RoundInPixel(textLeftEdge, pointsPerPixel.X) - itemLeftEdge;
+            itemTopEdge = RenderingHelper.RoundInPixel(itemTopEdge, pointsPerPixel.Y);
             float itemWidth = itemRightEdge - itemLeftEdge;
             // itemRightEdge 無須做 round 操作，因為 renderSize.Width 與 borderWidth 均已對齊 pixel
 

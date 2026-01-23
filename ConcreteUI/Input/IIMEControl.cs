@@ -1,6 +1,6 @@
-﻿using ConcreteUI.Native;
+using ConcreteUI.Native;
 
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Input
 {

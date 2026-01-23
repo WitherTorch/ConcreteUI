@@ -1,4 +1,4 @@
-﻿#if NET472_OR_GREATER
+#if NET472_OR_GREATER
 using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
@@ -7,6 +7,7 @@ using System.Security;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
+using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Native

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -8,7 +8,7 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.Direct2D.Geometry;
 using ConcreteUI.Graphics.Native.DXGI;
 
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 using SystemColor = System.Drawing.Color;
 

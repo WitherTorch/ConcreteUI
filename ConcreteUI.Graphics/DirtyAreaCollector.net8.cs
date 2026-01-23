@@ -1,18 +1,22 @@
-﻿#if NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 using WitherTorch.Common;
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Graphics
 {
     partial class DirtyAreaCollector
     {
-        private static unsafe partial void ScaleRects(RectF* source, uint count, float pointsPerPixel)
+        private static unsafe partial void ScaleRects(RectF* source, uint count, Vector2 pointsPerPixel)
         {
             DebugHelper.ThrowIf(sizeof(Rect) != sizeof(RectF));
+
+            (float pointsPerPixelX, float pointsPerPixelY) = pointsPerPixel;
 
             RectF* sourceEnd = source + count;
             if (Limits.UseVector512())
@@ -21,7 +25,7 @@ namespace ConcreteUI.Graphics
                 if (sourceLimit < sourceEnd)
                 {
                     Vector512<float> zeroVector = Vector512.Create<float>(0.0f);
-                    Vector512<float> multiplierVector = Vector512.Create<float>(pointsPerPixel);
+                    Vector512<float> multiplierVector = CreateVector512(pointsPerPixelX, pointsPerPixelY);
                     Vector512<float> roundAdditionVector = Vector512.Create<float>(0.5f);
                     do
                     {
@@ -40,7 +44,7 @@ namespace ConcreteUI.Graphics
                 if (sourceLimit < sourceEnd)
                 {
                     Vector256<float> zeroVector = Vector256.Create<float>(0.0f);
-                    Vector256<float> multiplierVector = Vector256.Create<float>(pointsPerPixel);
+                    Vector256<float> multiplierVector = CreateVector256(pointsPerPixelX, pointsPerPixelY);
                     Vector256<float> roundAdditionVector = Vector256.Create<float>(0.5f);
                     do
                     {
@@ -59,7 +63,7 @@ namespace ConcreteUI.Graphics
                 if (sourceLimit < sourceEnd)
                 {
                     Vector128<float> zeroVector = Vector128.Create<float>(0.0f);
-                    Vector128<float> multiplierVector = Vector128.Create<float>(pointsPerPixel);
+                    Vector128<float> multiplierVector = CreateVector128(pointsPerPixelX, pointsPerPixelY);
                     Vector128<float> roundAdditionVector = Vector128.Create<float>(0.5f);
                     do
                     {
@@ -78,7 +82,7 @@ namespace ConcreteUI.Graphics
                 if (sourceLimit < sourceEnd)
                 {
                     Vector64<float> zeroVector = Vector64.Create<float>(0.0f);
-                    Vector64<float> multiplierVector = Vector64.Create<float>(pointsPerPixel);
+                    Vector64<float> multiplierVector = CreateVector64(pointsPerPixelX, pointsPerPixelY);
                     Vector64<float> roundAdditionVector = Vector64.Create<float>(0.5f);
                     do
                     {
@@ -96,12 +100,67 @@ namespace ConcreteUI.Graphics
             {
                 RectF sourceRect = *source;
                 Rect destinationRect = new Rect(
-                    MathI.Round(MathHelper.Max(sourceRect.Left, 0f) * pointsPerPixel),
-                    MathI.Round(MathHelper.Max(sourceRect.Top, 0f) * pointsPerPixel),
-                    MathI.Round(MathHelper.Max(sourceRect.Right, 0f) * pointsPerPixel),
-                    MathI.Round(MathHelper.Max(sourceRect.Bottom, 0f) * pointsPerPixel));
+                    MathI.Round(MathHelper.Max(sourceRect.Left, 0f) * pointsPerPixelX),
+                    MathI.Round(MathHelper.Max(sourceRect.Top, 0f) * pointsPerPixelY),
+                    MathI.Round(MathHelper.Max(sourceRect.Right, 0f) * pointsPerPixelX),
+                    MathI.Round(MathHelper.Max(sourceRect.Bottom, 0f) * pointsPerPixelY));
                 *(Rect*)source = destinationRect;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector64<float> CreateVector64(float x, float y)
+        {
+            if (x == y)
+                return Vector64.Create(x);
+            else
+                return Vector64.Create([
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y
+                    ]);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector128<float> CreateVector128(float x, float y)
+        {
+            if (x == y)
+                return Vector128.Create(x);
+            else
+                return Vector128.Create([
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y
+                    ]);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector256<float> CreateVector256(float x, float y)
+        {
+            if (x == y)
+                return Vector256.Create(x);
+            else
+                return Vector256.Create([
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y
+                    ]);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector512<float> CreateVector512(float x, float y)
+        {
+            if (x == y)
+                return Vector512.Create(x);
+            else
+                return Vector512.Create([
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
+                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y
+                    ]);
         }
     }
 }

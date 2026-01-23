@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 
 using ConcreteUI.Input.NativeHelper;
 using ConcreteUI.Native;
 using ConcreteUI.Window;
 
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Input
 {

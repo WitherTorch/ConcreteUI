@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Numerics;
 using System.Threading;
 
 using ConcreteUI.Graphics;
@@ -16,7 +17,7 @@ using ConcreteUI.Window;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
@@ -90,9 +91,9 @@ namespace ConcreteUI.Controls
             }
             DisposeHelper.SwapDispose(ref _layouts, layouts);
 
-            float pointsPerPixel = _window.GetPointsPerPixel();
-            float borderWidth = RenderingHelper.GetDefaultBorderWidth(pointsPerPixel);
-            itemHeight = RenderingHelper.CeilingInPixel(itemHeight, pointsPerPixel) + borderWidth * 2;
+            Vector2 pointsPerPixel = _window.GetPointsPerPixel();
+            float borderWidth = RenderingHelper.GetDefaultBorderWidth(pointsPerPixel.X);
+            itemHeight = RenderingHelper.CeilingInPixel(itemHeight, pointsPerPixel.Y) + borderWidth * 2;
             _itemHeight = itemHeight;
 
             int maxViewCount = MathHelper.Min(parent.DropdownListVisibleCount, count);
@@ -131,12 +132,12 @@ namespace ConcreteUI.Controls
             int selectedIndex = SelectedIndex;
             D2D1Brush[] brushes = _brushes;
             D2D1Brush textBrush;
-            float pointsPerPixel = context.PointsPerPixel;
+            Vector2 pointsPerPixel = context.PointsPerPixel;
             float borderWidth = context.DefaultBorderWidth;
             float itemLeft = borderWidth,
-                textLeft = RenderingHelper.RoundInPixel(borderWidth + 5, pointsPerPixel),
-                itemTop = RenderingHelper.RoundInPixel(-offsetY, pointsPerPixel),
-                itemRight = RenderingHelper.RoundInPixel(renderSize.Width - borderWidth, pointsPerPixel),
+                textLeft = RenderingHelper.RoundInPixel(borderWidth + 5, pointsPerPixel.X),
+                itemTop = RenderingHelper.RoundInPixel(-offsetY, pointsPerPixel.Y),
+                itemRight = RenderingHelper.RoundInPixel(renderSize.Width - borderWidth, pointsPerPixel.X),
                 itemWIdth = itemRight - itemLeft;
             textBrush = brushes[(int)Brush.TextBrush];
             ref DWriteTextLayout layoutArrayRef = ref layouts[0];
@@ -265,7 +266,7 @@ namespace ConcreteUI.Controls
                 if (!_ownerRef.TryGetTarget(out ComboBoxDropdownList? owner))
                     return 0;
                 int val = manager.GetComputedValue(owner._parent, LayoutProperty.Bottom);
-                return val - MathI.Ceiling(RenderingHelper.GetDefaultBorderWidth(owner._window.GetPointsPerPixel()));
+                return val - MathI.Ceiling(RenderingHelper.GetDefaultBorderWidth(owner._window.GetPointsPerPixel().Y));
             }
         }
     }

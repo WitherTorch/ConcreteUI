@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -15,7 +16,7 @@ using InlineMethod;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
@@ -138,6 +139,8 @@ namespace ConcreteUI.Controls
             bool redrawContent = (updateFlags & ScrollableElementUpdateFlags.Content) == ScrollableElementUpdateFlags.Content;
             bool redrawContentResult = false;
 
+            if (triggerViewportPointChanged)
+                OnViewportPointChanged();
             if (redrawAll)
             {
                 RenderBackground(context, enabled ? GetBackBrush() : GetBackDisabledBrush());
@@ -184,7 +187,7 @@ namespace ConcreteUI.Controls
 
                 if (scrollBarBounds.IsValid && scrollButtonBounds.IsValid && upButtonBounds.IsValid && downButtonBounds.IsValid)
                 {
-                    float pointsPerPixel = context.PointsPerPixel;
+                    Vector2 pointsPerPixel = context.PointsPerPixel;
                     scrollBarBounds = RenderingHelper.RoundInPixel(scrollBarBounds, pointsPerPixel);
                     scrollButtonBounds = RenderingHelper.RoundInPixel(scrollButtonBounds, pointsPerPixel);
                     upButtonBounds = RenderingHelper.RoundInPixel(upButtonBounds, pointsPerPixel);
@@ -197,7 +200,7 @@ namespace ConcreteUI.Controls
                     (D2D1AntialiasMode antialiasModeBefore, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
                     try
                     {
-                        float gap = RenderingHelper.CeilingInPixel((UIConstantsPrivate.ScrollBarWidth - UIConstantsPrivate.ScrollBarScrollButtonWidth) * 0.5f, pointsPerPixel);
+                        float gap = RenderingHelper.CeilingInPixel((UIConstantsPrivate.ScrollBarWidth - UIConstantsPrivate.ScrollBarScrollButtonWidth) * 0.5f, pointsPerPixel.X);
                         context.FillRoundedRectangle(new D2D1RoundedRectangle()
                         {
                             RadiusX = 3,
@@ -222,8 +225,6 @@ namespace ConcreteUI.Controls
                 if (borderBrush is not null)
                     context.DrawBorder(borderBrush);
             }
-            if (triggerViewportPointChanged)
-                OnViewportPointChanged();
             if (redrawContentResult)
             {
                 InterlockedHelper.Or(ref _updateFlagsRaw, (long)ScrollableElementUpdateFlags.Content);
@@ -350,14 +351,14 @@ namespace ConcreteUI.Controls
         public void ScrollToStart()
         {
             _viewportPoint.Y = 0;
-            Update(ScrollableElementUpdateFlags.RecalcScrollBar | ScrollableElementUpdateFlags.All);
+            Update(ScrollableElementUpdateFlags.RecalcScrollBar | ScrollableElementUpdateFlags.TriggerViewportPointChanged | ScrollableElementUpdateFlags.All);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ScrollToEnd()
         {
             _viewportPoint.Y = MathHelper.Max(_surfaceSize.Height - _contentBounds.Height, 0);
-            Update(ScrollableElementUpdateFlags.RecalcScrollBar | ScrollableElementUpdateFlags.All);
+            Update(ScrollableElementUpdateFlags.RecalcScrollBar | ScrollableElementUpdateFlags.TriggerViewportPointChanged | ScrollableElementUpdateFlags.All);
         }
 
         private void MoveScrollBarButtonY(int movementY)
@@ -379,7 +380,7 @@ namespace ConcreteUI.Controls
                     viewPortY = 0;
                 }
                 _viewportPoint.Y = viewPortY;
-                Update(ScrollableElementUpdateFlags.RecalcScrollBar | ScrollableElementUpdateFlags.All);
+                Update(ScrollableElementUpdateFlags.RecalcScrollBar | ScrollableElementUpdateFlags.TriggerViewportPointChanged | ScrollableElementUpdateFlags.All);
             }
         }
 

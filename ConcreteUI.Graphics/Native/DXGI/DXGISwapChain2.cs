@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Security;
 
 using InlineMethod;
@@ -7,7 +7,7 @@ using LocalsInit;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Graphics.Native.DXGI
 {

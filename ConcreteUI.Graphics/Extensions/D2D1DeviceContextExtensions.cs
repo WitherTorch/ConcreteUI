@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
 
@@ -9,6 +9,7 @@ using InlineMethod;
 
 using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics.Extensions

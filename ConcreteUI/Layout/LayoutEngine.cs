@@ -10,8 +10,8 @@ using InlineMethod;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Structures;
 using WitherTorch.Common.Threading;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Layout
 {

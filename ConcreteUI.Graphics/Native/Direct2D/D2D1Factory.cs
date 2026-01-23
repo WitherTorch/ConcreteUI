@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System.Security;
 
 using ConcreteUI.Graphics.Native.Direct2D.Geometry;
@@ -7,8 +7,8 @@ using InlineMethod;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
+using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.ObjectModels;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics.Native.Direct2D
 {

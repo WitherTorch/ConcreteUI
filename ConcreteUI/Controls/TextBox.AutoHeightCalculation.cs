@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;

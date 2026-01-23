@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -34,7 +35,6 @@ using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Threading;
-using WitherTorch.Common.Windows.Structures;
 
 using ContextMenu = ConcreteUI.Controls.ContextMenu;
 using ToolTip = ConcreteUI.Controls.ToolTip;
@@ -96,7 +96,7 @@ namespace ConcreteUI.Window
         protected D2D1ColorF _clearDCColor, _windowBaseColor;
         protected RectF _minRect, _maxRect, _closeRect, _pageRect, _titleBarRect;
         protected BitVector64 _titleBarButtonStatus, _titleBarButtonChangedStatus;
-        protected float _drawingOffsetX, _drawingOffsetY, _borderWidthInPoints;
+        protected float _drawingOffsetX, _drawingOffsetY, _borderWidthInPointsX, _borderWidthInPointsY;
         #endregion
 
         #region Properties
@@ -155,9 +155,9 @@ namespace ConcreteUI.Window
             D2D1DeviceContext? deviceContext = _host!.BeginDraw();
             if (deviceContext is null)
                 return;
-            uint dpi = Dpi;
-            if (dpi != 96)
-                deviceContext.Dpi = new PointF(dpi, dpi);
+            (uint dpiX, uint dpiY) = Dpi;
+            if (dpiX != SystemConstants.DefaultDpiX || dpiY != SystemConstants.DefaultDpiY)
+                deviceContext.Dpi = new PointF(dpiX, dpiY);
             _deviceContext = deviceContext;
 
             ChangeBackgroundElement(new ToolTip(this, element => GetActiveElements().Contains(element)));
@@ -238,7 +238,7 @@ namespace ConcreteUI.Window
 
         public IThemeResourceProvider? GetThemeResourceProvider() => InterlockedHelper.Read(ref _resourceProvider);
 
-        public float GetPointsPerPixel() => _pointsPerPixel;
+        public Vector2 GetPointsPerPixel() => _pointsPerPixel;
 
         IEnumerable<UIElement?> IElementContainer.GetActiveElements() => GetActiveElements();
         #endregion
@@ -358,8 +358,8 @@ namespace ConcreteUI.Window
                 if (handle == IntPtr.Zero)
                     return;
 
-                float windowScaleFactor = _pixelsPerPoint;
-                float borderWidthInPoints;
+                Vector2 pixelsPerPoint = _pixelsPerPoint;
+                float borderWidthInPointsX, borderWidthInPointsY;
                 float drawingOffsetX, drawingOffsetY;
                 if (User32.IsZoomed(handle))
                 {
@@ -369,14 +369,19 @@ namespace ConcreteUI.Window
                     if (!Screen.TryGetScreenInfoFromHwnd(handle, out ScreenInfo screenInfo))
                         screenInfo = default;
                     Rect workingArea = screenInfo.WorkingArea;
-                    drawingOffsetX = (workingArea.Left - windowRect.Left) * windowScaleFactor;
-                    drawingOffsetY = (workingArea.Top - windowRect.Top) * windowScaleFactor;
-                    borderWidthInPoints = _borderWidthInPoints = 0;
+                    drawingOffsetX = (workingArea.Left - windowRect.Left) * pixelsPerPoint.X;
+                    drawingOffsetY = (workingArea.Top - windowRect.Top) * pixelsPerPoint.Y;
+                    borderWidthInPointsX = _borderWidthInPointsX = 0;
+                    borderWidthInPointsY = _borderWidthInPointsY = 0;
                 }
                 else
                 {
-                    borderWidthInPoints = _borderWidthInPixels * RenderingHelper.GetDefaultBorderWidth(_pointsPerPixel);
-                    _borderWidthInPoints = borderWidthInPoints;
+                    Vector2 pointsPerPixel = _pointsPerPixel;
+                    float borderWidthInPixels = _borderWidthInPixels;
+                    borderWidthInPointsX = borderWidthInPixels * RenderingHelper.GetDefaultBorderWidth(pointsPerPixel.X);
+                    borderWidthInPointsY = borderWidthInPixels * RenderingHelper.GetDefaultBorderWidth(pointsPerPixel.Y);
+                    _borderWidthInPointsX = borderWidthInPointsX;
+                    _borderWidthInPointsY = borderWidthInPointsY;
                     drawingOffsetX = 0;
                     drawingOffsetY = 0;
                 }
@@ -387,8 +392,11 @@ namespace ConcreteUI.Window
                 _maxRect = RectF.FromXYWH(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
                 _minRect = RectF.FromXYWH(x - UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
                 RectF titleBarRect = _titleBarRect = RectF.FromXYWH(drawingOffsetX + 1, drawingOffsetY + 1, Size.Width - 2, 26);
-                _pageRect = RenderingHelper.CeilingInPixel(new RectF(drawingOffsetX + borderWidthInPoints, titleBarRect.Bottom + 1,
-                    windowSize.Width - drawingOffsetX - borderWidthInPoints, windowSize.Height - borderWidthInPoints), _pointsPerPixel);
+                _pageRect = RenderingHelper.CeilingInPixel(new RectF(
+                    left: drawingOffsetX + borderWidthInPointsX, 
+                    top: titleBarRect.Bottom + 1,
+                    right: windowSize.Width - drawingOffsetX - borderWidthInPointsX, 
+                    bottom: windowSize.Height - borderWidthInPointsY), _pointsPerPixel);
             }
             if (callRecalculatePageLayout && _pageRect.IsValid)
                 RecalculatePageLayout(_pageRect);
@@ -473,7 +481,7 @@ namespace ConcreteUI.Window
                 RenderPageBackground(deviceContext, collector, pageRect);
                 RenderOnceContent(deviceContext, collector, pageRect);
             }
-            float pointPerPixel = _pointsPerPixel;
+            Vector2 pointPerPixel = _pointsPerPixel;
             UIElementHelper.RenderElements(deviceContext, collector, pointPerPixel, GetActiveElements(), ignoreNeedRefresh: force);
             UIElementHelper.RenderElements(deviceContext, collector, pointPerPixel, GetOverlayElements(), ignoreNeedRefresh: force || collector.HasAnyDirtyArea());
         }
@@ -636,7 +644,7 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Remove)]
-        private void ChangeDpi_RenderingPart(uint dpi, float pointsPerPixel, float pixelsPerPoint)
+        private void ChangeDpi_RenderingPart(PointU dpi, Vector2 pointsPerPixel, Vector2 pixelsPerPoint)
         {
             SwapChainGraphicsHost? host = _host;
             if (host is null || host.IsDisposed)
@@ -646,7 +654,7 @@ namespace ConcreteUI.Window
                 return;
             controller.Lock();
             controller.WaitForRendering();
-            host.GetDeviceContext().Dpi = new PointF(dpi, dpi);
+            host.GetDeviceContext().Dpi = new PointF(dpi.X, dpi.Y);
             OnDpiChangedForElements(new DpiChangedEventArgs(dpi, pointsPerPixel, pixelsPerPoint));
             controller.Unlock();
         }

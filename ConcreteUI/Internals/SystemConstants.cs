@@ -1,9 +1,16 @@
-﻿using System;
+using System;
+
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Internals
 {
     internal static class SystemConstants
     {
+        public const uint DefaultDpiX = 96;
+        public const uint DefaultDpiY = 96;
+        public const uint Float32IntegerLimit = 1u << 24;
+
+        public static readonly PointU DefaultDpi = new PointU(DefaultDpiX, DefaultDpiY);
         public static readonly SystemVersionLevel VersionLevel = GetSystemVersionLevel();
 
         private static SystemVersionLevel GetSystemVersionLevel()

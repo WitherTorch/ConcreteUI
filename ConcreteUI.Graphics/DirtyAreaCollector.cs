@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Hosting;
@@ -7,7 +8,7 @@ using ConcreteUI.Graphics.Native.DXGI;
 using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Graphics
 {
@@ -53,7 +54,7 @@ namespace ConcreteUI.Graphics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void UsePresentAllModeOnce() => _presentAllMode = true;
 
-        public unsafe void Present(float pointsPerPixel)
+        public unsafe void Present(Vector2 pointsPerPixel)
         {
             SwapChainGraphicsHost1? host = _host;
             if (host is null)
@@ -84,7 +85,7 @@ namespace ConcreteUI.Graphics
             }
         }
 
-        public unsafe bool TryPresent(float pointsPerPixel)
+        public unsafe bool TryPresent(Vector2 pointsPerPixel)
         {
             SwapChainGraphicsHost1? host = _host;
             if (host is null)
@@ -111,7 +112,7 @@ namespace ConcreteUI.Graphics
             }
         }
 
-        private bool TryGetPresentingRects(float pointsPerPixel,
+        private bool TryGetPresentingRects(Vector2 pointsPerPixel,
             [NotNullWhen(true)] out ArrayPool<Rect>? pool, [NotNullWhen(true)] out Rect[]? rects, out uint count)
         {
             UnwrappableList<RectF> list = _list!;
@@ -132,7 +133,7 @@ namespace ConcreteUI.Graphics
             return true;
         }
 
-        private static unsafe uint ScaleRects(Rect[] destination, RectF[] source, uint count, float pointsPerPixel)
+        private static unsafe uint ScaleRects(Rect[] destination, RectF[] source, uint count, Vector2 pointsPerPixel)
         {
             uint j = 0;
             ref Rect destinationArrayRef = ref destination[0];
@@ -152,6 +153,6 @@ namespace ConcreteUI.Graphics
             return j;
         }
 
-        private static unsafe partial void ScaleRects(RectF* source, uint count, float pointsPerPixel);
+        private static unsafe partial void ScaleRects(RectF* source, uint count, Vector2 pointsPerPixel);
     }
 }

@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Layout.Internals;
 
 using WitherTorch.Common.Collections;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Layout
 {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
@@ -7,7 +7,7 @@ using ConcreteUI.Layout;
 using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {

@@ -11,7 +11,6 @@ using ConcreteUI.Theme;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Structures;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Window
 {

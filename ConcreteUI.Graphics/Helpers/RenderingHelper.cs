@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Drawing;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Graphics.Helpers
 {
@@ -19,23 +20,23 @@ namespace ConcreteUI.Graphics.Helpers
             return FloorInPixelCore(valueInPoints, pointsPerPixel);
         }
 
-        public static PointF FloorInPixel(PointF valueInPoints, float pointsPerPixel)
+        public static PointF FloorInPixel(PointF valueInPoints, Vector2 pointsPerPixel)
         {
-            if (pointsPerPixel == 1.0f)
+            if (pointsPerPixel == Vector2.One)
                 return valueInPoints;
-            float x = FloorInPixelCore(valueInPoints.X, pointsPerPixel);
-            float y = FloorInPixelCore(valueInPoints.Y, pointsPerPixel);
+            float x = FloorInPixelCore(valueInPoints.X, pointsPerPixel.X);
+            float y = FloorInPixelCore(valueInPoints.Y, pointsPerPixel.Y);
             return new PointF(x, y);
         }
 
-        public static RectF FloorInPixel(in RectF valueInPoints, float pointsPerPixel)
+        public static RectF FloorInPixel(in RectF valueInPoints, Vector2 pointsPerPixel)
         {
-            if (pointsPerPixel == 1.0f)
+            if (pointsPerPixel == Vector2.One)
                 return valueInPoints;
-            float left = FloorInPixelCore(valueInPoints.Left, pointsPerPixel);
-            float top = FloorInPixelCore(valueInPoints.Top, pointsPerPixel);
-            float right = FloorInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pointsPerPixel);
-            float bottom = FloorInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pointsPerPixel);
+            float left = FloorInPixelCore(valueInPoints.Left, pointsPerPixel.X);
+            float top = FloorInPixelCore(valueInPoints.Top, pointsPerPixel.Y);
+            float right = FloorInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pointsPerPixel.X);
+            float bottom = FloorInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pointsPerPixel.Y);
             return new RectF(left, top, right, bottom);
         }
 
@@ -46,23 +47,23 @@ namespace ConcreteUI.Graphics.Helpers
             return CeilingInPixelCore(valueInPoints, pointsPerPixel);
         }
 
-        public static PointF CeilingInPixel(PointF valueInPoints, float pointsPerPixel)
+        public static PointF CeilingInPixel(PointF valueInPoints, Vector2 pointsPerPixel)
         {
-            if (pointsPerPixel == 1.0f)
+            if (pointsPerPixel == Vector2.One)
                 return valueInPoints;
-            float x = CeilingInPixelCore(valueInPoints.X, pointsPerPixel);
-            float y = CeilingInPixelCore(valueInPoints.Y, pointsPerPixel);
+            float x = CeilingInPixelCore(valueInPoints.X, pointsPerPixel.X);
+            float y = CeilingInPixelCore(valueInPoints.Y, pointsPerPixel.Y);
             return new PointF(x, y);
         }
 
-        public static RectF CeilingInPixel(in RectF valueInPoints, float pointsPerPixel)
+        public static RectF CeilingInPixel(in RectF valueInPoints, Vector2 pointsPerPixel)
         {
-            if (pointsPerPixel == 1.0f)
+            if (pointsPerPixel == Vector2.One)
                 return valueInPoints;
-            float left = CeilingInPixelCore(valueInPoints.Left, pointsPerPixel);
-            float top = CeilingInPixelCore(valueInPoints.Top, pointsPerPixel);
-            float right = CeilingInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pointsPerPixel);
-            float bottom = CeilingInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pointsPerPixel);
+            float left = CeilingInPixelCore(valueInPoints.Left, pointsPerPixel.X);
+            float top = CeilingInPixelCore(valueInPoints.Top, pointsPerPixel.Y);
+            float right = CeilingInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pointsPerPixel.X);
+            float bottom = CeilingInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pointsPerPixel.Y);
             return new RectF(left, top, right, bottom);
         }
 
@@ -73,23 +74,23 @@ namespace ConcreteUI.Graphics.Helpers
             return RoundInPixelCore(valueInPoints, pointsPerPixel);
         }
 
-        public static PointF RoundInPixel(PointF valueInPoints, float pointsPerPixel)
+        public static PointF RoundInPixel(PointF valueInPoints, Vector2 pointsPerPixel)
         {
-            if (pointsPerPixel == 1.0f)
+            if (pointsPerPixel == Vector2.One)
                 return valueInPoints;
-            float x = RoundInPixelCore(valueInPoints.X, pointsPerPixel);
-            float y = RoundInPixelCore(valueInPoints.Y, pointsPerPixel);
+            float x = RoundInPixelCore(valueInPoints.X, pointsPerPixel.X);
+            float y = RoundInPixelCore(valueInPoints.Y, pointsPerPixel.Y);
             return new PointF(x, y);
         }
 
-        public static RectF RoundInPixel(in RectF valueInPoints, float pointsPerPixel)
+        public static RectF RoundInPixel(in RectF valueInPoints, Vector2 pointsPerPixel)
         {
-            if (pointsPerPixel == 1.0f)
+            if (pointsPerPixel == Vector2.One)
                 return valueInPoints;
-            float left = RoundInPixelCore(valueInPoints.Left, pointsPerPixel);
-            float top = RoundInPixelCore(valueInPoints.Top, pointsPerPixel);
-            float right = RoundInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pointsPerPixel);
-            float bottom = RoundInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pointsPerPixel);
+            float left = RoundInPixelCore(valueInPoints.Left, pointsPerPixel.X);
+            float top = RoundInPixelCore(valueInPoints.Top, pointsPerPixel.Y);
+            float right = RoundInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pointsPerPixel.X);
+            float bottom = RoundInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pointsPerPixel.Y);
             return new RectF(left, top, right, bottom);
         }
 

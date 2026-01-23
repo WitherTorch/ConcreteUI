@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
@@ -14,7 +15,7 @@ using InlineMethod;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
@@ -139,7 +140,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void RenderElements<TEnumerable>(D2D1DeviceContext context, DirtyAreaCollector collector, float pointPerPixel,
+        public static unsafe void RenderElements<TEnumerable>(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pointPerPixel,
             TEnumerable elements, bool ignoreNeedRefresh) where TEnumerable : IEnumerable<UIElement?>
         {
             UIElement?[] array;
@@ -217,7 +218,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void RenderElement(D2D1DeviceContext context, DirtyAreaCollector collector, float pointPerPixel,
+        public static void RenderElement(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pointPerPixel,
             UIElement element, bool ignoreNeedRefresh)
         {
             if (ignoreNeedRefresh || element.NeedRefresh() || collector.IsEmptyInstance)

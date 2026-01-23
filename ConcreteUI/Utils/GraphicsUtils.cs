@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
@@ -10,7 +10,7 @@ using ConcreteUI.Graphics.Native.DirectWrite;
 using InlineMethod;
 
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Utils
 {

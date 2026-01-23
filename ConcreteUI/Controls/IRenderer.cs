@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Numerics;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Theme;
@@ -7,7 +8,7 @@ namespace ConcreteUI.Controls
 {
     public interface IRenderer : IRenderingControl, IElementContainer
     {
-        float GetPointsPerPixel();
+        Vector2 GetPointsPerPixel();
 
         ToolTip? GetToolTip();
 

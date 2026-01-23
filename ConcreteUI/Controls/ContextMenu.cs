@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Numerics;
 using System.Threading;
 
 using ConcreteUI.Graphics;
@@ -14,7 +15,7 @@ using ConcreteUI.Window;
 using WitherTorch.Common;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
@@ -50,7 +51,7 @@ namespace ConcreteUI.Controls
 
             ContextMenuItem[] items = MenuItems;
             float itemHeight = 0f, itemWidth = 0f;
-            float pointsPerPixel = Renderer.GetPointsPerPixel();
+            Vector2 pointsPerPixel = Renderer.GetPointsPerPixel();
             int count = items.Length;
             DWriteTextLayout[] layouts = new DWriteTextLayout[count];
             using (DWriteTextFormat format = factory.CreateTextFormat(provider.FontName, UIConstants.BoxFontSize))
@@ -67,8 +68,8 @@ namespace ConcreteUI.Controls
                     itemHeight = MathHelper.Max(itemHeight, metrics.Height);
                     UnsafeHelper.AddTypedOffset(ref layoutArrayRef, i) = layout;
                 }
-                itemWidth = RenderingHelper.CeilingInPixel(itemWidth, pointsPerPixel);
-                itemHeight = RenderingHelper.CeilingInPixel(itemHeight + UIConstants.ElementMarginHalf, pointsPerPixel);
+                itemWidth = RenderingHelper.CeilingInPixel(itemWidth, pointsPerPixel.X);
+                itemHeight = RenderingHelper.CeilingInPixel(itemHeight + UIConstants.ElementMarginHalf, pointsPerPixel.Y);
                 for (int i = 0; i < count; i++)
                 {
                     DWriteTextLayout layout = UnsafeHelper.AddTypedOffset(ref layoutArrayRef, i);
@@ -76,7 +77,7 @@ namespace ConcreteUI.Controls
                     layout.MaxHeight = itemHeight;
                 }
             }
-            float borderWidth = RenderingHelper.GetDefaultBorderWidth(pointsPerPixel);
+            float borderWidth = RenderingHelper.GetDefaultBorderWidth(pointsPerPixel.X);
             Size size = new Size(
                 width: MathI.Ceiling(itemWidth + UIConstants.ElementMargin + borderWidth * 2),
                 height: MathI.Ceiling(itemHeight * count + borderWidth * 2));

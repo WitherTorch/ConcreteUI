@@ -1,11 +1,11 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 using InlineMethod;
 
 using LocalsInit;
 
 using WitherTorch.Common.Native;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
 {
