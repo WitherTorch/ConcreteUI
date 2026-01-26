@@ -83,16 +83,18 @@ namespace ConcreteUI.Graphics
 
             private unsafe void ThreadLoop()
             {
+                const int WaitHandlesCount = 2;
+
                 ThreadHelper.SetCurrentThreadName("Concrete UI Rendering Thread #" + InterlockedHelper.GetAndIncrement(ref _idCounter).ToString("D"));
                 RenderingController controller = _controller;
                 IntPtr exitTriggerHandle = Kernel32.CreateEventW(null, bManualReset: true, bInitialState: false, null);
                 InterlockedHelper.CompareExchange(ref _exitTriggerHandle, exitTriggerHandle, IntPtr.Zero);
                 IntPtr triggerEventHandle = Kernel32.CreateEventW(null, bManualReset: false, bInitialState: false, null);
                 InterlockedHelper.CompareExchange(ref _triggerEventHandle, triggerEventHandle, IntPtr.Zero);
+                Kernel32.WaitForSingleObject(triggerEventHandle, dwMilliseconds: Timeout.Infinite);
+                IntPtr sleepTimer = Kernel32.CreateWaitableTimerW(null, false, null);
                 try
                 {
-                    Kernel32.WaitForSingleObject(triggerEventHandle, dwMilliseconds: Timeout.Infinite);
-                    IntPtr sleepTimer = Kernel32.CreateWaitableTimerW(null, false, null);
                     do
                     {
                         long frameCycle = Interlocked.Read(ref _nativeTicksPerFrameCycle);
@@ -102,13 +104,13 @@ namespace ConcreteUI.Graphics
                         Thread.MemoryBarrier();
                         controller.RenderCore();
                         Kernel32.SetWaitableTimer(sleepTimer, &frameCycle, 0, null, null, false);
-                        Kernel32.WaitForSingleObject(sleepTimer, dwMilliseconds: Timeout.Infinite);
                         Kernel32.WaitForSingleObject(triggerEventHandle, dwMilliseconds: Timeout.Infinite);
+                        Kernel32.WaitForSingleObject(sleepTimer, dwMilliseconds: Timeout.Infinite);
                     } while (true);
-                    Kernel32.CloseHandle(sleepTimer);
                 }
                 finally
                 {
+                    Kernel32.CloseHandle(sleepTimer);
                     InterlockedHelper.CompareExchange(ref _triggerEventHandle, IntPtr.Zero, triggerEventHandle);
                     Kernel32.CloseHandle(triggerEventHandle);
                     InterlockedHelper.CompareExchange(ref _exitTriggerHandle, IntPtr.Zero, exitTriggerHandle);
