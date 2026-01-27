@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Threading;
 
-using ConcreteUI.Graphics.Native;
+using ConcreteUI.Graphics.Internals.Native;
 
 using LocalsInit;
 
@@ -104,26 +104,17 @@ namespace ConcreteUI.Graphics
                         if (InterlockedHelper.CompareExchange(ref _renderingWaitingHandle, renderingWaitingHandle, IntPtr.Zero) != IntPtr.Zero)
                             return;
                         Wait(renderingWaitingHandle, timeout: Infinite);
-                        IntPtr sleepTimer = Kernel32.CreateWaitableTimerW(null, false, null);
-                        try
+                        do
                         {
-                            do
-                            {
-                                long frameCycle = Interlocked.Read(ref _nativeTicksPerFrameCycle);
-                                if (frameCycle < 0L)
-                                    break;
-                                frameCycle += GetSystemTimeInNativeTicks();
-                                Thread.MemoryBarrier();
-                                controller.RenderCore();
-                                Kernel32.SetWaitableTimer(sleepTimer, &frameCycle, 0, null, null, false);
-                                Wait(renderingWaitingHandle, timeout: Infinite);
-                                Kernel32.WaitForSingleObject(sleepTimer, dwMilliseconds: Infinite);
-                            } while (true);
-                        }
-                        finally
-                        {
-                            Kernel32.CloseHandle(sleepTimer);
-                        }
+                            long frameCycle = Interlocked.Read(ref _nativeTicksPerFrameCycle);
+                            if (frameCycle < 0L)
+                                break;
+                            frameCycle += GetSystemTimeInNativeTicks();
+                            Thread.MemoryBarrier();
+                            controller.RenderCore();
+                            NtDll.NtDelayExecution(alertable: false, delayInterval: frameCycle);
+                            Wait(renderingWaitingHandle, timeout: Infinite);
+                        } while (true);
                     }
                     finally
                     {

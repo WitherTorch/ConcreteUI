@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace ConcreteUI.Graphics.Native
+namespace ConcreteUI.Graphics.Internals.Native
 {
     [SuppressUnmanagedCodeSecurity]
     internal static unsafe class Kernel32

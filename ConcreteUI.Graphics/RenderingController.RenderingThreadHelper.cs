@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 
-using ConcreteUI.Graphics.Native;
+using ConcreteUI.Graphics.Internals.Native;
 
 namespace ConcreteUI.Graphics
 {

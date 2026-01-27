@@ -3,7 +3,7 @@ using System.Security;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Helpers;
 
-namespace ConcreteUI.Graphics.Native
+namespace ConcreteUI.Graphics.Internals.Native
 {
     [SuppressUnmanagedCodeSecurity]
     internal unsafe static class KernelBase

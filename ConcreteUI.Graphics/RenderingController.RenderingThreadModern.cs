@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-using ConcreteUI.Graphics.Native;
+using ConcreteUI.Graphics.Internals.Native;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
