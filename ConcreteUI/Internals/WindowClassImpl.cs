@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 using ConcreteUI.Internals.Native;
 using ConcreteUI.Window;
+
+using InlineMethod;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Threading;
@@ -44,7 +47,7 @@ namespace ConcreteUI.Internals
                     cbSize = UnsafeHelper.SizeOf<WindowClassEx>(),
                     style = ClassStyles.ClassDC,
                     hInstance = hInstance,
-                    lpfnWndProc = GetWndProcPointer(),
+                    lpfnWndProc = &ProcessWindowMessage,
                     lpszClassName = className,
                     hbrBackground = Gdi32.CreateSolidBrush(0x00000000)
                 };
@@ -56,9 +59,9 @@ namespace ConcreteUI.Internals
             }
         }
 
-        private static unsafe partial delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint> GetWndProcPointer();
-
-        private static unsafe partial nint ProcessWindowMessage(IntPtr hwnd, uint message, nint wParam, nint lParam)
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        private static unsafe nint ProcessWindowMessage(IntPtr hwnd, uint message, nint wParam, nint lParam)
         {
             try
             {
