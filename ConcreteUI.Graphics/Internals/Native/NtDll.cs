@@ -9,6 +9,6 @@ namespace ConcreteUI.Graphics.Internals.Native
         private const string LibraryName = "ntdll.dll";
 
         [DllImport(LibraryName)]
-        public static extern uint NtDelayExecution(bool alertable, long delayInterval);
+        public static extern uint NtDelayExecution(bool alertable, long* delayInterval);
     }
 }

@@ -112,7 +112,7 @@ namespace ConcreteUI.Graphics
                             frameCycle += GetSystemTimeInNativeTicks();
                             Thread.MemoryBarrier();
                             controller.RenderCore();
-                            NtDll.NtDelayExecution(alertable: false, delayInterval: frameCycle);
+                            NtDll.NtDelayExecution(alertable: false, delayInterval: &frameCycle);
                             Wait(renderingWaitingHandle, timeout: Infinite);
                         } while (true);
                     }
