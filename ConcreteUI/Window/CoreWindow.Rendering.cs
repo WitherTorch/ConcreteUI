@@ -616,7 +616,7 @@ namespace ConcreteUI.Window
         private void UpdateFirstTime()
         {
             _isShown = true;
-            RenderingController controller = new RenderingController(this);
+            RenderingController controller = new RenderingController(this, GetWindowFps(Handle));
             _controller = controller;
             UpdateCoreUnchecked(controller);
         }

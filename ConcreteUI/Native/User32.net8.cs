@@ -243,6 +243,10 @@ namespace ConcreteUI.Native
         [SuppressGCTransition]
         [DllImport(USER32_DLL)]
         public static extern partial int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+        [SuppressGCTransition]
+        [DllImport(USER32_DLL)]
+        public static extern partial bool EnumDisplaySettingsW(char* lpszDeviceName, int iModeNum, DeviceModeW* lpDevMode);
     }
 }
 #endif

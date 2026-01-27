@@ -9,7 +9,6 @@ using ConcreteUI.Window;
 
 using InlineMethod;
 
-using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -144,6 +143,7 @@ namespace ConcreteUI.Native
         public static partial bool ReleaseCapture();
         public static partial IntPtr GetDC(IntPtr hWnd);
         public static partial int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+        public static partial bool EnumDisplaySettingsW(char* lpszDeviceName, int iModeNum, DeviceModeW* lpDevMode);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool SetWindowText(IntPtr handle, string text)

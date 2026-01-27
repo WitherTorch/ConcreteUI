@@ -1,8 +1,8 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 using WitherTorch.Common.Windows.Structures;
 
-namespace ConcreteUI.Graphics.Native
+namespace ConcreteUI.Native
 {
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct DeviceModeW

@@ -389,9 +389,11 @@ namespace ConcreteUI.Window
                     Update();
                     goto default;
                 case WindowMessage.DisplayChange:
-                    UpdateDpi(hwnd);
-                    _controller?.UpdateMonitorFpsStatus();
+                    UpdateWindowFps(hwnd);
                     Update();
+                    goto default;
+                case WindowMessage.WindowPositionChanging:
+                    UpdateWindowFps(hwnd);
                     goto default;
                 #endregion
                 default:
@@ -611,6 +613,36 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Normal Methods
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void UpdateWindowFps(IntPtr handle) => _controller?.SetFramesPerSecond(GetWindowFps(handle));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private uint GetWindowFps(IntPtr handle)
+        {
+            const int VREFRESH = 0x74;
+
+            IntPtr hdc = User32.GetDC(handle);
+            if (hdc == IntPtr.Zero)
+                goto Fallback;
+            try
+            {
+                int result = Gdi32.GetDeviceCaps(hdc, VREFRESH);
+                if (result < 2)
+                    goto Fallback;
+                return (uint)result;
+            }
+            finally
+            {
+                User32.ReleaseDC(handle, hdc);
+            }
+
+        Fallback:
+            DeviceModeW mode;
+            if (!User32.EnumDisplaySettingsW(null, iModeNum: 0, &mode))
+                return 30;
+            return mode.dmDisplayFrequency;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void UpdateDpi(IntPtr handle)

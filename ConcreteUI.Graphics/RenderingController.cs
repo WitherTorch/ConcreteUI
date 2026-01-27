@@ -1,12 +1,6 @@
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
-
-using ConcreteUI.Graphics.Native;
-using ConcreteUI.Graphics.Native.Direct2D;
-
-using LocalsInit;
 
 using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
@@ -24,11 +18,11 @@ namespace ConcreteUI.Graphics
         private bool _disposed;
         private long _state, _locked;
 
-        public RenderingController(IRenderingControl control)
+        public RenderingController(IRenderingControl control, uint framesPerSecond)
         {
             _control = control;
             _state = (long)RenderingFlags._FlagAllTrue;
-            _thread = RenderingThreadHelper.CreateRenderingThread(this, GetMonitorFpsStatus());
+            _thread = RenderingThreadHelper.CreateRenderingThread(this, framesPerSecond);
             _waitForRenderingTrigger = new ManualResetEventSlim(true);
         }
 
@@ -78,19 +72,8 @@ namespace ConcreteUI.Graphics
             _waitForRenderingTrigger.Wait();
         }
 
-        [LocalsInit(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe uint GetMonitorFpsStatus()
-        {
-            DeviceModeW devMode;
-            if (User32.EnumDisplaySettingsW(null, -1, &devMode))
-                return devMode.dmDisplayFrequency;
-            return DefaultFramesPerSecond;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void UpdateMonitorFpsStatus()
-            => _thread.SetFramesPerSecond(GetMonitorFpsStatus());
+        public void SetFramesPerSecond(uint value) => _thread.SetFramesPerSecond(value);
 
         public void Stop() => _thread.Stop();
 
