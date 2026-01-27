@@ -5,7 +5,7 @@ using WitherTorch.Common.Windows.Structures;
 namespace ConcreteUI.Internals.Native
 {
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct DeviceModeW
+    internal struct DeviceModeW
     {
         public FixedChar32 dmDeviceName;
         public ushort dmSpecVersion;

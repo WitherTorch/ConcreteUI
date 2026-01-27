@@ -1,5 +1,7 @@
 using System;
 
+using ConcreteUI.Utils;
+
 namespace ConcreteUI.Internals.Native
 {
     internal static unsafe partial class Imm32

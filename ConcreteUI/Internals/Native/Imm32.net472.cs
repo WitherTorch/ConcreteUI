@@ -3,6 +3,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security;
 
+using ConcreteUI.Utils;
+
 namespace ConcreteUI.Internals.Native
 {
     [SuppressUnmanagedCodeSecurity]

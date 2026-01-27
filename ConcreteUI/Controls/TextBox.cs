@@ -12,7 +12,6 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Input;
 using ConcreteUI.Internals;
-using ConcreteUI.Internals.Native;
 using ConcreteUI.Internals.NativeHelpers;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
