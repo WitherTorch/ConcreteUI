@@ -1,5 +1,6 @@
-﻿#if NET472_OR_GREATER
+#if NET472_OR_GREATER
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace ConcreteUI.Internals
@@ -13,6 +14,9 @@ namespace ConcreteUI.Internals
 
         private static unsafe partial delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint> GetWndProcPointer()
             => (delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint>)Marshal.GetFunctionPointerForDelegate(_delegate);
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        private static unsafe partial nint ProcessWindowMessage(IntPtr hwnd, uint message, nint wParam, nint lParam);
     }
 }
 #endif

@@ -1,4 +1,4 @@
-﻿#if NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -26,11 +26,9 @@ namespace ConcreteUI.Native
         [DllImport(KERNEL32_DLL)]
         public static extern partial IntPtr GlobalFree(IntPtr hMem);
 
-        [SuppressGCTransition]
         [DllImport(KERNEL32_DLL)]
         public static extern partial void* GlobalLock(IntPtr hMem);
 
-        [SuppressGCTransition]
         [DllImport(KERNEL32_DLL)]
         public static extern partial bool GlobalUnlock(IntPtr hMem);
 

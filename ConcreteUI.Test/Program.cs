@@ -11,6 +11,7 @@ namespace ConcreteUI.Test
         static int Main()
         {
             ConcreteSettings.WindowMaterial = WindowMaterial.Default;
+            ConcreteSettings.UseDebugMode = false;
             return WindowMessageLoop.Start(new MainWindow(null));
         }
 

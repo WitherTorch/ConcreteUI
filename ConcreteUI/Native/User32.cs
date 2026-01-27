@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security;
 
 using ConcreteUI.Graphics;
@@ -15,12 +16,15 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Native
 {
-    [SuppressUnmanagedCodeSecurity]
     internal static unsafe partial class User32
     {
         private static readonly void*[] _pointers =
             MethodImportHelper.GetImportedMethodPointers(USER32_DLL, "GetDpiForWindow");
 
+#if NET8_0_OR_GREATER
+        [SuppressGCTransition]
+#endif
+        [SuppressUnmanagedCodeSecurity]
         public static bool TryGetDpiForWindow(IntPtr hWnd, out uint dpiX, out uint dpiY)
         {
             void* pointer = _pointers[0];

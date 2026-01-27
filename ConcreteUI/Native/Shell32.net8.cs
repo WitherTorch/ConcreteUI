@@ -1,4 +1,4 @@
-﻿#if NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -10,7 +10,6 @@ namespace ConcreteUI.Native
     {
         private const string SHELL32_DLL = "shell32.dll";
 
-        [SuppressGCTransition]
         [DllImport(SHELL32_DLL)]
         public static extern partial IntPtr SHAppBarMessage(uint dwMessage, AppBarData* pData);
     }

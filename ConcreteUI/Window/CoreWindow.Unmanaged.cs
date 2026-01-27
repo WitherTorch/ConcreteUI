@@ -122,7 +122,6 @@ namespace ConcreteUI.Window
         protected override bool TryProcessSystemWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
             result = 0;
-
             switch (message)
             {
                 case WindowMessage.DpiChanged:

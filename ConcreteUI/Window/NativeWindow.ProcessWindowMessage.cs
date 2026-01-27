@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -15,6 +15,8 @@ using WitherTorch.Common.Helpers;
 
 using GdiColor = System.Drawing.Color;
 using GdiGraphics = System.Drawing.Graphics;
+using System.IO;
+
 
 #if NET8_0_OR_GREATER
 using System.Collections.Frozen;
@@ -293,7 +295,6 @@ namespace ConcreteUI.Window
             return false;
         }
 
-        [LocalsInit(false)]
         private bool HandlePaint()
         {
             IntPtr handle = Handle;

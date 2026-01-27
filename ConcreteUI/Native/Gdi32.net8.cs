@@ -1,4 +1,4 @@
-﻿#if NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -18,7 +18,6 @@ namespace ConcreteUI.Native
         [DllImport(GDI32_DLL)]
         public static extern partial bool DeleteObject(IntPtr handle);
 
-        [SuppressGCTransition]
         [DllImport(GDI32_DLL)]
         public static extern partial int GetDeviceCaps(IntPtr hdc, int index);
     }

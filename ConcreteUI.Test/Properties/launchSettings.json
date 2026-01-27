@@ -2,7 +2,8 @@
   "profiles": {
     "ConcreteUI.Test": {
       "commandName": "Project",
-      "nativeDebugging": true
+      "nativeDebugging": true,
+      "hotReloadEnabled": true
     }
   }
 }

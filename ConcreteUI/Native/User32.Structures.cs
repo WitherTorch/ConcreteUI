@@ -96,16 +96,13 @@ namespace ConcreteUI.Native
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
-    internal struct PaintStruct
+    internal unsafe struct PaintStruct
     {
         public IntPtr hdc;
         public SysBool fErase;
         public Rect rcPaint;
         public SysBool fRestore;
         public SysBool fIncUpdate;
-        public int rgbReserved0;
-        public int rgbReserved1;
-        public int rgbReserved2;
-        public int rgbReserved3;
+        public fixed byte rgbReserved[32];
     }
 }

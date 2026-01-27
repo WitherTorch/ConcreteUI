@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -14,9 +14,9 @@ namespace ConcreteUI.Internals
 {
     internal sealed partial class WindowClassImpl
     {
-
         private static readonly LazyTiny<WindowClassImpl> _instanceLazy =
             new LazyTiny<WindowClassImpl>(CreateInstance, LazyThreadSafetyMode.ExecutionAndPublication);
+        private static readonly List<Exception> _exceptionList = new List<Exception>();
 
         public static WindowClassImpl Instance => _instanceLazy.Value;
 
@@ -58,15 +58,45 @@ namespace ConcreteUI.Internals
 
         private static unsafe partial delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint> GetWndProcPointer();
 
-#if NET8_0_OR_GREATER
-        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
-#endif
-        private static unsafe nint ProcessWindowMessage(IntPtr hwnd, uint message, nint wParam, nint lParam)
+        private static unsafe partial nint ProcessWindowMessage(IntPtr hwnd, uint message, nint wParam, nint lParam)
         {
-            WindowClassImpl? instance = _instanceLazy.GetValueDirectly();
-            if (instance is not null && instance.TryProcessWindowMessage(hwnd, (WindowMessage)message, wParam, lParam, out nint result))
-                return result;
+            try
+            {
+                WindowClassImpl? instance = _instanceLazy.GetValueDirectly();
+                if (instance is not null && instance.TryProcessWindowMessage(hwnd, (WindowMessage)message, wParam, lParam, out nint result))
+                    return result;
+            }
+            catch (Exception ex)
+            {
+                List<Exception> exceptionList = _exceptionList;
+                lock (exceptionList)
+                    exceptionList.Add(ex);
+                return 0;
+            }
             return User32.DefWindowProcW(hwnd, message, wParam, lParam);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void PumpExceptions()
+        {
+            List<Exception> exceptionList = _exceptionList;
+            lock (exceptionList)
+            {
+                int count = exceptionList.Count;
+                if (count <= 0)
+                    return;
+                try
+                {
+                    if (count == 1)
+                        throw exceptionList[0];
+
+                    throw new AggregateException(exceptionList.ToArray());
+                }
+                finally
+                {
+                    exceptionList.Clear();
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -107,7 +137,7 @@ namespace ConcreteUI.Internals
             WeakReference<IHwndOwner>? ownerRef = _hwndOwnerDictWithLock.Read(
                 dict => dict.TryGetValue(hwnd, out WeakReference<IHwndOwner>? result) ? result : null);
 
-            if (ownerRef is not null && ownerRef.TryGetTarget(out IHwndOwner? owner) && 
+            if (ownerRef is not null && ownerRef.TryGetTarget(out IHwndOwner? owner) &&
                 owner is not null && owner.TryProcessWindowMessage(hwnd, message, wParam, lParam, out result))
                 return true;
 
