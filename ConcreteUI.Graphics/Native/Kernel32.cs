@@ -11,8 +11,9 @@ namespace ConcreteUI.Graphics.Native
         public static partial IntPtr CreateWaitableTimerW(void* lpTimerAttributes, bool bManualReset, char* lpTimerName);
         public static partial bool SetEvent(IntPtr hEvent);
         public static partial bool SetWaitableTimer(IntPtr hTimer, long* lpDueTime, nint lPeriod, void* pfnCompletionRoutine, void* lpArgToCompletionRoutine, bool fResume);
-        public static partial uint WaitForSingleObject(IntPtr hHandle, int dwMilliseconds);
-        public static partial uint WaitForMultipleObjects(uint nCount, IntPtr* lpHandles, bool bWaitAll, int dwMilliseconds);
+        public static partial uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+        public static partial uint WaitForMultipleObjects(uint nCount, IntPtr* lpHandles, bool bWaitAll, uint dwMilliseconds);
         public static partial bool CloseHandle(IntPtr hObject);
+        public static partial uint GetLastError();
     }
 }

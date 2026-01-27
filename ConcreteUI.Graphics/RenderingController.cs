@@ -18,7 +18,7 @@ namespace ConcreteUI.Graphics
         public const int DefaultFramesPerSecond = 30; //30 fps
 
         private readonly IRenderingControl _control;
-        private readonly RenderingThread _thread;
+        private readonly RenderingThreadBase _thread;
         private readonly ManualResetEventSlim _waitForRenderingTrigger;
 
         private bool _disposed;
@@ -28,7 +28,7 @@ namespace ConcreteUI.Graphics
         {
             _control = control;
             _state = (long)RenderingFlags._FlagAllTrue;
-            _thread = new RenderingThread(this, GetMonitorFpsStatus());
+            _thread = RenderingThreadHelper.CreateRenderingThread(this, GetMonitorFpsStatus());
             _waitForRenderingTrigger = new ManualResetEventSlim(true);
         }
 

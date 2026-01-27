@@ -3,8 +3,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security;
 
-using WitherTorch.Common.Buffers;
-
 namespace ConcreteUI.Graphics.Native
 {
     [SuppressUnmanagedCodeSecurity]
@@ -34,13 +32,16 @@ namespace ConcreteUI.Graphics.Native
         public static extern partial bool SetWaitableTimer(IntPtr hTimer, long* lpDueTime, nint lPeriod, void* pfnCompletionRoutine, void* lpArgToCompletionRoutine, bool fResume);
 
         [DllImport(KERNEL32_DLL)]
-        public static extern partial uint WaitForSingleObject(IntPtr hHandle, int dwMilliseconds);
+        public static extern partial uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
 
         [DllImport(KERNEL32_DLL)]
-        public static extern partial uint WaitForMultipleObjects(uint nCount, IntPtr* lpHandles, bool bWaitAll, int dwMilliseconds);
+        public static extern partial uint WaitForMultipleObjects(uint nCount, IntPtr* lpHandles, bool bWaitAll, uint dwMilliseconds);
 
         [DllImport(KERNEL32_DLL)]
         public static extern partial bool CloseHandle(IntPtr hObject);
+
+        [DllImport(KERNEL32_DLL)]
+        public static extern partial uint GetLastError();
     }
 }
 #endif
