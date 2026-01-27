@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 
 using WitherTorch.Common.Threading;
 

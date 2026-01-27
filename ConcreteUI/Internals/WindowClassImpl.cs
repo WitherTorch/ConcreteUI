@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 using ConcreteUI.Window;
 
 using WitherTorch.Common.Helpers;

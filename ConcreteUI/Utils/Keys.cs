@@ -1,6 +1,6 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 
 using InlineMethod;
 

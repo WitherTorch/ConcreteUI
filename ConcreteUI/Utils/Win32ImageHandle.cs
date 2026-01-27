@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Runtime.ConstrainedExecution;
 
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 
 namespace ConcreteUI.Utils
 {

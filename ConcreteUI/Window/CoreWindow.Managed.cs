@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Internals;
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 

@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 
 using WitherTorch.Common.Helpers;
 

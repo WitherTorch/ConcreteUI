@@ -1,7 +1,7 @@
 using System;
 
 using ConcreteUI.Input.NativeHelper;
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 using ConcreteUI.Window;
 
 using WitherTorch.Common.Structures;

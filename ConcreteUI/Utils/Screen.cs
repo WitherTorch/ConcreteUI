@@ -1,7 +1,7 @@
 using System;
 using System.Drawing;
 
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;

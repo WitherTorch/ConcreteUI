@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Drawing;
 
+using ConcreteUI.Internals.Native;
 using ConcreteUI.Internals.NativeHelpers;
-using ConcreteUI.Native;
 using ConcreteUI.Window;
 
 namespace ConcreteUI.Internals

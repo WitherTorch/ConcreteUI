@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 
 using ConcreteUI.Internals;
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 
 using InlineIL;
 
@@ -15,8 +15,6 @@ using WitherTorch.Common.Helpers;
 
 using GdiColor = System.Drawing.Color;
 using GdiGraphics = System.Drawing.Graphics;
-using System.IO;
-
 
 #if NET8_0_OR_GREATER
 using System.Collections.Frozen;

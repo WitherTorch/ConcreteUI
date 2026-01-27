@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 using ConcreteUI.Utils;
 
 using LocalsInit;

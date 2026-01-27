@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 using ConcreteUI.Window;
 
 using InlineMethod;

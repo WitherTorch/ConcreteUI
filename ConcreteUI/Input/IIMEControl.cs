@@ -1,4 +1,4 @@
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 
 using WitherTorch.Common.Structures;
 

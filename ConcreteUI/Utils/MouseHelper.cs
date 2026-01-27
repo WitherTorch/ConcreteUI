@@ -1,6 +1,6 @@
-﻿using System.Drawing;
+using System.Drawing;
 
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 
 using LocalsInit;
 

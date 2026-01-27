@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 
 namespace ConcreteUI.Utils
 {

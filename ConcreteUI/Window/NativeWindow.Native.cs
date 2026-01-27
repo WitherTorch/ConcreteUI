@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 
 using ConcreteUI.Internals;
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 
 using WitherTorch.Common.Helpers;
 

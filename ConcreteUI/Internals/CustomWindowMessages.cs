@@ -1,4 +1,4 @@
-﻿using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 
 namespace ConcreteUI.Internals
 {

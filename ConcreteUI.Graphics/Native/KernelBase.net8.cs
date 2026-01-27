@@ -47,13 +47,12 @@ namespace ConcreteUI.Graphics.Native
             return ((delegate* unmanaged[Stdcall]<void*, void*, nuint, uint, bool>)ptr)(address, compareAddress, addressSize, dwMilliseconds);
         }
 
-        [SuppressGCTransition]
         public static partial void WakeByAddressAll(void* address)
         {
             void* ptr = _functionPointers[(int)MethodTable.WakeByAddressAll];
             if (ptr == null)
                 return;
-            ((delegate* unmanaged[Stdcall]<void*, void>)ptr)(address);
+            ((delegate* unmanaged[Stdcall, SuppressGCTransition]<void*, void>)ptr)(address);
         }
     }
 }

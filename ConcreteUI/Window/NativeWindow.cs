@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using ConcreteUI.Internals;
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 using ConcreteUI.Utils;
 
 using InlineMethod;

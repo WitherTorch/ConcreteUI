@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
-using ConcreteUI.Native;
+using ConcreteUI.Internals.Native;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
