@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 using ConcreteUI.Native;
@@ -51,7 +51,7 @@ namespace ConcreteUI.Internals
 
                 ushort atom = User32.RegisterClassExW(&clazz);
                 if (atom == 0)
-                    Marshal.ThrowExceptionForHR(Kernel32.GetLastError());
+                    throw new Win32Exception(Kernel32.GetLastError());
                 return new WindowClassImpl(atom, hInstance);
             }
         }
