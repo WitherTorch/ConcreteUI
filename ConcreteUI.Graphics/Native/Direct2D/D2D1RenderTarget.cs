@@ -362,7 +362,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawLine);
-            ((delegate* unmanaged[Stdcall]<void*, PointF, PointF, void*, float, void*, void>)functionPointer)(nativePointer, point0, point1, brush.NativePointer,
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, PointF, PointF, void*, float, void*, void>)functionPointer)(nativePointer, point0, point1, brush.NativePointer,
                 strokeWidth, strokeStyle == null ? null : strokeStyle.NativePointer);
         }
 
@@ -374,7 +380,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawRectangle);
-            ((delegate* unmanaged[Stdcall]<void*, RectF*, void*, float, void*, void>)functionPointer)(nativePointer, rect, brush.NativePointer,
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, RectF*, void*, float, void*, void>)functionPointer)(nativePointer, rect, brush.NativePointer,
                 strokeWidth, strokeStyle == null ? null : strokeStyle.NativePointer);
         }
 
@@ -386,7 +398,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.FillRectangle);
-            ((delegate* unmanaged[Stdcall]<void*, RectF*, void*, void>)functionPointer)(nativePointer, rect, brush.NativePointer);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, RectF*, void*, void>)functionPointer)(nativePointer, rect, brush.NativePointer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -397,7 +415,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawRoundedRectangle);
-            ((delegate* unmanaged[Stdcall]<void*, D2D1RoundedRectangle*, void*, float, void*, void>)functionPointer)(nativePointer, roundedRect, brush.NativePointer,
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, D2D1RoundedRectangle*, void*, float, void*, void>)functionPointer)(nativePointer, roundedRect, brush.NativePointer,
                 strokeWidth, strokeStyle == null ? null : strokeStyle.NativePointer);
         }
 
@@ -409,7 +433,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.FillRoundedRectangle);
-            ((delegate* unmanaged[Stdcall]<void*, D2D1RoundedRectangle*, void*, void>)functionPointer)(nativePointer, roundedRect, brush.NativePointer);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, D2D1RoundedRectangle*, void*, void>)functionPointer)(nativePointer, roundedRect, brush.NativePointer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -420,7 +450,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawEllipse);
-            ((delegate* unmanaged[Stdcall]<void*, D2D1Ellipse*, void*, float, void*, void>)functionPointer)(nativePointer, ellipse, brush.NativePointer,
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, D2D1Ellipse*, void*, float, void*, void>)functionPointer)(nativePointer, ellipse, brush.NativePointer,
                 strokeWidth, strokeStyle == null ? null : strokeStyle.NativePointer);
         }
 
@@ -432,14 +468,26 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.FillEllipse);
-            ((delegate* unmanaged[Stdcall]<void*, D2D1Ellipse*, void*, void>)functionPointer)(nativePointer, ellipse, brush.NativePointer);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, D2D1Ellipse*, void*, void>)functionPointer)(nativePointer, ellipse, brush.NativePointer);
         }
 
         public void DrawGeometry(D2D1Geometry geometry, D2D1Brush brush, float strokeWidth = 1.0f, D2D1StrokeStyle? strokeStyle = null)
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawGeometry);
-            ((delegate* unmanaged[Stdcall]<void*, void*, void*, float, void*, void>)functionPointer)(nativePointer, geometry.NativePointer, brush.NativePointer,
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, void*, void*, float, void*, void>)functionPointer)(nativePointer, geometry.NativePointer, brush.NativePointer,
                 strokeWidth, strokeStyle == null ? null : strokeStyle.NativePointer);
         }
 
@@ -453,7 +501,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.FillGeometry);
-            ((delegate* unmanaged[Stdcall]<void*, void*, void*, void*, void>)functionPointer)(nativePointer, geometry.NativePointer, brush.NativePointer,
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, void*, void*, void*, void>)functionPointer)(nativePointer, geometry.NativePointer, brush.NativePointer,
                 opacityBrush is null ? null : opacityBrush.NativePointer);
         }
 
@@ -530,7 +584,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawTextLayout);
-            ((delegate* unmanaged[Stdcall]<void*, PointF, void*, void*, D2D1DrawTextOptions, void>)functionPointer)(nativePointer,
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, PointF, void*, void*, D2D1DrawTextOptions, void>)functionPointer)(nativePointer,
                 origin, textLayout.NativePointer, defaultFillBrush.NativePointer, options);
         }
 
@@ -543,7 +603,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetTransform);
-            ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, void>)functionPointer)(nativePointer, matrix);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, Matrix3x2*, void>)functionPointer)(nativePointer, matrix);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -553,7 +619,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             Matrix3x2 matrix;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetTransform);
-            ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, void>)functionPointer)(nativePointer, &matrix);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, Matrix3x2*, void>)functionPointer)(nativePointer, &matrix);
             return matrix;
         }
 
@@ -562,7 +634,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetAntialiasMode);
-            ((delegate* unmanaged[Stdcall]<void*, D2D1AntialiasMode, void>)functionPointer)(nativePointer, antialiasMode);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, D2D1AntialiasMode, void>)functionPointer)(nativePointer, antialiasMode);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -570,7 +648,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetAntialiasMode);
-            return ((delegate* unmanaged[Stdcall]<void*, D2D1AntialiasMode>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, D2D1AntialiasMode>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -578,8 +662,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetTextAntialiasMode);
-            ((delegate* unmanaged[Stdcall]<void*, D2D1TextAntialiasMode, void>)functionPointer)(nativePointer, textAntialiasMode);
-
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, D2D1TextAntialiasMode, void>)functionPointer)(nativePointer, textAntialiasMode);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -587,7 +676,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetTextAntialiasMode);
-            return ((delegate* unmanaged[Stdcall]<void*, D2D1TextAntialiasMode>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, D2D1TextAntialiasMode>)functionPointer)(nativePointer);
         }
 
         /// <inheritdoc cref="PushLayer(D2D1LayerParametersNative*, D2D1Layer?)"/>
@@ -620,7 +715,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.PushLayer);
-            ((delegate* unmanaged[Stdcall]<void*, D2D1LayerParametersNative*, void*, void>)functionPointer)(
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, D2D1LayerParametersNative*, void*, void>)functionPointer)(
                 nativePointer, layerParameters, layer is null ? null : layer.NativePointer);
         }
 
@@ -632,7 +733,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.PopLayer);
-            ((delegate* unmanaged[Stdcall]<void*, void>)functionPointer)(nativePointer);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, void>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
@@ -668,14 +775,26 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.PushAxisAlignedClip);
-            ((delegate* unmanaged[Stdcall]<void*, RectF*, D2D1AntialiasMode, void>)functionPointer)(nativePointer, clipRect, antialiasMode);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, RectF*, D2D1AntialiasMode, void>)functionPointer)(nativePointer, clipRect, antialiasMode);
         }
 
         public void PopAxisAlignedClip()
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.PopAxisAlignedClip);
-            ((delegate* unmanaged[Stdcall]<void*, void>)functionPointer)(nativePointer);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, void>)functionPointer)(nativePointer);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
@@ -689,7 +808,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Clear);
-            ((delegate* unmanaged[Stdcall]<void*, D2D1ColorF*, void>)functionPointer)(nativePointer, clearColor);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, D2D1ColorF*, void>)functionPointer)(nativePointer, clearColor);
         }
 
         /// <summary>
@@ -700,7 +825,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.BeginDraw);
-            ((delegate* unmanaged[Stdcall]<void*, void>)functionPointer)(nativePointer);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, void>)functionPointer)(nativePointer);
         }
 
         /// <inheritdoc cref="TryEndDraw(ulong*, ulong*)"/>
@@ -732,7 +863,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             D2D1PixelFormat format;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetPixelFormat);
-            ((delegate* unmanaged[Stdcall]<void*, D2D1PixelFormat*, void>)functionPointer)(nativePointer, &format);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, D2D1PixelFormat*, void>)functionPointer)(nativePointer, &format);
             return format;
         }
 
@@ -741,7 +878,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetDpi);
-            ((delegate* unmanaged[Stdcall]<void*, float, float, void>)functionPointer)(nativePointer, dpi.X, dpi.Y);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, float, float, void>)functionPointer)(nativePointer, dpi.X, dpi.Y);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -751,7 +894,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             PointF result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDpi);
-            ((delegate* unmanaged[Stdcall]<void*, float*, float*, void>)functionPointer)(nativePointer, (float*)&result, (float*)&result + 1);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, float*, float*, void>)functionPointer)(nativePointer, (float*)&result, (float*)&result + 1);
             return result;
         }
 
@@ -761,7 +910,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             SizeF result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetSize);
-            ((delegate* unmanaged[Stdcall]<void*, SizeF*, void>)functionPointer)(nativePointer, &result);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, SizeF*, void>)functionPointer)(nativePointer, &result);
             return result;
         }
 
@@ -771,7 +926,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             SizeU result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetPixelSize);
-            ((delegate* unmanaged[Stdcall]<void*, SizeU*, void>)functionPointer)(nativePointer, &result);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, SizeU*, void>)functionPointer)(nativePointer, &result);
             return result;
         }
 
@@ -783,7 +944,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetMaximumBitmapSize);
-            return ((delegate* unmanaged[Stdcall]<void*, uint>)functionPointer)(nativePointer);
+            return ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, uint>)functionPointer)(nativePointer);
         }
 
         /// <inheritdoc cref="IsSupported(D2D1RenderTargetProperties*)"/>
@@ -802,7 +969,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.IsSupported);
-            return ((delegate* unmanaged[Stdcall]<void*, D2D1RenderTargetProperties*, bool>)functionPointer)(nativePointer, renderTargetProperties);
+            return ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, D2D1RenderTargetProperties*, bool>)functionPointer)(nativePointer, renderTargetProperties);
         }
     }
 }

@@ -177,7 +177,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.IsDxgiFormatSupported);
-            return ((delegate* unmanaged[Stdcall]<void*, DXGIFormat, bool>)functionPointer)(nativePointer, format);
+            return ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, DXGIFormat, bool>)functionPointer)(nativePointer, format);
         }
 
         /// <summary>
@@ -187,7 +193,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetDevice);
-            ((delegate* unmanaged[Stdcall]<void*, void**, void>)functionPointer)(nativePointer, &nativePointer);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, void**, void>)functionPointer)(nativePointer, &nativePointer);
             return nativePointer == null ? null : new D2D1Device(nativePointer, ReferenceType.Owned);
         }
 
@@ -196,7 +208,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.SetTarget);
-            ((delegate* unmanaged[Stdcall]<void*, void*, void>)functionPointer)(nativePointer, image == null ? null : image.NativePointer);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, void*, void>)functionPointer)(nativePointer, image == null ? null : image.NativePointer);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -205,7 +223,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* image;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetTarget);
-            ((delegate* unmanaged[Stdcall]<void*, void**, void>)functionPointer)(nativePointer, &image);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, void**, void>)functionPointer)(nativePointer, &image);
             return image == null ? null : new D2D1Image(image, ReferenceType.Owned);
         }
 

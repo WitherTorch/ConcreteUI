@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Security;
 
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
@@ -60,7 +60,13 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawGeometryRealization);
-            ((delegate* unmanaged[Stdcall]<void*, void*, void*, void>)functionPointer)(nativePointer, geometryRealization.NativePointer, brush.NativePointer);
+            ((delegate* unmanaged
+#if NET8_0_OR_GREATER
+            [Stdcall, SuppressGCTransition]
+#else
+            [Stdcall]
+#endif
+            <void*, void*, void*, void>)functionPointer)(nativePointer, geometryRealization.NativePointer, brush.NativePointer);
         }
     }
 }

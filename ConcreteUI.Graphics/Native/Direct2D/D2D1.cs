@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Security;
 
@@ -23,7 +23,11 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* pointer = _pointers[0];
             if (pointer == null)
                 return Constants.E_NOTIMPL;
+#if NET8_0_OR_GREATER
+            return ((delegate* unmanaged[Stdcall, SuppressGCTransition]<void*, D2D1CreationProperties*, void**, int>)pointer)(dxgiDevice, creationProperties, d2dDevice);
+#else
             return ((delegate* unmanaged[Stdcall]<void*, D2D1CreationProperties*, void**, int>)pointer)(dxgiDevice, creationProperties, d2dDevice);
+#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -36,7 +40,11 @@ namespace ConcreteUI.Graphics.Native.Direct2D
             void* pointer = _pointers[1];
             if (pointer == null)
                 return 1.0f;
+#if NET8_0_OR_GREATER
+            return ((delegate* unmanaged[Stdcall, SuppressGCTransition]<Matrix3x2*, float>)pointer)(matrix);
+#else
             return ((delegate* unmanaged[Stdcall]<Matrix3x2*, float>)pointer)(matrix);
+#endif
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
