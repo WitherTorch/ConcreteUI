@@ -1,11 +1,15 @@
 using System;
-
-using ConcreteUI.Internals.Native;
+using System.Runtime.InteropServices;
+using System.Security;
 
 namespace ConcreteUI.Internals.Native
 {
-    internal static unsafe partial class Shell32
+    [SuppressUnmanagedCodeSecurity]
+    internal static unsafe class Shell32
     {
-        public static partial IntPtr SHAppBarMessage(uint dwMessage, AppBarData* pData);
+        private const string LibraryName = "shell32.dll";
+
+        [DllImport(LibraryName)]
+        public static extern IntPtr SHAppBarMessage(uint dwMessage, AppBarData* pData);
     }
 }

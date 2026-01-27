@@ -1,23 +1,54 @@
 using System;
+using System.Runtime.InteropServices;
+using System.Security;
 
 using ConcreteUI.Utils;
 
 namespace ConcreteUI.Internals.Native
 {
-    internal static unsafe partial class Imm32
+    [SuppressUnmanagedCodeSecurity]
+    internal static unsafe class Imm32
     {
-        public static partial IntPtr ImmGetContext(IntPtr hWND);
-        public static partial bool ImmReleaseContext(IntPtr hWND, IntPtr hIMC);
-        public static partial IntPtr ImmCreateContext();
-        public static partial bool ImmDestroyContext(IntPtr hIMC);
-        public static partial IntPtr ImmAssociateContext(IntPtr hWND, IntPtr hIMC);
-        public static partial IntPtr ImmAssociateContext(IntPtr hWND, uint hIMC);
-        public static partial IntPtr ImmAssociateContextEx(IntPtr hWND, IntPtr hIMC, ImmAssociateContextEx_Flags flag);
-        public static partial bool ImmGetOpenStatus(IntPtr hIMC);
-        public static partial bool ImmSetOpenStatus(IntPtr hIMC, bool open);
-        public static partial long ImmGetCompositionStringW(IntPtr hIMC, IMECompositionFlags flags, void* lpBuf, int dwBufLen);
-        public static partial bool ImmSetCandidateWindow(IntPtr hIMC, CandidateForm* lpCandidate);
-        public static partial bool ImmSetCompositionWindow(IntPtr hIMC, CompositionForm* lpCompForm);
-        public static partial uint ImmGetVirtualKey(IntPtr hIMC);
+        private const string LibraryName = "imm32.dll";
+
+        [DllImport(LibraryName)]
+        public static extern IntPtr ImmGetContext(IntPtr hWND);
+
+        [DllImport(LibraryName)]
+        public static extern bool ImmReleaseContext(IntPtr hWND, IntPtr hIMC);
+
+        [SuppressGCTransition]
+        [DllImport(LibraryName)]
+        public static extern IntPtr ImmCreateContext();
+
+        [DllImport(LibraryName)]
+        public static extern bool ImmDestroyContext(IntPtr hIMC);
+
+        [DllImport(LibraryName)]
+        public static extern IntPtr ImmAssociateContext(IntPtr hWND, IntPtr hIMC);
+
+        [DllImport(LibraryName)]
+        public static extern IntPtr ImmAssociateContext(IntPtr hWND, uint hIMC);
+
+        [DllImport(LibraryName)]
+        public static extern IntPtr ImmAssociateContextEx(IntPtr hWND, IntPtr hIMC, ImmAssociateContextEx_Flags flag);
+
+        [DllImport(LibraryName)]
+        public static extern bool ImmGetOpenStatus(IntPtr hIMC);
+
+        [DllImport(LibraryName)]
+        public static extern bool ImmSetOpenStatus(IntPtr hIMC, bool open);
+
+        [DllImport(LibraryName)]
+        public static extern long ImmGetCompositionStringW(IntPtr hIMC, IMECompositionFlags flags, void* lpBuf, int dwBufLen);
+
+        [DllImport(LibraryName)]
+        public static extern bool ImmSetCandidateWindow(IntPtr hIMC, CandidateForm* lpCandidate);
+
+        [DllImport(LibraryName)]
+        public static extern bool ImmSetCompositionWindow(IntPtr hIMC, CompositionForm* lpCompForm);
+
+        [DllImport(LibraryName)]
+        public static extern uint ImmGetVirtualKey(IntPtr hIMC);
     }
 }

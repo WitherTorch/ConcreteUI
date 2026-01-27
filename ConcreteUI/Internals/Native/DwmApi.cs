@@ -1,19 +1,43 @@
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security;
 
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Internals.Native
 {
-    internal static unsafe partial class DwmApi
+    [SuppressUnmanagedCodeSecurity]
+    internal static unsafe class DwmApi
     {
-        public static partial int DwmExtendFrameIntoClientArea(IntPtr hWnd, Margins* pMargins);
-        public static partial int DwmGetWindowAttribute(IntPtr hwnd, DwmWindowAttribute attr, void* attrValue, int attrSize);
-        public static partial int DwmSetWindowAttribute(IntPtr hwnd, DwmWindowAttribute attr, void* attrValue, int attrSize);
-        public static partial void DwmEnableBlurBehindWindow(IntPtr hwnd, DWMBlurBehind* blurBehind);
-        public static partial void DwmEnableBlurBehindWindow(IntPtr hwnd, ref DWMBlurBehind blurBehind);
-        public static partial int DwmIsCompositionEnabled(bool* enabled);
-        public static partial bool DwmDefWindowProc(IntPtr hWnd, uint msg, nint wParam, nint lParam, nint* plResult);
+        private const string LibraryName = "dwmapi.dll";
+
+        [SuppressGCTransition]
+        [DllImport(LibraryName)]
+        public static extern int DwmExtendFrameIntoClientArea(IntPtr hWnd, Margins* pMargins);
+
+        [SuppressGCTransition]
+        [DllImport(LibraryName)]
+        public static extern int DwmGetWindowAttribute(IntPtr hwnd, DwmWindowAttribute attr, void* attrValue, int attrSize);
+
+        [SuppressGCTransition]
+        [DllImport(LibraryName)]
+        public static extern int DwmSetWindowAttribute(IntPtr hwnd, DwmWindowAttribute attr, void* attrValue, int attrSize);
+
+        [SuppressGCTransition]
+        [DllImport(LibraryName)]
+        public static extern void DwmEnableBlurBehindWindow(IntPtr hwnd, DWMBlurBehind* blurBehind);
+
+        [SuppressGCTransition]
+        [DllImport(LibraryName)]
+        public static extern void DwmEnableBlurBehindWindow(IntPtr hwnd, ref DWMBlurBehind blurBehind);
+
+        [SuppressGCTransition]
+        [DllImport(LibraryName)]
+        public static extern int DwmIsCompositionEnabled(bool* enabled);
+
+        [DllImport(LibraryName)]
+        public static extern bool DwmDefWindowProc(IntPtr hWnd, uint msg, nint wParam, nint lParam, nint* plResult);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool DwmGetWindowAttribute<T>(IntPtr hwnd, DwmWindowAttribute attr, out T value) where T : unmanaged
