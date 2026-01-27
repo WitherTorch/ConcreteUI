@@ -63,7 +63,7 @@ namespace ConcreteUI.Internals.Native
     {
         public uint cbSize;
         public ClassStyles style;
-        public delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint> lpfnWndProc;
+        public void* lpfnWndProc;
         public int cbClsExtra;
         public int cbWndExtra;
         public IntPtr hInstance;

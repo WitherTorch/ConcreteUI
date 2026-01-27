@@ -45,9 +45,9 @@ namespace ConcreteUI.Internals
                 WindowClassEx clazz = new WindowClassEx()
                 {
                     cbSize = UnsafeHelper.SizeOf<WindowClassEx>(),
-                    style = ClassStyles.ClassDC,
+                    style = ClassStyles.OwnDC,
                     hInstance = hInstance,
-                    lpfnWndProc = &ProcessWindowMessage,
+                    lpfnWndProc = (delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint>)&ProcessWindowMessage,
                     lpszClassName = className,
                     hbrBackground = Gdi32.CreateSolidBrush(0x00000000)
                 };
