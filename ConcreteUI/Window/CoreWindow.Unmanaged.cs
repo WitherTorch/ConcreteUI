@@ -23,11 +23,6 @@ namespace ConcreteUI.Window
 {
     public unsafe partial class CoreWindow
     {
-        #region Static Fields
-        private void* UIDependentWndProc;
-        private void* UIDependentCustomHitTest;
-        #endregion
-
         #region Fields
         private UnwrappableList<IWindowMessageFilter> _filterList = new UnwrappableList<IWindowMessageFilter>(1);
         private SizeF _minimumSize, _maximumSize;
@@ -396,7 +391,10 @@ namespace ConcreteUI.Window
                     goto default;
                 #endregion
                 default:
-                    return TryProcessUIWindowMessage(hwnd, message, wParam, lParam, out result);
+                    if (_windowMaterial == WindowMaterial.Integrated)
+                        return TryProcessUIWindowMessage_Integrated(hwnd, message, wParam, lParam, out result);
+                    else
+                        return TryProcessUIWindowMessage_Default(hwnd, message, wParam, lParam, out result);
             }
             return true;
         }
@@ -504,36 +502,6 @@ namespace ConcreteUI.Window
         Transfer:
             return base.TryProcessSystemWindowMessage(hwnd, message, wParam, lParam, out result);
         }
-
-        private bool TryProcessUIWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
-        {
-            void* wndProc = UIDependentWndProc;
-            if (wndProc == null)
-            {
-                if (_windowMaterial == WindowMaterial.Integrated)
-                {
-                    IL.Emit.Ldftn(new MethodRef(typeof(CoreWindow), nameof(TryProcessUIWindowMessage_Integrated)));
-                    IL.Pop(out wndProc);
-                    UIDependentWndProc = wndProc;
-                }
-                else
-                {
-                    IL.Emit.Ldftn(new MethodRef(typeof(CoreWindow), nameof(TryProcessUIWindowMessage_Default)));
-                    IL.Pop(out wndProc);
-                    UIDependentWndProc = wndProc;
-                }
-            }
-            IL.Emit.Ldarg_0();
-            IL.Emit.Ldarg_1();
-            IL.Emit.Ldarg_2();
-            IL.Emit.Ldarg_3();
-            IL.Emit.Ldarg(4);
-            IL.PushOutRef(out result);
-            IL.Push(wndProc);
-            IL.Emit.Calli(StandAloneMethodSig.ManagedMethod(System.Reflection.CallingConventions.HasThis,
-                typeof(bool), typeof(IntPtr), typeof(WindowMessage), typeof(nint), typeof(nint), TypeRef.Type<nint>().MakeByRefType()));
-            return IL.Return<bool>();
-        }
         #endregion
 
         #region HitTests
@@ -581,33 +549,6 @@ namespace ConcreteUI.Window
                 }
             }
             return CustomHitTest(ScalingPixelToLogical(point, _pixelsPerPoint));
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private HitTestValue InvokeUIDependentCustomHitTest(PointF point)
-        {
-            void* hitTest = UIDependentCustomHitTest;
-            if (hitTest == null)
-            {
-                if (_windowMaterial == WindowMaterial.Integrated)
-                {
-                    IL.Emit.Ldftn(new MethodRef(typeof(CoreWindow), nameof(CustomHitTestForIntegratedUI)));
-                    IL.Pop(out hitTest);
-                    UIDependentCustomHitTest = hitTest;
-                }
-                else
-                {
-                    IL.Emit.Ldftn(new MethodRef(typeof(CoreWindow), nameof(CustomHitTestForConcreteUI)));
-                    IL.Pop(out hitTest);
-                    UIDependentCustomHitTest = hitTest;
-                }
-            }
-            IL.Emit.Ldarg_0();
-            IL.Emit.Ldarg_1();
-            IL.Push(hitTest);
-            IL.Emit.Calli(StandAloneMethodSig.ManagedMethod(System.Reflection.CallingConventions.HasThis,
-                typeof(HitTestValue), typeof(PointF)));
-            return IL.Return<HitTestValue>();
         }
         #endregion
 
@@ -715,9 +656,10 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Hit Test
-        private HitTestValue CustomHitTestForConcreteUI(PointF clientPoint)
+        [Inline(InlineBehavior.Remove)]
+        private HitTestValue CustomHitTest_Default(PointF clientPoint)
         {
-            BitVector64 titleBarStates = this._titleBarStates;
+            BitVector64 titleBarStates = _titleBarStates;
             bool hasMinimum = titleBarStates[1];
             bool hasMaximum = titleBarStates[2];
             float clientX = clientPoint.X;
@@ -753,7 +695,8 @@ namespace ConcreteUI.Window
             return HitTestValue.NoWhere;
         }
 
-        private HitTestValue CustomHitTestForIntegratedUI(PointF clientPoint)
+        [Inline(InlineBehavior.Remove)]
+        private HitTestValue CustomHitTest_Integrated(PointF clientPoint)
         {
             return HitTestValue.NoWhere;
         }
@@ -762,7 +705,10 @@ namespace ConcreteUI.Window
         #region Virtual Methods
         protected virtual HitTestValue CustomHitTest(PointF clientPoint)
         {
-            return InvokeUIDependentCustomHitTest(clientPoint);
+            if (_windowMaterial == WindowMaterial.Integrated)
+                return CustomHitTest_Integrated(clientPoint);
+            else
+                return CustomHitTest_Default(clientPoint);
         }
         #endregion
 
