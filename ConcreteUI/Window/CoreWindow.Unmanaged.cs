@@ -832,25 +832,29 @@ namespace ConcreteUI.Window
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Size ScalingLogicalToPixel(SizeF original, Vector2 pointsPerPixel)
         {
-            return new Size(MathI.Floor(original.Width * pointsPerPixel.X), MathI.Floor(original.Height * pointsPerPixel.Y));
+            (float factorX, float factorY) = pointsPerPixel;
+            return new Size(MathI.Floor(original.Width * factorX), MathI.Floor(original.Height * factorY));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static SizeF ScalingPixelToLogical(Size original, Vector2 pixelsPerPoint)
         {
-            return new SizeF(original.Width * pixelsPerPoint.X, original.Height * pixelsPerPoint.Y);
+            (float factorX, float factorY) = pixelsPerPoint;
+            return new SizeF(original.Width * factorX, original.Height * factorY);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Point ScalingPixelToLogical(Point original, Vector2 pixelsPerPoint)
         {
-            return new Point(MathI.Floor(original.X * pixelsPerPoint.X), MathI.Floor(original.Y * pixelsPerPoint.Y));
+            (float factorX, float factorY) = pixelsPerPoint;
+            return new Point(MathI.Floor(original.X * factorX), MathI.Floor(original.Y * factorY));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static PointF ScalingPixelToLogical(PointF original, Vector2 pixelsPerPoint)
         {
-            return new PointF(original.X * pixelsPerPoint.X, original.Y * pixelsPerPoint.Y);
+            (float factorX, float factorY) = pixelsPerPoint;
+            return new PointF(original.X * factorX, original.Y * factorY);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
