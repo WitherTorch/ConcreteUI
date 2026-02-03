@@ -20,7 +20,7 @@ namespace ConcreteUI.Graphics
     {
         private readonly D2D1DeviceContext _context;
         private readonly DirtyAreaCollector _collector;
-        private readonly RenderingClipToken _clipToken;
+        private readonly RenderingClipScope _clipScope;
         private readonly Matrix3x2 _originalTransform;
         private readonly PointF _offsetPoint;
         private readonly Vector2 _pointsPerPixel;
@@ -36,7 +36,7 @@ namespace ConcreteUI.Graphics
 
         public readonly RectF Bounds => RectF.FromXYWH(PointF.Empty, Size);
 
-        public readonly SizeF Size => _clipToken.ClipRect.Size;
+        public readonly SizeF Size => _clipScope.ClipRect.Size;
 
         public readonly float DefaultBorderWidth
         {
@@ -56,7 +56,7 @@ namespace ConcreteUI.Graphics
         {
             _context = original._context;
             _collector = collector;
-            _clipToken = original._clipToken;
+            _clipScope = original._clipScope;
             _offsetPoint = original._offsetPoint;
             _pointsPerPixel = original._pointsPerPixel;
             _isPixelAligned = original._isPixelAligned;
@@ -71,7 +71,7 @@ namespace ConcreteUI.Graphics
             _context = context;
             _collector = collector;
             _pointsPerPixel = pointsPerPixel;
-            _clipToken = new RenderingClipToken(context, in clipRect, antialiasMode);
+            _clipScope = RenderingClipScope.Enter(context, in clipRect, antialiasMode);
 
             Matrix3x2 transformMatrix = context.Transform;
             _originalTransform = transformMatrix;
@@ -282,28 +282,28 @@ namespace ConcreteUI.Graphics
             => _context.DrawBitmap(bitmap, destinationRectangle, opacity, interpolationMode, sourceRectangle, perspectiveTransform);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly RenderingLayerToken PushLayer(in D2D1LayerParameters parameters)
-            => new RenderingLayerToken(_context, parameters);
+        public readonly RenderingLayerScope PushLayer(in D2D1LayerParameters parameters)
+            => RenderingLayerScope.Enter(_context, parameters);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly RenderingLayerToken PushLayer(in D2D1LayerParametersNative parameters)
-            => new RenderingLayerToken(_context, parameters);
+        public readonly RenderingLayerScope PushLayer(in D2D1LayerParametersNative parameters)
+            => RenderingLayerScope.Enter(_context, parameters);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly RenderingClipToken PushAxisAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode)
-            => new RenderingClipToken(_context, in clipRect, antialiasMode);
+        public readonly RenderingClipScope PushAxisAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode)
+            => RenderingClipScope.Enter(_context, in clipRect, antialiasMode);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly RenderingClipToken PushPixelAlignedClip(ref RectF clipRect, D2D1AntialiasMode antialiasMode)
+        public readonly RenderingClipScope PushPixelAlignedClip(ref RectF clipRect, D2D1AntialiasMode antialiasMode)
             => PushPixelAlignedClip(in clipRect, antialiasMode, out clipRect);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly RenderingClipToken PushPixelAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode, out RectF actualClipRect)
+        public readonly RenderingClipScope PushPixelAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode, out RectF actualClipRect)
         {
             actualClipRect = GetPixelAlignedRect(in clipRect);
             if (actualClipRect.IsEmpty)
                 return default;
-            return new RenderingClipToken(_context, in actualClipRect, antialiasMode);
+            return RenderingClipScope.Enter(_context, in actualClipRect, antialiasMode);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -327,7 +327,7 @@ namespace ConcreteUI.Graphics
 
         public readonly RectF GetPixelAlignedRect(in RectF rect)
         {
-            RectF sourceClipRect = _clipToken.ClipRect;
+            RectF sourceClipRect = _clipScope.ClipRect;
             float width = sourceClipRect.Width;
             float height = sourceClipRect.Height;
             RectF adjustedRect = new RectF(MathHelper.Min(rect.Left, width), MathHelper.Min(rect.Top, height),
@@ -427,7 +427,7 @@ namespace ConcreteUI.Graphics
             _disposed = true;
 
             _context.Transform = _originalTransform;
-            _clipToken.Dispose();
+            _clipScope.Dispose();
         }
 
         public object PushAxisAlignedClip(Rect itemBounds)

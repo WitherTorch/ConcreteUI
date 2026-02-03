@@ -195,7 +195,7 @@ namespace ConcreteUI.Controls
             RectangleF renderingBounds = GetCheckBoxRenderingBounds(in context, context.Size.Height);
             if (context.HasDirtyCollector)
             {
-                using RenderingClipToken token = context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
+                using RenderingClipScope scope = context.PushAxisAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased);
                 RenderBackground(in context);
                 context.MarkAsDirty(renderingBounds);
             }

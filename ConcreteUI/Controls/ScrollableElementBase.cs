@@ -193,7 +193,7 @@ namespace ConcreteUI.Controls
                     upButtonBounds = RenderingHelper.RoundInPixel(upButtonBounds, pointsPerPixel);
                     downButtonBounds = RenderingHelper.RoundInPixel(downButtonBounds, pointsPerPixel);
 
-                    using RenderingClipToken clipToken = context.PushAxisAlignedClip(scrollBarBounds, D2D1AntialiasMode.Aliased);
+                    using RenderingClipScope scope = context.PushAxisAlignedClip(scrollBarBounds, D2D1AntialiasMode.Aliased);
                     RenderBackground(context, brushes[(int)Brush.ScrollBarBackBrush]);
 
                     D2D1DeviceContext deviceContext = context.DeviceContext;

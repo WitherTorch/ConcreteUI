@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 
 using ConcreteUI.Controls;
@@ -9,19 +9,19 @@ using ConcreteUI.Window;
 
 namespace ConcreteUI.Utils
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    public readonly ref struct ClearTypeToken : IDisposable
+    [StructLayout(LayoutKind.Auto)]
+    public readonly ref struct ClearTypeScope : IDisposable
     {
         private readonly D2D1DeviceContext? _context;
         private readonly D2D1TextAntialiasMode _antialiasMode;
 
-        private ClearTypeToken(D2D1DeviceContext context, D2D1TextAntialiasMode antialiasMode)
+        private ClearTypeScope(D2D1DeviceContext context, D2D1TextAntialiasMode antialiasMode)
         {
             _context = context;
             _antialiasMode = antialiasMode;
         }
 
-        public static ClearTypeToken TryEnterClearTypeMode(IRenderer renderer, D2D1DeviceContext deviceContext, D2D1Brush backgroundBrush)
+        public static ClearTypeScope Enter(IRenderer renderer, D2D1DeviceContext deviceContext, D2D1Brush backgroundBrush)
         {
             D2D1TextAntialiasMode oldAntialiasMode = deviceContext.TextAntialiasMode;
             if (oldAntialiasMode == D2D1TextAntialiasMode.ClearType || 
@@ -29,11 +29,11 @@ namespace ConcreteUI.Utils
                 return default; // Empty token
 
             deviceContext.TextAntialiasMode = D2D1TextAntialiasMode.ClearType;
-            return new ClearTypeToken(deviceContext, oldAntialiasMode);
+            return new ClearTypeScope(deviceContext, oldAntialiasMode);
         }
 
-        public static ClearTypeToken TryEnterClearTypeMode(IRenderer renderer, scoped in RegionalRenderingContext renderingContext, D2D1Brush backgroundBrush)
-            => TryEnterClearTypeMode(renderer, renderingContext.DeviceContext, backgroundBrush);
+        public static ClearTypeScope Enter(IRenderer renderer, scoped in RegionalRenderingContext renderingContext, D2D1Brush backgroundBrush)
+            => Enter(renderer, renderingContext.DeviceContext, backgroundBrush);
 
         public void Dispose()
         {

@@ -277,7 +277,7 @@ namespace ConcreteUI.Controls
             (D2D1AntialiasMode andtialiasModeBefore, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
             try
             {
-                using RenderingClipToken token = context.PushPixelAlignedClip(ref renderingBounds, D2D1AntialiasMode.Aliased);
+                using RenderingClipScope scope = context.PushPixelAlignedClip(ref renderingBounds, D2D1AntialiasMode.Aliased);
                 PointF centerPoint = new PointF(renderingBounds.Width * 0.5f, renderingBounds.Height * 0.5f);
                 float borderWidth = context.DefaultBorderWidth;
                 float width = centerPoint.X - borderWidth * 2.0f;

@@ -144,12 +144,12 @@ namespace ConcreteUI.Controls
                 {
                     layout.MaxHeight = layoutRect.Height;
                     layout.MaxWidth = layoutRect.Width;
-                    using RenderingClipToken token = context.PushAxisAlignedClip(layoutRect, D2D1AntialiasMode.Aliased);
+                    using RenderingClipScope scope = context.PushAxisAlignedClip(layoutRect, D2D1AntialiasMode.Aliased);
                     context.DrawTextLayout(layoutRect.Location, layout, brushes[(int)Brush.TextBrush], D2D1DrawTextOptions.Clip);
                 }
                 DisposeHelper.NullSwapOrDispose(ref _layout, layout);
             }
-            using (RenderingClipToken token = context.PushAxisAlignedClip(buttonRect, D2D1AntialiasMode.Aliased))
+            using (RenderingClipScope scope = context.PushAxisAlignedClip(buttonRect, D2D1AntialiasMode.Aliased))
             {
                 RenderBackground(context, backBrush);
                 D2D1Brush buttonBrush = _state switch

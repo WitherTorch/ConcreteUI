@@ -114,7 +114,7 @@ namespace ConcreteUI.Controls
                     {
                         if (i == hoveredIndex && isEnabled)
                         {
-                            using RenderingClipToken token = context.PushAxisAlignedClip(
+                            using RenderingClipScope scope = context.PushAxisAlignedClip(
                                 new RectF(itemLeft, itemTop, itemRight, itemTop + itemHeight), D2D1AntialiasMode.Aliased);
                             D2D1Brush currentBackBrush = _isPressed ? brushes[(int)Brush.BackPressedBrush] : brushes[(int)Brush.BackHoveredBrush];
                             currentForeBrush = brushes[(int)Brush.TextHoveredBrush];

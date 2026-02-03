@@ -237,7 +237,7 @@ namespace ConcreteUI.Controls
                 return;
 
             RectF bounds = RectF.FromXYWH(UIConstants.ElementMargin, 0, layout.MaxWidth, layout.MaxHeight);
-            using RenderingClipToken token = context.PushPixelAlignedClip(ref bounds, D2D1AntialiasMode.Aliased);
+            using RenderingClipScope scope = context.PushPixelAlignedClip(ref bounds, D2D1AntialiasMode.Aliased);
             RenderBackground(context, backBrush);
             context.DrawTextLayout(bounds.Location, layout, textBrush, D2D1DrawTextOptions.Clip | D2D1DrawTextOptions.NoSnap);
             DisposeHelper.NullSwapOrDispose(ref _titleLayout, layout);
@@ -256,14 +256,14 @@ namespace ConcreteUI.Controls
                 renderSize.Width - UIConstants.ElementMarginDouble, renderSize.Height - UIConstants.ElementMarginDouble);
             if (!textBounds.IsValid)
                 return;
-            using RenderingClipToken clipToken = context.PushPixelAlignedClip(ref textBounds, D2D1AntialiasMode.Aliased);
+            using RenderingClipScope clipToken = context.PushPixelAlignedClip(ref textBounds, D2D1AntialiasMode.Aliased);
             layout.MaxWidth = textBounds.Width;
             if (context.HasDirtyCollector)
             {
                 RenderBackground(context, backBrush);
                 context.MarkAsDirty(textBounds);
             }
-            using ClearTypeToken token = ClearTypeToken.TryEnterClearTypeMode(Renderer, context.DeviceContext, backBrush);
+            using ClearTypeScope token = ClearTypeScope.Enter(Renderer, context.DeviceContext, backBrush);
             context.DrawTextLayout(textBounds.Location, layout, textBrush, D2D1DrawTextOptions.None);
             DisposeHelper.NullSwapOrDispose(ref _textLayout, layout);
         }

@@ -463,7 +463,7 @@ namespace ConcreteUI.Window
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual void RenderPage(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in RectF pageRect, bool force)
         {
-            using RenderingClipToken token = new RenderingClipToken(deviceContext, pageRect, D2D1AntialiasMode.Aliased);
+            using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, pageRect, D2D1AntialiasMode.Aliased);
             if (force)
             {
                 collector.UsePresentAllModeOnce();

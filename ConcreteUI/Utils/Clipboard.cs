@@ -10,7 +10,7 @@ namespace ConcreteUI.Utils
     {
         public static unsafe string GetText()
         {
-            using ClipboardToken token = ClipboardToken.Acquire();
+            using ClipboardScope token = ClipboardScope.Enter();
             IntPtr dataHandle = User32.GetClipboardData(ClipboardFormat.UnicodeText);
             if (dataHandle == IntPtr.Zero)
                 return string.Empty;
@@ -27,13 +27,13 @@ namespace ConcreteUI.Utils
 
         public static bool HasText()
         {
-            using ClipboardToken token = ClipboardToken.Acquire();
+            using ClipboardScope token = ClipboardScope.Enter();
             return User32.IsClipboardFormatAvailable(ClipboardFormat.UnicodeText);
         }
 
         public static unsafe void SetText(string? text)
         {
-            using ClipboardToken token = ClipboardToken.Acquire();
+            using ClipboardScope token = ClipboardScope.Enter();
             User32.EmptyClipboard();
             if (text is null)
                 return;
