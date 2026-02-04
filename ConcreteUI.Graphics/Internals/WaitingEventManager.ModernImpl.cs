@@ -8,11 +8,11 @@ using ConcreteUI.Graphics.Internals.Native;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
-namespace ConcreteUI.Graphics
+namespace ConcreteUI.Graphics.Internals
 {
-    partial class RenderingController
+    partial class WaitingEventManager
     {
-        private sealed unsafe class RenderingThreadModern : RenderingThreadBase
+        private sealed unsafe class ModernImpl : IWaitingEventManager
         {
             [StructLayout(LayoutKind.Sequential, Pack = 4)]
             private struct RawWaitingEvent
@@ -40,27 +40,25 @@ namespace ConcreteUI.Graphics
                 }
             }
 
-            public RenderingThreadModern(RenderingController controller, uint framesPerSecond) : base(controller, framesPerSecond) { }
-
-            protected override unsafe IntPtr CreateWaitingHandle(bool manualReset)
+            public unsafe IntPtr CreateWaitingHandle(bool manualReset)
             {
                 RawWaitingEvent* ptr = NativeMethods.AllocUnmanagedStructure(new RawWaitingEvent(manualReset));
                 return RawWaitingEvent.GetWaitingHandleFromEvent(ptr);
             }
 
-            protected override void DestroyWaitingHandle(IntPtr waitingHandle)
+            public void DestroyWaitingHandle(IntPtr waitingHandle)
             {
                 RawWaitingEvent* ptr = RawWaitingEvent.GetEventFromWaitingHandle(waitingHandle);
                 NativeMethods.FreeMemory(ptr);
             }
 
-            protected override void WakeUp(IntPtr waitingHandle)
+            public void WakeUp(IntPtr waitingHandle)
             {
                 RawWaitingEvent.GetEventFromWaitingHandle(waitingHandle)->State = true;
                 KernelBase.WakeByAddressAll((void*)waitingHandle);
             }
 
-            protected override bool Wait(IntPtr waitingHandle, uint timeout)
+            public bool Wait(IntPtr waitingHandle, uint timeout)
             {
                 RawWaitingEvent* ptr = RawWaitingEvent.GetEventFromWaitingHandle(waitingHandle);
                 if (ptr->IsManuallyReset)

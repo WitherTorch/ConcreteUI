@@ -9,9 +9,9 @@ namespace ConcreteUI.Graphics.Native.DXGI
     [SuppressUnmanagedCodeSecurity]
     public static unsafe class DXGI
     {
-        private const string DXGI_DLL = "dxgi.dll";
+        private const string LibraryName = "dxgi.dll";
 
-        private static readonly void*[] _pointers = MethodImportHelper.GetImportedMethodPointers(DXGI_DLL,
+        private static readonly void*[] _pointers = MethodImportHelper.GetImportedMethodPointers(LibraryName,
             nameof(CreateDXGIFactory), nameof(CreateDXGIFactory1), nameof(CreateDXGIFactory2));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -3,24 +3,22 @@ using System.Threading;
 
 using ConcreteUI.Graphics.Internals.Native;
 
-namespace ConcreteUI.Graphics
+namespace ConcreteUI.Graphics.Internals
 {
-    partial class RenderingController
+    partial class WaitingEventManager
     {
-        private sealed class RenderingThreadLegacy : RenderingThreadBase
+        private sealed class LegacyImpl : IWaitingEventManager
         {
-            public RenderingThreadLegacy(RenderingController controller, uint framesPerSecond) : base(controller, framesPerSecond) { }
-
-            protected override unsafe IntPtr CreateWaitingHandle(bool manualReset)
+            public unsafe IntPtr CreateWaitingHandle(bool manualReset)
                 => Kernel32.CreateEventW(null, bManualReset: manualReset, bInitialState: false, null);
 
-            protected override void DestroyWaitingHandle(IntPtr waitingHandle)
+            public void DestroyWaitingHandle(IntPtr waitingHandle)
                 => Kernel32.CloseHandle(waitingHandle);
 
-            protected override void WakeUp(IntPtr waitingHandle)
+            public void WakeUp(IntPtr waitingHandle)
                 => Kernel32.SetEvent(waitingHandle);
 
-            protected override bool Wait(IntPtr waitingHandle, uint timeout)
+            public bool Wait(IntPtr waitingHandle, uint timeout)
             {
                 const uint INFINITE = unchecked((uint)Timeout.Infinite);
                 const uint WAIT_TIMEOUT = 0x00000102U;

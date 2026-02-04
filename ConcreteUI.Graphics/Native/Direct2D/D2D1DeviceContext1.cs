@@ -17,7 +17,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     [SuppressUnmanagedCodeSecurity]
     public sealed unsafe class D2D1DeviceContext1 : D2D1DeviceContext
     {
-        public static readonly Guid IID_DeviceContext1 = new Guid(0xd37f57e4, 0x6908, 0x459f, 0xa1, 0x99, 0xe7, 0x2f, 0x24, 0xf7, 0x99, 0x87);
+        public static readonly Guid IID_IDeviceContext1 = new Guid(0xd37f57e4, 0x6908, 0x459f, 0xa1, 0x99, 0xe7, 0x2f, 0x24, 0xf7, 0x99, 0x87);
 
         private new enum MethodTable
         {

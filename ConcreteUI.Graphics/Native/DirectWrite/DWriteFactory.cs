@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using System.Security;
 
@@ -18,7 +18,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
     [SuppressUnmanagedCodeSecurity]
     public unsafe sealed class DWriteFactory : ComObject
     {
-        public static readonly Guid IID_DWriteFactory = new Guid(0xb859ee5a, 0xd838, 0x4b5b, 0xa2, 0xe8, 0x1a, 0xdc, 0x7d, 0x93, 0xdb, 0x48);
+        public static readonly Guid IID_IDWriteFactory = new Guid(0xb859ee5a, 0xd838, 0x4b5b, 0xa2, 0xe8, 0x1a, 0xdc, 0x7d, 0x93, 0xdb, 0x48);
 
         private new enum MethodTable
         {
@@ -55,7 +55,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         public static DWriteFactory Create(DWriteFactoryType factoryType = DWriteFactoryType.Shared)
         {
             void* nativePointer;
-            Guid guid = IID_DWriteFactory;
+            Guid guid = IID_IDWriteFactory;
             int hr = DWrite.DWriteCreateFactory(factoryType, &guid, &nativePointer);
             ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
             return new DWriteFactory(nativePointer, ReferenceType.Owned);

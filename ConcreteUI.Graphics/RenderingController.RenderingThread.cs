@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Threading;
 
+using ConcreteUI.Graphics.Internals;
 using ConcreteUI.Graphics.Internals.Native;
 
 using LocalsInit;
@@ -14,78 +15,41 @@ namespace ConcreteUI.Graphics
 {
     partial class RenderingController
     {
-        private abstract class RenderingThreadBase : CriticalFinalizerObject, IDisposable
+        private sealed class RenderingThread : CriticalFinalizerObject, IDisposable
         {
-            private static readonly long NativeTicksPerSecond;
-
             private static ulong _idCounter = 0;
 
             private readonly RenderingController _controller;
+            private readonly IWaitingEventManager _eventManager;
+            private readonly IFrameWaiter _frameWaiter;
             private readonly Thread _thread;
 
             private IntPtr _renderingWaitingHandle, _exitTriggerHandle;
-            private long _nativeTicksPerFrameCycle;
-            private uint _framesPerSecond;
             private bool _disposed;
 
-            [LocalsInit(false)]
-            unsafe static RenderingThreadBase()
-            {
-                long frequency;
-                if (!Kernel32.QueryPerformanceFrequency(&frequency))
-                    throw new NotSupportedException("Cannot query QPC frequency!");
-                NativeTicksPerSecond = frequency;
-            }
-
-            public unsafe RenderingThreadBase(RenderingController controller, uint framesPerSecond)
+            public unsafe RenderingThread(RenderingController controller, IWaitingEventManager eventManager, IFrameWaiter frameWaiter)
             {
                 _controller = controller;
+                _eventManager = eventManager;
+                _frameWaiter = frameWaiter;
                 _thread = new Thread(ThreadLoop)
                 {
                     IsBackground = true,
                     Priority = ThreadPriority.AboveNormal
                 };
-                _framesPerSecond = framesPerSecond;
-                _nativeTicksPerFrameCycle = NativeTicksPerSecond / framesPerSecond;
                 _exitTriggerHandle = IntPtr.Zero;
                 _thread.Start();
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void SetFramesPerSecond(uint value)
-            {
-                if (_framesPerSecond == value)
-                    return;
-                _framesPerSecond = value;
-                Interlocked.Exchange(ref _nativeTicksPerFrameCycle, NativeTicksPerSecond / value);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public long GetFramesPerSecond() => _framesPerSecond;
-
             public void DoRender() => Resume();
-
-            public void Stop()
-            {
-                Interlocked.Exchange(ref _nativeTicksPerFrameCycle, -1);
-                Resume();
-            }
 
             private void Resume()
             {
                 IntPtr handle = InterlockedHelper.Read(ref _renderingWaitingHandle);
                 if (handle == IntPtr.Zero)
                     return;
-                WakeUp(handle);
+                _eventManager.WakeUp(handle);
             }
-
-            protected abstract void WakeUp(IntPtr waitingHandle);
-
-            protected abstract IntPtr CreateWaitingHandle(bool manualReset);
-
-            protected abstract bool Wait(IntPtr waitingHandle, uint timeout);
-
-            protected abstract void DestroyWaitingHandle(IntPtr waitingHandle);
 
             private unsafe void ThreadLoop()
             {
@@ -93,50 +57,43 @@ namespace ConcreteUI.Graphics
 
                 ThreadHelper.SetCurrentThreadName("Concrete UI Rendering Thread #" + InterlockedHelper.GetAndIncrement(ref _idCounter).ToString("D"));
                 RenderingController controller = _controller;
-                IntPtr exitTriggerHandle = CreateWaitingHandle(manualReset: true);
+                IWaitingEventManager eventManager = _eventManager;
+                IFrameWaiter frameWaiter = _frameWaiter;
+
+
+                IntPtr exitTriggerHandle = eventManager.CreateWaitingHandle(manualReset: true);
                 try
                 {
                     if (InterlockedHelper.CompareExchange(ref _exitTriggerHandle, exitTriggerHandle, IntPtr.Zero) != IntPtr.Zero)
                         return;
-                    IntPtr renderingWaitingHandle = CreateWaitingHandle(manualReset: false);
+                    IntPtr renderingWaitingHandle = eventManager.CreateWaitingHandle(manualReset: false);
                     try
                     {
                         if (InterlockedHelper.CompareExchange(ref _renderingWaitingHandle, renderingWaitingHandle, IntPtr.Zero) != IntPtr.Zero)
                             return;
-                        Wait(renderingWaitingHandle, timeout: Infinite);
+                        eventManager.Wait(renderingWaitingHandle, timeout: Infinite);
                         do
                         {
-                            long frameCycle = Interlocked.Read(ref _nativeTicksPerFrameCycle);
-                            if (frameCycle < 0L)
+                            if (!frameWaiter.TryEnterFrame())
                                 break;
-                            frameCycle += GetSystemTimeInNativeTicks();
                             Thread.MemoryBarrier();
                             controller.RenderCore();
-                            NtDll.NtDelayExecution(alertable: false, delayInterval: &frameCycle);
-                            Wait(renderingWaitingHandle, timeout: Infinite);
+                            frameWaiter.LeaveFrameAndWait();
+                            eventManager.Wait(renderingWaitingHandle, timeout: Infinite);
                         } while (true);
                     }
                     finally
                     {
                         InterlockedHelper.CompareExchange(ref _renderingWaitingHandle, IntPtr.Zero, renderingWaitingHandle);
-                        DestroyWaitingHandle(renderingWaitingHandle);
+                        eventManager.DestroyWaitingHandle(renderingWaitingHandle);
                     }
                 }
                 finally
                 {
                     InterlockedHelper.CompareExchange(ref _exitTriggerHandle, IntPtr.Zero, exitTriggerHandle);
-                    WakeUp(exitTriggerHandle);
-                    DestroyWaitingHandle(exitTriggerHandle);
+                    eventManager.WakeUp(exitTriggerHandle);
+                    eventManager.DestroyWaitingHandle(exitTriggerHandle);
                 }
-            }
-
-            [LocalsInit(false)]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static unsafe long GetSystemTimeInNativeTicks()
-            {
-                long result;
-                Kernel32.GetSystemTimeAsFileTime(&result);
-                return result;
             }
 
             public bool WaitForExit(int millisecondsTimeout)
@@ -144,16 +101,17 @@ namespace ConcreteUI.Graphics
                 IntPtr handle = InterlockedHelper.Read(ref _exitTriggerHandle);
                 if (handle == IntPtr.Zero || millisecondsTimeout < Timeout.Infinite)
                     return true;
-                return Wait(handle, (uint)millisecondsTimeout);
+                return _eventManager.Wait(handle, (uint)millisecondsTimeout);
             }
 
-            ~RenderingThreadBase() => DisposeCore();
+            ~RenderingThread() => DisposeCore();
 
             private void DisposeCore()
             {
                 if (ReferenceHelper.Exchange(ref _disposed, true))
                     return;
-                Stop();
+                _frameWaiter.Dispose();
+                Resume();
                 WaitForExit(50);
             }
 

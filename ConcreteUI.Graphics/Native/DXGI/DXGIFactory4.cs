@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using System.Security;
 
@@ -11,7 +11,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
     [SuppressUnmanagedCodeSecurity]
     public unsafe class DXGIFactory4 : DXGIFactory3
     {
-        public static readonly Guid IID_DXGIFactory4 = new Guid(0x1bc6ea02, 0xef36, 0x464f, 0xbf, 0x0c, 0x21, 0xca, 0x39, 0xe5, 0x16, 0x8a);
+        public static readonly Guid IID_IDXGIFactory4 = new Guid(0x1bc6ea02, 0xef36, 0x464f, 0xbf, 0x0c, 0x21, 0xca, 0x39, 0xe5, 0x16, 0x8a);
 
         protected new enum MethodTable
         {

@@ -1,4 +1,4 @@
-﻿using ConcreteUI.Graphics.Hosting;
+using ConcreteUI.Graphics.Hosting;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.DXGI;
 
@@ -12,16 +12,27 @@ namespace ConcreteUI.Graphics.Helpers
     public static class GraphicsHostHelper
     {
         [Inline(InlineBehavior.Keep, export: true)]
-        public static SwapChainGraphicsHost CreateSwapChainGraphicsHost(IntPtr handle, GraphicsDeviceProvider provider, bool useFlipModel)
+        public static SwapChainGraphicsHost CreateSwapChainGraphicsHost(IntPtr handle, GraphicsDeviceProvider provider, bool useFlipModel, bool useDComp)
         {
-            return CreateSwapChainGraphicsHost(handle, provider, preferSwapChain1: true, useFlipModel: useFlipModel);
+            return CreateSwapChainGraphicsHost(handle, provider, preferSwapChain1: true, useFlipModel: useFlipModel, useDComp);
         }
 
         public static SwapChainGraphicsHost CreateSwapChainGraphicsHost(IntPtr handle, GraphicsDeviceProvider provider,
-            bool preferSwapChain1, bool useFlipModel)
+            bool preferSwapChain1, bool useFlipModel, bool useDComp)
         {
             if (preferSwapChain1 && provider.DXGIFactory is DXGIFactory2)  //支援 DXGI 1.1
             {
+                if (useDComp && provider.DCompDevice is not null) //支援 DirectComposition
+                {
+                    try
+                    {
+                        return new SwapChainCompositionGraphicsHost(provider, handle, D2D1TextAntialiasMode.Grayscale);
+                    }
+                    catch (Exception)
+                    {
+
+                    }
+                }
                 try
                 {
                     return new SwapChainGraphicsHost1(provider, handle,
@@ -38,16 +49,12 @@ namespace ConcreteUI.Graphics.Helpers
         }
 
         public static SwapChainGraphicsHost FromAnotherSwapChainGraphicsHost(SwapChainGraphicsHost another, IntPtr handle)
-        {
-            if (another is SwapChainGraphicsHost1)
+            => another switch
             {
-                return new SwapChainGraphicsHost1(another, handle);
-            }
-            else
-            {
-                return new SwapChainGraphicsHost(another, handle);
-            }
-        }
+                SwapChainCompositionGraphicsHost host => new SwapChainCompositionGraphicsHost(host, handle),
+                SwapChainGraphicsHost1 host => new SwapChainGraphicsHost1(host, handle),
+                _ => new SwapChainGraphicsHost(another, handle)
+            };
 
         public static string[] EnumAdapters(GraphicsDeviceProvider provider)
         {

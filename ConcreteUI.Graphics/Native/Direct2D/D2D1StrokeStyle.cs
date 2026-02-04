@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Security;
 
 using InlineMethod;
@@ -13,7 +13,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     [SuppressUnmanagedCodeSecurity]
     public unsafe sealed class D2D1StrokeStyle : D2D1Resource
     {
-        private static readonly Guid IID_D2D1StrokeStyle = new Guid(0x2cd906aa, 0x12e2, 0x11dc, 0x9f, 0xed, 0x00, 0x11, 0x43, 0xa0, 0x55, 0xf9);
+        private static readonly Guid IID_ID2D1StrokeStyle = new Guid(0x2cd906aa, 0x12e2, 0x11dc, 0x9f, 0xed, 0x00, 0x11, 0x43, 0xa0, 0x55, 0xf9);
 
         private new enum MethodTable
         {

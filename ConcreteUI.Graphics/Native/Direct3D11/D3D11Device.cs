@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using System.Security;
 
@@ -18,7 +18,7 @@ namespace ConcreteUI.Graphics.Native.Direct3D11
     [SuppressUnmanagedCodeSecurity]
     public unsafe sealed class D3D11Device : ComObject
     {
-        public static readonly Guid IID_D3D11Device = new Guid(0xdb6f6ddb, 0xac77, 0x4e88, 0x82, 0x53, 0x81, 0x9d, 0xf9, 0xbb, 0xf1, 0x40);
+        public static readonly Guid IID_ID3D11Device = new Guid(0xdb6f6ddb, 0xac77, 0x4e88, 0x82, 0x53, 0x81, 0x9d, 0xf9, 0xbb, 0xf1, 0x40);
 
         public D3D11Device() : base() { }
 

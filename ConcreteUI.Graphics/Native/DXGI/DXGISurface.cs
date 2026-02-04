@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Security;
 
 using InlineMethod;
@@ -13,7 +13,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
     [SuppressUnmanagedCodeSecurity]
     public unsafe sealed class DXGISurface : DXGIDeviceSubObject
     {
-        public static readonly Guid IID_DXGISurface = new Guid(0xcafcb56c, 0x6ac3, 0x4889, 0xbf, 0x47, 0x9e, 0x23, 0xbb, 0xd2, 0x60, 0xec);
+        public static readonly Guid IID_IDXGISurface = new Guid(0xcafcb56c, 0x6ac3, 0x4889, 0xbf, 0x47, 0x9e, 0x23, 0xbb, 0xd2, 0x60, 0xec);
 
         private new enum MethodTable
         {

@@ -4,10 +4,9 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Controls;
+using ConcreteUI.Graphics;
 using ConcreteUI.Internals;
 using ConcreteUI.Internals.Native;
-
-using InlineIL;
 
 using InlineMethod;
 
@@ -26,8 +25,9 @@ namespace ConcreteUI.Window
         #region Fields
         private UnwrappableList<IWindowMessageFilter> _filterList = new UnwrappableList<IWindowMessageFilter>(1);
         private SizeF _minimumSize, _maximumSize;
-        private nint _beforeHitTest;
         private MouseButtons _lastMouseDownButtons;
+        private nint _beforeHitTest;
+        private uint _sizeModeState;
         private int _borderWidthInPixels;
         private bool _isMaximized, _isCreateByDefaultX, _isCreateByDefaultY, _hasMouseCapture;
         #endregion
@@ -172,6 +172,7 @@ namespace ConcreteUI.Window
                     goto default;
                 case WindowMessage.Size:
                     {
+                        ReferenceHelper.CompareExchange(ref _sizeModeState, 2u, 1u);
                         switch (wParam)
                         {
                             case 2: // SIZE_MAXIMIZED
@@ -204,6 +205,13 @@ namespace ConcreteUI.Window
                             WindowPositionFlags.SwapWithNoMove | WindowPositionFlags.SwapWithNoZOrder | WindowPositionFlags.SwapWithNoActivate);
                         break;
                     }
+                case WindowMessage.EnterSizeMove:
+                    _sizeModeState = 1u;
+                    goto default;
+                case WindowMessage.ExitSizeMove:
+                    if (ReferenceHelper.Exchange(ref _sizeModeState, 0u) > 1u)
+                        _controller?.RequestResize(temporarily: false);
+                    goto default;
                 #region Normal input events
                 case WindowMessage.Char:
                     {
@@ -405,17 +413,16 @@ namespace ConcreteUI.Window
             {
                 case WindowMessage.Activate:
                     {
-                        Margins margins;
-                        bool useBackdrop = SystemConstants.VersionLevel switch
+                        if (!IsUsingBackdrop())
                         {
-                            SystemVersionLevel.Windows_11_After => _windowMaterial > WindowMaterial.Gaussian,
-                            _ => false,
-                        };
-                        if (useBackdrop)
-                            margins = new Margins(-1);
+                            Margins margins = default;
+                            DwmApi.DwmExtendFrameIntoClientArea(hwnd, &margins);
+                        }
                         else
-                            margins = default;
-                        DwmApi.DwmExtendFrameIntoClientArea(hwnd, &margins);
+                        {
+                            Margins margins = new Margins(-1);
+                            DwmApi.DwmExtendFrameIntoClientArea(hwnd, &margins);
+                        }
                         result = 0;
                     }
                     goto default;
@@ -553,9 +560,21 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Normal Methods
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool IsUsingBackdrop() => SystemConstants.VersionLevel switch
+        {
+            SystemVersionLevel.Windows_11_After => _windowMaterial > WindowMaterial.Gaussian,
+            _ => false,
+        };
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void UpdateWindowFps(IntPtr handle) => _controller?.SetFramesPerSecond(GetWindowFps(handle));
+        private void UpdateWindowFps(IntPtr handle)
+        {
+            RenderingController? controller = _controller;
+            if (controller is not null && controller.NeedUpdateFps)
+                controller.SetFramesPerSecond(GetWindowFps(handle));
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private uint GetWindowFps(IntPtr handle)
@@ -719,7 +738,8 @@ namespace ConcreteUI.Window
             WindowMaterial material = _windowMaterial;
             if (material != WindowMaterial.Integrated)
                 windowInfo.Styles &= ~WindowStyles.SystemMenu;
-            if (material == WindowMaterial.None && SystemConstants.VersionLevel == SystemVersionLevel.Windows_8)
+            if ((material == WindowMaterial.None && SystemConstants.VersionLevel == SystemVersionLevel.Windows_8) ||
+                graphicsDeviceProviderLazy.Value.DCompDevice is not null)
                 windowInfo.ExtendedStyles |= WindowExtendedStyles.NoRedirectionBitmap;
 
             const int CW_USEDEFAULT = unchecked((int)0x80000000);
@@ -737,6 +757,8 @@ namespace ConcreteUI.Window
         {
             base.OnHandleCreated(handle);
 
+            if (SystemConstants.VersionLevel >= SystemVersionLevel.Windows_11_21H2)
+                DwmApi.DwmSetWindowAttribute(handle, DwmWindowAttribute.CaptionColor, 0xFFFFFFFE);
             User32.SetWindowPos(handle, IntPtr.Zero,
                             WindowPositionFlags.SwapWithFrameChanged | WindowPositionFlags.SwapWithNoZOrder);
 

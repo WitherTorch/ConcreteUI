@@ -12,9 +12,9 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     [SuppressUnmanagedCodeSecurity]
     public static unsafe class D2D1
     {
-        private const string D2D1_DLL = "d2d1.dll";
+        private const string LibraryName = "d2d1.dll";
 
-        private static readonly void*[] _pointers = MethodImportHelper.GetImportedMethodPointers(D2D1_DLL,
+        private static readonly void*[] _pointers = MethodImportHelper.GetImportedMethodPointers(LibraryName,
             nameof(D2D1CreateDevice), nameof(D2D1ComputeMaximumScaleFactor));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

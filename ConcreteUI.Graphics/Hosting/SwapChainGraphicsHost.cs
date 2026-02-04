@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -92,7 +92,7 @@ namespace ConcreteUI.Graphics.Hosting
         [Inline(InlineBehavior.Remove)]
         private void DisableDXGIExtendedFeature(DXGISwapChain swapChain)
         {
-            DXGIFactory factory = swapChain.GetParent<DXGIFactory>(DXGIFactory.IID_DXGIFactory)!;
+            DXGIFactory factory = swapChain.GetParent<DXGIFactory>(DXGIFactory.IID_IDXGIFactory)!;
             factory.MakeWindowAssociation(Handle,
                 DXGIMakeWindowAssociationFlags.NoAltEnter | DXGIMakeWindowAssociationFlags.NoWindowChanges | DXGIMakeWindowAssociationFlags.NoPrintScreen);
             factory.Dispose();
@@ -101,7 +101,7 @@ namespace ConcreteUI.Graphics.Hosting
         [Inline(InlineBehavior.Remove)]
         private static D2D1DeviceContext TryQueryNewestInterface(D2D1DeviceContext context)
         {
-            D2D1DeviceContext1? context1 = context.QueryInterface<D2D1DeviceContext1>(D2D1DeviceContext1.IID_DeviceContext1, throwWhenQueryFailed: false);
+            D2D1DeviceContext1? context1 = context.QueryInterface<D2D1DeviceContext1>(D2D1DeviceContext1.IID_IDeviceContext1, throwWhenQueryFailed: false);
             if (context1 is null)
                 return context;
             context.Dispose();
@@ -113,6 +113,9 @@ namespace ConcreteUI.Graphics.Hosting
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public D2D1DeviceContext GetDeviceContext() => _context;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public DXGISwapChain GetSwapChain() => _swapChain;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public D2D1DeviceContext? BeginDraw()
@@ -134,7 +137,7 @@ namespace ConcreteUI.Graphics.Hosting
             D2D1Bitmap1? target = _target;
             if (target is null)
             {
-                DXGISurface surface = _swapChain.GetBuffer<DXGISurface>(0, DXGISurface.IID_DXGISurface);
+                DXGISurface surface = _swapChain.GetBuffer<DXGISurface>(0, DXGISurface.IID_IDXGISurface);
                 target = context.CreateBitmapFromDxgiSurface(surface);
                 surface.Dispose();
                 _target = target;
@@ -254,7 +257,9 @@ namespace ConcreteUI.Graphics.Hosting
             context.BeginDraw();
         }
 
-        public void Resize(in Size size)
+        public virtual void ResizeTemporarily(in Size size) => Resize(size);
+
+        public virtual void Resize(in Size size)
         {
             DXGISwapChain swapChain = _swapChain;
             if (swapChain.IsDisposed)
@@ -284,26 +289,30 @@ namespace ConcreteUI.Graphics.Hosting
             => swapChain.ResizeBuffers(0, MathHelper.MakeUnsigned(size.Width), MathHelper.MakeUnsigned(size.Height));
 
         #region Disposing
-        private void DisposeCore(bool disposing)
+        protected virtual void DisposeCore(bool disposing)
         {
-            if (_disposed)
-                return;
-            _disposed = true;
             if (disposing)
                 _activeContext = null;
-            _context.Dispose();
+            _context?.Dispose();
             _target?.Dispose();
-            _swapChain.Dispose();
+            _swapChain?.Dispose();
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (ReferenceHelper.Exchange(ref _disposed, true))
+                return;
+            DisposeCore(disposing);
         }
 
         ~SwapChainGraphicsHost()
         {
-            DisposeCore(disposing: false);
+            Dispose(disposing: false);
         }
 
         public override void Dispose()
         {
-            DisposeCore(disposing: true);
+            Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
         #endregion

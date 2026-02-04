@@ -146,8 +146,20 @@ namespace ConcreteUI.Window
             CoreWindow? parent = _parent;
             SwapChainGraphicsHost host;
             if (parent is null)
-                host = GraphicsHostHelper.CreateSwapChainGraphicsHost(handle, graphicsDeviceProviderLazy.Value,
-                    useFlipModel: material == WindowMaterial.None && SystemConstants.VersionLevel >= SystemVersionLevel.Windows_8);
+            {
+                GraphicsDeviceProvider provider = graphicsDeviceProviderLazy.Value;
+                bool useFlipModel, useDComp;
+                if (material == WindowMaterial.None && SystemConstants.VersionLevel >= SystemVersionLevel.Windows_8)
+                {
+                    useFlipModel = true;
+                    useDComp = false;
+                }
+                else
+                {
+                    useFlipModel = useDComp = provider.DCompDevice is not null;
+                }
+                host = GraphicsHostHelper.CreateSwapChainGraphicsHost(handle, provider, useFlipModel, useDComp);
+            }
             else
                 host = GraphicsHostHelper.FromAnotherSwapChainGraphicsHost(parent._host!, handle);
             _host = host;
@@ -206,6 +218,9 @@ namespace ConcreteUI.Window
         public GraphicsDeviceProvider GetGraphicsDeviceProvider() => _host!.GetDeviceProvider();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public DXGISwapChain GetSwapChain() => _host!.GetSwapChain();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public D2D1DeviceContext GetDeviceContext() => NullSafetyHelper.ThrowIfNull(_deviceContext);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -217,8 +232,9 @@ namespace ConcreteUI.Window
         void IRenderingControl.Render(RenderingFlags flags)
         {
             bool resized = (flags & RenderingFlags.Resize) == RenderingFlags.Resize,
+                resizedTemporarily = (flags & RenderingFlags.ResizeTemporarily) == RenderingFlags.ResizeTemporarily,
                 redrawAll = (flags & RenderingFlags.RedrawAll) == RenderingFlags.RedrawAll;
-            redrawAll = !RenderCore(redrawAll, resized);
+            redrawAll = !RenderCore(redrawAll, resized, resizedTemporarily);
             if (redrawAll)
                 _controller?.RequestUpdate(true);
         }
@@ -382,9 +398,9 @@ namespace ConcreteUI.Window
                 _minRect = RectF.FromXYWH(x - UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
                 RectF titleBarRect = _titleBarRect = RectF.FromXYWH(drawingOffsetX + 1, drawingOffsetY + 1, Size.Width - 2, 26);
                 _pageRect = RenderingHelper.CeilingInPixel(new RectF(
-                    left: drawingOffsetX + borderWidthInPointsX, 
+                    left: drawingOffsetX + borderWidthInPointsX,
                     top: titleBarRect.Bottom + 1,
-                    right: windowSize.Width - drawingOffsetX - borderWidthInPointsX, 
+                    right: windowSize.Width - drawingOffsetX - borderWidthInPointsX,
                     bottom: windowSize.Height - borderWidthInPointsY), _pointsPerPixel);
             }
             if (callRecalculatePageLayout && _pageRect.IsValid)
@@ -410,7 +426,7 @@ namespace ConcreteUI.Window
         protected D2D1Brush GetBrush(Brush brush) => _brushes[(int)brush];
 
         [Inline]
-        private bool RenderCore(bool force, bool resized)
+        private bool RenderCore(bool force, bool resized, bool resizedTemporarily)
         {
             SwapChainGraphicsHost? host = _host;
             if (host is null || host.IsDisposed)
@@ -419,7 +435,10 @@ namespace ConcreteUI.Window
             {
                 force = true;
                 Size size = RawClientSize;
-                host.Resize(size);
+                if (resizedTemporarily)
+                    host.ResizeTemporarily(size);
+                else
+                    host.Resize(size);
                 RecalculateLayout(ScalingPixelToLogical(size, _pixelsPerPoint), true);
             }
             D2D1DeviceContext? deviceContext = host.GetDeviceContext();
@@ -610,7 +629,10 @@ namespace ConcreteUI.Window
         protected override void OnResized(EventArgs args)
         {
             base.OnResized(args);
-            _controller?.RequestResize();
+            RenderingController? controller = _controller;
+            if (controller is null)
+                return;
+            TriggerResizeCore(controller, _sizeModeState);
         }
 
         private void UpdateFirstTime()
@@ -682,7 +704,15 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Normal Methods
-        protected void TriggerResize() => _controller?.RequestResize();
+        protected void TriggerResize()
+        {
+            RenderingController? controller = _controller;
+            if (controller is null)
+                return;
+            TriggerResizeCore(controller, _sizeModeState);
+        }
+
+        private static void TriggerResizeCore(RenderingController controller, uint sizeModeState) => controller.RequestResize(sizeModeState == 2u);
 
         protected void Update()
         {
@@ -889,7 +919,7 @@ namespace ConcreteUI.Window
             }
             if (controller is not null)
             {
-                controller.RequestResize();
+                TriggerResizeCore(controller, _sizeModeState);
                 controller.Unlock();
             }
         }

@@ -51,7 +51,7 @@ namespace ConcreteUI.Internals.Native
             => DwmGetWindowAttribute(hwnd, attr, out T result) ? result : defaultValue;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void DwmSetWindowAttribute<T>(IntPtr hwnd, DwmWindowAttribute attr, in T value) where T : unmanaged
+        public static int DwmSetWindowAttribute<T>(IntPtr hwnd, DwmWindowAttribute attr, in T value) where T : unmanaged
             => DwmSetWindowAttribute(hwnd, attr, UnsafeHelper.AsPointerIn(in value), sizeof(T));
     }
 }

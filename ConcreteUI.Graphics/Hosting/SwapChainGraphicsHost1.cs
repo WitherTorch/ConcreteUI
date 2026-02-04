@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -10,7 +10,7 @@ using static ConcreteUI.Graphics.Constants;
 
 namespace ConcreteUI.Graphics.Hosting
 {
-    public sealed class SwapChainGraphicsHost1 : SwapChainGraphicsHost
+    public class SwapChainGraphicsHost1 : SwapChainGraphicsHost
     {
         private bool _forcePresentAll = false;
         private bool _switchToNormalSwapChain = false;

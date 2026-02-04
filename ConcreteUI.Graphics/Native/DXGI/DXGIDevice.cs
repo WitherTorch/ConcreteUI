@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Security;
 
 using InlineMethod;
@@ -11,11 +11,11 @@ using WitherTorch.Common.Native;
 namespace ConcreteUI.Graphics.Native.DXGI
 {
     [SuppressUnmanagedCodeSecurity]
-    public unsafe sealed class DXGIDevice : DXGIObject
+    public unsafe class DXGIDevice : DXGIObject
     {
-        public static readonly Guid IID_DXGIDevice = new Guid(0x54ec77fa, 0x1377, 0x44e6, 0x8c, 0x32, 0x88, 0xfd, 0x5f, 0x44, 0xc8, 0x4c);
+        public static readonly Guid IID_IDXGIDevice = new Guid(0x54ec77fa, 0x1377, 0x44e6, 0x8c, 0x32, 0x88, 0xfd, 0x5f, 0x44, 0xc8, 0x4c);
 
-        private new enum MethodTable
+        protected new enum MethodTable
         {
             _Start = DXGIObject.MethodTable._End,
             GetAdapter = _Start,

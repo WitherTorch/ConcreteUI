@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Security;
 
 using WitherTorch.Common.Helpers;
@@ -9,7 +9,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
     [SuppressUnmanagedCodeSecurity]
     public unsafe class DXGIFactory5 : DXGIFactory4
     {
-        public static readonly Guid IID_DXGIFactory5 = new Guid(0x7632e1f5, 0xee65, 0x4dca, 0x87, 0xfd, 0x84, 0xcd, 0x75, 0xf8, 0x83, 0x8d);
+        public static readonly Guid IID_IDXGIFactory5 = new Guid(0x7632e1f5, 0xee65, 0x4dca, 0x87, 0xfd, 0x84, 0xcd, 0x75, 0xf8, 0x83, 0x8d);
 
         protected new enum MethodTable
         {

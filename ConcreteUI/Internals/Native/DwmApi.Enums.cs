@@ -2,7 +2,7 @@ namespace ConcreteUI.Internals.Native
 {
     internal enum DwmWindowAttribute : uint
     {
-        NCRenderingEnabled,
+        NCRenderingEnabled = 1,
         NCRenderingPolicy,
         TransitionsForceDisabled,
         AllowNCPaint,
@@ -51,5 +51,22 @@ namespace ConcreteUI.Internals.Native
         Enable = 1,
         BlurRegion = 2,
         TransitionMaximized = 4
+    }
+
+    internal enum DwmNCRenderingPolicy : uint
+    {
+        /// <summary>
+        /// Enable/disable non-client rendering based on window style
+        /// </summary>
+        UseWindowStyle,
+        /// <summary>
+        /// Disabled non-client rendering; window style is ignored
+        /// </summary>
+        Disabled,
+        /// <summary>
+        /// Enabled non-client rendering; window style is ignored
+        /// </summary>
+        Enabled,
+        _Last
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using System.Security;
 
@@ -15,7 +15,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
     [SuppressUnmanagedCodeSecurity]
     public unsafe class DXGIFactory2 : DXGIFactory1
     {
-        public static readonly Guid IID_DXGIFactory2 = new Guid(0x50c83a1c, 0xe072, 0x4c48, 0x87, 0xb0, 0x36, 0x30, 0xfa, 0x36, 0xa6, 0xd0);
+        public static readonly Guid IID_IDXGIFactory2 = new Guid(0x50c83a1c, 0xe072, 0x4c48, 0x87, 0xb0, 0x36, 0x30, 0xfa, 0x36, 0xa6, 0xd0);
 
         protected new enum MethodTable
         {
@@ -77,6 +77,20 @@ namespace ConcreteUI.Graphics.Native.DXGI
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateSwapChainForHwnd);
             int hr = ((delegate* unmanaged[Stdcall]<void*, void*, IntPtr, DXGISwapChainDescription1*, DXGISwapChainFullscreenDescription*, void*, void**, int>)functionPointer)(nativePointer,
                 device.NativePointer, handle, pDesc, pFullscreenDesc, null, &nativePointer);
+            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+            return new DXGISwapChain1(nativePointer, ReferenceType.Owned);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public DXGISwapChain1 CreateSwapChainForComposition(ComObject device, in DXGISwapChainDescription1 desc)
+            => CreateSwapChainForComposition(device, UnsafeHelper.AsPointerIn(in desc));
+
+        public DXGISwapChain1 CreateSwapChainForComposition(ComObject device, DXGISwapChainDescription1* pDesc)
+        {
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateSwapChainForComposition);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void*, DXGISwapChainDescription1*, void*, void**, int>)functionPointer)(nativePointer,
+                device.NativePointer, pDesc, null, &nativePointer);
             ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
             return new DXGISwapChain1(nativePointer, ReferenceType.Owned);
         }
