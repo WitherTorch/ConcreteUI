@@ -7,6 +7,7 @@ using ConcreteUI.Graphics.Internals.Native;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics.Internals
 {
@@ -18,9 +19,9 @@ namespace ConcreteUI.Graphics.Internals
 
             private ulong _disposed;
 
-            public uint FramesPerSecond
+            public Rational FramesPerSecond
             {
-                get => 0;
+                get => Rational.Zero;
                 set { }
             }
 

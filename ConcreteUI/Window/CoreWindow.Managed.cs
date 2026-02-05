@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Internals;
@@ -259,6 +260,16 @@ namespace ConcreteUI.Window
         private static WindowMaterial GetRealWindowMaterial(WindowMaterial material)
             => material < WindowMaterial.None || material >= WindowMaterial._Last || !SequenceHelper.Contains(SystemHelper.GetAvailableMaterials(), material) ?
             SystemHelper.GetDefaultMaterial() : material;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static async void InvokeUpdateWindowFps(CoreWindow window)
+        {
+            await Task.Delay(2000);
+            IntPtr handle = window.Handle;
+            if (handle == IntPtr.Zero)
+                return;
+            User32.PostMessageW(handle, CustomWindowMessages.ConcreteUpdateRefreshRate, 0, 0);
+        }
 
         #region Overrides Methods
         PointF IRenderer.GetMousePosition() => PointToClient(MouseHelper.GetMousePosition());

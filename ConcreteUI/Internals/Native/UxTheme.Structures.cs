@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace ConcreteUI.Internals.Native
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct Margins
     {
         public int Left;

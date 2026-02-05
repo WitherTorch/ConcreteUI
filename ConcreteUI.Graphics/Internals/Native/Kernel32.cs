@@ -2,6 +2,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security;
 
+using WitherTorch.Common.Windows.Structures;
+
 namespace ConcreteUI.Graphics.Internals.Native
 {
     [SuppressUnmanagedCodeSecurity]
@@ -11,11 +13,11 @@ namespace ConcreteUI.Graphics.Internals.Native
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern bool QueryPerformanceFrequency(long* lpFrequency);
+        public static extern SysBool QueryPerformanceFrequency(long* lpFrequency);
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern bool QueryPerformanceCounter(long* lpPerformanceCount);
+        public static extern SysBool QueryPerformanceCounter(long* lpPerformanceCount);
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
@@ -23,29 +25,29 @@ namespace ConcreteUI.Graphics.Internals.Native
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern IntPtr CreateEventW(void* lpEventAttributes, bool bManualReset, bool bInitialState, char* lpName);
+        public static extern IntPtr CreateEventW(void* lpEventAttributes, SysBool bManualReset, SysBool bInitialState, char* lpName);
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern IntPtr CreateWaitableTimerW(void* lpTimerAttributes, bool bManualReset, char* lpTimerName);
+        public static extern IntPtr CreateWaitableTimerW(void* lpTimerAttributes, SysBool bManualReset, char* lpTimerName);
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern bool SetEvent(IntPtr hEvent);
+        public static extern SysBool SetEvent(IntPtr hEvent);
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern bool SetWaitableTimer(IntPtr hTimer, long* lpDueTime, nint lPeriod, void* pfnCompletionRoutine, void* lpArgToCompletionRoutine, bool fResume);
+        public static extern SysBool SetWaitableTimer(IntPtr hTimer, long* lpDueTime, nint lPeriod, void* pfnCompletionRoutine, void* lpArgToCompletionRoutine, SysBool fResume);
 
         [DllImport(LibraryName)]
         public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
 
         [DllImport(LibraryName)]
-        public static extern uint WaitForMultipleObjects(uint nCount, IntPtr* lpHandles, bool bWaitAll, uint dwMilliseconds);
+        public static extern uint WaitForMultipleObjects(uint nCount, IntPtr* lpHandles, SysBool bWaitAll, uint dwMilliseconds);
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern bool CloseHandle(IntPtr hObject);
+        public static extern SysBool CloseHandle(IntPtr hObject);
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]

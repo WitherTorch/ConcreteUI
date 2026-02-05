@@ -9,5 +9,8 @@ namespace ConcreteUI.Internals
 
         public static readonly uint ConcreteDestroyWindowAsync 
             = User32.RegisterWindowMessage(nameof(ConcreteDestroyWindowAsync));
+
+        public static readonly uint ConcreteUpdateRefreshRate 
+            = User32.RegisterWindowMessage(nameof(ConcreteUpdateRefreshRate));
     }
 }

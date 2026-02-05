@@ -5,7 +5,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Internals.Native
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct AppBarData
     {
         public int cbSize;

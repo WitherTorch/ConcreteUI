@@ -7,6 +7,7 @@ using ConcreteUI.Graphics.Native.DXGI;
 
 using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics
 {
@@ -25,7 +26,7 @@ namespace ConcreteUI.Graphics
 
         public bool NeedUpdateFps => _needUpdateFps;
 
-        public RenderingController(IRenderingControl control, uint framesPerSecond)
+        public RenderingController(IRenderingControl control, Rational framesPerSecond)
         {
             _control = control;
             _state = (long)RenderingFlags._FlagAllTrue;
@@ -34,7 +35,7 @@ namespace ConcreteUI.Graphics
             _waitForRenderingTrigger = new ManualResetEventSlim(true);
         }
 
-        private static IFrameWaiter CreateFrameWaiter(IRenderingControl control, uint framesPerSecond, out bool needUpdateFps)
+        private static IFrameWaiter CreateFrameWaiter(IRenderingControl control, Rational framesPerSecond, out bool needUpdateFps)
         {
             DXGISwapChain swapChain = control.GetSwapChain();
             if (!swapChain.TryQueryInterface(DXGISwapChain2.IID_IDXGISwapChain2, out DXGISwapChain2? swapChain2))
@@ -104,7 +105,7 @@ namespace ConcreteUI.Graphics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SetFramesPerSecond(uint value) => _frameWaiter.FramesPerSecond = value;
+        public void SetFramesPerSecond(Rational value) => _frameWaiter.FramesPerSecond = value;
 
         public bool WaitForExit(int millisecondsTimeout) => _thread.WaitForExit(millisecondsTimeout);
 

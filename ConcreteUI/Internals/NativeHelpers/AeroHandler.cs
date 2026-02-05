@@ -2,6 +2,8 @@ using System;
 
 using ConcreteUI.Internals.Native;
 
+using WitherTorch.Common.Windows.Structures;
+
 namespace ConcreteUI.Internals.NativeHelpers
 {
     internal static class AeroHandler
@@ -14,7 +16,7 @@ namespace ConcreteUI.Internals.NativeHelpers
 
         public static unsafe bool HasBlur()
         {
-            bool result;
+            SysBool result;
             return DwmApi.DwmIsCompositionEnabled(&result) == 0 && result;
         }
     }

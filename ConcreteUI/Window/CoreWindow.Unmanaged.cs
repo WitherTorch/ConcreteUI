@@ -2,9 +2,11 @@ using System;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
+using ConcreteUI.Graphics.Native.DXGI;
 using ConcreteUI.Internals;
 using ConcreteUI.Internals.Native;
 
@@ -17,6 +19,7 @@ using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
+using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Window
 {
@@ -26,6 +29,7 @@ namespace ConcreteUI.Window
         private UnwrappableList<IWindowMessageFilter> _filterList = new UnwrappableList<IWindowMessageFilter>(1);
         private SizeF _minimumSize, _maximumSize;
         private MouseButtons _lastMouseDownButtons;
+        private IntPtr _associatedMonitor;
         private nint _beforeHitTest;
         private uint _sizeModeState;
         private int _borderWidthInPixels;
@@ -392,10 +396,11 @@ namespace ConcreteUI.Window
                     goto default;
                 case WindowMessage.DisplayChange:
                     UpdateWindowFps(hwnd);
-                    Update();
                     goto default;
-                case WindowMessage.WindowPositionChanging:
-                    UpdateWindowFps(hwnd);
+                case WindowMessage.WindowPositionChanged:
+                    IntPtr monitor = User32.MonitorFromWindow(hwnd, MonitorFromWindowFlags.DefaultToNearest);
+                    if (ReferenceHelper.Exchange(ref _associatedMonitor, monitor) != monitor)
+                        UpdateWindowFps(hwnd);
                     goto default;
                 #endregion
                 default:
@@ -509,6 +514,24 @@ namespace ConcreteUI.Window
         Transfer:
             return base.TryProcessSystemWindowMessage(hwnd, message, wParam, lParam, out result);
         }
+
+        protected override bool TryProcessCustomWindowMessage(IntPtr handle, uint message, nint wParam, nint lParam, out nint result)
+        {
+            if (message == CustomWindowMessages.ConcreteUpdateRefreshRate)
+            {
+                UpdateWindowFps(handle);
+                result = 0;
+                return true;
+            }
+            return base.TryProcessCustomWindowMessage(handle, message, wParam, lParam, out result);
+        }
+
+        private static void TransferMessageToChildren(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam)
+        {
+            for (IntPtr child = User32.GetWindow(hwnd, GetWindowCommand.Child);
+                child != IntPtr.Zero; child = User32.GetWindow(child, GetWindowCommand.HwndNext))
+                User32.PostMessageW(child, message, wParam, lParam);
+        }
         #endregion
 
         #region HitTests
@@ -567,7 +590,6 @@ namespace ConcreteUI.Window
             _ => false,
         };
 
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void UpdateWindowFps(IntPtr handle)
         {
@@ -576,8 +598,23 @@ namespace ConcreteUI.Window
                 controller.SetFramesPerSecond(GetWindowFps(handle));
         }
 
+        [LocalsInit(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private uint GetWindowFps(IntPtr handle)
+        private Rational GetWindowFps(IntPtr handle)
+        {
+            DwmTimingInfo timingInfo = new DwmTimingInfo() { cbSize = UnsafeHelper.SizeOf<DwmTimingInfo>() };
+            int hr = DwmApi.DwmGetCompositionTimingInfo(IntPtr.Zero, &timingInfo);
+            if (hr >= 0)
+            {
+                Rational result = timingInfo.rateRefresh;
+                if (result.Denominator > 0 && result.Numerator > 0)
+                    return result;
+            }
+            return GetWindowFpsFallback(handle);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Rational GetWindowFpsFallback(IntPtr handle)
         {
             const int VREFRESH = 0x74;
 
@@ -589,7 +626,7 @@ namespace ConcreteUI.Window
                 int result = Gdi32.GetDeviceCaps(hdc, VREFRESH);
                 if (result < 2)
                     goto Fallback;
-                return (uint)result;
+                return new Rational((uint)result, 1);
             }
             finally
             {
@@ -599,8 +636,8 @@ namespace ConcreteUI.Window
         Fallback:
             DeviceModeW mode;
             if (!User32.EnumDisplaySettingsW(null, iModeNum: 0, &mode))
-                return 30;
-            return mode.dmDisplayFrequency;
+                return new Rational(30, 1);
+            return new Rational(mode.dmDisplayFrequency, 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -785,6 +822,8 @@ namespace ConcreteUI.Window
 
         InitRenderObj:
             InitRenderObjects(handle);
+
+            _associatedMonitor = User32.MonitorFromWindow(handle, MonitorFromWindowFlags.DefaultToNearest);
         }
 
         #region Thread-Safe Function Overwrite

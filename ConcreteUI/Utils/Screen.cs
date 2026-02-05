@@ -14,7 +14,7 @@ namespace ConcreteUI.Utils
         {
             if (hwnd == IntPtr.Zero)
                 goto Failed;
-            IntPtr monitor = User32.MonitorFromWindow(hwnd, GetMonitorFlags.DefaultToNearest);
+            IntPtr monitor = User32.MonitorFromWindow(hwnd, MonitorFromWindowFlags.DefaultToNearest);
             if (monitor == IntPtr.Zero)
                 goto Failed;
 

@@ -39,7 +39,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
     [StructLayout(LayoutKind.Sequential)]
     public struct DXGISwapChainFullscreenDescription
     {
-        public DXGIRational RefreshRate;
+        public Rational RefreshRate;
         public DXGIModeScanlineOrder ScanlineOrdering;
         public DXGIModeScaling Scaling;
         public SysBool Windowed;
@@ -67,7 +67,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
     {
         public uint Width;
         public uint Height;
-        public DXGIRational RefreshRate;
+        public Rational RefreshRate;
         public DXGIFormat Format;
         public DXGIModeScanlineOrder ScanlineOrdering;
         public DXGIModeScaling Scaling;
@@ -89,19 +89,6 @@ namespace ConcreteUI.Graphics.Native.DXGI
         {
             Count = count;
             Quality = quality;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DXGIRational
-    {
-        public uint Numerator;
-        public uint Denominator;
-
-        public DXGIRational(uint numerator, uint denominator)
-        {
-            Numerator = numerator;
-            Denominator = denominator;
         }
     }
 

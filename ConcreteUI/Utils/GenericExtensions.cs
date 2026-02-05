@@ -1,15 +1,15 @@
-﻿using System.Drawing;
-
-using ConcreteUI.Internals;
+using System.Drawing;
 
 using InlineMethod;
+
+using WitherTorch.Common;
 
 namespace ConcreteUI.Utils
 {
     internal static class GenericExtensions
     {
         [Inline(InlineBehavior.Keep, export: true)]
-        public static bool IsTrue(this long value) => value != BooleanConstants.FalseLong;
+        public static bool IsTrue(this long value) => value != Booleans.FalseLong;
 
         [Inline(InlineBehavior.Keep, export: true)]
         public static bool Contains(this Rectangle rectangle, in PointF point) => rectangle.Contains(point.X, point.Y);

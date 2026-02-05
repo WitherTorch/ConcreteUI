@@ -6,34 +6,27 @@ using ConcreteUI.Graphics.Internals.Native;
 
 using LocalsInit;
 
+using WitherTorch.Common.Windows.Structures;
+
 namespace ConcreteUI.Graphics.Internals
 {
     partial class FrameWaiter
     {
         private sealed class LegacyImpl : IFrameWaiter
         {
-            private static readonly long NativeTicksPerSecond;
+            private const long NativeTicksPerSecond = 10000000;
 
             private long _nativeTicksPerFrameCycle, _nextTime;
-            private uint _framesPerSecond;
+            private Rational _framesPerSecond;
 
-            [LocalsInit(false)]
-            unsafe static LegacyImpl()
-            {
-                long frequency;
-                if (!Kernel32.QueryPerformanceFrequency(&frequency))
-                    throw new PlatformNotSupportedException("Cannot query QPC frequency!");
-                NativeTicksPerSecond = frequency;
-            }
-
-            public LegacyImpl(uint framesPerSecond)
+            public LegacyImpl(Rational framesPerSecond)
             {
                 _framesPerSecond = framesPerSecond;
                 _nativeTicksPerFrameCycle = NativeTicksPerSecond / framesPerSecond;
                 _nextTime = 0;
             }
 
-            public uint FramesPerSecond
+            public Rational FramesPerSecond
             {
                 get => _framesPerSecond;
                 set

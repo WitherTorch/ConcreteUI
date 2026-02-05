@@ -231,7 +231,7 @@ namespace ConcreteUI.Internals.Native
     }
 
     [Flags]
-    internal enum GetMonitorFlags : uint
+    internal enum MonitorFromWindowFlags : uint
     {
         DefaultToNull = 0x00000000,
         DefaultToPrimary = 0x00000001,

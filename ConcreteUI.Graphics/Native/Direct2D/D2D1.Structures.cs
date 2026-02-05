@@ -18,7 +18,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// This specifies the options while simultaneously creating the device, factory,
     /// and device context.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct D2D1CreationProperties
     {
         /// <summary>
@@ -32,7 +32,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// <summary>
     /// Describes the pixel format and dpi of a bitmap.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct D2D1BitmapProperties
     {
         public D2D1PixelFormat PixelFormat;
@@ -57,7 +57,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// <summary>
     /// Extended bitmap properties.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     public unsafe struct D2D1BitmapProperties1
     {
         public D2D1PixelFormat PixelFormat;
@@ -104,7 +104,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     public readonly struct D2D1ColorF : IEquatable<D2D1ColorF>
     {
         private readonly float _r, _g, _b, _a;
@@ -169,7 +169,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// <summary>
     /// Contains the dimensions and corner radii of a rounded rectangle.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct D2D1RoundedRectangle
     {
         public RectF Rect;
@@ -187,7 +187,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// <summary>
     /// Contains the center point, x-radius, and y-radius of an ellipse.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct D2D1Ellipse
     {
         public PointF Point;
@@ -205,7 +205,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// <summary>
     /// Describes a triangle.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct D2D1Triangle
     {
         public PointF Point1;
@@ -223,7 +223,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// <summary>
     /// Properties, aside from the width, that allow geometric penning to be specified.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct D2D1StrokeStyleProperties
     {
         public D2D1CapStyle StartCap;
@@ -238,7 +238,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// <summary>
     /// Describes mapped memory from the <see cref="D2D1Bitmap1.Map(D2D1MapOptions)"/> API.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     public unsafe struct D2D1MappedRect
     {
         public uint Pitch;
@@ -250,7 +250,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// information, remoting options, and Direct3D support requirements for a render
     /// target.
     /// </summary>    
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct D2D1RenderTargetProperties
     {
         public D2D1RenderTargetType Type;
@@ -323,7 +323,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     /// Contains the content bounds, mask information, opacity settings, and other
     /// options for a layer resource.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     public unsafe struct D2D1LayerParametersNative
     {
         /// <summary>

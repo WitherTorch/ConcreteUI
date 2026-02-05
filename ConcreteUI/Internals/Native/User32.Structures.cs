@@ -9,7 +9,7 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Internals.Native
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct NCCalcSizeParameters
     {
         public Rect rcNewWindow;
@@ -18,7 +18,7 @@ namespace ConcreteUI.Internals.Native
         public WindowPosition* lppos;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct WindowPosition
     {
         public IntPtr hwnd;
@@ -30,7 +30,7 @@ namespace ConcreteUI.Internals.Native
         public WindowPositionFlags flags;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct WindowPlacement
     {
         public int Length;
@@ -41,7 +41,7 @@ namespace ConcreteUI.Internals.Native
         public Rect NormalPosition;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct WindowCompositionAttributeData
     {
         public WindowCompositionAttribute Attribute;
@@ -49,7 +49,7 @@ namespace ConcreteUI.Internals.Native
         public int SizeOfData;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct AccentPolicy
     {
         public AccentState AccentState;
@@ -58,7 +58,7 @@ namespace ConcreteUI.Internals.Native
         public uint AnimationId;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct WindowClassEx
     {
         public uint cbSize;
@@ -75,7 +75,7 @@ namespace ConcreteUI.Internals.Native
         public IntPtr hIconSm;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct PumpingMessage
     {
         public IntPtr hwnd;
@@ -86,7 +86,7 @@ namespace ConcreteUI.Internals.Native
         public Point pt;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct MonitorInfo
     {
         public uint cbSize;
@@ -95,7 +95,7 @@ namespace ConcreteUI.Internals.Native
         public uint dwFlags;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct PaintStruct
     {
         public IntPtr hdc;

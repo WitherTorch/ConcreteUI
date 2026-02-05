@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Threading;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Utils;
@@ -10,6 +11,7 @@ using ConcreteUI.Window;
 
 using InlineMethod;
 
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.Helpers;
 using WitherTorch.Common.Windows.Structures;
@@ -23,7 +25,7 @@ namespace ConcreteUI.Internals.Native
         private static readonly void*[] _pointers =
             MethodImportHelper.GetImportedMethodPointers(LibraryName, "GetDpiForWindow");
 
-        public static bool TryGetDpiForWindow(IntPtr hWnd, out uint dpiX, out uint dpiY)
+        public static SysBool TryGetDpiForWindow(IntPtr hWnd, out uint dpiX, out uint dpiY)
         {
             void* pointer = _pointers[0];
             if (pointer != null)
@@ -38,7 +40,7 @@ namespace ConcreteUI.Internals.Native
                 goto ReturnSame;
             }
 
-            IntPtr hMonitor = MonitorFromWindow(hWnd, GetMonitorFlags.DefaultToNearest);
+            IntPtr hMonitor = MonitorFromWindow(hWnd, MonitorFromWindowFlags.DefaultToNearest);
             if (hMonitor == IntPtr.Zero)
                 goto Failed;
             int hr = ShCore.GetDpiForMonitor(hMonitor, MonitorDpiType.EffectiveDpi, out dpiX, out dpiY); // Fallback 1 : GetDpiForMonitor (Windows 8.1 or greater)
@@ -82,16 +84,16 @@ namespace ConcreteUI.Internals.Native
         public static extern int GetSystemMetrics(SystemMetric smIndex);
 
         [DllImport(LibraryName)]
-        public static extern bool GetWindowRect(IntPtr hWnd, Rect* lpRect);
+        public static extern SysBool GetWindowRect(IntPtr hWnd, Rect* lpRect);
 
         [DllImport(LibraryName)]
-        public static extern bool GetClientRect(IntPtr hWnd, Rect* lpRect);
+        public static extern SysBool GetClientRect(IntPtr hWnd, Rect* lpRect);
 
         [DllImport(LibraryName)]
-        public static extern bool ScreenToClient(IntPtr hWnd, Point* lpPoint);
+        public static extern SysBool ScreenToClient(IntPtr hWnd, Point* lpPoint);
 
         [DllImport(LibraryName)]
-        public static extern bool SetWindowTextW(IntPtr hWnd, char* lpString);
+        public static extern SysBool SetWindowTextW(IntPtr hWnd, char* lpString);
 
         [DllImport(LibraryName)]
         public static extern int SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int Width, int Height, WindowPositionFlags flags);
@@ -100,13 +102,13 @@ namespace ConcreteUI.Internals.Native
         public static extern int GetWindowThreadProcessId(IntPtr hWnd, int* lpdwProcessId);
 
         [DllImport(LibraryName)]
-        public static extern bool GetWindowPlacement(IntPtr hWnd, WindowPlacement* lpwndpl);
+        public static extern SysBool GetWindowPlacement(IntPtr hWnd, WindowPlacement* lpwndpl);
 
         [DllImport(LibraryName)]
-        public static extern bool IsIconic(IntPtr hWnd);
+        public static extern SysBool IsIconic(IntPtr hWnd);
 
         [DllImport(LibraryName)]
-        public static extern bool IsZoomed(IntPtr hWnd);
+        public static extern SysBool IsZoomed(IntPtr hWnd);
 
         [DllImport(LibraryName)]
         public static extern IntPtr GetKeyboardLayout(uint idThread);
@@ -116,13 +118,13 @@ namespace ConcreteUI.Internals.Native
         public static extern uint GetDoubleClickTime();
 
         [DllImport(LibraryName)]
-        public static extern bool CreateCaret(IntPtr hWnd, IntPtr hBitmap, int nWidth, int nHeight);
+        public static extern SysBool CreateCaret(IntPtr hWnd, IntPtr hBitmap, int nWidth, int nHeight);
 
         [DllImport(LibraryName)]
-        public static extern bool DestroyCaret();
+        public static extern SysBool DestroyCaret();
 
         [DllImport(LibraryName)]
-        public static extern bool SetCaretPos(int x, int y);
+        public static extern SysBool SetCaretPos(int x, int y);
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
@@ -133,7 +135,7 @@ namespace ConcreteUI.Internals.Native
         public static extern int SetWindowCompositionAttribute(IntPtr hWnd, WindowCompositionAttributeData* data);
 
         [DllImport(LibraryName)]
-        public static extern bool SystemParametersInfoW(uint uiAction, uint uiParam, void* pvParam, uint fWinIni);
+        public static extern SysBool SystemParametersInfoW(uint uiAction, uint uiParam, void* pvParam, uint fWinIni);
 
         [DllImport(LibraryName)]
         public static extern IntPtr CreateWindowExW(WindowExtendedStyles dwExStyle, char* lpClassName, char* lpWindowName,
@@ -150,10 +152,10 @@ namespace ConcreteUI.Internals.Native
         public static extern nint DefWindowProcW(IntPtr hWnd, uint msg, nint wParam, nint lParam);
 
         [DllImport(LibraryName)]
-        public static extern bool ShowWindow(IntPtr hWnd, ShowWindowCommands nCmdShow);
+        public static extern SysBool ShowWindow(IntPtr hWnd, ShowWindowCommands nCmdShow);
 
         [DllImport(LibraryName)]
-        public static extern bool EnableWindow(IntPtr hWnd, bool bEnable);
+        public static extern SysBool EnableWindow(IntPtr hWnd, SysBool bEnable);
 
         [DllImport(LibraryName)]
         public static extern IntPtr GetWindow(IntPtr hWnd, GetWindowCommand uCmd);
@@ -165,10 +167,10 @@ namespace ConcreteUI.Internals.Native
         public static extern IntPtr SetActiveWindow(IntPtr hWnd);
 
         [DllImport(LibraryName)]
-        public static extern bool IsWindowVisible(IntPtr hWnd);
+        public static extern SysBool IsWindowVisible(IntPtr hWnd);
 
         [DllImport(LibraryName)]
-        public static extern bool DestroyWindow(IntPtr hWnd);
+        public static extern SysBool DestroyWindow(IntPtr hWnd);
 
         [DllImport(LibraryName)]
         public static extern uint RegisterWindowMessageW(char* lpString);
@@ -180,10 +182,10 @@ namespace ConcreteUI.Internals.Native
         public static extern nint SendMessageW(IntPtr hWnd, uint message, nint wParam, nint lParam);
 
         [DllImport(LibraryName)]
-        public static extern bool PostMessageW(IntPtr hWnd, WindowMessage message, nint wParam, nint lParam);
+        public static extern SysBool PostMessageW(IntPtr hWnd, WindowMessage message, nint wParam, nint lParam);
 
         [DllImport(LibraryName)]
-        public static extern bool PostMessageW(IntPtr hWnd, uint message, nint wParam, nint lParam);
+        public static extern SysBool PostMessageW(IntPtr hWnd, uint message, nint wParam, nint lParam);
 
         [DllImport(LibraryName)]
         public static extern void PostQuitMessage(int nExitCode);
@@ -192,7 +194,7 @@ namespace ConcreteUI.Internals.Native
         public static extern SysBool GetMessageW(PumpingMessage* lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
 
         [DllImport(LibraryName)]
-        public static extern bool PeekMessageW(PumpingMessage* lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax, PeekMessageOptions wRemoveMsg);
+        public static extern SysBool PeekMessageW(PumpingMessage* lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax, PeekMessageOptions wRemoveMsg);
 
         [DllImport(LibraryName)]
         public static extern SysBool TranslateMessage(PumpingMessage* lpMsg);
@@ -207,10 +209,10 @@ namespace ConcreteUI.Internals.Native
         public static extern IntPtr CopyIcon(IntPtr hIcon);
 
         [DllImport(LibraryName)]
-        public static extern bool DestroyCursor(IntPtr hCursor);
+        public static extern SysBool DestroyCursor(IntPtr hCursor);
 
         [DllImport(LibraryName)]
-        public static extern bool DestroyIcon(IntPtr hIcon);
+        public static extern SysBool DestroyIcon(IntPtr hIcon);
 
         [DllImport(LibraryName)]
         public static extern IntPtr SetCursor(IntPtr hCursor);
@@ -228,22 +230,22 @@ namespace ConcreteUI.Internals.Native
         public static extern nint SetWindowLongPtrW(IntPtr hWnd, int nIndex, nint dwNewLong);
 
         [DllImport(LibraryName)]
-        public static extern IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
+        public static extern IntPtr GetSystemMenu(IntPtr hWnd, SysBool bRevert);
 
         [DllImport(LibraryName)]
-        public static extern bool OpenClipboard(IntPtr hWndNewOwner);
+        public static extern SysBool OpenClipboard(IntPtr hWndNewOwner);
 
         [DllImport(LibraryName)]
-        public static extern bool EmptyClipboard();
+        public static extern SysBool EmptyClipboard();
 
         [DllImport(LibraryName)]
-        public static extern bool CloseClipboard();
+        public static extern SysBool CloseClipboard();
 
         [DllImport(LibraryName)]
         public static extern IntPtr GetClipboardData(ClipboardFormat uFormat);
 
         [DllImport(LibraryName)]
-        public static extern bool IsClipboardFormatAvailable(ClipboardFormat format);
+        public static extern SysBool IsClipboardFormatAvailable(ClipboardFormat format);
 
         [DllImport(LibraryName)]
         public static extern IntPtr SetClipboardData(ClipboardFormat format, IntPtr hMem);
@@ -255,46 +257,46 @@ namespace ConcreteUI.Internals.Native
         public static extern short GetKeyState(VirtualKey vKey);
 
         [DllImport(LibraryName)]
-        public static extern bool GetCursorPos(Point* lpPoint);
+        public static extern SysBool GetCursorPos(Point* lpPoint);
 
         [DllImport(LibraryName)]
-        public static extern IntPtr MonitorFromWindow(IntPtr hWnd, GetMonitorFlags dwFlags);
+        public static extern IntPtr MonitorFromWindow(IntPtr hWnd, MonitorFromWindowFlags dwFlags);
 
         [DllImport(LibraryName)]
-        public static extern bool GetMonitorInfoW(IntPtr hMonitor, MonitorInfo* lpmi);
+        public static extern SysBool GetMonitorInfoW(IntPtr hMonitor, MonitorInfo* lpmi);
 
         [DllImport(LibraryName)]
-        public static extern bool GetUpdateRect(IntPtr hWnd, Rect* lpRect, bool bErase);
+        public static extern SysBool GetUpdateRect(IntPtr hWnd, Rect* lpRect, SysBool bErase);
 
         [DllImport(LibraryName)]
         public static extern IntPtr BeginPaint(IntPtr hWnd, PaintStruct* lpPaint);
 
         [DllImport(LibraryName)]
-        public static extern bool EndPaint(IntPtr hWnd, PaintStruct* lpPaint);
+        public static extern SysBool EndPaint(IntPtr hWnd, PaintStruct* lpPaint);
 
         [DllImport(LibraryName)]
         public static extern DialogResult MessageBoxW(IntPtr hWnd, char* lpText, char* lpCaption, MessageBoxFlags uType);
 
         [DllImport(LibraryName)]
-        public static extern bool PostThreadMessageW(uint idThread, WindowMessage msg, nint wParam, nint lParam);
+        public static extern SysBool PostThreadMessageW(uint idThread, WindowMessage msg, nint wParam, nint lParam);
 
         [DllImport(LibraryName)]
-        public static extern uint MsgWaitForMultipleObjects(uint nCount, IntPtr* pHandles, bool fWaitAll, uint dwMilliseconds, QueueStatusFlags dwWakeMask);
+        public static extern uint MsgWaitForMultipleObjects(uint nCount, IntPtr* pHandles, SysBool fWaitAll, uint dwMilliseconds, QueueStatusFlags dwWakeMask);
 
         [DllImport(LibraryName)]
-        public static extern bool PostThreadMessageW(uint idThread, uint msg, nint wParam, nint lParam);
+        public static extern SysBool PostThreadMessageW(uint idThread, uint msg, nint wParam, nint lParam);
 
         [DllImport(LibraryName)]
-        public static extern bool InSendMessage();
+        public static extern SysBool InSendMessage();
 
         [DllImport(LibraryName)]
-        public static extern bool ReplyMessage(nint lResult);
+        public static extern SysBool ReplyMessage(nint lResult);
 
         [DllImport(LibraryName)]
-        public static extern bool SetCapture(IntPtr hWnd);
+        public static extern SysBool SetCapture(IntPtr hWnd);
 
         [DllImport(LibraryName)]
-        public static extern bool ReleaseCapture();
+        public static extern SysBool ReleaseCapture();
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
@@ -306,10 +308,10 @@ namespace ConcreteUI.Internals.Native
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern bool EnumDisplaySettingsW(char* lpszDeviceName, int iModeNum, DeviceModeW* lpDevMode);
+        public static extern SysBool EnumDisplaySettingsW(char* lpszDeviceName, int iModeNum, DeviceModeW* lpDevMode);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool SetWindowText(IntPtr handle, string text)
+        public static SysBool SetWindowText(IntPtr handle, string text)
         {
             fixed (char* ptr = text)
                 return SetWindowTextW(handle, ptr);

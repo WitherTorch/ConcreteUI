@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Internals.Native
 {
@@ -34,10 +35,14 @@ namespace ConcreteUI.Internals.Native
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern int DwmIsCompositionEnabled(bool* enabled);
+        public static extern int DwmIsCompositionEnabled(SysBool* enabled);
 
         [DllImport(LibraryName)]
-        public static extern bool DwmDefWindowProc(IntPtr hWnd, uint msg, nint wParam, nint lParam, nint* plResult);
+        public static extern SysBool DwmDefWindowProc(IntPtr hWnd, uint msg, nint wParam, nint lParam, nint* plResult);
+
+        [SuppressGCTransition]
+        [DllImport(LibraryName)]
+        public static extern int DwmGetCompositionTimingInfo(IntPtr hwnd, DwmTimingInfo* pTimingInfo);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool DwmGetWindowAttribute<T>(IntPtr hwnd, DwmWindowAttribute attr, out T value) where T : unmanaged

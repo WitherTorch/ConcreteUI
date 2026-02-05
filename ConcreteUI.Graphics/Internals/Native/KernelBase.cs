@@ -2,6 +2,7 @@ using System.Security;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Helpers;
+using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics.Internals.Native
 {
@@ -37,12 +38,12 @@ namespace ConcreteUI.Graphics.Internals.Native
             return false;
         }
 
-        public static bool WaitOnAddress(void* address, void* compareAddress, nuint addressSize, uint dwMilliseconds)
+        public static SysBool WaitOnAddress(void* address, void* compareAddress, nuint addressSize, uint dwMilliseconds)
         {
             void* ptr = _functionPointers[(int)MethodTable.WaitOnAddress];
             if (ptr == null)
                 return false;
-            return ((delegate* unmanaged[Stdcall]<void*, void*, nuint, uint, bool>)ptr)(address, compareAddress, addressSize, dwMilliseconds);
+            return ((delegate* unmanaged[Stdcall]<void*, void*, nuint, uint, SysBool>)ptr)(address, compareAddress, addressSize, dwMilliseconds);
         }
 
         public static void WakeByAddressAll(void* address)

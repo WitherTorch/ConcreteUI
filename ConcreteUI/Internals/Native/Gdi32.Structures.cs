@@ -4,7 +4,7 @@ using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Internals.Native
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct DeviceModeW
     {
         public FixedChar32 dmDeviceName;
