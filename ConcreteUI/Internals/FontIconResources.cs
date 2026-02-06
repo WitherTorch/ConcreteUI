@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -57,7 +57,7 @@ namespace ConcreteUI.Internals
         {
             if (factory.TryCreateFluentUIFontIcon(0xE921, UIConstantsPrivate.TitleBarIconSize, out FontIcon? result) ||
                 factory.TryCreateSegoeSymbolFontIcon(0x1F5D5, UIConstantsPrivate.TitleBarIconSize, out result) ||
-                factory.TryCreateWebdingsFontIcon(0xF072, UIConstantsPrivate.TitleBarIconSize, out result))
+                factory.TryCreateWebdingsFontIcon(0xF030, UIConstantsPrivate.TitleBarIconSize, out result))
                 return result;
             return null;
         }
@@ -66,7 +66,7 @@ namespace ConcreteUI.Internals
         {
             if (factory.TryCreateFluentUIFontIcon(0xE8BB, UIConstantsPrivate.TitleBarIconSize, out FontIcon? result) ||
                 factory.TryCreateSegoeSymbolFontIcon(0x1F5D9, UIConstantsPrivate.TitleBarIconSize, out result) ||
-                factory.TryCreateWebdingsFontIcon(0xF030, UIConstantsPrivate.TitleBarIconSize, out result))
+                factory.TryCreateWebdingsFontIcon(0xF072, UIConstantsPrivate.TitleBarIconSize, out result))
                 return result;
             return null;
         }

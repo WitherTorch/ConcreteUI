@@ -90,8 +90,11 @@ namespace ConcreteUI.Window
         {
             if (RecalculateLayoutIfPageChanged(pageRect))
                 force = true;
-            base.RenderPage(deviceContext, collector, pageRect, force);
+            RenderPageCore(deviceContext, collector, pageRect, force);
         }
+
+        protected virtual void RenderPageCore(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in RectF pageRect, bool force)
+            => base.RenderPage(deviceContext, collector, pageRect, force);
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {

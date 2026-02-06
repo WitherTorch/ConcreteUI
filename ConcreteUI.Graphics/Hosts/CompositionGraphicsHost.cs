@@ -11,21 +11,21 @@ using WitherTorch.Common.Structures;
 
 using static ConcreteUI.Graphics.Constants;
 
-namespace ConcreteUI.Graphics.Hosting
+namespace ConcreteUI.Graphics.Hosts
 {
-    public sealed class SwapChainCompositionGraphicsHost : SwapChainGraphicsHost1
+    public sealed class CompositionGraphicsHost : OptimizedGraphicsHost
     {
         private readonly DCompositionTarget _target;
         private readonly DCompositionVisual _visual;
 
-        public SwapChainCompositionGraphicsHost(GraphicsDeviceProvider deviceProvider, IntPtr handle,
+        public CompositionGraphicsHost(GraphicsDeviceProvider deviceProvider, IntPtr handle,
             D2D1TextAntialiasMode textAntialiasMode) : base(deviceProvider, handle, textAntialiasMode, true)
         {
             DCompositionDevice device = NullSafetyHelper.ThrowIfNull(deviceProvider.DCompDevice);
             Initialize(device, (DXGISwapChain1)_swapChain, handle, out _target, out _visual);
         }
 
-        public SwapChainCompositionGraphicsHost(SwapChainGraphicsHost another, IntPtr handle) : base(another, handle)
+        public CompositionGraphicsHost(SimpleGraphicsHost another, IntPtr handle) : base(another, handle)
         {
             DCompositionDevice device = NullSafetyHelper.ThrowIfNull(another.GetDeviceProvider().DCompDevice);
             Initialize(device, (DXGISwapChain1)_swapChain, handle, out _target, out _visual);
@@ -44,7 +44,7 @@ namespace ConcreteUI.Graphics.Hosting
         protected override unsafe DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, bool isFlipModel)
         {
             if (!isFlipModel || provider.DXGIFactory is not DXGIFactory2 factory)
-                return base.CreateSwapChain(provider, isFlipModel);
+                throw new InvalidOperationException();
 
             DXGISwapChainDescription1 swapChainDesc = new DXGISwapChainDescription1
             {
@@ -66,7 +66,8 @@ namespace ConcreteUI.Graphics.Hosting
         protected override unsafe DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, DXGISwapChain original)
         {
             if (original is not DXGISwapChain1 originalSwapChain || provider.DXGIFactory is not DXGIFactory2 factory)
-                return base.CreateSwapChain(provider, original);
+                throw new InvalidOperationException();
+
             DXGISwapChainDescription1 swapChainDesc = originalSwapChain.Description1;
             DXGISwapChain1 swapChain = factory.CreateSwapChainForComposition(provider.D3DDevice, swapChainDesc);
             return GetLatestSwapChain(swapChain);

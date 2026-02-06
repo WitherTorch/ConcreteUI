@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Helpers;
-using ConcreteUI.Graphics.Hosting;
+using ConcreteUI.Graphics.Hosts;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
@@ -71,7 +71,7 @@ namespace ConcreteUI.Window
             "closeButton.active",
         }.WithPrefix("app.title.").ToLowerAscii();
         private static readonly Pool<LayoutEngine> _layoutEnginePool = new Pool<LayoutEngine>(1);
-        private static readonly LazyTiny<GraphicsDeviceProvider> graphicsDeviceProviderLazy
+        private static readonly LazyTiny<GraphicsDeviceProvider> _graphicsDeviceProviderLazy
             = new LazyTiny<GraphicsDeviceProvider>(CreateGraphicsDeviceProvider, LazyThreadSafetyMode.ExecutionAndPublication);
         #endregion
 
@@ -81,7 +81,7 @@ namespace ConcreteUI.Window
         private readonly UnwrappableList<UIElement> _overlayElementList = new UnwrappableList<UIElement>();
         private readonly UnwrappableList<UIElement> _backgroundElementList = new UnwrappableList<UIElement>();
         private readonly WindowMaterial _windowMaterial;
-        private SwapChainGraphicsHost? _host;
+        private SimpleGraphicsHost? _host;
         private DirtyAreaCollector? _collector;
         private RenderingController? _controller;
         private UIElement? _focusElement;
@@ -145,10 +145,10 @@ namespace ConcreteUI.Window
         {
             WindowMaterial material = _windowMaterial;
             CoreWindow? parent = _parent;
-            SwapChainGraphicsHost host;
+            SimpleGraphicsHost host;
             if (parent is null)
             {
-                GraphicsDeviceProvider provider = graphicsDeviceProviderLazy.Value;
+                GraphicsDeviceProvider provider = _graphicsDeviceProviderLazy.Value;
                 bool useFlipModel, useDComp;
                 if (material == WindowMaterial.None && SystemConstants.VersionLevel >= SystemVersionLevel.Windows_8)
                 {
@@ -157,15 +157,15 @@ namespace ConcreteUI.Window
                 }
                 else
                 {
-                    useFlipModel = useDComp = provider.DCompDevice is not null;
+                    useFlipModel = useDComp = provider.IsSupportDComp && provider.IsSupportSwapChain1;
                 }
                 host = GraphicsHostHelper.CreateSwapChainGraphicsHost(handle, provider, useFlipModel, useDComp);
             }
             else
                 host = GraphicsHostHelper.FromAnotherSwapChainGraphicsHost(parent._host!, handle);
             _host = host;
-            _collector = DirtyAreaCollector.TryCreate(host as SwapChainGraphicsHost1);
-            D2D1DeviceContext? deviceContext = _host!.BeginDraw();
+            _collector = new DirtyAreaCollector(host);
+            D2D1DeviceContext? deviceContext = host.BeginDraw();
             if (deviceContext is null)
                 return;
             (uint dpiX, uint dpiY) = Dpi;
@@ -429,8 +429,11 @@ namespace ConcreteUI.Window
         [Inline]
         private bool RenderCore(bool force, bool resized, bool resizedTemporarily)
         {
-            SwapChainGraphicsHost? host = _host;
+            SimpleGraphicsHost? host = _host;
             if (host is null || host.IsDisposed)
+                return false;
+            DirtyAreaCollector? collector = _collector;
+            if (collector is null)
                 return false;
             if (resized)
             {
@@ -445,32 +448,46 @@ namespace ConcreteUI.Window
             D2D1DeviceContext? deviceContext = host.GetDeviceContext();
             if (deviceContext is null || deviceContext.IsDisposed)
                 return true;
-            DirtyAreaCollector? rawCollector = force ? null : _collector;
-            DirtyAreaCollector collector = rawCollector ?? DirtyAreaCollector.Empty;
-            RenderTitle(deviceContext, collector, force);
-            RectF pageRect = _pageRect;
-            if (!pageRect.IsValid)
-                return true;
-            RenderPage(deviceContext, collector, pageRect, force);
-            host.Flush();
-            if (rawCollector is null)
-            {
-                if (ConcreteSettings.UseDebugMode)
-                {
-                    host.Present();
-                    return true;
-                }
-                return host.TryPresent();
-            }
+
+            if (force)
+                return RenderCore_Force(host, deviceContext);
             else
+                return RenderCore_Normal(host, deviceContext, collector);
+        }
+
+        private bool RenderCore_Force(SimpleGraphicsHost host, D2D1DeviceContext deviceContext)
+        {
+            DirtyAreaCollector collector = DirtyAreaCollector.Empty;
+            RenderTitle(deviceContext, collector, force: true);
+            RectF pageRect = _pageRect;
+            if (pageRect.IsValid)
+                RenderPage(deviceContext, collector, pageRect, force: true);
+            host.Flush();
+
+            if (ConcreteSettings.UseDebugMode)
             {
-                if (ConcreteSettings.UseDebugMode)
-                {
-                    rawCollector.Present(_pointsPerPixel);
-                    return true;
-                }
-                return rawCollector.TryPresent(_pointsPerPixel);
+                host.Present();
+                return true;
             }
+            return host.TryPresent();
+        }
+
+        private bool RenderCore_Normal(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector)
+        {
+            Vector2 pointsPerPixel = _pointsPerPixel;
+
+            RenderTitle(deviceContext, collector, force: false);
+            RectF pageRect = _pageRect;
+            if (pageRect.IsValid)
+                RenderPage(deviceContext, collector, pageRect, force: false);
+            host.Flush();
+
+            if (ConcreteSettings.UseDebugMode)
+            {
+                collector.Present(pointsPerPixel);
+                return true;
+            }
+            return collector.TryPresent(pointsPerPixel);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -512,7 +529,7 @@ namespace ConcreteUI.Window
             D2D1Brush[] brushes = _brushes;
 
             BitVector64 TitleBarButtonChangedStatus = _titleBarButtonChangedStatus;
-            BitVector64 titleBarStates = this._titleBarStates;
+            BitVector64 titleBarStates = _titleBarStates;
             _titleBarButtonChangedStatus.Reset();
             #region 繪製標題
             if (force)
@@ -658,7 +675,7 @@ namespace ConcreteUI.Window
         [Inline(InlineBehavior.Remove)]
         private void ChangeDpi_RenderingPart(PointU dpi, Vector2 pointsPerPixel, Vector2 pixelsPerPoint)
         {
-            SwapChainGraphicsHost? host = _host;
+            SimpleGraphicsHost? host = _host;
             if (host is null || host.IsDisposed)
                 return;
             RenderingController? controller = _controller;
@@ -978,7 +995,7 @@ namespace ConcreteUI.Window
             {
                 DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider);
                 DisposeHelper.SwapDisposeInterlocked(ref _controller);
-                SwapChainGraphicsHost? host = InterlockedHelper.Exchange(ref _host, null);
+                SimpleGraphicsHost? host = InterlockedHelper.Exchange(ref _host, null);
                 if (host is not null && !host.IsDisposed)
                 {
                     host.EndDraw();

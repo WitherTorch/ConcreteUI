@@ -775,9 +775,14 @@ namespace ConcreteUI.Window
             WindowMaterial material = _windowMaterial;
             if (material != WindowMaterial.Integrated)
                 windowInfo.Styles &= ~WindowStyles.SystemMenu;
-            if ((material == WindowMaterial.None && SystemConstants.VersionLevel == SystemVersionLevel.Windows_8) ||
-                graphicsDeviceProviderLazy.Value.DCompDevice is not null)
+            if (material == WindowMaterial.None && SystemConstants.VersionLevel == SystemVersionLevel.Windows_8)
                 windowInfo.ExtendedStyles |= WindowExtendedStyles.NoRedirectionBitmap;
+            else
+            {
+                GraphicsDeviceProvider provider = _graphicsDeviceProviderLazy.Value;
+                if (provider.IsSupportSwapChain1 && provider.IsSupportDComp)
+                    windowInfo.ExtendedStyles |= WindowExtendedStyles.NoRedirectionBitmap;
+            }
 
             const int CW_USEDEFAULT = unchecked((int)0x80000000);
 

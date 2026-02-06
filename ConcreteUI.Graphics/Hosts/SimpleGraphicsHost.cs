@@ -8,55 +8,61 @@ using ConcreteUI.Graphics.Native.DXGI;
 
 using InlineMethod;
 
+using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 
-namespace ConcreteUI.Graphics.Hosting
+namespace ConcreteUI.Graphics.Hosts
 {
-    public class SwapChainGraphicsHost : GraphicsHostBase
+    public class SimpleGraphicsHost : ICheckableDisposable
     {
         protected readonly DXGISwapChain _swapChain;
 
         private readonly GraphicsDeviceProvider _provider;
-        private readonly D2D1TextAntialiasMode _antialiasMode;
         private readonly D2D1DeviceContext _context;
+        private readonly D2D1TextAntialiasMode _antialiasMode;
+        private readonly IntPtr _handle;
 
-        protected bool _disposed;
-        protected bool _sleeping;
+        protected bool _disposed, _sleeping;
 
         private D2D1DeviceContext? _activeContext;
         private D2D1Bitmap1? _target;
 
         private bool _alternateFlushing;
 
-        public override bool IsDisposed => _disposed;
+        public IntPtr AssociatedWindowHandle => _handle;
+        public bool IsDisposed => _disposed;
 
-        public SwapChainGraphicsHost(GraphicsDeviceProvider provider, IntPtr handle, D2D1TextAntialiasMode textAntialiasMode, bool isFlipModel) : base(handle)
+        public SimpleGraphicsHost(GraphicsDeviceProvider provider, IntPtr handle, D2D1TextAntialiasMode textAntialiasMode, bool isFlipModel)
         {
+            _provider = provider;
+            _handle = handle;
+            _antialiasMode = textAntialiasMode;
+            _alternateFlushing = false;
+
             D2D1DeviceContext context = TryQueryNewestInterface(provider.D2DDevice.CreateDeviceContext(D2D1DeviceContextOptions.None));
             DXGISwapChain swapChain = CreateSwapChain(provider, isFlipModel);
             DisableDXGIExtendedFeature(swapChain);
             context.AntialiasMode = D2D1AntialiasMode.Aliased;
             context.TextAntialiasMode = textAntialiasMode;
-            _provider = provider;
             _context = context;
-            _antialiasMode = textAntialiasMode;
             _swapChain = swapChain;
-            _alternateFlushing = false;
         }
 
-        public SwapChainGraphicsHost(SwapChainGraphicsHost another, IntPtr handle) : base(handle)
+        public SimpleGraphicsHost(SimpleGraphicsHost another, IntPtr handle)
         {
             GraphicsDeviceProvider provider = another._provider;
+            _provider = provider;
+            _handle = handle;
+            _antialiasMode = another._antialiasMode;
+            _alternateFlushing = another._alternateFlushing;
+
             D2D1DeviceContext context = TryQueryNewestInterface(provider.D2DDevice.CreateDeviceContext(D2D1DeviceContextOptions.None));
             DXGISwapChain swapChain = CreateSwapChain(provider, another._swapChain);
             DisableDXGIExtendedFeature(swapChain);
             context.AntialiasMode = another._context.AntialiasMode;
             context.TextAntialiasMode = another._antialiasMode;
-            _provider = provider;
             _context = context;
-            _antialiasMode = another._antialiasMode;
             _swapChain = swapChain;
-            _alternateFlushing = another._alternateFlushing;
         }
 
         protected virtual DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, bool isFlipModel)
@@ -64,28 +70,20 @@ namespace ConcreteUI.Graphics.Hosting
             DXGISwapChainDescription swapChainDesc = new DXGISwapChainDescription
             {
                 BufferUsage = DXGIUsage.RenderTargetOutput | DXGIUsage.BackBuffer,
-                OutputWindow = Handle,
+                OutputWindow = AssociatedWindowHandle,
                 Windowed = true,
                 BufferDesc = new DXGIModeDescription(Constants.Format),
-                SampleDesc = new DXGISampleDescription(1, 0)
+                SampleDesc = new DXGISampleDescription(1, 0),
+                BufferCount = 1,
+                SwapEffect = DXGISwapEffect.Discard
             };
-            if (isFlipModel)
-            {
-                swapChainDesc.BufferCount = 2;
-                swapChainDesc.SwapEffect = DXGISwapEffect.FlipDiscard;
-            }
-            else
-            {
-                swapChainDesc.BufferCount = 1;
-                swapChainDesc.SwapEffect = DXGISwapEffect.Discard;
-            }
             return provider.DXGIFactory.CreateSwapChain(provider.D3DDevice, swapChainDesc);
         }
 
         protected virtual DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, DXGISwapChain original)
         {
             DXGISwapChainDescription swapChainDesc = original.Description;
-            swapChainDesc.OutputWindow = Handle;
+            swapChainDesc.OutputWindow = AssociatedWindowHandle;
             return provider.DXGIFactory.CreateSwapChain(provider.D3DDevice, swapChainDesc);
         }
 
@@ -93,7 +91,7 @@ namespace ConcreteUI.Graphics.Hosting
         private void DisableDXGIExtendedFeature(DXGISwapChain swapChain)
         {
             DXGIFactory factory = swapChain.GetParent<DXGIFactory>(DXGIFactory.IID_IDXGIFactory)!;
-            factory.MakeWindowAssociation(Handle,
+            factory.MakeWindowAssociation(AssociatedWindowHandle,
                 DXGIMakeWindowAssociationFlags.NoAltEnter | DXGIMakeWindowAssociationFlags.NoWindowChanges | DXGIMakeWindowAssociationFlags.NoPrintScreen);
             factory.Dispose();
         }
@@ -305,12 +303,9 @@ namespace ConcreteUI.Graphics.Hosting
             DisposeCore(disposing);
         }
 
-        ~SwapChainGraphicsHost()
-        {
-            Dispose(disposing: false);
-        }
+        ~SimpleGraphicsHost() => Dispose(disposing: false);
 
-        public override void Dispose()
+        public void Dispose()
         {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);

@@ -11,10 +11,11 @@ using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
-namespace ConcreteUI.Graphics.Hosting
+namespace ConcreteUI.Graphics
 {
     public unsafe sealed class GraphicsDeviceProvider : IDisposable
     {
+        private const bool SupportSwapChain1 = true;
         private const D3D11CreateDeviceFlags CreateDeviceFlags = D3D11CreateDeviceFlags.BgraSupport;
         private const D3D11CreateDeviceFlags CreateDeviceFlagsForDebug = CreateDeviceFlags | D3D11CreateDeviceFlags.Debug;
 
@@ -26,6 +27,10 @@ namespace ConcreteUI.Graphics.Hosting
         public readonly DCompositionDevice? DCompDevice;
 
         private bool _disposed;
+
+        public bool IsSupportSwapChain1 => SupportSwapChain1 && DXGIFactory is DXGIFactory2;
+
+        public bool IsSupportDComp => DCompDevice is not null;
 
         private GraphicsDeviceProvider(D3D11Device? d3dDevice, DXGIAdapter? adapter, DXGIFactory? factory, bool isDebug)
         {

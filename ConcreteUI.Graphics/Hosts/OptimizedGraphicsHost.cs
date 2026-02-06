@@ -8,22 +8,23 @@ using InlineMethod;
 
 using static ConcreteUI.Graphics.Constants;
 
-namespace ConcreteUI.Graphics.Hosting
+namespace ConcreteUI.Graphics.Hosts
 {
-    public class SwapChainGraphicsHost1 : SwapChainGraphicsHost
+    public class OptimizedGraphicsHost : SimpleGraphicsHost
     {
         private bool _forcePresentAll = false;
         private bool _switchToNormalSwapChain = false;
 
-        public SwapChainGraphicsHost1(GraphicsDeviceProvider deviceProvider, IntPtr handle,
+        public OptimizedGraphicsHost(GraphicsDeviceProvider deviceProvider, IntPtr handle,
             D2D1TextAntialiasMode textAntialiasMode, bool isFlipModel) : base(deviceProvider, handle, textAntialiasMode, isFlipModel) { }
 
-        public SwapChainGraphicsHost1(SwapChainGraphicsHost another, IntPtr handle) : base(another, handle) { }
+        public OptimizedGraphicsHost(SimpleGraphicsHost another, IntPtr handle) : base(another, handle) { }
 
         protected override unsafe DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, bool isFlipModel)
         {
             if (provider.DXGIFactory is not DXGIFactory2 factory)
-                return base.CreateSwapChain(provider, isFlipModel);
+                throw new InvalidOperationException();
+
             DXGISwapChainDescription1 swapChainDesc = new DXGISwapChainDescription1()
             {
                 BufferUsage = DXGIUsage.RenderTargetOutput | DXGIUsage.BackBuffer,
@@ -47,15 +48,16 @@ namespace ConcreteUI.Graphics.Hosting
                 swapChainDesc.Scaling = DXGIScaling.Stretch;
                 swapChainDesc.SwapEffect = DXGISwapEffect.Sequential;
             }
-            return factory.CreateSwapChainForHwnd(provider.D3DDevice, Handle, swapChainDesc);
+            return factory.CreateSwapChainForHwnd(provider.D3DDevice, AssociatedWindowHandle, swapChainDesc);
         }
 
         protected override unsafe DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, DXGISwapChain original)
         {
             if (original is not DXGISwapChain1 originalSwapChain || provider.DXGIFactory is not DXGIFactory2 factory)
-                return base.CreateSwapChain(provider, original);
+                throw new InvalidOperationException();
+
             DXGISwapChainDescription1 swapChainDesc = originalSwapChain.Description1;
-            DXGISwapChain1 swapChain = factory.CreateSwapChainForHwnd(provider.D3DDevice, Handle, swapChainDesc);
+            DXGISwapChain1 swapChain = factory.CreateSwapChainForHwnd(provider.D3DDevice, AssociatedWindowHandle, swapChainDesc);
             return swapChain;
         }
 

@@ -74,7 +74,6 @@ namespace ConcreteUI.Graphics.Native.DXGI
 
         public DXGIModeDescription(DXGIFormat format)
         {
-            this = default;
             Format = format;
         }
     }

@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-using ConcreteUI.Graphics.Hosting;
+using ConcreteUI.Graphics.Hosts;
 using ConcreteUI.Graphics.Native.DXGI;
 
 using WitherTorch.Common.Buffers;
@@ -14,28 +14,24 @@ namespace ConcreteUI.Graphics
 {
     public sealed partial class DirtyAreaCollector
     {
-        private static readonly DirtyAreaCollector _empty = new DirtyAreaCollector(null, null);
-        public static DirtyAreaCollector Empty => _empty;
+        public static readonly DirtyAreaCollector Empty = new DirtyAreaCollector(null, null);
 
-        private readonly SwapChainGraphicsHost1? _host;
+        private readonly SimpleGraphicsHost? _host;
         private readonly UnwrappableList<RectF>? _list;
 
         private bool _presentAllMode;
 
-        private DirtyAreaCollector(UnwrappableList<RectF>? list, SwapChainGraphicsHost1? host)
+        public DirtyAreaCollector(SimpleGraphicsHost host) :
+            this(host is OptimizedGraphicsHost ? new UnwrappableList<RectF>() : null, host)
+        { }
+
+        private DirtyAreaCollector(UnwrappableList<RectF>? list, SimpleGraphicsHost? host)
         {
             _list = list;
             _host = host;
         }
 
-        public static DirtyAreaCollector? TryCreate(SwapChainGraphicsHost1? host)
-        {
-            if (host is null || host.IsDisposed)
-                return null;
-            return new DirtyAreaCollector(new UnwrappableList<RectF>(), host);
-        }
-
-        public bool IsEmptyInstance => _list is null;
+        public bool IsEmptyInstance => _host is null && _list is null;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool HasAnyDirtyArea()
@@ -44,7 +40,7 @@ namespace ConcreteUI.Graphics
                 return true;
             UnwrappableList<RectF>? list = _list;
             if (list is null)
-                return false;
+                return true;
             return list.Count > 0;
         }
 
@@ -56,7 +52,7 @@ namespace ConcreteUI.Graphics
 
         public unsafe void Present(Vector2 pointsPerPixel)
         {
-            SwapChainGraphicsHost1? host = _host;
+            SimpleGraphicsHost? host = _host;
             if (host is null)
                 return;
             UnwrappableList<RectF>? list = _list;
@@ -65,9 +61,8 @@ namespace ConcreteUI.Graphics
                 host.Present();
                 return;
             }
-            if (_presentAllMode)
+            if (host is not OptimizedGraphicsHost host1 || ReferenceHelper.Exchange(ref _presentAllMode, false))
             {
-                _presentAllMode = false;
                 list.Clear();
                 host.Present();
                 return;
@@ -77,7 +72,7 @@ namespace ConcreteUI.Graphics
             try
             {
                 fixed (Rect* ptr = rects)
-                    host.Present(new DXGIPresentParameters(count, ptr));
+                    host1.Present(new DXGIPresentParameters(count, ptr));
             }
             finally
             {
@@ -87,15 +82,14 @@ namespace ConcreteUI.Graphics
 
         public unsafe bool TryPresent(Vector2 pointsPerPixel)
         {
-            SwapChainGraphicsHost1? host = _host;
+            SimpleGraphicsHost? host = _host;
             if (host is null)
                 return false;
             UnwrappableList<RectF>? list = _list;
             if (list is null)
                 return host.TryPresent();
-            if (_presentAllMode)
+            if (host is not OptimizedGraphicsHost host1 || ReferenceHelper.Exchange(ref _presentAllMode, false))
             {
-                _presentAllMode = false;
                 list.Clear();
                 return host.TryPresent();
             }
@@ -104,7 +98,7 @@ namespace ConcreteUI.Graphics
             try
             {
                 fixed (Rect* ptr = rects)
-                    return host.TryPresent(new DXGIPresentParameters(count, ptr));
+                    return host1.TryPresent(new DXGIPresentParameters(count, ptr));
             }
             finally
             {

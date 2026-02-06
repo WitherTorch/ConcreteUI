@@ -57,6 +57,7 @@ namespace ConcreteUI.Window
         private long _updateFlags = -1L;
         private D2D1ColorF _wizardBaseColor;
         private PointF _titleLocation, _titleDescriptionLocation;
+        private RectF _widePageRect;
         #endregion
 
         #region Constructor
@@ -115,6 +116,16 @@ namespace ConcreteUI.Window
             DisposeHelper.SwapDisposeInterlocked(ref _titleLayout, null);
             DisposeHelper.SwapDisposeInterlocked(ref _titleDescriptionLayout, null);
             Interlocked.Exchange(ref _updateFlags, -1L);
+        }
+
+        protected override void RenderPageCore(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in RectF pageRect, bool force)
+        {
+            if (force)
+            {
+                using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, _widePageRect, D2D1AntialiasMode.Aliased);
+                ClearDC(deviceContext);
+            }
+            base.RenderPageCore(deviceContext, collector, pageRect, force);
         }
 
         public override void RenderBackground(UIElement element, in RegionalRenderingContext context)
@@ -200,6 +211,7 @@ namespace ConcreteUI.Window
         {
             base.RecalculateLayout(windowSize, false);
             RectF pageRect = _pageRect;
+            RectF widePageRect = pageRect;
             pageRect.Left += UIConstantsPrivate.WizardLeftPadding;
             pageRect.Top += UIConstantsPrivate.WizardPadding;
             pageRect.Right -= UIConstantsPrivate.WizardPadding;
@@ -222,6 +234,9 @@ namespace ConcreteUI.Window
                 DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
             }
 
+            widePageRect.Top = pageRect.Top;
+            widePageRect.Bottom = pageRect.Bottom;
+            _widePageRect = widePageRect;
             _pageRect = pageRect = RenderingHelper.CeilingInPixel(pageRect, GetPointsPerPixel());
             if (callRecalculatePageLayout && pageRect.IsValid)
             {

@@ -429,10 +429,5 @@ namespace ConcreteUI.Graphics
             _context.Transform = _originalTransform;
             _clipScope.Dispose();
         }
-
-        public object PushAxisAlignedClip(Rect itemBounds)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

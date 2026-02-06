@@ -1,41 +1,24 @@
-using ConcreteUI.Graphics.Hosting;
-using ConcreteUI.Graphics.Native.Direct2D;
-using ConcreteUI.Graphics.Native.DXGI;
-
-using InlineMethod;
-
 using System;
 using System.Collections.Generic;
+
+using ConcreteUI.Graphics.Hosts;
+using ConcreteUI.Graphics.Native.Direct2D;
+using ConcreteUI.Graphics.Native.DXGI;
 
 namespace ConcreteUI.Graphics.Helpers
 {
     public static class GraphicsHostHelper
     {
-        [Inline(InlineBehavior.Keep, export: true)]
-        public static SwapChainGraphicsHost CreateSwapChainGraphicsHost(IntPtr handle, GraphicsDeviceProvider provider, bool useFlipModel, bool useDComp)
+        public static SimpleGraphicsHost CreateSwapChainGraphicsHost(IntPtr handle, GraphicsDeviceProvider provider, bool useFlipModel, bool useDComp)
         {
-            return CreateSwapChainGraphicsHost(handle, provider, preferSwapChain1: true, useFlipModel: useFlipModel, useDComp);
-        }
+            if (useDComp && useFlipModel)
+                return new CompositionGraphicsHost(provider, handle, D2D1TextAntialiasMode.Grayscale); // 無法回退 (因為視窗的性質不一樣)
 
-        public static SwapChainGraphicsHost CreateSwapChainGraphicsHost(IntPtr handle, GraphicsDeviceProvider provider,
-            bool preferSwapChain1, bool useFlipModel, bool useDComp)
-        {
-            if (preferSwapChain1 && provider.DXGIFactory is DXGIFactory2)  //支援 DXGI 1.1
+            if (provider.IsSupportSwapChain1) // 支援 DXGI 1.1
             {
-                if (useDComp && provider.DCompDevice is not null) //支援 DirectComposition
-                {
-                    try
-                    {
-                        return new SwapChainCompositionGraphicsHost(provider, handle, D2D1TextAntialiasMode.Grayscale);
-                    }
-                    catch (Exception)
-                    {
-
-                    }
-                }
                 try
                 {
-                    return new SwapChainGraphicsHost1(provider, handle,
+                    return new OptimizedGraphicsHost(provider, handle,
                         D2D1TextAntialiasMode.Grayscale,
                         useFlipModel);
                 }
@@ -43,17 +26,17 @@ namespace ConcreteUI.Graphics.Helpers
                 {
                 }
             }
-            return new SwapChainGraphicsHost(provider, handle,
+            return new SimpleGraphicsHost(provider, handle,
                 D2D1TextAntialiasMode.Grayscale,
                 useFlipModel);
         }
 
-        public static SwapChainGraphicsHost FromAnotherSwapChainGraphicsHost(SwapChainGraphicsHost another, IntPtr handle)
+        public static SimpleGraphicsHost FromAnotherSwapChainGraphicsHost(SimpleGraphicsHost another, IntPtr handle)
             => another switch
             {
-                SwapChainCompositionGraphicsHost host => new SwapChainCompositionGraphicsHost(host, handle),
-                SwapChainGraphicsHost1 host => new SwapChainGraphicsHost1(host, handle),
-                _ => new SwapChainGraphicsHost(another, handle)
+                CompositionGraphicsHost typedAnother => new CompositionGraphicsHost(typedAnother, handle),
+                OptimizedGraphicsHost typedAnother => new CompositionGraphicsHost(typedAnother, handle),
+                _ => new SimpleGraphicsHost(another, handle)
             };
 
         public static string[] EnumAdapters(GraphicsDeviceProvider provider)
@@ -68,7 +51,7 @@ namespace ConcreteUI.Graphics.Helpers
                 if (adapter is null)
                     break;
                 DXGIAdapterDescription description = adapter.Description;
-                if (description.VendorId != 5140) //Is not "Microsoft Basic Render Driver"
+                if (description.VendorId != 5140) // Is not "Microsoft Basic Render Driver"
                     result.Add(description.Description.ToString());
                 adapter.Dispose();
             }
