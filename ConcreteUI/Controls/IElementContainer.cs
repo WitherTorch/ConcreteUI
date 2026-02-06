@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
@@ -19,6 +20,10 @@ namespace ConcreteUI.Controls
 #endif
 
         void RenderBackground(UIElement element, in RegionalRenderingContext context);
+
+        Point PointToGlobal(Point point);
+
+        PointF PointToGlobal(PointF point);
     }
 
     public static class ElementContainerDefaults

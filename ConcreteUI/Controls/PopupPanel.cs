@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -51,6 +52,10 @@ namespace ConcreteUI.Controls
         IEnumerable<UIElement> IElementContainer.GetElements() => _collection;
 
         IEnumerable<UIElement> IElementContainer.GetActiveElements() => _collection;
+
+        Point IElementContainer.PointToGlobal(Point point) => PointToGlobal(point);
+
+        PointF IElementContainer.PointToGlobal(PointF point) => PointToGlobal(point);
 
         public void Dispose() => _collection.Dispose();
     }

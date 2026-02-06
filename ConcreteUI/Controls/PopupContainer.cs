@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
@@ -62,6 +63,10 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RenderBackground(UIElement element, in RegionalRenderingContext context)
             => RenderBackground(context, _brushes[(int)Brush.BackBrush]);
+
+        Point IElementContainer.PointToGlobal(Point point) => PointToGlobal(point);
+
+        PointF IElementContainer.PointToGlobal(PointF point) => PointToGlobal(point);
 
         protected override bool RenderCore(in RegionalRenderingContext context)
         {

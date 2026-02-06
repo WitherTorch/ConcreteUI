@@ -75,12 +75,12 @@ namespace ConcreteUI.Window
         public new RectangleF Bounds
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (RectangleF)ScalingPixelToLogical((Rect)base.Bounds, _pixelsPerPoint);
+            get => (RectangleF)GraphicsUtils.ScalingRect((Rect)base.Bounds, _pixelsPerPoint);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => base.Bounds = (Rectangle)ScalingLogicalToPixel((RectF)value, _pointsPerPixel);
+            set => base.Bounds = (Rectangle)GraphicsUtils.ScalingRect((RectF)value, _pointsPerPixel);
         }
 
-        public new RectangleF ClientBounds => (RectangleF)ScalingPixelToLogical((Rect)base.ClientBounds, _pixelsPerPoint);
+        public new RectangleF ClientBounds => (RectangleF)GraphicsUtils.ScalingRect((Rect)base.ClientBounds, _pixelsPerPoint);
         public new PointF Location => Bounds.Location;
         public new SizeF Size => Bounds.Size;
         public new SizeF ClientSize => ClientBounds.Size;

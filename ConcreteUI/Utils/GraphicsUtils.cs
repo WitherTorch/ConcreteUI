@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
@@ -9,6 +10,7 @@ using ConcreteUI.Graphics.Native.DirectWrite;
 
 using InlineMethod;
 
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
@@ -63,6 +65,124 @@ namespace ConcreteUI.Utils
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PointF AdjustPointF2(in PointF rawPoint)
             => new PointF(MathF.Floor(rawPoint.X), MathF.Ceiling(rawPoint.Y));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Size ScalingSize(SizeF original, Vector2 scaleFactor)
+        {
+            (float factorX, float factorY) = scaleFactor;
+            return new Size(MathI.Floor(original.Width * factorX), MathI.Floor(original.Height * factorY));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static SizeF ScalingSize(Size original, Vector2 scaleFactor)
+        {
+            (float factorX, float factorY) = scaleFactor;
+            return new SizeF(original.Width * factorX, original.Height * factorY);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Point ScalingPoint(Point original, Vector2 scaleFactor)
+        {
+            (float factorX, float factorY) = scaleFactor;
+            return new Point(MathI.Floor(original.X * factorX), MathI.Floor(original.Y * factorY));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PointF ScalingPoint(PointF original, Vector2 scaleFactor)
+        {
+            (float factorX, float factorY) = scaleFactor;
+            return new PointF(original.X * factorX, original.Y * factorY);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Point ScalingPointAndConvert(PointF original, Vector2 scaleFactor)
+        {
+            (float factorX, float factorY) = scaleFactor;
+            return new Point(MathI.Floor(original.X * factorX), MathI.Floor(original.Y * factorY));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PointF ScalingPointAndConvert(Point original, Vector2 scaleFactor)
+        {
+            (float factorX, float factorY) = scaleFactor;
+            return new PointF(original.X * factorX, original.Y * factorY);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Rect ScalingRect(Rect original, Vector2 scaleFactor)
+        {
+            (float factorX, float factorY) = scaleFactor;
+            if (factorX == 1.0f && factorY == 1.0f)
+                return original;
+            return new Rect(left: MathI.FloorPositive(original.Left * factorX),
+                top: MathI.FloorPositive(original.Top * factorY),
+                right: MathI.Ceiling(original.Right * factorX),
+                bottom: MathI.Ceiling(original.Bottom * factorY));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RectF ScalingRect(RectF original, Vector2 scaleFactor)
+        {
+            (float factorX, float factorY) = scaleFactor;
+            if (factorX == 1.0f && factorY == 1.0f)
+                return original;
+            return new RectF(left: original.Left * factorX,
+                top: original.Top * factorY,
+                right: original.Right * factorX,
+                bottom: original.Bottom * factorY);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Rect ScalingRectAndConvert(RectF original, Vector2 scaleFactor)
+        {
+            (float factorX, float factorY) = scaleFactor;
+            return new Rect(left: MathI.FloorPositive(original.Left * factorX),
+                top: MathI.FloorPositive(original.Top * factorY),
+                right: MathI.Ceiling(original.Right * factorX),
+                bottom: MathI.Ceiling(original.Bottom * factorY));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RectF ScalingRectAndConvert(Rect original, Vector2 scaleFactor)
+        {
+            (float factorX, float factorY) = scaleFactor;
+            return new RectF(left: original.Left * factorX,
+                top: original.Top * factorY,
+                right: original.Right * factorX,
+                bottom: original.Bottom * factorY);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Size AdjustSize(Size original, SizeF min, SizeF max, Vector2 pixelsPerPoint)
+        {
+            if (max == SizeF.Empty)
+            {
+                if (min == SizeF.Empty)
+                    return original;
+                return Max(original, ScalingSize(min, pixelsPerPoint));
+            }
+            else
+            {
+                if (min == SizeF.Empty)
+                    return Min(original, ScalingSize(min, pixelsPerPoint));
+                return Clamp(original, ScalingSize(min, pixelsPerPoint), ScalingSize(min, pixelsPerPoint));
+            }
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static Size Min(Size original, Size min)
+            => new Size(width: MathHelper.Min(original.Width, min.Width),
+                height: MathHelper.Min(original.Height, min.Height));
+
+        [Inline(InlineBehavior.Remove)]
+        private static Size Max(Size original, Size max)
+            => new Size(width: MathHelper.Max(original.Width, max.Width),
+                height: MathHelper.Max(original.Height, max.Height));
+
+        [Inline(InlineBehavior.Remove)]
+        private static Size Clamp(Size original, Size min, Size max)
+            => new Size(width: MathHelper.Clamp(original.Width, min.Width, max.Width),
+                height: MathHelper.Clamp(original.Height, min.Height, max.Height));
 
         [Inline(InlineBehavior.Remove)]
         private static float MeasureTextWidthCore(string text, DWriteTextFormat format)

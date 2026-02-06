@@ -12,6 +12,7 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Input;
 using ConcreteUI.Internals;
+using ConcreteUI.Internals.Native;
 using ConcreteUI.Internals.NativeHelpers;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
@@ -31,7 +32,7 @@ using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class TextBox : ScrollableElementBase, IIMEControl, IMouseInteractEvents, IMouseNotifyEvents, IKeyEvents, ICharacterEvents, ICursorPredicator
+    public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler, IMouseInteractEvents, IMouseNotifyEvents, IKeyEvents, ICharacterEvents, ICursorPredicator
     {
         private static readonly LazyTiny<GraphemeInfo> EmptyGraphemeInfoLazy =
             new LazyTiny<GraphemeInfo>(new GraphemeInfo(string.Empty, Array.Empty<int>()));
@@ -610,11 +611,18 @@ namespace ConcreteUI.Controls
         #endregion
 
         #region IME Support
-        void IIMEControl.StartIMEComposition()
-        { }
+        void IInputMethodHandler.StartIMEComposition(InputMethod ime, InputMethodContext context)
+        {
+            (PointF caretPoint, Vector2 pointsPerPixel) = UpdateIMECaret(context, _caretIndex);
+            context.SetCompositionWindow(new IMECompositionForm()
+            {
+                dwStyle = IMECompositionStyle.PositionedAtPoint,
+                ptCurrentPos = GraphicsUtils.ScalingPointAndConvert(caretPoint, pointsPerPixel)
+            });
+        }
 
         [LocalsInit(false)]
-        unsafe void IIMEControl.OnIMEComposition(string str, IMECompositionFlags flags, int cursorPosition)
+        unsafe void IInputMethodHandler.OnIMEComposition(InputMethod ime, InputMethodContext context, string str, IMECompositionFlags flags, int cursorPosition)
         {
             string text = _text;
             int caretIndex = _caretIndex;
@@ -660,7 +668,7 @@ namespace ConcreteUI.Controls
         }
 
         [LocalsInit(false)]
-        unsafe void IIMEControl.OnIMECompositionResult(string str, IMECompositionFlags flags)
+        unsafe void IInputMethodHandler.OnIMECompositionResult(InputMethod ime, InputMethodContext context, string str, IMECompositionFlags flags)
         {
             string text = _text;
             int caretIndex = _caretIndex;
@@ -699,12 +707,27 @@ namespace ConcreteUI.Controls
             UpdateTextAndCaretIndex(text, caretIndex);
         }
 
-        void IIMEControl.EndIMEComposition()
+        void IInputMethodHandler.EndIMEComposition(InputMethod ime, InputMethodContext context)
         {
             uint length = ReferenceHelper.Exchange(ref _compositionRange, default).Length;
             if (length <= 0)
                 return;
             UpdateCaretIndex(_caretIndex + MathHelper.MakeSigned(length));
+        }
+
+        private (PointF caretPoint, Vector2 pointsPerPixel) UpdateIMECaret(InputMethodContext context, int caretIndex)
+        {
+            Vector2 pointsPerPixel = Renderer.GetPointsPerPixel();
+
+            PointF caretPoint = GetPointFromCaretIndex(caretIndex - 1, isTrailingHit: false, out DWriteHitTestMetrics metrics);
+            context.SetCandidateWindow(new IMECandidateForm()
+            {
+                dwIndex = 0,
+                dwStyle = IMECandicateStyle.ExcludeRect,
+                rcArea = GraphicsUtils.ScalingRectAndConvert(RectF.FromXYWH(caretPoint, new SizeF(metrics.Width, metrics.Height)), pointsPerPixel)
+            });
+
+            return (caretPoint, pointsPerPixel);
         }
 
         [LocalsInit(false)]
@@ -939,6 +962,12 @@ namespace ConcreteUI.Controls
                 _caretTimer.Change(Timeout.Infinite, Timeout.Infinite);
             CalculateCurrentViewportPoint();
             Update(updateFlags);
+            if (_imeEnabled)
+            {
+                InputMethodContext? context = _ime?.Context;
+                if (context is not null)
+                    UpdateIMECaret(context, caretIndex + _compositionCaretIndex);
+            }
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -1139,15 +1168,26 @@ namespace ConcreteUI.Controls
 
         private int GetCaretIndexFromPoint(PointF point, out bool isInside)
         {
+            Rect contentBounds = ContentBounds;
             PointF viewportPoint = ViewportPoint;
-            float viewportLeft = MathF.Floor(Location.X + UIConstants.ElementMarginHalf) - viewportPoint.X;
-            float viewportTop = MathF.Floor(Location.Y + UIConstants.ElementMarginHalf) - viewportPoint.Y;
+            float viewportLeft = MathF.Floor(contentBounds.X + UIConstants.ElementMarginHalf) - viewportPoint.X;
+            float viewportTop = MathF.Floor(contentBounds.Y + UIConstants.ElementMarginHalf) - viewportPoint.Y;
             string text = _text;
             using DWriteTextLayout layout = CreateVirtualTextLayout(text);
             int result = MathHelper.MakeSigned(layout.HitTestPoint(point.X - viewportLeft, point.Y - viewportTop, out bool isTrailingHit, out isInside).TextPosition);
             if (isTrailingHit)
                 result = AdjustCaretIndex(text, result + 1, takeGreaterIfNotExists: true);
             return result;
+        }
+
+        private PointF GetPointFromCaretIndex(int caretIndex, bool isTrailingHit, out DWriteHitTestMetrics metrics)
+        {
+            Rect contentBounds = ContentBounds;
+            PointF viewportPoint = ViewportPoint;
+            string text = _text;
+            using DWriteTextLayout layout = CreateVirtualTextLayout(text);
+            metrics = layout.HitTestTextPosition((uint)MathHelper.Clamp(0, caretIndex, MathHelper.Max(text.Length, 0)), isTrailingHit, out float x, out float y);
+            return new PointF(x - viewportPoint.X + contentBounds.X, y - viewportPoint.Y + contentBounds.Y);
         }
 
         #region Mouse Events Handling
@@ -1340,8 +1380,6 @@ namespace ConcreteUI.Controls
             SequenceHelper.Clear(_brushes);
         }
         #endregion
-
-        public Rect GetInputArea() => ContentBounds;
 
         private sealed record class GraphemeInfo(
             string Original,

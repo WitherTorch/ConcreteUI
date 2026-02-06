@@ -237,6 +237,12 @@ namespace ConcreteUI.Controls
 
         protected abstract void ApplyThemeCore(IThemeResourceProvider provider);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected Point PointToGlobal(Point point) => (_parent ?? _renderer).PointToGlobal(point);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected PointF PointToGlobal(PointF point) => (_parent ?? _renderer).PointToGlobal(point);
+
         public override int GetHashCode() => _identifier;
 
         public override bool Equals(object? obj) => ReferenceEquals(obj, this);

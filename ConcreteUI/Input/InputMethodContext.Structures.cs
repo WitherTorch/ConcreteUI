@@ -3,21 +3,21 @@ using System.Runtime.InteropServices;
 
 using WitherTorch.Common.Structures;
 
-namespace ConcreteUI.Internals.Native
+namespace ConcreteUI.Input
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal struct CandidateForm
+    public struct IMECandidateForm
     {
         public int dwIndex;
-        public int dwStyle;
+        public IMECandicateStyle dwStyle;
         public Point ptCurrentPos;
         public Rect rcArea;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct CompositionForm
+    public struct IMECompositionForm
     {
-        public int dwStyle;
+        public IMECompositionStyle dwStyle;
         public Point ptCurrentPos;
         public Rect rcArea;
     }

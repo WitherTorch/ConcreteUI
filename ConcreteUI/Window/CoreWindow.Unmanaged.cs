@@ -9,6 +9,7 @@ using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.DXGI;
 using ConcreteUI.Internals;
 using ConcreteUI.Internals.Native;
+using ConcreteUI.Utils;
 
 using InlineMethod;
 
@@ -149,7 +150,7 @@ namespace ConcreteUI.Window
 
                         Rect rect = UnsafeHelper.ReadUnaligned<Rect>((void*)lParam);
                         Size oldSize = rect.Size;
-                        Size newSize = AdjustSize(oldSize, minimumSize, maximumSize, _pointsPerPixel);
+                        Size newSize = GraphicsUtils.AdjustSize(oldSize, minimumSize, maximumSize, _pointsPerPixel);
                         if (newSize == oldSize)
                             goto default;
 
@@ -200,7 +201,7 @@ namespace ConcreteUI.Window
 
                         (ushort width, ushort height) = lParam.GetWords();
                         Size oldSize = new Size(width, height);
-                        Size newSize = AdjustSize(oldSize, minimumSize, maximumSize, _pointsPerPixel);
+                        Size newSize = GraphicsUtils.AdjustSize(oldSize, minimumSize, maximumSize, _pointsPerPixel);
 
                         if (oldSize == newSize)
                             goto default;
@@ -278,7 +279,7 @@ namespace ConcreteUI.Window
                             User32.SetCapture(hwnd);
                         }
                         MouseInteractEventArgs args = new MouseInteractEventArgs(
-                            point: ScalingPixelToLogical(point, _pixelsPerPoint),
+                            point: GraphicsUtils.ScalingPoint(point, _pixelsPerPoint),
                             buttons: buttons);
                         OnMouseDown(ref args);
                         if (args.Handled)
@@ -304,7 +305,7 @@ namespace ConcreteUI.Window
                         if (buttons == MouseButtons.None)
                             goto default;
                         MouseNotifyEventArgs args = new MouseNotifyEventArgs(
-                            point: ScalingPixelToLogical(point, _pixelsPerPoint),
+                            point: GraphicsUtils.ScalingPoint(point, _pixelsPerPoint),
                             buttons: buttons);
                         OnMouseUp(in args);
                         goto default;
@@ -359,7 +360,7 @@ namespace ConcreteUI.Window
                     {
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
                         OnMouseMove(new MouseInteractEventArgs(
-                            point: ScalingPixelToLogical(point, _pixelsPerPoint)));
+                            point: GraphicsUtils.ScalingPoint(point, _pixelsPerPoint)));
                         if (_beforeHitTest != (nint)HitTestValue.Client)
                         {
                             switch ((HitTestValue)_beforeHitTest)
@@ -578,7 +579,7 @@ namespace ConcreteUI.Window
                     }
                 }
             }
-            return CustomHitTest(ScalingPixelToLogical(point, _pixelsPerPoint));
+            return CustomHitTest(GraphicsUtils.ScalingPoint(point, _pixelsPerPoint));
         }
         #endregion
 
@@ -833,43 +834,13 @@ namespace ConcreteUI.Window
 
         #region Thread-Safe Function Overwrite
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point PointToLocal(Point point)
-        {
-            IntPtr handle = Handle;
-            if (handle == IntPtr.Zero)
-                return Point.Empty;
-
-            return ScalingPixelToLogical(PointToLocalCore(handle, point), _pixelsPerPoint);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point PointToLocalRaw(Point point)
-        {
-            IntPtr handle = Handle;
-            if (handle == IntPtr.Zero)
-                return Point.Empty;
-
-            return PointToLocalCore(handle, point);
-        }
-
-        [LocalsInit(false)]
-        private static Point PointToLocalCore(IntPtr handle, Point point)
-        {
-            Rect rect;
-            if (!User32.GetWindowRect(handle, &rect))
-                return Point.Empty;
-
-            return new Point(point.X - rect.X, point.Y - rect.Y);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Point PointToClient(Point point)
         {
             IntPtr handle = Handle;
             if (handle == IntPtr.Zero)
                 return Point.Empty;
 
-            return ScalingPixelToLogical(PointToClientCore(handle, point), _pixelsPerPoint);
+            return GraphicsUtils.ScalingPoint(PointToClientCore(handle, point), _pixelsPerPoint);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -891,93 +862,36 @@ namespace ConcreteUI.Window
             return point;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Point PointToScreen(Point point)
+        {
+            IntPtr handle = Handle;
+            if (handle == IntPtr.Zero)
+                return Point.Empty;
+
+            return GraphicsUtils.ScalingPoint(PointToClientCore(handle, point), _pointsPerPixel);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Point PointToScreenRaw(Point point)
+        {
+            IntPtr handle = Handle;
+            if (handle == IntPtr.Zero)
+                return Point.Empty;
+
+            return PointToScreenCore(handle, point);
+        }
+
+        [LocalsInit(false)]
+        private static Point PointToScreenCore(IntPtr handle, Point point)
+        {
+            if (!User32.ClientToScreen(handle, &point))
+                return Point.Empty;
+
+            return point;
+        }
+
         #endregion
-        #endregion
-
-        #region Inline Macros
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Size ScalingLogicalToPixel(SizeF original, Vector2 pointsPerPixel)
-        {
-            (float factorX, float factorY) = pointsPerPixel;
-            return new Size(MathI.Floor(original.Width * factorX), MathI.Floor(original.Height * factorY));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static SizeF ScalingPixelToLogical(Size original, Vector2 pixelsPerPoint)
-        {
-            (float factorX, float factorY) = pixelsPerPoint;
-            return new SizeF(original.Width * factorX, original.Height * factorY);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Point ScalingPixelToLogical(Point original, Vector2 pixelsPerPoint)
-        {
-            (float factorX, float factorY) = pixelsPerPoint;
-            return new Point(MathI.Floor(original.X * factorX), MathI.Floor(original.Y * factorY));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static PointF ScalingPixelToLogical(PointF original, Vector2 pixelsPerPoint)
-        {
-            (float factorX, float factorY) = pixelsPerPoint;
-            return new PointF(original.X * factorX, original.Y * factorY);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Rect ScalingLogicalToPixel(RectF original, Vector2 pointsPerPixel)
-        {
-            (float factorX, float factorY) = pointsPerPixel;
-            if (factorX == 1.0f && factorY == 1.0f)
-                return (Rect)original;
-            return new Rect(left: MathI.FloorPositive(original.Left * factorX),
-                top: MathI.FloorPositive(original.Top * factorY),
-                right: MathI.Ceiling(original.Right * factorX),
-                bottom: MathI.Ceiling(original.Bottom * factorY));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static RectF ScalingPixelToLogical(Rect original, Vector2 pixelsPerPoint)
-        {
-            (float factorX, float factorY) = pixelsPerPoint;
-            if (factorX == 1.0f && factorY == 1.0f)
-                return (RectF)original;
-            return new RectF(left: original.Left * factorX,
-                top: original.Top * factorY,
-                right: original.Right * factorX,
-                bottom: original.Bottom * factorY);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Size AdjustSize(Size original, SizeF min, SizeF max, Vector2 pixelsPerPoint)
-        {
-            if (max == SizeF.Empty)
-            {
-                if (min == SizeF.Empty)
-                    return original;
-                return Max(original, ScalingLogicalToPixel(min, pixelsPerPoint));
-            }
-            else
-            {
-                if (min == SizeF.Empty)
-                    return Min(original, ScalingLogicalToPixel(min, pixelsPerPoint));
-                return Clamp(original, ScalingLogicalToPixel(min, pixelsPerPoint), ScalingLogicalToPixel(min, pixelsPerPoint));
-            }
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private static Size Min(Size original, Size min)
-            => new Size(width: MathHelper.Min(original.Width, min.Width),
-                height: MathHelper.Min(original.Height, min.Height));
-
-        [Inline(InlineBehavior.Remove)]
-        private static Size Max(Size original, Size max)
-            => new Size(width: MathHelper.Max(original.Width, max.Width),
-                height: MathHelper.Max(original.Height, max.Height));
-
-        [Inline(InlineBehavior.Remove)]
-        private static Size Clamp(Size original, Size min, Size max)
-            => new Size(width: MathHelper.Clamp(original.Width, min.Width, max.Width),
-                height: MathHelper.Clamp(original.Height, min.Height, max.Height));
         #endregion
     }
 }

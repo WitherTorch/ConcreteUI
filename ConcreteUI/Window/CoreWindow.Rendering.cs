@@ -247,6 +247,10 @@ namespace ConcreteUI.Window
         public Vector2 GetPointsPerPixel() => _pointsPerPixel;
 
         IEnumerable<UIElement?> IElementContainer.GetActiveElements() => GetActiveElements();
+
+        Point IElementContainer.PointToGlobal(Point point) => point;
+
+        PointF IElementContainer.PointToGlobal(PointF point) => point;
         #endregion
 
         #region Abstract Methods
@@ -443,7 +447,7 @@ namespace ConcreteUI.Window
                     host.ResizeTemporarily(size);
                 else
                     host.Resize(size);
-                RecalculateLayout(ScalingPixelToLogical(size, _pixelsPerPoint), true);
+                RecalculateLayout(GraphicsUtils.ScalingSize(size, _pixelsPerPoint), true);
             }
             D2D1DeviceContext? deviceContext = host.GetDeviceContext();
             if (deviceContext is null || deviceContext.IsDisposed)

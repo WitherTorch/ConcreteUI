@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security;
 
+using ConcreteUI.Input;
 using ConcreteUI.Utils;
 
 using WitherTorch.Common.Windows.Structures;
@@ -45,10 +46,10 @@ namespace ConcreteUI.Internals.Native
         public static extern long ImmGetCompositionStringW(IntPtr hIMC, IMECompositionFlags flags, void* lpBuf, int dwBufLen);
 
         [DllImport(LibraryName)]
-        public static extern SysBool ImmSetCandidateWindow(IntPtr hIMC, CandidateForm* lpCandidate);
+        public static extern SysBool ImmSetCandidateWindow(IntPtr hIMC, IMECandidateForm* lpCandidate);
 
         [DllImport(LibraryName)]
-        public static extern SysBool ImmSetCompositionWindow(IntPtr hIMC, CompositionForm* lpCompForm);
+        public static extern SysBool ImmSetCompositionWindow(IntPtr hIMC, IMECompositionForm* lpCompForm);
 
         [DllImport(LibraryName)]
         public static extern uint ImmGetVirtualKey(IntPtr hIMC);

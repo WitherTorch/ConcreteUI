@@ -268,6 +268,10 @@ namespace ConcreteUI.Controls
             DisposeHelper.NullSwapOrDispose(ref _textLayout, layout);
         }
 
+        Point IElementContainer.PointToGlobal(Point point) => PointToGlobal(point);
+
+        PointF IElementContainer.PointToGlobal(PointF point) => PointToGlobal(point);
+
         [Inline(InlineBehavior.Remove)]
         private static int GetContentLeftCore(int x) => x + UIConstants.ElementMarginDouble;
 

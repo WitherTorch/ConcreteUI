@@ -93,6 +93,9 @@ namespace ConcreteUI.Internals.Native
         public static extern SysBool ScreenToClient(IntPtr hWnd, Point* lpPoint);
 
         [DllImport(LibraryName)]
+        public static extern SysBool ClientToScreen(IntPtr hWnd, Point* lpPoint);
+
+        [DllImport(LibraryName)]
         public static extern SysBool SetWindowTextW(IntPtr hWnd, char* lpString);
 
         [DllImport(LibraryName)]
