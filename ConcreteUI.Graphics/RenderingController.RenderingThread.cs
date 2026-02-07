@@ -34,6 +34,7 @@ namespace ConcreteUI.Graphics
                 uint timePeriod = capability.wPeriodMin;
                 if (timePeriod <= 0 || Winmm.timeBeginPeriod(timePeriod) != 0)
                     return;
+                _timePeriod = timePeriod;
                 AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
             }
 
