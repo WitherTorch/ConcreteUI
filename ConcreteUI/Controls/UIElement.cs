@@ -94,6 +94,11 @@ namespace ConcreteUI.Controls
             => UnsafeHelper.AddTypedOffset(ref _layoutVariables[0], (nuint)property) = variable;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsBackgroundOpaque() => IsBackgroundOpaqueCore() || (_parent ?? _renderer).IsBackgroundOpaque(this);
+
+        protected virtual bool IsBackgroundOpaqueCore() => false;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual void Update()
         {
             const ulong RequestRedrawBit = 0b01;
@@ -238,10 +243,10 @@ namespace ConcreteUI.Controls
         protected abstract void ApplyThemeCore(IThemeResourceProvider provider);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected Point PointToGlobal(Point point) => (_parent ?? _renderer).PointToGlobal(point);
+        public Point PointToGlobal(Point point) => (_parent ?? _renderer).PointToGlobal(point);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected PointF PointToGlobal(PointF point) => (_parent ?? _renderer).PointToGlobal(point);
+        public PointF PointToGlobal(PointF point) => (_parent ?? _renderer).PointToGlobal(point);
 
         public override int GetHashCode() => _identifier;
 

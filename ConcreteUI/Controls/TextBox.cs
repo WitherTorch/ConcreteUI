@@ -359,8 +359,7 @@ namespace ConcreteUI.Controls
                     return true;
                 SetRenderingProperties(watermarkLayout, renderSize, context.PointsPerPixel, _multiLine);
                 //文字為空，繪製浮水印
-                using (ClearTypeScope scope = ClearTypeScope.Enter(Renderer, context, backBrush))
-                    RenderLayoutCore(context, brushes[(int)Brush.ForeInactiveBrush], watermarkLayout, PointF.Empty);
+                RenderLayoutCore(context, brushes[(int)Brush.ForeInactiveBrush], watermarkLayout, PointF.Empty);
                 if (focused)
                     DrawCaret(context, watermarkLayout, PointF.Empty, 0);
                 if (layout is not null)
@@ -370,8 +369,7 @@ namespace ConcreteUI.Controls
             }
 
             SetRenderingProperties(layout, renderSize, context.PointsPerPixel, _multiLine);
-            using (ClearTypeScope token = ClearTypeScope.Enter(Renderer, context, backBrush))
-                RenderLayout(context, focused, layout, RectF.FromXYWH(PointF.Empty, renderSize));
+            RenderLayout(context, focused, layout, RectF.FromXYWH(PointF.Empty, renderSize));
             DisposeHelper.NullSwapOrDispose(ref _layout, layout);
             if (watermarkLayout is not null)
                 DisposeHelper.NullSwapOrDispose(ref _watermarkLayout, watermarkLayout);

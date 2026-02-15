@@ -10,6 +10,8 @@ namespace ConcreteUI.Controls
 {
     public interface IElementContainer
     {
+        bool IsBackgroundOpaque(UIElement element);
+
         IEnumerable<UIElement?> GetElements();
 
         IEnumerable<UIElement?> GetActiveElements()

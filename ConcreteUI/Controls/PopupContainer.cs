@@ -7,6 +7,7 @@ using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Internals;
 using ConcreteUI.Theme;
+using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
 using InlineMethod;
@@ -64,9 +65,9 @@ namespace ConcreteUI.Controls
         public void RenderBackground(UIElement element, in RegionalRenderingContext context)
             => RenderBackground(context, _brushes[(int)Brush.BackBrush]);
 
-        Point IElementContainer.PointToGlobal(Point point) => PointToGlobal(point);
+        protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(_brushes[(int)Brush.BackBrush]);
 
-        PointF IElementContainer.PointToGlobal(PointF point) => PointToGlobal(point);
+        bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
 
         protected override bool RenderCore(in RegionalRenderingContext context)
         {

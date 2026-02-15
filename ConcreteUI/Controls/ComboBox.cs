@@ -122,6 +122,17 @@ namespace ConcreteUI.Controls
             return false;
         }
 
+        protected override bool IsBackgroundOpaqueCore()
+        {
+            D2D1Brush[] brushes = _brushes;
+            D2D1Brush backBrush;
+            if (Enabled)
+                backBrush = _hovered ? brushes[(int)Brush.BackHoveredBrush] : brushes[(int)Brush.BackBrush];
+            else
+                backBrush = brushes[(int)Brush.BackDisabledBrush];
+            return GraphicsUtils.CheckBrushIsSolid(backBrush);
+        }
+
         protected override bool RenderCore(in RegionalRenderingContext context)
         {
             DWriteTextLayout? layout = GetTextLayout(GetAndCleanRenderObjectUpdateFlags());

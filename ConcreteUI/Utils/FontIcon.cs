@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -45,26 +45,28 @@ namespace ConcreteUI.Utils
             do
             {
                 DWriteTextFormat format = factory.CreateTextFormat(fontName, fontSize, fontWeight, fontStyle);
-                format.ParagraphAlignment = DWriteParagraphAlignment.Center;
-                format.TextAlignment = DWriteTextAlignment.Center;
+                format.ParagraphAlignment = DWriteParagraphAlignment.Near;
+                format.TextAlignment = DWriteTextAlignment.Leading;
                 format.WordWrapping = DWriteWordWrapping.NoWrap;
                 DWriteTextLayout layout = factory.CreateTextLayout(text, format);
                 format.Dispose();
                 DWriteTextMetrics metrics = layout.GetMetrics();
-                float realHeight = metrics.Height;
+                float realHeight = metrics.Top + metrics.Height;
                 if (realHeight > targetHeight)
                 {
                     layout.Dispose();
                     fontSize -= realHeight - targetHeight;
                     continue;
                 }
-                float realWidth = metrics.Width;
+                float realWidth = metrics.Left + metrics.Width;
                 if (realWidth > targetWidth)
                 {
                     layout.Dispose();
                     fontSize -= realWidth - targetWidth;
                     continue;
                 }
+                layout.ParagraphAlignment = DWriteParagraphAlignment.Center;
+                layout.TextAlignment = DWriteTextAlignment.Center;
                 layout.MaxWidth = size.Width;
                 layout.MaxHeight = size.Height;
                 return layout;
@@ -74,12 +76,14 @@ namespace ConcreteUI.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Render(IRenderingContext context, PointF location, D2D1Brush brush)
+        public void Render(D2D1DeviceContext context, PointF location, D2D1Brush brush)
             => Render(context, new RectangleF(location, _size), brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Render(IRenderingContext context, in RectangleF rect, D2D1Brush brush)
+        public void Render(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
         {
+            using ClearTypeScope scope = ClearTypeScope.Enter(context, enable: false);
+
             SemaphoreSlim semaphore = _semaphore;
             DWriteTextLayout layout = _layout;
 
@@ -103,6 +107,8 @@ namespace ConcreteUI.Utils
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Render(in RegionalRenderingContext context, in RectangleF rect, D2D1Brush brush)
         {
+            using ClearTypeScope scope = ClearTypeScope.Enter(in context, enable: false);
+
             SemaphoreSlim semaphore = _semaphore;
             DWriteTextLayout layout = _layout;
 

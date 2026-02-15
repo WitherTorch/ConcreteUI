@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
+using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Utils;
 
@@ -134,19 +135,19 @@ namespace ConcreteUI.Internals
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderMaximizeButton(IRenderingContext context, in RectangleF rect, D2D1Brush brush)
+        public void RenderMaximizeButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
             => _maxIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderRestoreButton(IRenderingContext context, in RectangleF rect, D2D1Brush brush)
+        public void RenderRestoreButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
             => _restoreIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderMinimizeButton(IRenderingContext context, in RectangleF rect, D2D1Brush brush)
+        public void RenderMinimizeButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
             => _minIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderCloseButton(IRenderingContext context, in RectangleF rect, D2D1Brush brush)
+        public void RenderCloseButton(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
             => _closeIcon?.Render(context, rect, brush);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -5,6 +5,7 @@ using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Theme;
+using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
@@ -34,6 +35,8 @@ namespace ConcreteUI.Controls
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
             => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
+
+        protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(_brushes[(int)Brush.BackBrush]);
 
         protected override bool RenderCore(in RegionalRenderingContext context)
         {

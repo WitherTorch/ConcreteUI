@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Theme;
+using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
 using WitherTorch.Common;
@@ -53,9 +54,7 @@ namespace ConcreteUI.Controls
 
         IEnumerable<UIElement> IElementContainer.GetActiveElements() => _collection;
 
-        Point IElementContainer.PointToGlobal(Point point) => PointToGlobal(point);
-
-        PointF IElementContainer.PointToGlobal(PointF point) => PointToGlobal(point);
+        bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
 
         public void Dispose() => _collection.Dispose();
     }

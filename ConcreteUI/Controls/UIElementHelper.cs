@@ -8,6 +8,7 @@ using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.Direct2D.Geometry;
+using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 
 using InlineMethod;
@@ -223,8 +224,10 @@ namespace ConcreteUI.Controls
         {
             if (ignoreNeedRefresh || element.NeedRefresh() || collector.IsEmptyInstance)
             {
+                bool isOpaque = element.IsBackgroundOpaque();
+                ClearTypeSwitcher.SetClearType(context, isOpaque);
                 using (RegionalRenderingContext renderingContext =
-                    RegionalRenderingContext.Create(context, collector, pointPerPixel, (RectF)element.Bounds, D2D1AntialiasMode.Aliased, out _))
+                    RegionalRenderingContext.Create(context, collector, pointPerPixel, (RectF)element.Bounds, D2D1AntialiasMode.Aliased, isOpaque, out _))
                     element.Render(renderingContext);
                 collector = DirtyAreaCollector.Empty;
             }

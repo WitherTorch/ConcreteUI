@@ -86,6 +86,8 @@ namespace ConcreteUI.Controls
             DisposeHelper.SwapDisposeInterlocked(ref _layouts, layouts);
         }
 
+        protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(_brushes[(int)Brush.BackBrush]);
+
         protected override bool RenderCore(in RegionalRenderingContext context)
         {
             SizeF renderSize = context.Size;

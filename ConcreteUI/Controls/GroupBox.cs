@@ -195,6 +195,10 @@ namespace ConcreteUI.Controls
             return false;
         }
 
+        protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(_brushes[(int)Brush.BackBrush]);
+
+        bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
+
         public override void Render(in RegionalRenderingContext context) => Render(context, markDirty: false);
 
         protected override bool RenderCore(in RegionalRenderingContext context)
@@ -263,14 +267,9 @@ namespace ConcreteUI.Controls
                 RenderBackground(context, backBrush);
                 context.MarkAsDirty(textBounds);
             }
-            using ClearTypeScope token = ClearTypeScope.Enter(Renderer, context.DeviceContext, backBrush);
             context.DrawTextLayout(textBounds.Location, layout, textBrush, D2D1DrawTextOptions.None);
             DisposeHelper.NullSwapOrDispose(ref _textLayout, layout);
         }
-
-        Point IElementContainer.PointToGlobal(Point point) => PointToGlobal(point);
-
-        PointF IElementContainer.PointToGlobal(PointF point) => PointToGlobal(point);
 
         [Inline(InlineBehavior.Remove)]
         private static int GetContentLeftCore(int x) => x + UIConstants.ElementMarginDouble;

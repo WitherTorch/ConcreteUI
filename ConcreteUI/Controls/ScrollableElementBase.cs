@@ -11,6 +11,7 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Internals;
 using ConcreteUI.Internals.NativeHelpers;
 using ConcreteUI.Theme;
+using ConcreteUI.Utils;
 
 using InlineMethod;
 
@@ -111,6 +112,15 @@ namespace ConcreteUI.Controls
             {
                 return default;
             }
+        }
+
+        protected override bool IsBackgroundOpaqueCore()
+        {
+            D2D1Brush brush = Enabled ? GetBackBrush() : GetBackDisabledBrush();
+            bool result = GraphicsUtils.CheckBrushIsSolid(brush);
+            if (!result || !_hasScrollBar)
+                return result;
+            return GraphicsUtils.CheckBrushIsSolid(_brushes[(int)Brush.ScrollBarBackBrush]);
         }
 
         public override void Render(in RegionalRenderingContext context) => Render(context, markDirty: false);

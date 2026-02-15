@@ -251,6 +251,8 @@ namespace ConcreteUI.Window
         Point IElementContainer.PointToGlobal(Point point) => point;
 
         PointF IElementContainer.PointToGlobal(PointF point) => point;
+
+        bool IElementContainer.IsBackgroundOpaque(UIElement element) => _windowMaterial == WindowMaterial.None;
         #endregion
 
         #region Abstract Methods
@@ -453,6 +455,7 @@ namespace ConcreteUI.Window
             if (deviceContext is null || deviceContext.IsDisposed)
                 return true;
 
+            ClearTypeSwitcher.SetClearType(deviceContext, false);
             if (force)
                 return RenderCore_Force(host, deviceContext);
             else

@@ -114,6 +114,18 @@ namespace ConcreteUI.Controls
             return false;
         }
 
+        protected override bool IsBackgroundOpaqueCore()
+        {
+            D2D1Brush[] brushes = _brushes;
+            D2D1Brush brush = PressState switch
+            {
+                ButtonTriState.Hovered => brushes[(int)Brush.FaceHoveredBrush],
+                ButtonTriState.Pressed => brushes[(int)Brush.FacePressedBrush],
+                _ => brushes[(int)Brush.FaceBrush],
+            };
+            return GraphicsUtils.CheckBrushIsSolid(brush);
+        }
+
         protected override bool RenderCore(in RegionalRenderingContext context)
         {
             RenderObjectUpdateFlags flags = GetAndCleanRenderObjectUpdateFlags();
