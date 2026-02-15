@@ -1,13 +1,11 @@
 using System;
 using System.Drawing;
 
-using ConcreteUI.Graphics.Internals.Native;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.DirectComposition;
 using ConcreteUI.Graphics.Native.DXGI;
 
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Structures;
 
 using static ConcreteUI.Graphics.Constants;
 
@@ -19,13 +17,13 @@ namespace ConcreteUI.Graphics.Hosts
         private readonly DCompositionVisual _visual;
 
         public CompositionGraphicsHost(GraphicsDeviceProvider deviceProvider, IntPtr handle,
-            D2D1TextAntialiasMode textAntialiasMode) : base(deviceProvider, handle, textAntialiasMode, true)
+            D2D1TextAntialiasMode textAntialiasMode, bool isOpaque) : base(deviceProvider, handle, textAntialiasMode, true, isOpaque)
         {
             DCompositionDevice device = NullSafetyHelper.ThrowIfNull(deviceProvider.DCompDevice);
             Initialize(device, (DXGISwapChain1)_swapChain, handle, out _target, out _visual);
         }
 
-        public CompositionGraphicsHost(SimpleGraphicsHost another, IntPtr handle) : base(another, handle)
+        public CompositionGraphicsHost(SimpleGraphicsHost another, IntPtr handle, bool isOpaque) : base(another, handle, isOpaque)
         {
             DCompositionDevice device = NullSafetyHelper.ThrowIfNull(another.GetDeviceProvider().DCompDevice);
             Initialize(device, (DXGISwapChain1)_swapChain, handle, out _target, out _visual);
@@ -41,7 +39,7 @@ namespace ConcreteUI.Graphics.Hosts
             device.Commit();
         }
 
-        protected override unsafe DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, bool isFlipModel)
+        protected override DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, bool isFlipModel, bool isOpaque)
         {
             if (!isFlipModel || provider.DXGIFactory is not DXGIFactory2 factory)
                 throw new InvalidOperationException();
@@ -54,7 +52,7 @@ namespace ConcreteUI.Graphics.Hosts
                 Stereo = false,
                 Width = 1,
                 Height = 1,
-                AlphaMode = DXGIAlphaMode.Premultiplied,
+                AlphaMode = isOpaque ? DXGIAlphaMode.Ignore : DXGIAlphaMode.Premultiplied,
                 Flags = DXGISwapChainFlags.None,
                 BufferCount = 2,
                 Scaling = DXGIScaling.Stretch,
@@ -63,12 +61,13 @@ namespace ConcreteUI.Graphics.Hosts
             return GetLatestSwapChain(factory.CreateSwapChainForComposition(provider.D3DDevice, swapChainDesc));
         }
 
-        protected override unsafe DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, DXGISwapChain original)
+        protected override DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, DXGISwapChain original, bool isOpaque)
         {
             if (original is not DXGISwapChain1 originalSwapChain || provider.DXGIFactory is not DXGIFactory2 factory)
                 throw new InvalidOperationException();
 
             DXGISwapChainDescription1 swapChainDesc = originalSwapChain.Description1;
+            swapChainDesc.AlphaMode = isOpaque ? DXGIAlphaMode.Ignore : DXGIAlphaMode.Premultiplied;    
             DXGISwapChain1 swapChain = factory.CreateSwapChainForComposition(provider.D3DDevice, swapChainDesc);
             return GetLatestSwapChain(swapChain);
         }

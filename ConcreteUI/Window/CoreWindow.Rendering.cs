@@ -159,10 +159,10 @@ namespace ConcreteUI.Window
                 {
                     useFlipModel = useDComp = provider.IsSupportDComp && provider.IsSupportSwapChain1;
                 }
-                host = GraphicsHostHelper.CreateSwapChainGraphicsHost(handle, provider, useFlipModel, useDComp);
+                host = GraphicsHostHelper.CreateSwapChainGraphicsHost(handle, provider, useFlipModel, useDComp, IsBackgroundOpaque());
             }
             else
-                host = GraphicsHostHelper.FromAnotherSwapChainGraphicsHost(parent._host!, handle);
+                host = GraphicsHostHelper.FromAnotherSwapChainGraphicsHost(parent._host!, handle, IsBackgroundOpaque());
             _host = host;
             _collector = new DirtyAreaCollector(host);
             D2D1DeviceContext? deviceContext = host.BeginDraw();
@@ -252,7 +252,9 @@ namespace ConcreteUI.Window
 
         PointF IElementContainer.PointToGlobal(PointF point) => point;
 
-        bool IElementContainer.IsBackgroundOpaque(UIElement element) => _windowMaterial == WindowMaterial.None;
+        bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
+
+        private bool IsBackgroundOpaque() => _windowMaterial == WindowMaterial.None;
         #endregion
 
         #region Abstract Methods

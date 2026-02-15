@@ -32,7 +32,7 @@ namespace ConcreteUI.Graphics.Hosts
         public IntPtr AssociatedWindowHandle => _handle;
         public bool IsDisposed => _disposed;
 
-        public SimpleGraphicsHost(GraphicsDeviceProvider provider, IntPtr handle, D2D1TextAntialiasMode textAntialiasMode, bool isFlipModel)
+        public SimpleGraphicsHost(GraphicsDeviceProvider provider, IntPtr handle, D2D1TextAntialiasMode textAntialiasMode, bool isFlipModel, bool isOpaque)
         {
             _provider = provider;
             _handle = handle;
@@ -40,7 +40,7 @@ namespace ConcreteUI.Graphics.Hosts
             _alternateFlushing = false;
 
             D2D1DeviceContext context = TryQueryNewestInterface(provider.D2DDevice.CreateDeviceContext(D2D1DeviceContextOptions.None));
-            DXGISwapChain swapChain = CreateSwapChain(provider, isFlipModel);
+            DXGISwapChain swapChain = CreateSwapChain(provider, isFlipModel, isOpaque);
             DisableDXGIExtendedFeature(swapChain);
             context.AntialiasMode = D2D1AntialiasMode.Aliased;
             context.TextAntialiasMode = textAntialiasMode;
@@ -48,7 +48,7 @@ namespace ConcreteUI.Graphics.Hosts
             _swapChain = swapChain;
         }
 
-        public SimpleGraphicsHost(SimpleGraphicsHost another, IntPtr handle)
+        public SimpleGraphicsHost(SimpleGraphicsHost another, IntPtr handle, bool isOpaque)
         {
             GraphicsDeviceProvider provider = another._provider;
             _provider = provider;
@@ -57,7 +57,7 @@ namespace ConcreteUI.Graphics.Hosts
             _alternateFlushing = another._alternateFlushing;
 
             D2D1DeviceContext context = TryQueryNewestInterface(provider.D2DDevice.CreateDeviceContext(D2D1DeviceContextOptions.None));
-            DXGISwapChain swapChain = CreateSwapChain(provider, another._swapChain);
+            DXGISwapChain swapChain = CreateSwapChain(provider, another._swapChain, isOpaque);
             DisableDXGIExtendedFeature(swapChain);
             context.AntialiasMode = another._context.AntialiasMode;
             context.TextAntialiasMode = another._antialiasMode;
@@ -65,7 +65,7 @@ namespace ConcreteUI.Graphics.Hosts
             _swapChain = swapChain;
         }
 
-        protected virtual DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, bool isFlipModel)
+        protected virtual DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, bool isFlipModel, bool isOpaque)
         {
             DXGISwapChainDescription swapChainDesc = new DXGISwapChainDescription
             {
@@ -80,7 +80,7 @@ namespace ConcreteUI.Graphics.Hosts
             return provider.DXGIFactory.CreateSwapChain(provider.D3DDevice, swapChainDesc);
         }
 
-        protected virtual DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, DXGISwapChain original)
+        protected virtual DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, DXGISwapChain original, bool isOpaque)
         {
             DXGISwapChainDescription swapChainDesc = original.Description;
             swapChainDesc.OutputWindow = AssociatedWindowHandle;

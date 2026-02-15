@@ -16,11 +16,11 @@ namespace ConcreteUI.Graphics.Hosts
         private bool _switchToNormalSwapChain = false;
 
         public OptimizedGraphicsHost(GraphicsDeviceProvider deviceProvider, IntPtr handle,
-            D2D1TextAntialiasMode textAntialiasMode, bool isFlipModel) : base(deviceProvider, handle, textAntialiasMode, isFlipModel) { }
+            D2D1TextAntialiasMode textAntialiasMode, bool isFlipModel, bool isOpaque) : base(deviceProvider, handle, textAntialiasMode, isFlipModel, isOpaque) { }
 
-        public OptimizedGraphicsHost(SimpleGraphicsHost another, IntPtr handle) : base(another, handle) { }
+        public OptimizedGraphicsHost(SimpleGraphicsHost another, IntPtr handle, bool isOpaque) : base(another, handle, isOpaque) { }
 
-        protected override unsafe DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, bool isFlipModel)
+        protected override DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, bool isFlipModel, bool isOpaque)
         {
             if (provider.DXGIFactory is not DXGIFactory2 factory)
                 throw new InvalidOperationException();
@@ -33,7 +33,7 @@ namespace ConcreteUI.Graphics.Hosts
                 Stereo = false,
                 Width = 0,
                 Height = 0,
-                AlphaMode = DXGIAlphaMode.Unspecified,
+                AlphaMode = isOpaque ? DXGIAlphaMode.Ignore : DXGIAlphaMode.Premultiplied,
                 Flags = DXGISwapChainFlags.None,
             };
             if (isFlipModel)
@@ -51,12 +51,13 @@ namespace ConcreteUI.Graphics.Hosts
             return factory.CreateSwapChainForHwnd(provider.D3DDevice, AssociatedWindowHandle, swapChainDesc);
         }
 
-        protected override unsafe DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, DXGISwapChain original)
+        protected override DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, DXGISwapChain original, bool isOpaque)
         {
             if (original is not DXGISwapChain1 originalSwapChain || provider.DXGIFactory is not DXGIFactory2 factory)
                 throw new InvalidOperationException();
 
             DXGISwapChainDescription1 swapChainDesc = originalSwapChain.Description1;
+            swapChainDesc.AlphaMode = isOpaque ? DXGIAlphaMode.Ignore : DXGIAlphaMode.Premultiplied;
             DXGISwapChain1 swapChain = factory.CreateSwapChainForHwnd(provider.D3DDevice, AssociatedWindowHandle, swapChainDesc);
             return swapChain;
         }
