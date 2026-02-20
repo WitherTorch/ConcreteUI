@@ -91,6 +91,7 @@ namespace ConcreteUI.Graphics.Hosts
         {
             DXGISwapChainDescription swapChainDesc = original.Description;
             swapChainDesc.OutputWindow = AssociatedWindowHandle;
+            swapChainDesc.BufferDesc = swapChainDesc.BufferDesc with { Height = 1, Width = 1 };
             return provider.DXGIFactory.CreateSwapChain(provider.D3DDevice, swapChainDesc);
         }
 

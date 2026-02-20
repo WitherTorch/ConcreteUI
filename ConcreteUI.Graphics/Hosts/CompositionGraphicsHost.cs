@@ -68,6 +68,8 @@ namespace ConcreteUI.Graphics.Hosts
 
             DXGISwapChainDescription1 swapChainDesc = originalSwapChain.Description1;
             swapChainDesc.AlphaMode = isOpaque ? DXGIAlphaMode.Ignore : DXGIAlphaMode.Premultiplied;
+            swapChainDesc.Width = 1;
+            swapChainDesc.Height = 1;
             DXGISwapChain1 swapChain = factory.CreateSwapChainForComposition(provider.D3DDevice, swapChainDesc);
             return GetLatestSwapChain(swapChain);
         }

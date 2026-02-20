@@ -29,8 +29,8 @@ namespace ConcreteUI.Graphics.Hosts
                 Format = Constants.Format,
                 SampleDesc = new DXGISampleDescription(1, 0),
                 Stereo = false,
-                Width = 0,
-                Height = 0,
+                Width = 1,
+                Height = 1,
                 AlphaMode = isOpaque ? DXGIAlphaMode.Ignore : DXGIAlphaMode.Premultiplied,
                 Flags = DXGISwapChainFlags.None,
             };
@@ -56,6 +56,8 @@ namespace ConcreteUI.Graphics.Hosts
 
             DXGISwapChainDescription1 swapChainDesc = originalSwapChain.Description1;
             swapChainDesc.AlphaMode = isOpaque ? DXGIAlphaMode.Ignore : DXGIAlphaMode.Premultiplied;
+            swapChainDesc.Width = 1;
+            swapChainDesc.Height = 1;
             DXGISwapChain1 swapChain = factory.CreateSwapChainForHwnd(provider.D3DDevice, AssociatedWindowHandle, swapChainDesc);
             return swapChain;
         }
