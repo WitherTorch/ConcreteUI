@@ -193,7 +193,7 @@ namespace ConcreteUI.Graphics
             return NullSafetyHelper.ThrowIfNull(DXGIFactory.Create(DXGIFactory.IID_IDXGIFactory, throwException: true));
         }
 
-        private static unsafe DCompositionDevice? CreateDCompDevice(DXGIDevice device)
+        private static DCompositionDevice? CreateDCompDevice(DXGIDevice device)
         {
             Guid iid = DCompositionDevice.IID_IDCompositionDevice;
             void* nativePointer = device.NativePointer;
@@ -222,16 +222,14 @@ namespace ConcreteUI.Graphics
 
         private void Dispose(bool disposing)
         {
-            if (_disposed)
-                return;
-            _disposed = true;
-            if (!disposing)
+            if (ReferenceHelper.Exchange(ref _disposed, true))
                 return;
             DXGIFactory?.Dispose();
             DXGIAdapter?.Dispose();
             D3DDevice?.Dispose();
             DXGIDevice?.Dispose();
             D2DDevice?.Dispose();
+            DCompDevice?.Dispose();
         }
 
         ~GraphicsDeviceProvider()

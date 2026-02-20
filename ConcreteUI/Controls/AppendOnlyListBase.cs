@@ -12,22 +12,25 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public abstract partial class AppendOnlyListBase<TItem> : ScrollableElementBase where TItem : IAppendOnlyListItem<TItem>
+    public abstract partial class AppendOnlyListBase<TItem, TMeasuringContext> : ScrollableElementBase 
+        where TItem : IMeasurableListItem<TMeasuringContext> where TMeasuringContext : IMeasuringContext
     {
-        protected readonly AppendOnlyListItemStore<TItem> _itemStore;
+        protected readonly AppendOnlyListItemStore<TItem, TMeasuringContext> _itemStore;
         private bool _ignoreNeedRefresh;
 
-        protected AppendOnlyListBase(IRenderer renderer, string themePrefix, AppendOnlyListItemStore<TItem> itemStore) : base(renderer, themePrefix)
+        protected AppendOnlyListBase(IRenderer renderer, string themePrefix, AppendOnlyListItemStore<TItem, TMeasuringContext> itemStore) : base(renderer, themePrefix)
         {
             _itemStore = itemStore;
             itemStore.HeightChanged += ItemStore_HeightChanged;
+            itemStore.Bind(this);
             Initialize();
         }
 
-        protected AppendOnlyListBase(IRenderer renderer, string themePrefix, string scrollBarThemePrefix, AppendOnlyListItemStore<TItem> itemStore) : base(renderer, themePrefix, scrollBarThemePrefix)
+        protected AppendOnlyListBase(IRenderer renderer, string themePrefix, string scrollBarThemePrefix, AppendOnlyListItemStore<TItem, TMeasuringContext> itemStore) : base(renderer, themePrefix, scrollBarThemePrefix)
         {
             _itemStore = itemStore;
             itemStore.HeightChanged += ItemStore_HeightChanged;
+            itemStore.Bind(this);
             Initialize();
         }
 
@@ -53,7 +56,7 @@ namespace ConcreteUI.Controls
         protected override void OnContentBoundsChanged()
         {
             base.OnContentBoundsChanged();
-            _itemStore.RecalculateAll(force: false);
+            _itemStore.AdjustAll();
         }
 
         protected override bool RenderContent(in RegionalRenderingContext context, D2D1Brush backBrush)
@@ -106,6 +109,8 @@ namespace ConcreteUI.Controls
 
         protected virtual void RenderItem(in RegionalRenderingContext context, TItem item, SizeF renderSize)
             => item.Render(context, renderSize);
+
+        internal protected abstract TMeasuringContext CreateMeasuringContext();
 
         private void ItemStore_HeightChanged(object? sender, int height)
         {

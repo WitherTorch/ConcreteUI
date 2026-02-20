@@ -40,7 +40,7 @@ namespace ConcreteUI.Graphics.Internals
                 }
             }
 
-            public unsafe IntPtr CreateWaitingHandle(bool manualReset)
+            public IntPtr CreateWaitingHandle(bool manualReset)
             {
                 RawWaitingEvent* ptr = NativeMethods.AllocUnmanagedStructure(new RawWaitingEvent(manualReset));
                 return RawWaitingEvent.GetWaitingHandleFromEvent(ptr);

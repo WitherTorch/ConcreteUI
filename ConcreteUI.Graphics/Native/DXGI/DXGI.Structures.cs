@@ -92,7 +92,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 2)]
-    public unsafe struct DXGIAdapterDescription
+    public struct DXGIAdapterDescription
     {
         public FixedChar128 Description;
         public uint VendorId;
@@ -106,7 +106,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 2)]
-    public unsafe struct DXGIAdapterDescription1
+    public struct DXGIAdapterDescription1
     {
         public FixedChar128 Description;
         public uint VendorId;

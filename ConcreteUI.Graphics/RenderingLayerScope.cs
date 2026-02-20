@@ -20,15 +20,15 @@ namespace ConcreteUI.Graphics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe RenderingLayerScope Enter(D2D1DeviceContext context, scoped in D2D1LayerParameters parameters)
+        public static RenderingLayerScope Enter(D2D1DeviceContext context, scoped in D2D1LayerParameters parameters)
             => Enter(context, parameters, !SystemHelper.IsWindows8OrHigher);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe RenderingLayerScope Enter(D2D1DeviceContext context, scoped in D2D1LayerParametersNative parameters)
+        public static RenderingLayerScope Enter(D2D1DeviceContext context, scoped in D2D1LayerParametersNative parameters)
             => Enter(context, parameters, !SystemHelper.IsWindows8OrHigher);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe RenderingLayerScope Enter(D2D1DeviceContext context, scoped in D2D1LayerParameters parameters, bool createLayerObject)
+        public static RenderingLayerScope Enter(D2D1DeviceContext context, scoped in D2D1LayerParameters parameters, bool createLayerObject)
         {
             if (createLayerObject)
             {
@@ -44,7 +44,7 @@ namespace ConcreteUI.Graphics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe RenderingLayerScope Enter(D2D1DeviceContext context, scoped in D2D1LayerParametersNative parameters, bool createLayerObject)
+        public static RenderingLayerScope Enter(D2D1DeviceContext context, scoped in D2D1LayerParametersNative parameters, bool createLayerObject)
         {
             if (createLayerObject)
             {

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -29,6 +30,7 @@ namespace ConcreteUI.Graphics.Hosts
 
         private bool _alternateFlushing;
 
+        public event EventHandler? DeviceRemoved;
         public IntPtr AssociatedWindowHandle => _handle;
         public bool IsDisposed => _disposed;
 
@@ -215,16 +217,31 @@ namespace ConcreteUI.Graphics.Hosts
                     _sleeping = true;
                 return null;
             }
+            if (IsDeviceRemovedOrReset(hr))
+            {
+                OnDeviceRemoved();
+                return null;
+            }
             return hr switch
             {
-                Constants.DXGI_ERROR_DEVICE_REMOVED => new InvalidOperationException("Direct3D Device or DXGI Device has been removed."),
                 Constants.E_OUTOFMEMORY => new InvalidOperationException("Direct3D Device or DXGI Device was out of memory, application must be shutdown!"),
                 _ => Marshal.GetExceptionForHR(hr),
             };
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void Flush()
+        private static bool IsDeviceRemovedOrReset(int hr) =>
+            hr switch
+            {
+                Constants.DXGI_ERROR_DEVICE_REMOVED or
+                Constants.DXGI_ERROR_DEVICE_RESET or
+                Constants.DXGI_ERROR_DEVICE_HUNG or
+                Constants.DXGI_ERROR_DRIVER_INTERNAL_ERROR => true,
+                _ => false
+            };
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Flush()
         {
             D2D1DeviceContext? context = _activeContext;
             if (context is null || context.IsDisposed)
@@ -241,6 +258,11 @@ namespace ConcreteUI.Graphics.Hosts
             {
                 _alternateFlushing = true;
                 AlternativeFlush(context);
+                return;
+            }
+            if (IsDeviceRemovedOrReset(hr) || hr == Constants.D2DERR_RECREATE_TARGET)
+            {
+                OnDeviceRemoved();
                 return;
             }
 #if DEBUG
@@ -285,6 +307,12 @@ namespace ConcreteUI.Graphics.Hosts
 
         protected virtual void ResizeSwapChain(DXGISwapChain swapChain, in Size size)
             => swapChain.ResizeBuffers(0, MathHelper.MakeUnsigned(size.Width), MathHelper.MakeUnsigned(size.Height));
+
+        protected virtual void OnDeviceRemoved()
+        {
+            Debug.WriteLine("Device removed!");
+            DeviceRemoved?.Invoke(this, EventArgs.Empty);
+        }
 
         #region Disposing
         protected virtual void DisposeCore(bool disposing)

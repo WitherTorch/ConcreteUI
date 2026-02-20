@@ -6,8 +6,6 @@ using ConcreteUI.Graphics.Native.DXGI;
 
 using InlineMethod;
 
-using static ConcreteUI.Graphics.Constants;
-
 namespace ConcreteUI.Graphics.Hosts
 {
     public class OptimizedGraphicsHost : SimpleGraphicsHost
@@ -28,7 +26,7 @@ namespace ConcreteUI.Graphics.Hosts
             DXGISwapChainDescription1 swapChainDesc = new DXGISwapChainDescription1()
             {
                 BufferUsage = DXGIUsage.RenderTargetOutput | DXGIUsage.BackBuffer,
-                Format = Format,
+                Format = Constants.Format,
                 SampleDesc = new DXGISampleDescription(1, 0),
                 Stereo = false,
                 Width = 0,
@@ -103,7 +101,7 @@ namespace ConcreteUI.Graphics.Hosts
 
         protected override Exception? GetExceptionHRForPresent(DXGISwapChain swapChain, int hr)
         {
-            if (hr == E_NOTIMPL)
+            if (hr == Constants.E_NOTIMPL)
             {
                 _switchToNormalSwapChain = true;
                 return base.GetExceptionHRForPresent(swapChain, PresentCore(swapChain));

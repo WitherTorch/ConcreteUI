@@ -38,7 +38,7 @@ namespace ConcreteUI.Graphics
                 AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
             }
 
-            public unsafe RenderingThread(RenderingController controller, IWaitingEventManager eventManager, IFrameWaiter frameWaiter)
+            public RenderingThread(RenderingController controller, IWaitingEventManager eventManager, IFrameWaiter frameWaiter)
             {
                 _controller = controller;
                 _eventManager = eventManager;
@@ -62,7 +62,7 @@ namespace ConcreteUI.Graphics
                 _eventManager.WakeUp(handle);
             }
 
-            private unsafe void ThreadLoop()
+            private void ThreadLoop()
             {
                 const uint Infinite = unchecked((uint)Timeout.Infinite);
 

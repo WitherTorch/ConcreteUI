@@ -2,45 +2,56 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
+using InlineMethod;
+
+using WitherTorch.Common;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
-    public delegate void HeightChangedEventHandler<T>(object? sender, int height) where T : IAppendOnlyListItem<T>;
-    public delegate void ItemRemovedEventHandler<T>(object? sender, T item) where T : IAppendOnlyListItem<T>;
+    public delegate void HeightChangedEventHandler<TItem, TMeasuringContext>(object? sender, int height)
+        where TItem : IMeasurableListItem<TMeasuringContext> where TMeasuringContext : IMeasuringContext;
+    public delegate void ItemRemovedEventHandler<TItem, TMeasuringContext>(object? sender, TItem item)
+        where TItem : IMeasurableListItem<TMeasuringContext> where TMeasuringContext : IMeasuringContext;
 
-    public sealed class AppendOnlyListItemStore<T> where T : IAppendOnlyListItem<T>
+    public sealed class AppendOnlyListItemStore<TItem, TMeasuringContext> : ICheckableDisposable
+        where TItem : IMeasurableListItem<TMeasuringContext> where TMeasuringContext : IMeasuringContext
     {
         private readonly IAppendOnlyCollection<int> _keys;
-        private readonly IAppendOnlyCollection<T> _values;
+        private readonly IAppendOnlyCollection<TItem> _values;
         private readonly object _syncLock;
 
+        private AppendOnlyListBase<TItem, TMeasuringContext>? _owner;
+        private TMeasuringContext? _context;
         private ulong _disposed;
 
-        public event HeightChangedEventHandler<T>? HeightChanged;
-        public event ItemRemovedEventHandler<T>? ItemRemoved;
+        public event HeightChangedEventHandler<TItem, TMeasuringContext>? HeightChanged;
+        public event ItemRemovedEventHandler<TItem, TMeasuringContext>? ItemRemoved;
 
         public bool IsDisposed => InterlockedHelper.Read(ref _disposed) != 0UL;
 
-        private AppendOnlyListItemStore(IAppendOnlyCollection<int> keys, IAppendOnlyCollection<T> values)
+        private AppendOnlyListItemStore(IAppendOnlyCollection<int> keys, IAppendOnlyCollection<TItem> values)
         {
             _keys = keys;
             _values = values;
+            _owner = null;
             _syncLock = new object();
         }
 
-        public static AppendOnlyListItemStore<T> CreateLimited(int capacity)
-            => new AppendOnlyListItemStore<T>(
+        public void Bind(AppendOnlyListBase<TItem, TMeasuringContext> owner) => _owner = owner;
+
+        public static AppendOnlyListItemStore<TItem, TMeasuringContext> CreateLimited(int capacity)
+            => new AppendOnlyListItemStore<TItem, TMeasuringContext>(
                 keys: AppendOnlyCollection.CreateLimitedCollection<int>(capacity),
-                values: AppendOnlyCollection.CreateLimitedCollection<T>(capacity));
+                values: AppendOnlyCollection.CreateLimitedCollection<TItem>(capacity));
 
-        public static AppendOnlyListItemStore<T> CreateUnlimited()
-            => new AppendOnlyListItemStore<T>(
+        public static AppendOnlyListItemStore<TItem, TMeasuringContext> CreateUnlimited()
+            => new AppendOnlyListItemStore<TItem, TMeasuringContext>(
                 keys: AppendOnlyCollection.CreateUnlimitedCollection<int>(),
-                values: AppendOnlyCollection.CreateUnlimitedCollection<T>());
+                values: AppendOnlyCollection.CreateUnlimitedCollection<TItem>());
 
-        public void Append(T item)
+        public void Append(TItem item)
         {
             if (IsDisposed)
                 return;
@@ -48,7 +59,7 @@ namespace ConcreteUI.Controls
                 AppendCore(item);
         }
 
-        public void Append(IEnumerable<T> items)
+        public void Append(IEnumerable<TItem> items)
         {
             if (IsDisposed)
                 return;
@@ -64,40 +75,48 @@ namespace ConcreteUI.Controls
                 ClearCore();
         }
 
-        public void RecalculateAll(bool force)
+        public void AdjustAll()
         {
             if (IsDisposed)
                 return;
             lock (_syncLock)
-                RecalculateAllCore(force, triggerEvent: true);
+                AdjustAllCore(triggerEvent: true);
         }
 
-        public bool TryGetItem(int height, [NotNullWhen(true)] out T? item, out int itemTop, out int itemHeight)
+        public void ResetAll()
+        {
+            if (IsDisposed)
+                return;
+            lock (_syncLock)
+                ResetAllCore(triggerEvent: true);
+        }
+
+        public bool TryGetItem(int height, [NotNullWhen(true)] out TItem? item, out int itemTop, out int itemHeight)
         {
             if (height < 0 || IsDisposed)
                 goto Failed;
             lock (_syncLock)
                 return TryGetItemCore(height, out item, out itemTop, out itemHeight);
-            Failed:
+        Failed:
             item = default;
             itemHeight = 0;
             itemTop = 0;
             return false;
         }
 
-        public bool TryGetHeight(T item, out int itemTop, out int itemHeight)
+        public bool TryGetHeight(TItem item, out int itemTop, out int itemHeight)
         {
             if (IsDisposed)
                 goto Failed;
             lock (_syncLock)
-                return TryGetHeightCore_EqualityCompare(item, EqualityComparer<T>.Default, out itemTop, out itemHeight);
-            Failed:
+                return TryGetHeightCore_EqualityCompare(item, EqualityComparer<TItem>.Default, out itemTop, out itemHeight);
+        Failed:
             itemHeight = 0;
             itemTop = 0;
             return false;
         }
 
-        public bool TryGetHeight(T item, bool useBinarySearch, out int itemTop, out int itemHeight)
+        public bool TryGetHeight(TItem item, bool useBinarySearch, out int itemTop, out int itemHeight)
         {
             if (IsDisposed)
                 goto Failed;
@@ -106,7 +125,7 @@ namespace ConcreteUI.Controls
                 if (useBinarySearch)
                     return TryGetHeightCore_BinarySearch(item, null, out itemTop, out itemHeight);
                 else
-                    return TryGetHeightCore_EqualityCompare(item, EqualityComparer<T>.Default, out itemTop, out itemHeight);
+                    return TryGetHeightCore_EqualityCompare(item, EqualityComparer<TItem>.Default, out itemTop, out itemHeight);
             }
         Failed:
             itemHeight = 0;
@@ -114,7 +133,7 @@ namespace ConcreteUI.Controls
             return false;
         }
 
-        public bool TryGetHeight(T item, bool useBinarySearch, IComparer<T> comparer, out int itemTop, out int itemHeight)
+        public bool TryGetHeight(TItem item, bool useBinarySearch, IComparer<TItem> comparer, out int itemTop, out int itemHeight)
         {
             if (IsDisposed)
                 goto Failed;
@@ -131,31 +150,31 @@ namespace ConcreteUI.Controls
             return false;
         }
 
-        public bool TryGetHeight(T item, IEqualityComparer<T> comparer, out int itemTop, out int itemHeight)
+        public bool TryGetHeight(TItem item, IEqualityComparer<TItem> comparer, out int itemTop, out int itemHeight)
         {
             if (IsDisposed)
                 goto Failed;
             lock (_syncLock)
                 return TryGetHeightCore_EqualityCompare(item, comparer, out itemTop, out itemHeight);
-            Failed:
+        Failed:
             itemHeight = 0;
             itemTop = 0;
             return false;
         }
 
-        public bool TryGetHeight(T item, IComparer<T> comparer, out int itemTop, out int itemHeight)
+        public bool TryGetHeight(TItem item, IComparer<TItem> comparer, out int itemTop, out int itemHeight)
         {
             if (IsDisposed)
                 goto Failed;
             lock (_syncLock)
                 return TryGetHeightCore_Compare(item, comparer, out itemTop, out itemHeight);
-            Failed:
+        Failed:
             itemHeight = 0;
             itemTop = 0;
             return false;
         }
 
-        public int EnumerateItemsToList(int baseY, int height, IList<(T item, int itemTop, int itemHeight)> list)
+        public int EnumerateItemsToList(int baseY, int height, IList<(TItem item, int itemTop, int itemHeight)> list)
         {
             if (baseY < 0 || height < 0 || IsDisposed)
                 goto Failed;
@@ -164,26 +183,26 @@ namespace ConcreteUI.Controls
                 goto Failed;
             lock (_syncLock)
                 return EnumerateItemsCore(baseY, endY, list);
-            Failed:
+        Failed:
             return 0;
         }
 
-        private void AppendCore(T item) => HeightChanged?.Invoke(this, AppendCoreInternal(item));
+        private void AppendCore(TItem item) => HeightChanged?.Invoke(this, AppendCoreInternal(item));
 
-        private void AppendCore(IEnumerable<T> items)
+        private void AppendCore(IEnumerable<TItem> items)
         {
             switch (items)
             {
-                case T[] array:
+                case TItem[] array:
                     AppendCoreInternal(array, array.Length);
                     break;
-                case UnwrappableList<T> list:
+                case UnwrappableList<TItem> list:
                     AppendCoreInternal(list.Unwrap(), list.Count);
                     break;
-                case IList<T> list:
+                case IList<TItem> list:
                     AppendCoreInternal(list);
                     break;
-                case IReadOnlyList<T> list:
+                case IReadOnlyList<TItem> list:
                     AppendCoreInternal(list);
                     break;
                 default:
@@ -192,11 +211,11 @@ namespace ConcreteUI.Controls
             }
         }
 
-        private void AppendCoreInternal(T[] items, int count)
+        private void AppendCoreInternal(TItem[] items, int count)
         {
             if (count <= 0)
                 return;
-            ref T itemRef = ref items[0];
+            ref TItem itemRef = ref items[0];
             int key, i = 0;
             do
             {
@@ -205,7 +224,7 @@ namespace ConcreteUI.Controls
             HeightChanged?.Invoke(this, key);
         }
 
-        private void AppendCoreInternal(IList<T> items)
+        private void AppendCoreInternal(IList<TItem> items)
         {
             int count = items.Count;
             if (count <= 0)
@@ -218,7 +237,7 @@ namespace ConcreteUI.Controls
             HeightChanged?.Invoke(this, key);
         }
 
-        private void AppendCoreInternal(IReadOnlyList<T> items)
+        private void AppendCoreInternal(IReadOnlyList<TItem> items)
         {
             int count = items.Count;
             if (count <= 0)
@@ -231,9 +250,9 @@ namespace ConcreteUI.Controls
             HeightChanged?.Invoke(this, key);
         }
 
-        private void AppendCoreInternal(IEnumerable<T> items)
+        private void AppendCoreInternal(IEnumerable<TItem> items)
         {
-            using IEnumerator<T> enumerator = items.GetEnumerator();
+            using IEnumerator<TItem> enumerator = items.GetEnumerator();
             if (!enumerator.MoveNext())
                 return;
             int key;
@@ -244,15 +263,15 @@ namespace ConcreteUI.Controls
             HeightChanged?.Invoke(this, key);
         }
 
-        private int AppendCoreInternal(T item)
+        private int AppendCoreInternal(TItem item)
         {
             IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<T>? values = _values;
+            IAppendOnlyCollection<TItem>? values = _values;
 
             int count = values.Count;
 
             int referenceKey;
-            T? referenceValue;
+            TItem? referenceValue;
             if (count <= 0)
             {
                 referenceKey = 0;
@@ -264,7 +283,7 @@ namespace ConcreteUI.Controls
                 referenceKey = keys[lastIndex];
                 referenceValue = values[lastIndex];
             }
-            int height = item.CalculateHeight(referenceValue, force: true);
+            int height = item.ResetHeight(GetMeasuringContext(modified: false));
             if (height < 0)
                 throw new InvalidOperationException("The item's height cannot be negative!");
             int key = referenceKey + height;
@@ -283,13 +302,13 @@ namespace ConcreteUI.Controls
                     key = keys[i];
                     if (key < keyHead) // KeyList is broken, need rebuild keys
                     {
-                        RecalculateAllCore(force: true, triggerEvent: false);
+                        AdjustAllCore(triggerEvent: false);
                         break;
                     }
                     key -= keyHead;
                     keys[i] = key;
                 }
-                T headValue = values[0];
+                TItem headValue = values[0];
                 values.Append(item);
                 ItemRemoved?.Invoke(this, headValue);
                 headValue.Dispose();
@@ -309,24 +328,37 @@ namespace ConcreteUI.Controls
             HeightChanged?.Invoke(this, 0);
         }
 
-        private void RecalculateAllCore(bool force, bool triggerEvent)
+        private int AdjustAllAndCheck(bool triggerEvent)
+        {
+            AdjustAllCore(triggerEvent);
+            int count = _keys.Count;
+            if (count != _values.Count)
+                throw new InvalidOperationException("The keys and values are out of sync!");
+            return count;
+        }
+
+        private void AdjustAllCore(bool triggerEvent) => RecalcAllCore(resetAll: false, triggerEvent);
+
+        private void ResetAllCore(bool triggerEvent) => RecalcAllCore(resetAll: true, triggerEvent);
+
+        [Inline(InlineBehavior.Remove)]
+        private void RecalcAllCore([InlineParameter] bool resetAll, bool triggerEvent)
         {
             IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<T>? values = _values;
+            IAppendOnlyCollection<TItem>? values = _values;
 
             int count = values.Count;
             if (count <= 0)
                 return;
-            T value = values[0];
-            int key = value.CalculateHeight(reference: default, force);
+            TItem value = values[0];
+            TMeasuringContext context = GetMeasuringContext(resetAll);
+            int key = RecalcItemHeight(value, context, resetAll);
             if (keys.Count == count)
             {
                 keys[0] = key;
                 for (int i = 1; i < count; i++)
                 {
-                    T reference = value;
-                    value = values[i];
-                    key += value.CalculateHeight(reference, force);
+                    key += RecalcItemHeight(values[i], context, resetAll);
                     keys[i] = key;
                 }
             }
@@ -336,9 +368,7 @@ namespace ConcreteUI.Controls
                 keys.Append(key);
                 for (int i = 1; i < count; i++)
                 {
-                    T reference = value;
-                    value = values[i];
-                    key += value.CalculateHeight(reference, force);
+                    key += RecalcItemHeight(values[i], context, resetAll);
                     keys.Append(key);
                 }
             }
@@ -346,17 +376,18 @@ namespace ConcreteUI.Controls
                 HeightChanged?.Invoke(this, key);
         }
 
-        private bool TryGetItemCore(int height, [NotNullWhen(true)] out T? item, out int itemTop, out int itemHeight)
+        [Inline(InlineBehavior.Remove)]
+        private static int RecalcItemHeight(TItem item, TMeasuringContext context, [InlineParameter] bool reset)
+            => reset ? item.ResetHeight(context) : item.AdjustHeight(context);
+
+        private bool TryGetItemCore(int height, [NotNullWhen(true)] out TItem? item, out int itemTop, out int itemHeight)
         {
             IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<T>? values = _values;
+            IAppendOnlyCollection<TItem>? values = _values;
 
             int count = keys.Count;
             if (count != values.Count)
-            {
-                RecalculateAllCore(force: true, triggerEvent: true);
-                count = keys.Count;
-            }
+                count = AdjustAllAndCheck(triggerEvent: true);
             int index = keys.BinarySearch(height);
             if (index < 0)
                 index = ~index;
@@ -374,16 +405,16 @@ namespace ConcreteUI.Controls
             return false;
         }
 
-        private bool TryGetHeightCore_EqualityCompare<TEqualityComparer>(T item, TEqualityComparer comparer, out int itemTop, out int itemHeight)
-            where TEqualityComparer : IEqualityComparer<T>
+        private bool TryGetHeightCore_EqualityCompare<TEqualityComparer>(TItem item, TEqualityComparer comparer, out int itemTop, out int itemHeight)
+            where TEqualityComparer : IEqualityComparer<TItem>
         {
             IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<T>? values = _values;
+            IAppendOnlyCollection<TItem>? values = _values;
 
             int count = keys.Count;
             if (count != values.Count)
             {
-                RecalculateAllCore(force: true, triggerEvent: true);
+                AdjustAllCore(triggerEvent: true);
                 count = keys.Count;
             }
             if (count == 0)
@@ -412,18 +443,16 @@ namespace ConcreteUI.Controls
             return false;
         }
 
-        private bool TryGetHeightCore_Compare<TComparer>(T item, TComparer comparer, out int itemTop, out int itemHeight)
-            where TComparer : IComparer<T>
+        private bool TryGetHeightCore_Compare<TComparer>(TItem item, TComparer comparer, out int itemTop, out int itemHeight)
+            where TComparer : IComparer<TItem>
         {
             IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<T>? values = _values;
+            IAppendOnlyCollection<TItem>? values = _values;
 
             int count = keys.Count;
             if (count != values.Count)
-            {
-                RecalculateAllCore(force: true, triggerEvent: true);
-                count = keys.Count;
-            }
+                count = AdjustAllAndCheck(triggerEvent: true);
+
             if (count == 0)
                 goto Failed;
 
@@ -450,17 +479,15 @@ namespace ConcreteUI.Controls
             return false;
         }
 
-        private bool TryGetHeightCore_BinarySearch(T item, IComparer<T>? comparer, out int itemTop, out int itemHeight)
+        private bool TryGetHeightCore_BinarySearch(TItem item, IComparer<TItem>? comparer, out int itemTop, out int itemHeight)
         {
             IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<T>? values = _values;
+            IAppendOnlyCollection<TItem>? values = _values;
 
             int count = keys.Count;
             if (count != values.Count)
-            {
-                RecalculateAllCore(force: true, triggerEvent: true);
-                count = keys.Count;
-            }
+                count = AdjustAllAndCheck(triggerEvent: true);
+
             if (count == 0)
                 goto Failed;
 
@@ -490,17 +517,14 @@ namespace ConcreteUI.Controls
             return false;
         }
 
-        private int EnumerateItemsCore(int startY, int endY, IList<(T item, int itemTop, int itemHeight)> list)
+        private int EnumerateItemsCore(int startY, int endY, IList<(TItem item, int itemTop, int itemHeight)> list)
         {
             IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<T>? values = _values;
+            IAppendOnlyCollection<TItem>? values = _values;
 
             int count = keys.Count;
             if (count != values.Count)
-            {
-                RecalculateAllCore(force: true, triggerEvent: true);
-                count = keys.Count;
-            }
+                count = AdjustAllAndCheck(triggerEvent: true);
 
             int startIndex = keys.BinarySearch(startY);
             if (startIndex < 0)
@@ -524,10 +548,10 @@ namespace ConcreteUI.Controls
                 endIndex = count - 1;
 
             int result = endIndex - startIndex + 1;
-            if (list is CustomListBase<(T item, int itemTop, int itemHeight)> customList)
+            if (list is CustomListBase<(TItem item, int itemTop, int itemHeight)> customList)
                 customList.EnsureCapacity(customList.Count + result);
 #if NET8_0_OR_GREATER
-                else if (list is List<(T item, int itemTop, int itemHeight)> normalList)
+                else if (list is List<(TItem item, int itemTop, int itemHeight)> normalList)
                     normalList.EnsureCapacity(normalList.Count + result);
 #endif
             int key = 0;
@@ -543,25 +567,63 @@ namespace ConcreteUI.Controls
             return 0;
         }
 
-        private void DisposeCore()
+        private TMeasuringContext GetMeasuringContext(bool modified)
+        {
+            const string ErrorMessage = $"This {nameof(AppendOnlyListItemStore<,>)} doesn't bind any {nameof(AppendOnlyListBase<,>)}!";
+
+            TMeasuringContext? context;
+            if (modified)
+            {
+                context = NullSafetyHelper.ThrowIfNull(_owner, ErrorMessage).CreateMeasuringContext();
+                TMeasuringContext? oldContext = _context;
+                _context = context;
+                (oldContext as IDisposable)?.Dispose();
+            }
+            else
+            {
+                context = _context;
+                if (context is null)
+                {
+                    context = NullSafetyHelper.ThrowIfNull(_owner, ErrorMessage).CreateMeasuringContext();
+                    _context = context;
+                }
+                else
+                {
+                    context.Adjust();
+                }
+            }
+            return context;
+        }
+
+        private void DisposeCore(bool disposing)
         {
             if (InterlockedHelper.Exchange(ref _disposed, ulong.MaxValue) != 0UL)
                 return;
             lock (_syncLock)
             {
                 IAppendOnlyCollection<int> keys = _keys;
-                IAppendOnlyCollection<T> values = _values;
+                IAppendOnlyCollection<TItem> values = _values;
 
                 keys.Clear();
-                foreach (T value in _values)
-                    value.Dispose();
+                if (disposing)
+                {
+                    foreach (TItem value in _values)
+                        value.Dispose();
+                }
                 values.Clear();
+
+                TMeasuringContext? context = _context;
+                if (disposing)
+                    _context = default;
+                (context as IDisposable)?.Dispose();
             }
         }
 
+        ~AppendOnlyListItemStore() => DisposeCore(disposing: false);
+
         public void Dispose()
         {
-            DisposeCore();
+            DisposeCore(disposing: true);
             GC.SuppressFinalize(this);
         }
     }

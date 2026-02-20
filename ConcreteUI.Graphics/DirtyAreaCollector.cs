@@ -45,7 +45,7 @@ namespace ConcreteUI.Graphics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void MarkAsDirty(in RectF rect) => _list?.Add(rect);
+        public void MarkAsDirty(in RectF rect) => _list?.Add(rect);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void UsePresentAllModeOnce() => _presentAllMode = true;

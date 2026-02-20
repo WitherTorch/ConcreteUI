@@ -8,7 +8,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
@@ -73,6 +72,7 @@ namespace ConcreteUI.Window
         private static readonly Pool<LayoutEngine> _layoutEnginePool = new Pool<LayoutEngine>(1);
         private static readonly LazyTiny<GraphicsDeviceProvider> _graphicsDeviceProviderLazy
             = new LazyTiny<GraphicsDeviceProvider>(CreateGraphicsDeviceProvider, LazyThreadSafetyMode.ExecutionAndPublication);
+        private static ulong _recreateGraphicsDeviceProviderBarrier = 0;
         #endregion
 
         #region Fields
@@ -110,6 +110,10 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Events
+        public static event EventHandler? GraphicsDeviceRecreating;
+
+        public static event EventHandler? GraphicsDeviceRecreated;
+
         public event EventHandler<ContextMenu>? ContextMenuChanging;
 
         public event EventHandler<UIElement?>? FocusElementChanged;
@@ -143,8 +147,44 @@ namespace ConcreteUI.Window
         [Inline(InlineBehavior.Remove)]
         private void InitRenderObjects(IntPtr handle)
         {
+            if (!InitRenderObjectsCore(handle, out D2D1DeviceContext? deviceContext))
+                return;
+            _deviceContext = deviceContext;
+
+            CoreWindow? parent = _parent;
+            ChangeBackgroundElement(new ToolTip(this, element => GetActiveElements().Contains(element)));
+            InitializeElements();
+            ApplyTheme(parent is null ?
+                ThemeResourceProvider.CreateResourceProvider(deviceContext, ThemeManager.CurrentTheme, _windowMaterial) :
+                parent._resourceProvider!.Clone());
+            if (parent is null)
+            {
+                ApplyTheme(ThemeResourceProvider.CreateResourceProvider(deviceContext, ThemeManager.CurrentTheme, _windowMaterial));
+                GraphicsDeviceRecreating += CoreWindow_GraphicsDeviceRecreating;
+                GraphicsDeviceRecreated += CoreWindow_GraphicsDeviceRecreated;
+            }
+            else
+            {
+                ApplyTheme(parent._resourceProvider!.Clone());
+            }
+            SystemEvents.DisplaySettingsChanging += SystemEvents_DisplaySettingsChanging;
+            SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
+            SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
+            SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
+            ConcreteUtils.ApplyWindowStyle(this, out _fixLagObject);
+        }
+
+        private bool InitRenderObjectsCore(IntPtr handle, [NotNullWhen(true)] out D2D1DeviceContext? deviceContext)
+        {
+            if (handle == IntPtr.Zero)
+            {
+                deviceContext = null;
+                return false;
+            }
+
             WindowMaterial material = _windowMaterial;
             CoreWindow? parent = _parent;
+
             SimpleGraphicsHost host;
             if (parent is null)
             {
@@ -163,26 +203,90 @@ namespace ConcreteUI.Window
             }
             else
                 host = GraphicsHostHelper.FromAnotherSwapChainGraphicsHost(parent._host!, handle, IsBackgroundOpaque());
+            host.DeviceRemoved += GraphicsHost_DeviceRemoved;
             _host = host;
             _collector = new DirtyAreaCollector(host);
-            D2D1DeviceContext? deviceContext = host.BeginDraw();
+            deviceContext = host.BeginDraw();
             if (deviceContext is null)
-                return;
+                return false;
             (uint dpiX, uint dpiY) = Dpi;
             if (dpiX != SystemConstants.DefaultDpiX || dpiY != SystemConstants.DefaultDpiY)
                 deviceContext.Dpi = new PointF(dpiX, dpiY);
-            _deviceContext = deviceContext;
+            return true;
+        }
 
-            ChangeBackgroundElement(new ToolTip(this, element => GetActiveElements().Contains(element)));
-            InitializeElements();
-            ApplyTheme(parent is null ?
-                ThemeResourceProvider.CreateResourceProvider(deviceContext, ThemeManager.CurrentTheme, material) :
-                parent._resourceProvider!.Clone());
-            SystemEvents.DisplaySettingsChanging += SystemEvents_DisplaySettingsChanging;
-            SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
-            SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
-            SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
-            ConcreteUtils.ApplyWindowStyle(this, out _fixLagObject);
+        private void GraphicsHost_DeviceRemoved(object? sender, EventArgs e)
+        {
+            if (sender is not SimpleGraphicsHost host || !ReferenceEquals(host, _host))
+                return;
+            RecreateGraphicsDeviceProvider();
+        }
+
+        private static void RecreateGraphicsDeviceProvider()
+        {
+            if (InterlockedHelper.Exchange(ref _recreateGraphicsDeviceProviderBarrier, 1) != 0)
+                return;
+            GraphicsDeviceRecreating?.Invoke(null, EventArgs.Empty);
+            _graphicsDeviceProviderLazy.Reset();
+            GraphicsDeviceRecreated?.Invoke(null, EventArgs.Empty);
+            GC.Collect(generation: 2, GCCollectionMode.Forced, blocking: true, compacting: true);
+            InterlockedHelper.Exchange(ref _recreateGraphicsDeviceProviderBarrier, 0);
+        }
+
+        private void CoreWindow_GraphicsDeviceRecreating(object? sender, EventArgs e) => StopAllRenderingFromGDREvent();
+
+        private void CoreWindow_GraphicsDeviceRecreated(object? sender, EventArgs e) => RecreateResourcesFromGDREvent(null);
+
+        private void StopAllRenderingFromGDREvent()
+        {
+            RenderingController? controller = _controller;
+            if (controller is null)
+                return;
+            controller.Lock();
+            controller.WaitForRendering();
+            InterlockedHelper.Exchange(ref _collector, null);
+            InterlockedHelper.Exchange(ref _deviceContext, null);
+            SimpleGraphicsHost? host = InterlockedHelper.Exchange(ref _host, null);
+            if (host is not null)
+            {
+                host.EndDraw();
+                host.Dispose();
+            }
+            if (TryGetWindowListSnapshot(_childrenReferenceList, out ArrayPool<WeakReference<CoreWindow>>? pool,
+               out WeakReference<CoreWindow>[]? array, out int count))
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    if (!array[i].TryGetTarget(out CoreWindow? window) || window is null || window.IsDisposed)
+                        continue;
+                    window.StopAllRenderingFromGDREvent();
+                }
+                pool.Return(array);
+            }
+        }
+
+        private void RecreateResourcesFromGDREvent(IThemeResourceProvider? provider)
+        {
+            RenderingController? controller = _controller;
+            if (controller is null || !InitRenderObjectsCore(Handle, out D2D1DeviceContext? deviceContext))
+                return;
+            _deviceContext = deviceContext;
+            provider ??= ThemeResourceProvider.CreateResourceProvider(this, ThemeManager.CurrentTheme);
+            DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider, provider);
+            ApplyThemeCore(provider);
+            if (TryGetWindowListSnapshot(_childrenReferenceList, out ArrayPool<WeakReference<CoreWindow>>? pool,
+                    out WeakReference<CoreWindow>[]? array, out int count))
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    if (!array[i].TryGetTarget(out CoreWindow? window) || window is null || window.IsDisposed)
+                        continue;
+                    window.RecreateResourcesFromGDREvent(provider.Clone());
+                }
+                pool.Return(array);
+            }
+            TriggerResizeCore(controller, _sizeModeState);
+            controller.Unlock();
         }
         #endregion
 
@@ -211,6 +315,8 @@ namespace ConcreteUI.Window
             SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
             SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
             SystemEvents.SessionSwitch -= SystemEvents_SessionSwitch;
+            GraphicsDeviceRecreating -= CoreWindow_GraphicsDeviceRecreating;
+            GraphicsDeviceRecreated -= CoreWindow_GraphicsDeviceRecreated;
         }
         #endregion
 
@@ -278,6 +384,7 @@ namespace ConcreteUI.Window
             if (_brushes[(int)Brush.TitleBackBrush] is D2D1SolidColorBrush backBrush &&
                 _windowMaterial == WindowMaterial.Integrated && SystemConstants.VersionLevel >= SystemVersionLevel.Windows_11_21H2)
                 FluentHandler.SetTitleBarColor(Handle, (Color)backBrush.Color);
+            ConcreteUtils.ResetBlur(this);
         }
 
         protected virtual void OnMouseDownForElements(ref MouseInteractEventArgs args)
@@ -929,7 +1036,6 @@ namespace ConcreteUI.Window
             }
             DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider, provider);
             ApplyThemeCore(provider);
-            ConcreteUtils.ResetBlur(this);
             if (TryGetWindowListSnapshot(_childrenReferenceList, out ArrayPool<WeakReference<CoreWindow>>? pool,
                     out WeakReference<CoreWindow>[]? array, out int count))
             {
