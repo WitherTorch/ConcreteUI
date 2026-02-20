@@ -67,7 +67,7 @@ namespace ConcreteUI.Graphics.Hosts
                 throw new InvalidOperationException();
 
             DXGISwapChainDescription1 swapChainDesc = originalSwapChain.Description1;
-            swapChainDesc.AlphaMode = isOpaque ? DXGIAlphaMode.Ignore : DXGIAlphaMode.Premultiplied;    
+            swapChainDesc.AlphaMode = isOpaque ? DXGIAlphaMode.Ignore : DXGIAlphaMode.Premultiplied;
             DXGISwapChain1 swapChain = factory.CreateSwapChainForComposition(provider.D3DDevice, swapChainDesc);
             return GetLatestSwapChain(swapChain);
         }
@@ -92,15 +92,10 @@ namespace ConcreteUI.Graphics.Hosts
             return result;
         }
 
-        public override void ResizeTemporarily(in Size size)
+        public override void ResizeTemporarily(Size size)
         {
-            if (_swapChain is not DXGISwapChain2 swapChain)
-                goto Fallback;
-
-            DXGISwapChainDescription1 description = swapChain.Description1;
-            uint width, height;
-            if ((width = MathHelper.MakeUnsigned(size.Width)) > description.Width ||
-                (height = MathHelper.MakeUnsigned(size.Height)) > description.Height)
+            Size oldSize = _size;
+            if (size.Width > oldSize.Width || size.Height > oldSize.Height)
                 goto Fallback;
 
             //swapChain.SourceSize = new SizeU(width, height);

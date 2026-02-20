@@ -23,6 +23,7 @@ namespace ConcreteUI.Graphics.Hosts
         private readonly D2D1TextAntialiasMode _antialiasMode;
         private readonly IntPtr _handle;
 
+        protected Size _size;
         protected bool _disposed, _sleeping;
 
         private D2D1DeviceContext? _activeContext;
@@ -31,7 +32,9 @@ namespace ConcreteUI.Graphics.Hosts
         private bool _alternateFlushing;
 
         public event EventHandler? DeviceRemoved;
+
         public IntPtr AssociatedWindowHandle => _handle;
+
         public bool IsDisposed => _disposed;
 
         public SimpleGraphicsHost(GraphicsDeviceProvider provider, IntPtr handle, D2D1TextAntialiasMode textAntialiasMode, bool isFlipModel, bool isOpaque)
@@ -48,6 +51,7 @@ namespace ConcreteUI.Graphics.Hosts
             context.TextAntialiasMode = textAntialiasMode;
             _context = context;
             _swapChain = swapChain;
+            _size = new Size(1, 1);
         }
 
         public SimpleGraphicsHost(SimpleGraphicsHost another, IntPtr handle, bool isOpaque)
@@ -65,6 +69,7 @@ namespace ConcreteUI.Graphics.Hosts
             context.TextAntialiasMode = another._antialiasMode;
             _context = context;
             _swapChain = swapChain;
+            _size = new Size(1, 1);
         }
 
         protected virtual DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, bool isFlipModel, bool isOpaque)
@@ -74,7 +79,7 @@ namespace ConcreteUI.Graphics.Hosts
                 BufferUsage = DXGIUsage.RenderTargetOutput | DXGIUsage.BackBuffer,
                 OutputWindow = AssociatedWindowHandle,
                 Windowed = true,
-                BufferDesc = new DXGIModeDescription(Constants.Format),
+                BufferDesc = new DXGIModeDescription(Constants.Format) { Height = 1, Width = 1 },
                 SampleDesc = new DXGISampleDescription(1, 0),
                 BufferCount = 1,
                 SwapEffect = DXGISwapEffect.Discard
@@ -277,10 +282,12 @@ namespace ConcreteUI.Graphics.Hosts
             context.BeginDraw();
         }
 
-        public virtual void ResizeTemporarily(in Size size) => Resize(size);
+        public virtual void ResizeTemporarily(Size size) => Resize(size);
 
-        public virtual void Resize(in Size size)
+        public virtual void Resize(Size size)
         {
+            if (_size == size)
+                return;
             DXGISwapChain swapChain = _swapChain;
             if (swapChain.IsDisposed)
                 return;
@@ -299,13 +306,14 @@ namespace ConcreteUI.Graphics.Hosts
             if (context.IsDisposed)
                 return;
             ResizeSwapChain(swapChain, size);
+            _size = size;
             if (!beginDrawCalled)
                 return;
             BeginDrawCore(context);
             _activeContext = context;
         }
 
-        protected virtual void ResizeSwapChain(DXGISwapChain swapChain, in Size size)
+        protected virtual void ResizeSwapChain(DXGISwapChain swapChain, Size size)
             => swapChain.ResizeBuffers(0, MathHelper.MakeUnsigned(size.Width), MathHelper.MakeUnsigned(size.Height));
 
         protected virtual void OnDeviceRemoved()
