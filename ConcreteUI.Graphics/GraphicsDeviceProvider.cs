@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -7,7 +8,6 @@ using ConcreteUI.Graphics.Native.Direct3D11;
 using ConcreteUI.Graphics.Native.DirectComposition;
 using ConcreteUI.Graphics.Native.DXGI;
 
-using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
@@ -15,22 +15,68 @@ namespace ConcreteUI.Graphics
 {
     public unsafe sealed class GraphicsDeviceProvider : IDisposable
     {
-        private const bool SupportSwapChain1 = true;
+        private const bool UseLegacyRoute = false;
+
         private const D3D11CreateDeviceFlags CreateDeviceFlags = D3D11CreateDeviceFlags.BgraSupport;
         private const D3D11CreateDeviceFlags CreateDeviceFlagsForDebug = CreateDeviceFlags | D3D11CreateDeviceFlags.Debug;
 
-        public readonly DXGIAdapter DXGIAdapter;
-        public readonly DXGIFactory DXGIFactory;
-        public readonly DXGIDevice DXGIDevice;
-        public readonly D3D11Device D3DDevice;
-        public readonly D2D1Device D2DDevice;
-        public readonly DCompositionDevice? DCompDevice;
+        private readonly DXGIAdapter _adapter;
+        private readonly DXGIFactory _factory;
+        private readonly D3D11Device _d3dDevice;
+        private readonly DXGIDevice _dxgiDevice;
+        private readonly D2D1Device _d2dDevice;
+        private readonly DCompositionDevice? _dcompDevice;
+        private readonly bool _supportSwapChain1, _supportDComp;
 
         private bool _disposed;
 
-        public bool IsSupportSwapChain1 => SupportSwapChain1 && DXGIFactory is DXGIFactory2;
+        public DXGIAdapter DXGIAdapter
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _adapter;
+        }
 
-        public bool IsSupportDComp => DCompDevice is not null;
+        public DXGIFactory DXGIFactory
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _factory;
+        }
+
+        public D3D11Device D3DDevice
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _d3dDevice;
+        }
+
+        public DXGIDevice DXGIDevice
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _dxgiDevice;
+        }
+
+        public D2D1Device? D2DDevice
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _d2dDevice;
+        }
+
+        public DCompositionDevice? DCompDevice
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _dcompDevice;
+        }
+
+        public bool IsSupportSwapChain1
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _supportSwapChain1;
+        }
+
+        public bool IsSupportDComp
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _supportDComp;
+        }
 
         private GraphicsDeviceProvider(D3D11Device? d3dDevice, DXGIAdapter? adapter, DXGIFactory? factory, bool isDebug)
         {
@@ -38,36 +84,48 @@ namespace ConcreteUI.Graphics
             d3dDevice ??= NullSafetyHelper.ThrowIfNull(D3D11Device.Create(null, D3DDriverType.Warp, IntPtr.Zero,
                 isDebug ? CreateDeviceFlagsForDebug : CreateDeviceFlags));
 
-            D3DDevice = d3dDevice;
-            DXGIDevice = GetLatestDXGIDeviceInterface(NullSafetyHelper.ThrowIfNull(d3dDevice.QueryInterface<DXGIDevice>(DXGIDevice.IID_IDXGIDevice)));
+            _d3dDevice = d3dDevice;
+            DXGIDevice dxgiDevice = GetLatestDXGIDeviceInterface(NullSafetyHelper.ThrowIfNull(d3dDevice.QueryInterface<DXGIDevice>(DXGIDevice.IID_IDXGIDevice)));
 
-            if (DXGIDevice is DXGIDevice1 dxgiDevice1)
+            if (dxgiDevice is DXGIDevice1 dxgiDevice1)
                 dxgiDevice1.MaximumFrameLatency = 1;
 
-            DCompDevice = CreateDCompDevice(DXGIDevice);
+            _dxgiDevice = dxgiDevice;
 
-            D2DDevice = D2D1Device.Create(DXGIDevice, new D2D1CreationProperties()
-            {
-                Options = D2D1DeviceContextOptions.None,
-                DebugLevel = isDebug ? D2D1DebugLevel.Information : D2D1DebugLevel.None,
-                ThreadingMode = D2D1ThreadingMode.MultiThreaded
-            });
+            adapter ??= dxgiDevice.GetAdapter();
 
-            adapter ??= DXGIDevice.GetAdapter();
-
-            DXGIAdapter = adapter;
+            _adapter = adapter;
 
             if (factory is null)
             {
                 factory = adapter.GetParent<DXGIFactory6>(DXGIFactory6.IID_IDXGIFactory6, throwException: false);
                 factory ??= adapter.GetParent<DXGIFactory2>(DXGIFactory2.IID_IDXGIFactory2, throwException: false);
                 factory ??= adapter.GetParent<DXGIFactory1>(DXGIFactory1.IID_IDXGIFactory1, throwException: false);
-                factory ??= adapter.GetParent<DXGIFactory>(DXGIFactory.IID_IDXGIFactory, throwException: true);
-                DXGIFactory = factory!;
-                return;
+                factory ??= NullSafetyHelper.ThrowIfNull(adapter.GetParent<DXGIFactory>(DXGIFactory.IID_IDXGIFactory, throwException: true));
+            }
+            else
+            {
+                factory = GetLatestDXGIFactoryInterface(factory);
+            }
+            _factory = factory;
+
+            if (UseLegacyRoute || factory is not DXGIFactory2)
+            {
+                _supportSwapChain1 = false;
+                _supportDComp = false;
+            }
+            else
+            {
+                _supportSwapChain1 = true;
+                _supportDComp = TryCreateDCompDevice(dxgiDevice, out _dcompDevice);
             }
 
-            DXGIFactory = GetLatestDXGIFactoryInterface(factory);
+            _d2dDevice = D2D1Device.Create(dxgiDevice, new D2D1CreationProperties()
+            {
+                Options = D2D1DeviceContextOptions.None,
+                DebugLevel = isDebug ? D2D1DebugLevel.Information : D2D1DebugLevel.None,
+                ThreadingMode = D2D1ThreadingMode.MultiThreaded
+            });
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -193,14 +251,18 @@ namespace ConcreteUI.Graphics
             return NullSafetyHelper.ThrowIfNull(DXGIFactory.Create(DXGIFactory.IID_IDXGIFactory, throwException: true));
         }
 
-        private static DCompositionDevice? CreateDCompDevice(DXGIDevice device)
+        private static bool TryCreateDCompDevice(DXGIDevice device, [NotNullWhen(true)] out DCompositionDevice? result)
         {
             Guid iid = DCompositionDevice.IID_IDCompositionDevice;
             void* nativePointer = device.NativePointer;
             int hr = DComp.DCompositionCreateDevice(nativePointer, &iid, &nativePointer);
             if (hr < 0)
-                return null;
-            return NativeObject.FromNativePointer<DCompositionDevice>(nativePointer, ReferenceType.Owned);
+            {
+                result = null;
+                return false;
+            }
+            result = NativeObject.FromNativePointer<DCompositionDevice>(nativePointer, ReferenceType.Owned);
+            return result is not null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -222,14 +284,14 @@ namespace ConcreteUI.Graphics
 
         private void Dispose(bool disposing)
         {
-            if (ReferenceHelper.Exchange(ref _disposed, true))
+            if (ReferenceHelper.Exchange(ref _disposed, true) || !disposing)
                 return;
-            DXGIFactory?.Dispose();
-            DXGIAdapter?.Dispose();
-            D3DDevice?.Dispose();
-            DXGIDevice?.Dispose();
-            D2DDevice?.Dispose();
-            DCompDevice?.Dispose();
+            _adapter.Dispose();
+            _factory.Dispose();
+            _d3dDevice.Dispose();
+            _dxgiDevice.Dispose();
+            _d2dDevice.Dispose();
+            _dcompDevice?.Dispose();
         }
 
         ~GraphicsDeviceProvider()
