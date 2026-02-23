@@ -81,7 +81,7 @@ namespace ConcreteUI.Window
         private readonly UnwrappableList<UIElement> _overlayElementList = new UnwrappableList<UIElement>();
         private readonly UnwrappableList<UIElement> _backgroundElementList = new UnwrappableList<UIElement>();
         private readonly WindowMaterial _windowMaterial;
-        private SimpleGraphicsHost? _host;
+        private SwapChainGraphicsHost? _host;
         private DirtyAreaCollector? _collector;
         private RenderingController? _controller;
         private UIElement? _focusElement;
@@ -185,7 +185,7 @@ namespace ConcreteUI.Window
             WindowMaterial material = _windowMaterial;
             CoreWindow? parent = _parent;
 
-            SimpleGraphicsHost host;
+            SwapChainGraphicsHost host;
             if (parent is null)
             {
                 GraphicsDeviceProvider provider = _graphicsDeviceProviderLazy.Value;
@@ -199,10 +199,10 @@ namespace ConcreteUI.Window
                 {
                     useFlipModel = useDComp = provider.IsSupportDComp && provider.IsSupportSwapChain1;
                 }
-                host = GraphicsHostHelper.CreateSwapChainGraphicsHost(handle, provider, useFlipModel, useDComp, IsBackgroundOpaque());
+                host = GraphicsHost.Create(handle, provider, useFlipModel, useDComp, IsBackgroundOpaque());
             }
             else
-                host = GraphicsHostHelper.FromAnotherSwapChainGraphicsHost(parent._host!, handle, IsBackgroundOpaque());
+                host = GraphicsHost.FromAnother(parent._host!, handle, IsBackgroundOpaque());
             host.DeviceRemoved += GraphicsHost_DeviceRemoved;
             _host = host;
             _collector = new DirtyAreaCollector(host);
@@ -217,7 +217,7 @@ namespace ConcreteUI.Window
 
         private void GraphicsHost_DeviceRemoved(object? sender, EventArgs e)
         {
-            if (sender is not SimpleGraphicsHost host || !ReferenceEquals(host, _host))
+            if (sender is not SwapChainGraphicsHost host || !ReferenceEquals(host, _host))
                 return;
             RecreateGraphicsDeviceProvider();
         }
@@ -246,7 +246,7 @@ namespace ConcreteUI.Window
             controller.WaitForRendering();
             InterlockedHelper.Exchange(ref _collector, null);
             InterlockedHelper.Exchange(ref _deviceContext, null);
-            SimpleGraphicsHost? host = InterlockedHelper.Exchange(ref _host, null);
+            SwapChainGraphicsHost? host = InterlockedHelper.Exchange(ref _host, null);
             if (host is not null)
             {
                 host.EndDraw();
@@ -325,7 +325,7 @@ namespace ConcreteUI.Window
         public GraphicsDeviceProvider GetGraphicsDeviceProvider() => _host!.GetDeviceProvider();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public DXGISwapChain GetSwapChain() => _host!.GetSwapChain();
+        public DXGISwapChain? GetSwapChain() => _host?.GetSwapChain();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public D2D1DeviceContext GetDeviceContext() => NullSafetyHelper.ThrowIfNull(_deviceContext);
@@ -544,7 +544,7 @@ namespace ConcreteUI.Window
         [Inline]
         private bool RenderCore(bool force, bool resized, bool resizedTemporarily)
         {
-            SimpleGraphicsHost? host = _host;
+            SwapChainGraphicsHost? host = _host;
             if (host is null || host.IsDisposed)
                 return false;
             DirtyAreaCollector? collector = _collector;
@@ -571,7 +571,7 @@ namespace ConcreteUI.Window
                 return RenderCore_Normal(host, deviceContext, collector);
         }
 
-        private bool RenderCore_Force(SimpleGraphicsHost host, D2D1DeviceContext deviceContext)
+        private bool RenderCore_Force(SwapChainGraphicsHost host, D2D1DeviceContext deviceContext)
         {
             DirtyAreaCollector collector = DirtyAreaCollector.Empty;
             RenderTitle(deviceContext, collector, force: true);
@@ -588,7 +588,7 @@ namespace ConcreteUI.Window
             return host.TryPresent();
         }
 
-        private bool RenderCore_Normal(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector)
+        private bool RenderCore_Normal(SwapChainGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector)
         {
             Vector2 pointsPerPixel = _pointsPerPixel;
 
@@ -791,7 +791,7 @@ namespace ConcreteUI.Window
         [Inline(InlineBehavior.Remove)]
         private void ChangeDpi_RenderingPart(PointU dpi, Vector2 pointsPerPixel, Vector2 pixelsPerPoint)
         {
-            SimpleGraphicsHost? host = _host;
+            SwapChainGraphicsHost? host = _host;
             if (host is null || host.IsDisposed)
                 return;
             RenderingController? controller = _controller;
@@ -1110,7 +1110,7 @@ namespace ConcreteUI.Window
             {
                 DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider);
                 DisposeHelper.SwapDisposeInterlocked(ref _controller);
-                SimpleGraphicsHost? host = InterlockedHelper.Exchange(ref _host, null);
+                SwapChainGraphicsHost? host = InterlockedHelper.Exchange(ref _host, null);
                 if (host is not null && !host.IsDisposed)
                 {
                     host.EndDraw();

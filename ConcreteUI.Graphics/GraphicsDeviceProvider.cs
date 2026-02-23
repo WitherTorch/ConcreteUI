@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -8,38 +9,46 @@ using ConcreteUI.Graphics.Native.Direct3D11;
 using ConcreteUI.Graphics.Native.DirectComposition;
 using ConcreteUI.Graphics.Native.DXGI;
 
+using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics
 {
-    public unsafe sealed class GraphicsDeviceProvider : IDisposable
+    public unsafe sealed class GraphicsDeviceProvider : ICheckableDisposable
     {
         private const bool UseLegacyRoute = false;
 
         private const D3D11CreateDeviceFlags CreateDeviceFlags = D3D11CreateDeviceFlags.BgraSupport;
         private const D3D11CreateDeviceFlags CreateDeviceFlagsForDebug = CreateDeviceFlags | D3D11CreateDeviceFlags.Debug;
 
-        private readonly DXGIAdapter _adapter;
-        private readonly DXGIFactory _factory;
+        private readonly DXGIAdapter _dxgiAdapter;
+        private readonly DXGIFactory _dxgiFactory;
         private readonly D3D11Device _d3dDevice;
         private readonly DXGIDevice _dxgiDevice;
-        private readonly D2D1Device _d2dDevice;
+        private readonly D2D1Factory _d2dFactory;
+        private readonly D2D1Device? _d2dDevice;
         private readonly DCompositionDevice? _dcompDevice;
         private readonly bool _supportSwapChain1, _supportDComp;
 
         private bool _disposed;
 
+        public bool IsDisposed
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _disposed;
+        }
+
         public DXGIAdapter DXGIAdapter
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _adapter;
+            get => _dxgiAdapter;
         }
 
         public DXGIFactory DXGIFactory
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _factory;
+            get => _dxgiFactory;
         }
 
         public D3D11Device D3DDevice
@@ -52,6 +61,12 @@ namespace ConcreteUI.Graphics
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _dxgiDevice;
+        }
+
+        public D2D1Factory D2DFactory
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _d2dFactory;
         }
 
         public D2D1Device? D2DDevice
@@ -94,7 +109,7 @@ namespace ConcreteUI.Graphics
 
             adapter ??= dxgiDevice.GetAdapter();
 
-            _adapter = adapter;
+            _dxgiAdapter = adapter;
 
             if (factory is null)
             {
@@ -107,25 +122,24 @@ namespace ConcreteUI.Graphics
             {
                 factory = GetLatestDXGIFactoryInterface(factory);
             }
-            _factory = factory;
+            _dxgiFactory = factory;
 
-            if (UseLegacyRoute || factory is not DXGIFactory2)
+            if (UseLegacyRoute || factory is not DXGIFactory2 || !TryCreateD2DDevice(dxgiDevice, isDebug, out D2D1Device? d2dDevice))
             {
                 _supportSwapChain1 = false;
                 _supportDComp = false;
+                _d2dFactory = D2D1Factory.Create(D2D1FactoryType.MultiThreaded, new D2D1FactoryOptions()
+                {
+                    DebugLevel = isDebug ? D2D1DebugLevel.Information : D2D1DebugLevel.None,
+                });
             }
             else
             {
                 _supportSwapChain1 = true;
+                _d2dDevice = d2dDevice;
+                _d2dFactory = d2dDevice.GetFactory();
                 _supportDComp = TryCreateDCompDevice(dxgiDevice, out _dcompDevice);
             }
-
-            _d2dDevice = D2D1Device.Create(dxgiDevice, new D2D1CreationProperties()
-            {
-                Options = D2D1DeviceContextOptions.None,
-                DebugLevel = isDebug ? D2D1DebugLevel.Information : D2D1DebugLevel.None,
-                ThreadingMode = D2D1ThreadingMode.MultiThreaded
-            });
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -251,6 +265,15 @@ namespace ConcreteUI.Graphics
             return NullSafetyHelper.ThrowIfNull(DXGIFactory.Create(DXGIFactory.IID_IDXGIFactory, throwException: true));
         }
 
+        private static bool TryCreateD2DDevice(DXGIDevice device, bool isDebug, 
+            [NotNullWhen(true)] out D2D1Device? result)
+            => D2D1Device.TryCreate(device, new D2D1CreationProperties()
+            {
+                Options = D2D1DeviceContextOptions.None,
+                DebugLevel = isDebug ? D2D1DebugLevel.Information : D2D1DebugLevel.None,
+                ThreadingMode = D2D1ThreadingMode.MultiThreaded
+            }, out result);
+
         private static bool TryCreateDCompDevice(DXGIDevice device, [NotNullWhen(true)] out DCompositionDevice? result)
         {
             Guid iid = DCompositionDevice.IID_IDCompositionDevice;
@@ -286,11 +309,12 @@ namespace ConcreteUI.Graphics
         {
             if (ReferenceHelper.Exchange(ref _disposed, true) || !disposing)
                 return;
-            _adapter.Dispose();
-            _factory.Dispose();
+            _dxgiAdapter.Dispose();
+            _dxgiFactory.Dispose();
             _d3dDevice.Dispose();
             _dxgiDevice.Dispose();
-            _d2dDevice.Dispose();
+            _d2dFactory.Dispose();
+            _d2dDevice?.Dispose();
             _dcompDevice?.Dispose();
         }
 

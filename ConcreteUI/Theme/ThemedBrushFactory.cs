@@ -1,18 +1,17 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
-using ConcreteUI.Utils;
 
 namespace ConcreteUI.Theme
 {
     public interface IThemedBrushFactory
     {
-        D2D1Brush CreateDefaultBrush(D2D1DeviceContext context);
+        D2D1Brush CreateDefaultBrush(D2D1RenderTarget renderTarget);
 
-        D2D1Brush CreateBrushByMaterial(D2D1DeviceContext context, WindowMaterial material);
+        D2D1Brush CreateBrushByMaterial(D2D1RenderTarget renderTarget, WindowMaterial material);
 
         IEnumerable<WindowMaterial> GetVariants();
     }
@@ -31,14 +30,14 @@ namespace ConcreteUI.Theme
             => new AmplifiedThemedBrushFactory(factory, amplifier);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IThemedBrushFactory FromFunction(Func<D2D1DeviceContext, WindowMaterial, D2D1Brush> function)
+        public static IThemedBrushFactory FromFunction(Func<D2D1RenderTarget, WindowMaterial, D2D1Brush> function)
             => new FunctionThemedBrushFactoryImpl(function);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Builder CreateBuilder(in D2D1ColorF baseBrushColor) => new Builder(CreateFactoryByColor(baseBrushColor));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Builder CreateBuilder(Func<D2D1DeviceContext, D2D1Brush> baseBrushFactory) => new Builder(baseBrushFactory);
+        public static Builder CreateBuilder(Func<D2D1RenderTarget, D2D1Brush> baseBrushFactory) => new Builder(baseBrushFactory);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Builder CreateBuilder(IThemedBrushFactory originalFactory)
@@ -48,7 +47,7 @@ namespace ConcreteUI.Theme
                 case SimpleThemedBrushFactoryImpl factory:
                     return new Builder(factory.Destruct());
                 case ThemedBrushFactoryImpl factory:
-                    return new Builder(factory.Destruct(out byte[] variantKeys, out Func<D2D1DeviceContext, D2D1Brush>[] variantBrushFactories), variantKeys, variantBrushFactories);
+                    return new Builder(factory.Destruct(out byte[] variantKeys, out Func<D2D1RenderTarget, D2D1Brush>[] variantBrushFactories), variantKeys, variantBrushFactories);
                 default:
                     Builder builder = new Builder(originalFactory.CreateDefaultBrush);
                     foreach (WindowMaterial variant in originalFactory.GetVariants())
@@ -57,7 +56,7 @@ namespace ConcreteUI.Theme
             }
         }
 
-        private static Func<D2D1DeviceContext, D2D1Brush> CreateFactoryByColor(D2D1ColorF color)
+        private static Func<D2D1RenderTarget, D2D1Brush> CreateFactoryByColor(D2D1ColorF color)
             => context => context.CreateSolidColorBrush(color);
     }
 }

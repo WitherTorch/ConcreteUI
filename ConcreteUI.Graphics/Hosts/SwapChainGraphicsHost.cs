@@ -9,12 +9,11 @@ using ConcreteUI.Graphics.Native.DXGI;
 
 using InlineMethod;
 
-using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Graphics.Hosts
 {
-    public class SimpleGraphicsHost : ICheckableDisposable
+    public class SwapChainGraphicsHost : IGraphicsHost, ISwapChainGraphicsHost
     {
         protected readonly DXGISwapChain _swapChain;
 
@@ -37,14 +36,15 @@ namespace ConcreteUI.Graphics.Hosts
 
         public bool IsDisposed => _disposed;
 
-        public SimpleGraphicsHost(GraphicsDeviceProvider provider, IntPtr handle, D2D1TextAntialiasMode textAntialiasMode, bool isFlipModel, bool isOpaque)
+        public SwapChainGraphicsHost(GraphicsDeviceProvider provider, IntPtr handle, D2D1TextAntialiasMode textAntialiasMode, bool isFlipModel, bool isOpaque)
         {
             _provider = provider;
             _handle = handle;
             _antialiasMode = textAntialiasMode;
             _alternateFlushing = false;
 
-            D2D1DeviceContext context = TryQueryNewestInterface(provider.D2DDevice.CreateDeviceContext(D2D1DeviceContextOptions.None));
+            D2D1Device device = NullSafetyHelper.ThrowIfNull(provider.D2DDevice);
+            D2D1DeviceContext context = TryQueryNewestInterface(device.CreateDeviceContext(D2D1DeviceContextOptions.None));
             DXGISwapChain swapChain = CreateSwapChain(provider, isFlipModel, isOpaque);
             DisableDXGIExtendedFeature(swapChain);
             context.AntialiasMode = D2D1AntialiasMode.Aliased;
@@ -54,7 +54,7 @@ namespace ConcreteUI.Graphics.Hosts
             _size = new Size(1, 1);
         }
 
-        public SimpleGraphicsHost(SimpleGraphicsHost another, IntPtr handle, bool isOpaque)
+        public SwapChainGraphicsHost(SwapChainGraphicsHost another, IntPtr handle, bool isOpaque)
         {
             GraphicsDeviceProvider provider = another._provider;
             _provider = provider;
@@ -62,7 +62,8 @@ namespace ConcreteUI.Graphics.Hosts
             _antialiasMode = another._antialiasMode;
             _alternateFlushing = another._alternateFlushing;
 
-            D2D1DeviceContext context = TryQueryNewestInterface(provider.D2DDevice.CreateDeviceContext(D2D1DeviceContextOptions.None));
+            D2D1Device device = NullSafetyHelper.ThrowIfNull(provider.D2DDevice);
+            D2D1DeviceContext context = TryQueryNewestInterface(device.CreateDeviceContext(D2D1DeviceContextOptions.None));
             DXGISwapChain swapChain = CreateSwapChain(provider, another._swapChain, isOpaque);
             DisableDXGIExtendedFeature(swapChain);
             context.AntialiasMode = another._context.AntialiasMode;
@@ -118,13 +119,13 @@ namespace ConcreteUI.Graphics.Hosts
         public GraphicsDeviceProvider GetDeviceProvider() => _provider;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public D2D1DeviceContext GetDeviceContext() => _context;
+        public D2D1RenderTarget GetRenderTarget() => _context;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DXGISwapChain GetSwapChain() => _swapChain;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public D2D1DeviceContext? BeginDraw()
+        public D2D1RenderTarget? BeginDraw()
         {
             D2D1DeviceContext? context = _activeContext;
             if (context is not null)
@@ -340,7 +341,7 @@ namespace ConcreteUI.Graphics.Hosts
             DisposeCore(disposing);
         }
 
-        ~SimpleGraphicsHost() => Dispose(disposing: false);
+        ~SwapChainGraphicsHost() => Dispose(disposing: false);
 
         public void Dispose()
         {

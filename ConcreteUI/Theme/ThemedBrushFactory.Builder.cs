@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -13,32 +13,32 @@ namespace ConcreteUI.Theme
         public sealed class Builder : ICloneable
         {
             private readonly UnwrappableList<byte> _variantKeyList;
-            private readonly UnwrappableList<Func<D2D1DeviceContext, D2D1Brush>> _variantBrushFactoryList;
+            private readonly UnwrappableList<Func<D2D1RenderTarget, D2D1Brush>> _variantBrushFactoryList;
 
-            private Func<D2D1DeviceContext, D2D1Brush> _base;
+            private Func<D2D1RenderTarget, D2D1Brush> _base;
 
-            internal Builder(Func<D2D1DeviceContext, D2D1Brush> baseBrushFactory)
+            internal Builder(Func<D2D1RenderTarget, D2D1Brush> baseBrushFactory)
             {
                 _base = baseBrushFactory;
                 _variantKeyList = new UnwrappableList<byte>(capacity: 0);
-                _variantBrushFactoryList = new UnwrappableList<Func<D2D1DeviceContext, D2D1Brush>>(capacity: 0);
+                _variantBrushFactoryList = new UnwrappableList<Func<D2D1RenderTarget, D2D1Brush>>(capacity: 0);
             }
 
-            internal Builder(Func<D2D1DeviceContext, D2D1Brush> baseBrushFactory, byte[] variantKeys, Func<D2D1DeviceContext, D2D1Brush>[] variantBrushes)
+            internal Builder(Func<D2D1RenderTarget, D2D1Brush> baseBrushFactory, byte[] variantKeys, Func<D2D1RenderTarget, D2D1Brush>[] variantBrushes)
             {
                 int length = variantKeys.Length;
                 if (length != variantBrushes.Length)
                     throw new InvalidOperationException();
                 _base = baseBrushFactory;
                 _variantKeyList = new UnwrappableList<byte>(variantKeys);
-                _variantBrushFactoryList = new UnwrappableList<Func<D2D1DeviceContext, D2D1Brush>>(variantBrushes);
+                _variantBrushFactoryList = new UnwrappableList<Func<D2D1RenderTarget, D2D1Brush>>(variantBrushes);
             }
 
             private Builder(Builder original)
             {
                 _base = original._base;
                 _variantKeyList = new UnwrappableList<byte>(original._variantKeyList);
-                _variantBrushFactoryList = new UnwrappableList<Func<D2D1DeviceContext, D2D1Brush>>(original._variantBrushFactoryList);
+                _variantBrushFactoryList = new UnwrappableList<Func<D2D1RenderTarget, D2D1Brush>>(original._variantBrushFactoryList);
             }
 
             public Func<D2D1DeviceContext, D2D1Brush> this[WindowMaterial material]
@@ -61,12 +61,12 @@ namespace ConcreteUI.Theme
             public Builder WithVariant(WindowMaterial material, IThemedBrushFactory brushFactory)
                 => WithVariant(material, context => brushFactory.CreateBrushByMaterial(context, material));
 
-            public Builder WithVariant(WindowMaterial material, Func<D2D1DeviceContext, D2D1Brush> brushFactory)
+            public Builder WithVariant(WindowMaterial material, Func<D2D1RenderTarget, D2D1Brush> brushFactory)
             {
                 if (material < WindowMaterial.None || material >= WindowMaterial._Last)
                     throw new ArgumentOutOfRangeException(nameof(material));
                 UnwrappableList<byte> variantKeyList = _variantKeyList;
-                UnwrappableList<Func<D2D1DeviceContext, D2D1Brush>> variantBrushFactoryList = _variantBrushFactoryList;
+                UnwrappableList<Func<D2D1RenderTarget, D2D1Brush>> variantBrushFactoryList = _variantBrushFactoryList;
                 byte key = (byte)material;
                 int index = variantKeyList.IndexOf(key);
                 if (index >= 0)

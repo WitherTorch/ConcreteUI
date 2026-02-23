@@ -6,9 +6,11 @@ using ConcreteUI.Graphics.Native.DXGI;
 
 using InlineMethod;
 
+using WitherTorch.Common.Structures;
+
 namespace ConcreteUI.Graphics.Hosts
 {
-    public class OptimizedGraphicsHost : SimpleGraphicsHost
+    public class OptimizedGraphicsHost : SwapChainGraphicsHost, IOptimizedGraphicsHost
     {
         private bool _forcePresentAll = false;
         private bool _switchToNormalSwapChain = false;
@@ -16,7 +18,7 @@ namespace ConcreteUI.Graphics.Hosts
         public OptimizedGraphicsHost(GraphicsDeviceProvider deviceProvider, IntPtr handle,
             D2D1TextAntialiasMode textAntialiasMode, bool isFlipModel, bool isOpaque) : base(deviceProvider, handle, textAntialiasMode, isFlipModel, isOpaque) { }
 
-        public OptimizedGraphicsHost(SimpleGraphicsHost another, IntPtr handle, bool isOpaque) : base(another, handle, isOpaque) { }
+        public OptimizedGraphicsHost(SwapChainGraphicsHost another, IntPtr handle, bool isOpaque) : base(another, handle, isOpaque) { }
 
         protected override DXGISwapChain CreateSwapChain(GraphicsDeviceProvider provider, bool isFlipModel, bool isOpaque)
         {
@@ -63,33 +65,30 @@ namespace ConcreteUI.Graphics.Hosts
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryPresent(in DXGIPresentParameters parameters)
-        {
-            return PresentCore(parameters) is null;
-        }
+        public unsafe bool TryPresent(Rect* pDirtyRects, uint count) => PresentCore(pDirtyRects, count) is null;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Present(in DXGIPresentParameters parameters)
+        public unsafe void Present(Rect* pDirtyRects, uint count)
         {
-            Exception? exception = PresentCore(parameters);
+            Exception? exception = PresentCore(pDirtyRects, count);
             if (exception is null)
                 return;
             throw exception;
         }
 
-        private Exception? PresentCore(in DXGIPresentParameters parameters)
+        private unsafe Exception? PresentCore(Rect* pDirtyRects, uint count)
         {
             DXGISwapChain swapChain = _swapChain;
             if (swapChain is null || swapChain.IsDisposed)
                 return null;
             if (BeforeNormalPresent(swapChain))
                 return null;
-            Exception? exception = GetExceptionHRForPresent(swapChain, PresentCore(swapChain, parameters));
+            Exception? exception = GetExceptionHRForPresent(swapChain, PresentCore(swapChain, pDirtyRects, count));
             return exception;
         }
 
         [Inline(InlineBehavior.Remove)]
-        private int PresentCore(DXGISwapChain swapChain, in DXGIPresentParameters parameters)
+        private unsafe int PresentCore(DXGISwapChain swapChain, Rect* pDirtyRects, uint count)
         {
             if (swapChain is not DXGISwapChain1 swapChain1 || _switchToNormalSwapChain)
                 return PresentCore(swapChain);
@@ -98,7 +97,7 @@ namespace ConcreteUI.Graphics.Hosts
                 _forcePresentAll = false;
                 return PresentCore(swapChain);
             }
-            return swapChain1.TryPresent1(0, parameters);
+            return swapChain1.TryPresent1(0, new DXGIPresentParameters() { pDirtyRects = pDirtyRects, DirtyRectsCount = count});
         }
 
         protected override Exception? GetExceptionHRForPresent(DXGISwapChain swapChain, int hr)

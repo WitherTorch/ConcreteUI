@@ -5,7 +5,7 @@ namespace ConcreteUI.Graphics
 {
     public interface IRenderingControl
     {
-        DXGISwapChain GetSwapChain();
+        DXGISwapChain? GetSwapChain();
 
         D2D1DeviceContext GetDeviceContext();
 

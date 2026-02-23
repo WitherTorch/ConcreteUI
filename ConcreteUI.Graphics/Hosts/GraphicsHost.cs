@@ -1,15 +1,14 @@
 using System;
 using System.Collections.Generic;
 
-using ConcreteUI.Graphics.Hosts;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.DXGI;
 
-namespace ConcreteUI.Graphics.Helpers
+namespace ConcreteUI.Graphics.Hosts
 {
-    public static class GraphicsHostHelper
+    public static class GraphicsHost
     {
-        public static SimpleGraphicsHost CreateSwapChainGraphicsHost(IntPtr handle, GraphicsDeviceProvider provider, bool useFlipModel, bool useDComp, bool isOpaque)
+        public static IGraphicsHost Create(IntPtr handle, GraphicsDeviceProvider provider, bool useFlipModel, bool useDComp, bool isOpaque)
         {
             if (useDComp && useFlipModel)
                 return new CompositionGraphicsHost(provider, handle, D2D1TextAntialiasMode.Grayscale, isOpaque); // 無法回退 (因為視窗的性質不一樣)
@@ -26,17 +25,20 @@ namespace ConcreteUI.Graphics.Helpers
                 {
                 }
             }
-            return new SimpleGraphicsHost(provider, handle,
+
+            return new SwapChainGraphicsHost(provider, handle,
                 D2D1TextAntialiasMode.Grayscale,
                 useFlipModel, isOpaque);
         }
 
-        public static SimpleGraphicsHost FromAnotherSwapChainGraphicsHost(SimpleGraphicsHost another, IntPtr handle, bool isOpaque)
+        public static IGraphicsHost FromAnother(IGraphicsHost another, IntPtr handle, bool isOpaque)
             => another switch
             {
                 CompositionGraphicsHost typedAnother => new CompositionGraphicsHost(typedAnother, handle, isOpaque),
-                OptimizedGraphicsHost typedAnother => new CompositionGraphicsHost(typedAnother, handle, isOpaque),
-                _ => new SimpleGraphicsHost(another, handle, isOpaque)
+                OptimizedGraphicsHost typedAnother => new OptimizedGraphicsHost(typedAnother, handle, isOpaque),
+                SwapChainGraphicsHost typedAnother => new SwapChainGraphicsHost(typedAnother, handle, isOpaque),
+                HwndGraphicsHost typedAnother => new HwndGraphicsHost(typedAnother, handle, isOpaque),
+                _ => throw new ArgumentException($"Unknown {nameof(IGraphicsHost)} implementation.", nameof(another)),
             };
 
         public static string[] EnumAdapters(GraphicsDeviceProvider provider)

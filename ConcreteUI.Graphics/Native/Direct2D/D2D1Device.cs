@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Security;
 
@@ -31,19 +32,25 @@ namespace ConcreteUI.Graphics.Native.Direct2D
 
         public D2D1Device(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
 
-        [Inline(InlineBehavior.Keep, export: true)]
-        public static D2D1Device Create(DXGIDevice device) => Create(device, null);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryCreate(DXGIDevice device, [NotNullWhen(true)] out D2D1Device? d2dDevice)
+            => TryCreate(device, null, out d2dDevice);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static D2D1Device Create(DXGIDevice device, in D2D1CreationProperties creationProperties)
-            => Create(device, UnsafeHelper.AsPointerIn(in creationProperties));
+        public static bool TryCreate(DXGIDevice device, in D2D1CreationProperties creationProperties, [NotNullWhen(true)] out D2D1Device? d2dDevice)
+            => TryCreate(device, UnsafeHelper.AsPointerIn(in creationProperties), out d2dDevice);
 
-        public static D2D1Device Create(DXGIDevice device, D2D1CreationProperties* creationProperties)
+        public static bool TryCreate(DXGIDevice device, D2D1CreationProperties* creationProperties, [NotNullWhen(true)] out D2D1Device? d2dDevice)
         {
             void* nativePointer;
             int hr = D2D1.D2D1CreateDevice(device.NativePointer, creationProperties, &nativePointer);
-            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
-            return new D2D1Device(nativePointer, ReferenceType.Owned);
+            if (hr < 0 || nativePointer is null)
+            {
+                d2dDevice = null;
+                return false;
+            }
+            d2dDevice = new D2D1Device(nativePointer, ReferenceType.Owned);
+            return true;
         }
 
         /// <summary>

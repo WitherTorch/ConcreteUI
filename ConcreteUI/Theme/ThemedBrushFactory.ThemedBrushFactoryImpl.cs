@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -12,12 +12,12 @@ namespace ConcreteUI.Theme
     {
         private sealed class ThemedBrushFactoryImpl : IThemedBrushFactory
         {
-            private readonly Func<D2D1DeviceContext, D2D1Brush> _base;
+            private readonly Func<D2D1RenderTarget, D2D1Brush> _base;
             private readonly byte[] _variantKeys;
-            private readonly Func<D2D1DeviceContext, D2D1Brush>[] _variants;
+            private readonly Func<D2D1RenderTarget, D2D1Brush>[] _variants;
 
-            internal ThemedBrushFactoryImpl(Func<D2D1DeviceContext, D2D1Brush> baseBrushFactory, byte[] variantKeys,
-                Func<D2D1DeviceContext, D2D1Brush>[] variantBrushFactories)
+            internal ThemedBrushFactoryImpl(Func<D2D1RenderTarget, D2D1Brush> baseBrushFactory, byte[] variantKeys,
+                Func<D2D1RenderTarget, D2D1Brush>[] variantBrushFactories)
             {
                 if (variantKeys.Length != variantBrushFactories.Length)
                     throw new InvalidOperationException();
@@ -27,18 +27,18 @@ namespace ConcreteUI.Theme
                 _variants = variantBrushFactories;
             }
 
-            public D2D1Brush CreateDefaultBrush(D2D1DeviceContext context) => _base.Invoke(context);
+            public D2D1Brush CreateDefaultBrush(D2D1RenderTarget renderTarget) => _base.Invoke(renderTarget);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public D2D1Brush CreateBrushByMaterial(D2D1DeviceContext context, WindowMaterial material)
+            public D2D1Brush CreateBrushByMaterial(D2D1RenderTarget renderTarget, WindowMaterial material)
             {
                 byte[] variantKeys = _variantKeys;
                 if (variantKeys.Length <= 0)
-                    return _base.Invoke(context);
+                    return _base.Invoke(renderTarget);
                 int index = Array.BinarySearch(variantKeys, (byte)material);
                 if (index < 0)
-                    return _base.Invoke(context);
-                return _variants[index].Invoke(context);
+                    return _base.Invoke(renderTarget);
+                return _variants[index].Invoke(renderTarget);
             }
 
             public IEnumerable<WindowMaterial> GetVariants()
@@ -47,7 +47,7 @@ namespace ConcreteUI.Theme
                     yield return (WindowMaterial)variant;
             }
 
-            internal Func<D2D1DeviceContext, D2D1Brush> Destruct(out byte[] variantKeys, out Func<D2D1DeviceContext, D2D1Brush>[] variantBrushFactories)
+            internal Func<D2D1RenderTarget, D2D1Brush> Destruct(out byte[] variantKeys, out Func<D2D1RenderTarget, D2D1Brush>[] variantBrushFactories)
             {
                 variantKeys = _variantKeys;
                 variantBrushFactories = _variants;

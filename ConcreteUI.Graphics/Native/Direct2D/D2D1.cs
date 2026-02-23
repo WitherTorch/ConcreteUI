@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Security;
@@ -15,19 +16,24 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         private const string LibraryName = "d2d1.dll";
 
         private static readonly void*[] _pointers = MethodImportHelper.GetImportedMethodPointers(LibraryName,
-            nameof(D2D1CreateDevice), nameof(D2D1ComputeMaximumScaleFactor));
+            nameof(D2D1CreateFactory), nameof(D2D1CreateDevice), nameof(D2D1ComputeMaximumScaleFactor));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int D2D1CreateDevice(void* dxgiDevice, D2D1CreationProperties* creationProperties, void** d2dDevice)
+        public static int D2D1CreateFactory(D2D1FactoryType factoryType, Guid* riid, D2D1FactoryOptions* pFactoryOptions, void** ppIFactory)
         {
             void* pointer = _pointers[0];
             if (pointer == null)
                 return Constants.E_NOTIMPL;
-#if NET8_0_OR_GREATER
-            return ((delegate* unmanaged[Stdcall, SuppressGCTransition]<void*, D2D1CreationProperties*, void**, int>)pointer)(dxgiDevice, creationProperties, d2dDevice);
-#else
+            return ((delegate* unmanaged[Stdcall]<D2D1FactoryType, Guid*, D2D1FactoryOptions*, void**, int>)pointer)(factoryType, riid, pFactoryOptions, ppIFactory);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int D2D1CreateDevice(void* dxgiDevice, D2D1CreationProperties* creationProperties, void** d2dDevice)
+        {
+            void* pointer = _pointers[1];
+            if (pointer == null)
+                return Constants.E_NOTIMPL;
             return ((delegate* unmanaged[Stdcall]<void*, D2D1CreationProperties*, void**, int>)pointer)(dxgiDevice, creationProperties, d2dDevice);
-#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -37,14 +43,16 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float D2D1ComputeMaximumScaleFactor(Matrix3x2* matrix)
         {
-            void* pointer = _pointers[1];
+            void* pointer = _pointers[2];
             if (pointer == null)
                 return 1.0f;
+            return ((delegate* unmanaged
 #if NET8_0_OR_GREATER
-            return ((delegate* unmanaged[Stdcall, SuppressGCTransition]<Matrix3x2*, float>)pointer)(matrix);
+            [Stdcall, SuppressGCTransition]
 #else
-            return ((delegate* unmanaged[Stdcall]<Matrix3x2*, float>)pointer)(matrix);
+            [Stdcall]
 #endif
+            <Matrix3x2*, float>)pointer)(matrix);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]

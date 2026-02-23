@@ -52,14 +52,6 @@ namespace ConcreteUI.Graphics.Native.DXGI
         public Rect* pDirtyRects;
         public Rect* pScrollRect;
         public Point* pScrollOffset;
-
-        public DXGIPresentParameters(uint dirtyRectsCount, Rect* pDirtyRects)
-        {
-            DirtyRectsCount = dirtyRectsCount;
-            this.pDirtyRects = pDirtyRects;
-            pScrollRect = null;
-            pScrollOffset = null;
-        }
     }
 
     [StructLayout(LayoutKind.Sequential)]

@@ -11,7 +11,7 @@ using static ConcreteUI.Graphics.Constants;
 
 namespace ConcreteUI.Graphics.Hosts
 {
-    public sealed class CompositionGraphicsHost : OptimizedGraphicsHost
+    public sealed class CompositionGraphicsHost : SwapChainGraphicsHost
     {
         private readonly DCompositionTarget _target;
         private readonly DCompositionVisual _visual;
@@ -23,7 +23,7 @@ namespace ConcreteUI.Graphics.Hosts
             Initialize(device, (DXGISwapChain1)_swapChain, handle, out _target, out _visual);
         }
 
-        public CompositionGraphicsHost(SimpleGraphicsHost another, IntPtr handle, bool isOpaque) : base(another, handle, isOpaque)
+        public CompositionGraphicsHost(SwapChainGraphicsHost another, IntPtr handle, bool isOpaque) : base(another, handle, isOpaque)
         {
             DCompositionDevice device = NullSafetyHelper.ThrowIfNull(another.GetDeviceProvider().DCompDevice);
             Initialize(device, (DXGISwapChain1)_swapChain, handle, out _target, out _visual);

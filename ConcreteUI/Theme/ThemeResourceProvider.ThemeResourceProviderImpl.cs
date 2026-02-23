@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
@@ -12,7 +12,7 @@ namespace ConcreteUI.Theme
         private sealed class ThemeResourceProviderImpl : IThemeResourceProvider, IDisposable
         {
             private readonly Dictionary<string, D2D1Brush> _brushDict;
-            private readonly D2D1DeviceContext _deviceContext;
+            private readonly D2D1RenderTarget _renderTarget;
             private readonly IThemeContext _themeContext;
             private readonly WindowMaterial _material;
 
@@ -22,9 +22,9 @@ namespace ConcreteUI.Theme
 
             public string FontName => _themeContext.FontName;
 
-            public ThemeResourceProviderImpl(D2D1DeviceContext deviceContext, IThemeContext themeContext, WindowMaterial material)
+            public ThemeResourceProviderImpl(D2D1RenderTarget renderTarget, IThemeContext themeContext, WindowMaterial material)
             {
-                _deviceContext = deviceContext;
+                _renderTarget = renderTarget;
                 _themeContext = themeContext;
                 _material = material;
 
@@ -52,7 +52,7 @@ namespace ConcreteUI.Theme
                     return true;
                 if (_themeContext.TryGetBrushFactory(node, out IThemedBrushFactory? factory))
                 {
-                    brush = factory.CreateBrushByMaterial(_deviceContext, _material);
+                    brush = factory.CreateBrushByMaterial(_renderTarget, _material);
                     brushDict.Add(node, brush);
                     return true;
                 }

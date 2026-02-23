@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 using ConcreteUI.Graphics.Native.Direct3D;
 
@@ -526,6 +526,23 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     }
 
     /// <summary>
+    /// Describes how present should behave.
+    /// </summary>
+    [Flags]
+    public enum D2D1PresentOptions : uint
+    {
+        None = 0x00000000,
+        /// <summary>
+        /// Keep the target contents intact through present.
+        /// </summary>
+        RetainContent = 0x00000001,
+        /// <summary>
+        /// Do not wait for display refresh to commit changes to display.
+        /// </summary>
+        Immediately = 0x00000002,
+    }
+
+    /// <summary>
     /// Describes the minimum DirectX support required for hardware rendering by a
     /// render target.
     /// </summary>
@@ -562,5 +579,35 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         /// This flag is slightly slower than the default.
         /// </remarks>
         InitializeForClearType = 0x00000001,
+    }
+
+    /// <summary>
+    /// Describes whether a window is occluded.
+    /// </summary>
+    public enum D2D1WindowState : uint
+    {
+        None = 0x0000000,
+        Occluded = 0x0000001
+    }
+
+    /// <summary>
+    /// Specifies the threading model of the created factory and all of its derived
+    /// resources.
+    /// </summary>
+    public enum D2D1FactoryType : uint
+    {
+
+        /// <summary>
+        /// The resulting factory and derived resources may only be invoked serially.
+        /// Reference counts on resources are interlocked, however, resource and render
+        /// target state is not protected from multi-threaded access.
+        /// </summary>
+        SingleThreaded = 0,
+
+        /// <summary>
+        /// The resulting factory may be invoked from multiple threads. Returned resources
+        /// use interlocked reference counting and their state is protected.
+        /// </summary>
+        MultiThreaded = 1,
     }
 }

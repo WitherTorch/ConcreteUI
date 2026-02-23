@@ -16,16 +16,16 @@ namespace ConcreteUI.Graphics
     {
         public static readonly DirtyAreaCollector Empty = new DirtyAreaCollector(null, null);
 
-        private readonly SimpleGraphicsHost? _host;
+        private readonly IGraphicsHost? _host;
         private readonly UnwrappableList<RectF>? _list;
 
         private bool _presentAllMode;
 
-        public DirtyAreaCollector(SimpleGraphicsHost host) :
-            this(host is OptimizedGraphicsHost ? new UnwrappableList<RectF>() : null, host)
+        public DirtyAreaCollector(IGraphicsHost host) :
+            this(host is IOptimizedGraphicsHost ? new UnwrappableList<RectF>() : null, host)
         { }
 
-        private DirtyAreaCollector(UnwrappableList<RectF>? list, SimpleGraphicsHost? host)
+        private DirtyAreaCollector(UnwrappableList<RectF>? list, IGraphicsHost? host)
         {
             _list = list;
             _host = host;
@@ -52,7 +52,7 @@ namespace ConcreteUI.Graphics
 
         public unsafe void Present(Vector2 pointsPerPixel)
         {
-            SimpleGraphicsHost? host = _host;
+            IGraphicsHost? host = _host;
             if (host is null)
                 return;
             UnwrappableList<RectF>? list = _list;
@@ -61,7 +61,7 @@ namespace ConcreteUI.Graphics
                 host.Present();
                 return;
             }
-            if (host is not OptimizedGraphicsHost host1 || ReferenceHelper.Exchange(ref _presentAllMode, false))
+            if (host is not IOptimizedGraphicsHost host1 || ReferenceHelper.Exchange(ref _presentAllMode, false))
             {
                 list.Clear();
                 host.Present();
@@ -72,7 +72,7 @@ namespace ConcreteUI.Graphics
             try
             {
                 fixed (Rect* ptr = rects)
-                    host1.Present(new DXGIPresentParameters(count, ptr));
+                    host1.Present(ptr, count);
             }
             finally
             {
@@ -82,13 +82,13 @@ namespace ConcreteUI.Graphics
 
         public unsafe bool TryPresent(Vector2 pointsPerPixel)
         {
-            SimpleGraphicsHost? host = _host;
+            IGraphicsHost? host = _host;
             if (host is null)
                 return false;
             UnwrappableList<RectF>? list = _list;
             if (list is null)
                 return host.TryPresent();
-            if (host is not OptimizedGraphicsHost host1 || ReferenceHelper.Exchange(ref _presentAllMode, false))
+            if (host is not IOptimizedGraphicsHost host1 || ReferenceHelper.Exchange(ref _presentAllMode, false))
             {
                 list.Clear();
                 return host.TryPresent();
@@ -98,7 +98,7 @@ namespace ConcreteUI.Graphics
             try
             {
                 fixed (Rect* ptr = rects)
-                    return host1.TryPresent(new DXGIPresentParameters(count, ptr));
+                    return host1.TryPresent(ptr, count);
             }
             finally
             {

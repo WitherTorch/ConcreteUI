@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Utils;
@@ -15,8 +15,8 @@ namespace ConcreteUI.Theme
             => CreateResourceProvider(window.GetDeviceContext(), themeContext, window.WindowMaterial);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IThemeResourceProvider CreateResourceProvider(D2D1DeviceContext deviceContext, IThemeContext themeContext, WindowMaterial windowMaterial)
-            => new ThemeResourceProviderImpl(deviceContext, themeContext,
+        public static IThemeResourceProvider CreateResourceProvider(D2D1RenderTarget renderTarget, IThemeContext themeContext, WindowMaterial windowMaterial)
+            => new ThemeResourceProviderImpl(renderTarget, themeContext,
                 (windowMaterial < WindowMaterial.None || windowMaterial >= WindowMaterial._Last) ? SystemHelper.GetDefaultMaterial() : windowMaterial);
     }
 }

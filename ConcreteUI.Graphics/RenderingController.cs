@@ -37,8 +37,8 @@ namespace ConcreteUI.Graphics
 
         private static IFrameWaiter CreateFrameWaiter(IRenderingControl control, Rational framesPerSecond, out bool needUpdateFps)
         {
-            DXGISwapChain swapChain = control.GetSwapChain();
-            if (!swapChain.TryQueryInterface(DXGISwapChain2.IID_IDXGISwapChain2, out DXGISwapChain2? swapChain2))
+            DXGISwapChain? swapChain = control.GetSwapChain();
+            if (swapChain is null || !swapChain.TryQueryInterface(DXGISwapChain2.IID_IDXGISwapChain2, out DXGISwapChain2? swapChain2))
                 goto Fallback;
             try
             {

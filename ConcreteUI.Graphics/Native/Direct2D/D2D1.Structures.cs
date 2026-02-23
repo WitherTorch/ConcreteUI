@@ -14,6 +14,20 @@ using SystemColor = System.Drawing.Color;
 
 namespace ConcreteUI.Graphics.Native.Direct2D
 {
+
+    /// <summary>
+    /// Allows additional parameters for factory creation.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct D2D1FactoryOptions
+    {
+        /// <summary>
+        /// Requests a certain level of debugging information from the debug layer. This
+        /// parameter is ignored if the debug layer DLL is not present.
+        /// </summary>
+        public D2D1DebugLevel DebugLevel;
+    }
+
     /// <summary>
     /// This specifies the options while simultaneously creating the device, factory,
     /// and device context.
@@ -259,6 +273,16 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         public float DpiY;
         public D2D1RenderTargetUsages Usages;
         public D2D1FeatureLevel MinLevel;
+    }
+
+    /// <summary>
+    /// Contains the HWND, pixel size, and presentation options for a <see cref="D2D1HwndRenderTarget"/>.
+    /// </summary>
+    public struct D2D1HwndRenderTargetProperties
+    {
+        public IntPtr Hwnd;
+        public SizeU PixelSize;
+        public D2D1PresentOptions PresentOptions;
     }
 
     /// <inheritdoc cref="D2D1LayerParametersNative"/>

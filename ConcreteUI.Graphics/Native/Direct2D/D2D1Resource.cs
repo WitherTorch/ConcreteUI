@@ -1,4 +1,5 @@
-﻿using System.Security;
+using System;
+using System.Security;
 
 using WitherTorch.Common.Native;
 using WitherTorch.Common.Windows.ObjectModels;
@@ -25,12 +26,14 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         /// <summary>
         /// Retrieve the factory associated with this resource.
         /// </summary>
-        public D2D1Factory? GetFactory()
+        public D2D1Factory GetFactory()
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetFactory);
             ((delegate* unmanaged[Stdcall]<void*, void**, void>)functionPointer)(nativePointer, &nativePointer);
-            return nativePointer == null ? null : new D2D1Factory(nativePointer, ReferenceType.Owned);
+            if (nativePointer == null)
+                throw new InvalidOperationException("Failed to get the factory for this resource.");
+            return new D2D1Factory(nativePointer, ReferenceType.Owned);
         }
     }
 }
