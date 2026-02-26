@@ -82,7 +82,7 @@ namespace ConcreteUI.Graphics.Hosts
                 BufferDesc = new DXGIModeDescription(Constants.Format) { Height = 1, Width = 1 },
                 SampleDesc = new DXGISampleDescription(1, 0),
                 BufferCount = 1,
-                SwapEffect = DXGISwapEffect.Discard
+                SwapEffect = DXGISwapEffect.Sequential
             };
             return provider.DXGIFactory.CreateSwapChain(provider.D3DDevice, swapChainDesc);
         }
