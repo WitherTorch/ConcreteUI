@@ -54,7 +54,7 @@ namespace ConcreteUI.Graphics
             get => _dxgiDevice;
         }
 
-        public D2D1Device? D2DDevice
+        public D2D1Device D2DDevice
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _d2dDevice;

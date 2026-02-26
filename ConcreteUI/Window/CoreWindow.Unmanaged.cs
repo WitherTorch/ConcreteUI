@@ -2,11 +2,9 @@ using System;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
-using ConcreteUI.Graphics.Native.DXGI;
 using ConcreteUI.Internals;
 using ConcreteUI.Internals.Native;
 using ConcreteUI.Utils;
@@ -34,7 +32,7 @@ namespace ConcreteUI.Window
         private nint _beforeHitTest;
         private uint _sizeModeState;
         private int _borderWidthInPixels;
-        private bool _isMaximized, _isCreateByDefaultX, _isCreateByDefaultY, _hasMouseCapture;
+        private bool _isMaximized, _isCreateByDefaultX, _isCreateByDefaultY, _hasMouseCapture, _isSystemPrepareBoosting;
         #endregion
 
         #region Special Fields
@@ -102,6 +100,25 @@ namespace ConcreteUI.Window
         #endregion
 
         #region WndProcs
+        private void OnActivate(IntPtr hwnd, nint wParam)
+        {
+            RenderingController? controller = _controller;
+            if (controller is null)
+                _isSystemPrepareBoosting = wParam != 0;
+            else
+                controller.SetSystemBoosting(wParam != 0);
+            if (_windowMaterial == WindowMaterial.Integrated || IsUsingBackdrop())
+            {
+                Margins margins = new Margins(-1);
+                DwmApi.DwmExtendFrameIntoClientArea(hwnd, &margins);
+            }
+            else
+            {
+                Margins margins = default;
+                DwmApi.DwmExtendFrameIntoClientArea(hwnd, &margins);
+            }
+        }
+
         protected override bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
             UnwrappableList<IWindowMessageFilter> filterList = _filterList;
@@ -124,6 +141,9 @@ namespace ConcreteUI.Window
             result = 0;
             switch (message)
             {
+                case WindowMessage.Activate:
+                    OnActivate(hwnd, wParam);
+                    return base.TryProcessSystemWindowMessage(hwnd, message, wParam, lParam, out result);
                 case WindowMessage.DpiChanged:
                     {
                         (ushort dpiX, ushort dpiY) = wParam.GetWords();
@@ -410,6 +430,7 @@ namespace ConcreteUI.Window
                     else
                         return TryProcessUIWindowMessage_Default(hwnd, message, wParam, lParam, out result);
             }
+
             return true;
         }
 
@@ -417,21 +438,6 @@ namespace ConcreteUI.Window
         {
             switch (message)
             {
-                case WindowMessage.Activate:
-                    {
-                        if (!IsUsingBackdrop())
-                        {
-                            Margins margins = default;
-                            DwmApi.DwmExtendFrameIntoClientArea(hwnd, &margins);
-                        }
-                        else
-                        {
-                            Margins margins = new Margins(-1);
-                            DwmApi.DwmExtendFrameIntoClientArea(hwnd, &margins);
-                        }
-                        result = 0;
-                    }
-                    goto default;
                 case WindowMessage.NCCalcSize:
                     {
                         if (wParam == default)
@@ -494,26 +500,22 @@ namespace ConcreteUI.Window
 
             switch (message)
             {
-                case WindowMessage.Activate:
                 case WindowMessage.DwmCompositionChanged:
                     Margins margins = new Margins(-1);
                     DwmApi.DwmExtendFrameIntoClientArea(hwnd, &margins);
-                    goto Transfer;
+                    goto default;
                 case WindowMessage.NCHitTest:
                     {
                         HitTestValue hitTest = DoHitTestForIntergratedUI(lParam);
                         if (hitTest == HitTestValue.NoWhere)
-                            goto Transfer;
+                            goto default;
                         result = (nint)hitTest;
                     }
                     break;
                 default:
-                    goto Transfer;
+                    return base.TryProcessSystemWindowMessage(hwnd, message, wParam, lParam, out result);
             }
             return true;
-
-        Transfer:
-            return base.TryProcessSystemWindowMessage(hwnd, message, wParam, lParam, out result);
         }
 
         protected override bool TryProcessCustomWindowMessage(IntPtr handle, uint message, nint wParam, nint lParam, out nint result)

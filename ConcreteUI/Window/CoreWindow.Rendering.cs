@@ -773,6 +773,8 @@ namespace ConcreteUI.Window
         {
             _isShown = true;
             RenderingController controller = new RenderingController(this, GetWindowFps(Handle));
+            if (_isSystemPrepareBoosting)
+                controller.SetSystemBoosting(true);
             _controller = controller;
             UpdateCoreUnchecked(controller);
         }

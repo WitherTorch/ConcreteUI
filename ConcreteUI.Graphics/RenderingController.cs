@@ -21,18 +21,19 @@ namespace ConcreteUI.Graphics
         private readonly ManualResetEventSlim _waitForRenderingTrigger;
         private readonly bool _needUpdateFps;
 
+        private ulong _state, _locked, _isSystemBoosting;
         private bool _disposed;
-        private long _state, _locked;
 
         public bool NeedUpdateFps => _needUpdateFps;
 
         public RenderingController(IRenderingControl control, Rational framesPerSecond)
         {
             _control = control;
-            _state = (long)RenderingFlags._FlagAllTrue;
+            _state = (ulong)RenderingFlags._FlagAllTrue;
             _frameWaiter = CreateFrameWaiter(control, framesPerSecond, out _needUpdateFps);
             _thread = new RenderingThread(this, _eventManager, _frameWaiter);
             _waitForRenderingTrigger = new ManualResetEventSlim(true);
+            _isSystemBoosting = 0;
         }
 
         private static IFrameWaiter CreateFrameWaiter(IRenderingControl control, Rational framesPerSecond, out bool needUpdateFps)
@@ -60,7 +61,7 @@ namespace ConcreteUI.Graphics
 
         public void RequestUpdate(bool force)
         {
-            if (InterlockedHelper.Read(ref _locked) != 0L)
+            if (InterlockedHelper.Read(ref _locked) != 0UL)
                 return;
             if (force)
                 InterlockedHelper.Or(ref _state, (long)RenderingFlags.RedrawAll);
@@ -69,30 +70,30 @@ namespace ConcreteUI.Graphics
 
         public void RequestResize(bool temporarily)
         {
-            if (InterlockedHelper.Read(ref _locked) != 0L)
+            if (InterlockedHelper.Read(ref _locked) != 0UL)
                 return;
-            InterlockedHelper.Or(ref _state, temporarily ? (long)RenderingFlags.ResizeTemporarilyAndRedrawAll : (long)RenderingFlags.ResizeAndRedrawAll);
+            InterlockedHelper.Or(ref _state, temporarily ? (ulong)RenderingFlags.ResizeTemporarilyAndRedrawAll : (ulong)RenderingFlags.ResizeAndRedrawAll);
             _thread.DoRender();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RenderCore()
         {
-            if (InterlockedHelper.Read(ref _locked) != 0L)
+            if (InterlockedHelper.Read(ref _locked) != 0UL)
                 return;
             ManualResetEventSlim trigger = _waitForRenderingTrigger;
             trigger.Reset();
-            _control.Render((RenderingFlags)Interlocked.Exchange(ref _state, 0L));
+            _control.Render((RenderingFlags)InterlockedHelper.Exchange(ref _state, 0UL));
             trigger.Set();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Lock() => Interlocked.Exchange(ref _locked, Booleans.TrueLong);
+        public void Lock() => InterlockedHelper.Exchange(ref _locked, Booleans.TrueLong);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Unlock()
         {
-            if (Interlocked.CompareExchange(ref _locked, Booleans.FalseLong, Booleans.TrueLong) != Booleans.TrueLong)
+            if (InterlockedHelper.CompareExchange(ref _locked, Booleans.FalseLong, Booleans.TrueLong) != Booleans.TrueLong)
                 return;
             InterlockedHelper.Or(ref _state, (long)RenderingFlags.ResizeAndRedrawAll);
             _thread.DoRender();
@@ -107,20 +108,40 @@ namespace ConcreteUI.Graphics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetFramesPerSecond(Rational value) => _frameWaiter.FramesPerSecond = value;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetSystemBoosting(bool boost)
+        {
+            ulong value = UnsafeHelper.Negate(MathHelper.BooleanToUInt64(boost));
+            if (InterlockedHelper.Exchange(ref _isSystemBoosting, value) == value)
+                return;
+            DelayedSystemBooster booster = DelayedSystemBooster.Instance;
+            if (boost)
+                booster.AddRef();
+            else
+                booster.RemoveRef();
+        }
+
         public bool WaitForExit(int millisecondsTimeout) => _thread.WaitForExit(millisecondsTimeout);
 
-        private void DisposeCore()
+        ~RenderingController() => DisposeCore(disposing: false);
+
+        private void DisposeCore(bool disposing)
         {
             if (ReferenceHelper.Exchange(ref _disposed, true))
                 return;
-            _waitForRenderingTrigger.Dispose();
-            _frameWaiter.Dispose();
-            _thread.Dispose();
+            if (disposing)
+            {
+                _waitForRenderingTrigger.Dispose();
+                _frameWaiter.Dispose();
+                _thread.Dispose();
+            }
+            if (InterlockedHelper.Exchange(ref _isSystemBoosting, 0UL) != 0UL)
+                DelayedSystemBooster.Instance.RemoveRef();
         }
 
         public void Dispose()
         {
-            DisposeCore();
+            DisposeCore(disposing: true);
             GC.SuppressFinalize(this);
         }
     }

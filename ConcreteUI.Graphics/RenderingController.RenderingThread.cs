@@ -3,7 +3,6 @@ using System.Runtime.ConstrainedExecution;
 using System.Threading;
 
 using ConcreteUI.Graphics.Internals;
-using ConcreteUI.Graphics.Internals.Native;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Helpers;
@@ -16,8 +15,6 @@ namespace ConcreteUI.Graphics
         {
             private static ulong _idCounter = 0;
 
-            private static readonly uint _timePeriod;
-
             private readonly RenderingController _controller;
             private readonly IWaitingEventManager _eventManager;
             private readonly IFrameWaiter _frameWaiter;
@@ -25,18 +22,6 @@ namespace ConcreteUI.Graphics
 
             private IntPtr _renderingWaitingHandle, _exitTriggerHandle;
             private bool _disposed;
-
-            unsafe static RenderingThread()
-            {
-                TimeCapability capability;
-                if (Winmm.timeGetDevCaps(&capability, UnsafeHelper.SizeOf<TimeCapability>()) != 0)
-                    return;
-                uint timePeriod = capability.wPeriodMin;
-                if (timePeriod <= 0 || Winmm.timeBeginPeriod(timePeriod) != 0)
-                    return;
-                _timePeriod = timePeriod;
-                AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
-            }
 
             public RenderingThread(RenderingController controller, IWaitingEventManager eventManager, IFrameWaiter frameWaiter)
             {
@@ -114,9 +99,6 @@ namespace ConcreteUI.Graphics
                     return true;
                 return _eventManager.Wait(handle, (uint)millisecondsTimeout);
             }
-
-            private static void CurrentDomain_ProcessExit(object? sender, EventArgs e)
-                => Winmm.timeEndPeriod(_timePeriod);
 
             ~RenderingThread() => DisposeCore();
 

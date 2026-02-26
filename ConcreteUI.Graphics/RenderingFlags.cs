@@ -3,7 +3,7 @@ using System;
 namespace ConcreteUI.Graphics
 {
     [Flags]
-    public enum RenderingFlags : long
+    public enum RenderingFlags : ulong
     {
         None = 0b0000,
         RedrawAll = 0b0001,
@@ -11,7 +11,7 @@ namespace ConcreteUI.Graphics
         ResizeTemporarily = _ResizeTemporarilyFlag | Resize,
         ResizeAndRedrawAll = Resize | RedrawAll,
         ResizeTemporarilyAndRedrawAll = ResizeTemporarily | RedrawAll,
-        _FlagAllTrue = unchecked((long)ulong.MaxValue) & ~_ResizeTemporarilyFlag,
+        _FlagAllTrue = ulong.MaxValue & ~_ResizeTemporarilyFlag,
         _ResizeTemporarilyFlag = 0b0100,
     }
 }
