@@ -8,6 +8,8 @@ using ConcreteUI.Window;
 
 using Microsoft.Win32;
 
+using WitherTorch.Common.Extensions;
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Internals.NativeHelpers
@@ -15,41 +17,48 @@ namespace ConcreteUI.Internals.NativeHelpers
     internal static class FluentHandler
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe DwmSystemBackdropType GetCurrentBackdrop(IntPtr handle)
+        public static DwmSystemBackdropType GetCurrentBackdrop(IntPtr handle)
             => DwmApi.DwmGetWindowAttributeOrDefault(handle, DwmWindowAttribute.SystemBackdropType, DwmSystemBackdropType.None);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void EnableMicaBackdrop(IntPtr handle)
+        public static void EnableMicaBackdrop(IntPtr handle)
             => SetBackdropType(handle, DwmSystemBackdropType.MainWindow);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void EnableMicaAltBackdrop(IntPtr handle)
+        public static void EnableMicaAltBackdrop(IntPtr handle)
             => SetBackdropType(handle, DwmSystemBackdropType.TabbedWindow);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void EnableAcrylicBackdrop(IntPtr handle)
+        public static void EnableAcrylicBackdrop(IntPtr handle)
             => SetBackdropType(handle, DwmSystemBackdropType.TransientWindow);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void DisableBackdrop(IntPtr handle)
+        public static void DisableBackdrop(IntPtr handle)
             => SetBackdropType(handle, DwmSystemBackdropType.Auto);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void SetBackdropType(IntPtr handle, DwmSystemBackdropType type)
+        private static void SetBackdropType(IntPtr handle, DwmSystemBackdropType type)
             => DwmApi.DwmSetWindowAttribute(handle, DwmWindowAttribute.SystemBackdropType, type);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void SetTitleBarColor(IntPtr handle, in Color color)
+        public static void SetTitleBarColor(IntPtr handle, in Color color)
             => DwmApi.DwmSetWindowAttribute(handle, DwmWindowAttribute.CaptionColor, color.A == 0 ? uint.MaxValue : color.ToBgr());
 
-        public static unsafe void SetDarkThemeInWin11(IntPtr handle, bool value)
+        public static void SetDarkThemeInWin11(IntPtr handle, SysBool value)
         {
-            DwmApi.DwmSetWindowAttribute<SysBool>(handle, DwmWindowAttribute.UseImmersiveDarkMode, value);
-            UxTheme.SetPreferredAppMode(value ? PreferredAppMode.ForceDark : PreferredAppMode.ForceLight);
+            DwmApi.DwmSetWindowAttribute(handle, DwmWindowAttribute.UseImmersiveDarkMode, value);
         }
 
-        public static unsafe void SetDarkThemeInWin10_19H1(bool value)
-            => UxTheme.SetPreferredAppMode(value ? PreferredAppMode.ForceDark : PreferredAppMode.ForceLight);
+        public static unsafe void SetDarkThemeInWin10_19H1(IntPtr handle, SysBool value)
+        {
+            WindowCompositionAttributeData data = new WindowCompositionAttributeData()
+            {
+                Attribute = WindowCompositionAttribute.UseDarkModeColors,
+                Data = &value,
+                SizeOfData = sizeof(SysBool)
+            };
+            User32.SetWindowCompositionAttribute(handle, &data);
+        }
 
         public static bool CheckAppsUseLightTheme()
         {
@@ -61,13 +70,14 @@ namespace ConcreteUI.Internals.NativeHelpers
             return result;
         }
 
-        public static unsafe void EnableBlur(IntPtr handle)
+        public static unsafe void EnableBlur(IntPtr handle, bool isDarkMode)
         {
             AccentPolicy accent = new AccentPolicy
             {
                 AccentState = AccentState.EnableBlurBehind,
                 AnimationId = 0,
-                AccentFlags = AccentFlags.None
+                AccentFlags = AccentFlags.None,
+                GradientColor = isDarkMode ? 0x66000000 : 0x66FFFFFFu
             };
             WindowCompositionAttributeData data = new WindowCompositionAttributeData
             {
@@ -85,12 +95,9 @@ namespace ConcreteUI.Internals.NativeHelpers
             {
                 AccentState = AccentState.EnableAcrylicBlurBehind,
                 AnimationId = 0,
-                AccentFlags = AccentFlags.None
+                AccentFlags = AccentFlags.None,
+                GradientColor = isDarkMode ? 0x802B2B2B : 0x80F2F2F2
             };
-            if (isDarkMode)
-                accent.GradientColor = Color.FromArgb(0, 0, 0, 100).ToBgra();
-            else
-                accent.GradientColor = Color.FromArgb(255, 254, 247, 100).ToBgra();
             WindowCompositionAttributeData data = new WindowCompositionAttributeData
             {
                 Attribute = WindowCompositionAttribute.AccentPolicy,
@@ -101,18 +108,32 @@ namespace ConcreteUI.Internals.NativeHelpers
             User32.SetWindowCompositionAttribute(handle, &data);
         }
 
-        public static unsafe void DisableBlur(IntPtr handle, bool isDarkMode)
+        public static unsafe void EnableSolidBackdrop(IntPtr handle, bool isDarkMode)
         {
             AccentPolicy accent = new AccentPolicy
             {
                 AccentState = AccentState.EnableGradient,
                 AnimationId = 0,
+                AccentFlags = AccentFlags.None,
+                GradientColor = isDarkMode ? 0xFF1A1A1Au : 0xFFF2F2F2u
+            };
+            WindowCompositionAttributeData data = new WindowCompositionAttributeData
+            {
+                Attribute = WindowCompositionAttribute.AccentPolicy,
+                SizeOfData = sizeof(AccentPolicy),
+                Data = &accent
+            };
+            User32.SetWindowCompositionAttribute(handle, &data);
+        }
+
+        public static unsafe void DisableBlur(IntPtr handle)
+        {
+            AccentPolicy accent = new AccentPolicy
+            {
+                AccentState = AccentState.Disabled,
+                AnimationId = 0,
                 AccentFlags = AccentFlags.None
             };
-            if (isDarkMode)
-                accent.GradientColor = Color.FromArgb(0, 0, 0, 100).ToBgra();
-            else
-                accent.GradientColor = Color.FromArgb(255, 254, 247, 100).ToBgra();
             WindowCompositionAttributeData data = new WindowCompositionAttributeData
             {
                 Attribute = WindowCompositionAttribute.AccentPolicy,
@@ -123,59 +144,84 @@ namespace ConcreteUI.Internals.NativeHelpers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void ApplyWin11Corner(IntPtr handle)
+        public static void ApplyWin11Corner(IntPtr handle)
             => DwmApi.DwmSetWindowAttribute(handle, DwmWindowAttribute.WindowCornerPreference, DwmWindowCornerPreference.Round);
 
-        public static object FixLagForAcrylic(CoreWindow window)
-            => new AcrylicLagFixFor21H2(window, isAcrylic: true);
+        public static object? FixLagForAcrylic(CoreWindow window)
+            => new VisualLagFixFilter(window, isAcrylic: true,
+                fallBackToGaussian: !window.ExtendedStyles.HasFlagOptimized(WindowExtendedStyles.NoRedirectionBitmap));
 
-        public static object FixLagForBlur(CoreWindow window)
-            => new AcrylicLagFixFor21H2(window, isAcrylic: false);
+        public static object? FixLagForBlur(CoreWindow window)
+            => window.ExtendedStyles.HasFlagOptimized(WindowExtendedStyles.NoRedirectionBitmap) ? 
+            new VisualLagFixFilter(window, isAcrylic: false, fallBackToGaussian: false) : null;
 
-        private sealed class AcrylicLagFixFor21H2
+        private sealed class VisualLagFixFilter : IWindowMessageFilter, IDisposable
         {
             private readonly bool _isAcrylic;
+            private readonly bool _fallBackToGaussian;
             private readonly WeakReference<CoreWindow> _windowReference;
 
-            private bool _isResizing;
+            private bool _disposed;
 
-            public AcrylicLagFixFor21H2(CoreWindow window, bool isAcrylic)
+            public VisualLagFixFilter(CoreWindow window, bool isAcrylic, bool fallBackToGaussian)
             {
                 _windowReference = new WeakReference<CoreWindow>(window);
-                _isResizing = false;
                 _isAcrylic = isAcrylic;
-                window.Resizing += Window_Resizing;
-                window.Resized += Window_Resized;
-                window.Closing += Window_Closing;
+                _fallBackToGaussian = fallBackToGaussian;
+                _disposed = false;
+
+                window.AddMessageFilter(this);
             }
 
-            private void Window_Resizing(object? sender, EventArgs e)
+            public bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
             {
-                if (_isResizing || !_windowReference.TryGetTarget(out CoreWindow? window) || !ReferenceEquals(window, sender))
-                    return;
-                _isResizing = true;
-                DisableBlur(window.Handle, window.CurrentTheme?.IsDarkTheme ?? false);
+                result = 0;
+                switch (message)
+                {
+                    case WindowMessage.EnterSizeMove:
+                        {
+                            if (!_windowReference.TryGetTarget(out CoreWindow? window))
+                                break;
+                            bool isDarkMode = window.CurrentTheme?.IsDarkTheme ?? false;
+                            if (_fallBackToGaussian)
+                                EnableBlur(hwnd, isDarkMode);
+                            else
+                                EnableSolidBackdrop(hwnd, isDarkMode);
+                        }
+                        break;
+                    case WindowMessage.ExitSizeMove:
+                        {
+                            if (!_windowReference.TryGetTarget(out CoreWindow? window))
+                                break;
+                            bool isDarkMode = window.CurrentTheme?.IsDarkTheme ?? false;
+                            DisableBlur(hwnd);
+                            User32.SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0, 
+                                WindowPositionFlags.SwapWithNoMove | WindowPositionFlags.SwapWithNoSize | 
+                                WindowPositionFlags.SwapWithNoZOrder | WindowPositionFlags.SwapWithFrameChanged);
+                            if (_isAcrylic)
+                                EnableAcrylicBlur(hwnd, isDarkMode);
+                            else
+                                EnableBlur(hwnd, isDarkMode);
+                        }
+                        break;
+                    case WindowMessage.Destroy:
+                        Dispose();
+                        break;
+                }
+                return false;
             }
 
-            private void Window_Resized(object? sender, EventArgs e)
+            private void DisposeCore()
             {
-                if (!_isResizing || !_windowReference.TryGetTarget(out CoreWindow? window) || !ReferenceEquals(window, sender))
+                if (ReferenceHelper.Exchange(ref _disposed, true) || !_windowReference.TryGetTarget(out CoreWindow? window))
                     return;
-                _isResizing = false;
-                IntPtr handle = window.Handle;
-                if (_isAcrylic)
-                    EnableAcrylicBlur(handle, window.CurrentTheme?.IsDarkTheme ?? false);
-                else
-                    EnableBlur(handle);
+                window.RemoveMessageFilter(this);
             }
 
-            private void Window_Closing(object? sender, ref ClosingEventArgs args)
+            public void Dispose()
             {
-                if (args.Cancelled || !_windowReference.TryGetTarget(out CoreWindow? window) || !ReferenceEquals(window, sender))
-                    return;
-                window.Resizing -= Window_Resizing;
-                window.Resized -= Window_Resized;
-                window.Closing -= Window_Closing;
+                DisposeCore();
+                GC.SuppressFinalize(this);
             }
         }
     }

@@ -778,8 +778,12 @@ namespace ConcreteUI.Window
             WindowMaterial material = _windowMaterial;
             if (material != WindowMaterial.Integrated)
                 windowInfo.Styles &= ~WindowStyles.SystemMenu;
-            if (material == WindowMaterial.None && SystemConstants.VersionLevel == SystemVersionLevel.Windows_8)
+            SystemVersionLevel versionLevel = SystemConstants.VersionLevel;
+            if (material == WindowMaterial.None && versionLevel == SystemVersionLevel.Windows_8)
                 windowInfo.ExtendedStyles |= WindowExtendedStyles.NoRedirectionBitmap;
+            else if (material >= WindowMaterial.Gaussian &&
+                        versionLevel >= SystemVersionLevel.Windows_10 && versionLevel <= SystemVersionLevel.Windows_11_21H2)
+            { }
             else
             {
                 GraphicsDeviceProvider provider = _graphicsDeviceProviderLazy.Value;

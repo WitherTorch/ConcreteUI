@@ -170,6 +170,9 @@ namespace ConcreteUI.Internals.Native
         public static extern IntPtr SetActiveWindow(IntPtr hWnd);
 
         [DllImport(LibraryName)]
+        public static extern IntPtr UpdateWindow(IntPtr hWnd);
+
+        [DllImport(LibraryName)]
         public static extern SysBool IsWindowVisible(IntPtr hWnd);
 
         [DllImport(LibraryName)]

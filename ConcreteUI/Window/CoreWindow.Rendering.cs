@@ -188,17 +188,10 @@ namespace ConcreteUI.Window
             SimpleGraphicsHost host;
             if (parent is null)
             {
+                SystemVersionLevel versionLevel = SystemConstants.VersionLevel;
                 GraphicsDeviceProvider provider = _graphicsDeviceProviderLazy.Value;
-                bool useFlipModel, useDComp;
-                if (material == WindowMaterial.None && SystemConstants.VersionLevel >= SystemVersionLevel.Windows_8)
-                {
-                    useFlipModel = true;
-                    useDComp = false;
-                }
-                else
-                {
-                    useFlipModel = useDComp = provider.IsSupportDComp && provider.IsSupportSwapChain1;
-                }
+                bool useFlipModel = ExtendedStyles.HasFlagOptimized(WindowExtendedStyles.NoRedirectionBitmap);
+                bool useDComp = useFlipModel && provider.IsSupportDComp && provider.IsSupportSwapChain1;
                 host = GraphicsHostHelper.CreateSwapChainGraphicsHost(handle, provider, useFlipModel, useDComp, IsBackgroundOpaque());
             }
             else

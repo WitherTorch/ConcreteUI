@@ -1,5 +1,4 @@
 using System;
-using System.Drawing;
 
 using ConcreteUI.Internals.Native;
 using ConcreteUI.Internals.NativeHelpers;
@@ -9,7 +8,7 @@ namespace ConcreteUI.Internals
 {
     internal static class ConcreteUtils
     {
-        public static unsafe void ApplyWindowStyle(CoreWindow window, out object? fixLagObject)
+        public static void ApplyWindowStyle(CoreWindow window, out object? fixLagObject)
         {
             IntPtr handle = window.Handle;
             WindowMaterial material = window.WindowMaterial;
@@ -29,7 +28,7 @@ namespace ConcreteUI.Internals
                             FluentHandler.EnableAcrylicBackdrop(handle);
                             break;
                         case WindowMaterial.Gaussian:
-                            FluentHandler.EnableBlur(handle);
+                            FluentHandler.EnableBlur(handle, window.CurrentTheme?.IsDarkTheme ?? false);
                             fixLagObject = FluentHandler.FixLagForBlur(window);
                             break;
                         case WindowMaterial.Integrated:
@@ -54,7 +53,7 @@ namespace ConcreteUI.Internals
                             fixLagObject = FluentHandler.FixLagForAcrylic(window);
                             break;
                         case WindowMaterial.Gaussian:
-                            FluentHandler.EnableBlur(handle);
+                            FluentHandler.EnableBlur(handle, isDarkTheme);
                             fixLagObject = FluentHandler.FixLagForBlur(window);
                             break;
                         case WindowMaterial.Integrated:
@@ -72,12 +71,12 @@ namespace ConcreteUI.Internals
                             fixLagObject = FluentHandler.FixLagForAcrylic(window);
                             goto default;
                         case WindowMaterial.Gaussian:
-                            FluentHandler.EnableBlur(handle);
+                            FluentHandler.EnableBlur(handle, isDarkTheme);
                             goto default;
                         default:
                             break;
                     }
-                    FluentHandler.SetDarkThemeInWin10_19H1(isDarkTheme);
+                    FluentHandler.SetDarkThemeInWin10_19H1(handle, isDarkTheme);
                     break;
                 case SystemVersionLevel.Windows_10_Redstone_4: // WindowMaterial-theme-v2
                     switch (material)
@@ -87,7 +86,7 @@ namespace ConcreteUI.Internals
                             fixLagObject = FluentHandler.FixLagForAcrylic(window);
                             goto default;
                         case WindowMaterial.Gaussian:
-                            FluentHandler.EnableBlur(handle);
+                            FluentHandler.EnableBlur(handle, window.CurrentTheme?.IsDarkTheme ?? false);
                             goto default;
                         default:
                             break;
@@ -97,7 +96,7 @@ namespace ConcreteUI.Internals
                     switch (material)
                     {
                         case WindowMaterial.Gaussian:
-                            FluentHandler.EnableBlur(handle);
+                            FluentHandler.EnableBlur(handle, window.CurrentTheme?.IsDarkTheme ?? false);
                             goto default;
                         default:
                             break;
@@ -128,7 +127,7 @@ namespace ConcreteUI.Internals
                     switch (window.WindowMaterial)
                     {
                         case WindowMaterial.Gaussian:
-                            FluentHandler.EnableBlur(handle);
+                            FluentHandler.EnableBlur(handle, window.CurrentTheme?.IsDarkTheme ?? false);
                             break;
                     }
                     break;
@@ -136,7 +135,7 @@ namespace ConcreteUI.Internals
                     FluentHandler.SetDarkThemeInWin11(handle, window.CurrentTheme?.IsDarkTheme ?? false);
                     goto case SystemVersionLevel.Reserved_1;
                 case SystemVersionLevel.Windows_10_19H1:
-                    FluentHandler.SetDarkThemeInWin10_19H1(window.CurrentTheme?.IsDarkTheme ?? false);
+                    FluentHandler.SetDarkThemeInWin10_19H1(handle, window.CurrentTheme?.IsDarkTheme ?? false);
                     goto case SystemVersionLevel.Reserved_1;
                 case SystemVersionLevel.Windows_10_Redstone_4:
                 case SystemVersionLevel.Windows_10:
@@ -145,7 +144,7 @@ namespace ConcreteUI.Internals
                     switch (window.WindowMaterial)
                     {
                         case WindowMaterial.Gaussian:
-                            FluentHandler.EnableBlur(handle);
+                            FluentHandler.EnableBlur(handle, window.CurrentTheme?.IsDarkTheme ?? false);
                             break;
                         case WindowMaterial.Acrylic:
                             FluentHandler.EnableAcrylicBlur(handle, window.CurrentTheme?.IsDarkTheme ?? false);

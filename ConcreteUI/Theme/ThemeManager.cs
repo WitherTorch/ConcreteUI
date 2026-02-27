@@ -1,10 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
+using ConcreteUI.Internals;
+using ConcreteUI.Internals.Native;
 using ConcreteUI.Window;
+
+using InlineMethod;
 
 namespace ConcreteUI.Theme
 {
@@ -16,8 +20,8 @@ namespace ConcreteUI.Theme
         private static readonly HashSet<IThemeProvider> _providers = new HashSet<IThemeProvider>();
         private static IThemeContext _currentTheme;
 
-        public static event ThemeChangingEventHandler? OnThemeChanging;
-        public static event EventHandler? OnThemeChanged;
+        public static event ThemeChangingEventHandler? ThemeChanging;
+        public static event EventHandler? ThemeChanged;
 
         public static IThemeContext CurrentTheme
         {
@@ -27,10 +31,9 @@ namespace ConcreteUI.Theme
             {
                 if (ReferenceEquals(_currentTheme, value))
                     return;
-                OnThemeChanging?.Invoke(value);
+                OnThemeChanging(value);
                 _currentTheme = value;
-                OnThemeChanged?.Invoke(null, EventArgs.Empty);
-                CoreWindow.NotifyThemeChanged(value);
+                OnThemeChanged(value);
             }
         }
 
@@ -38,7 +41,9 @@ namespace ConcreteUI.Theme
         {
             DefaultThemeProvider provider = DefaultThemeProvider.Instance;
             _providers.Add(provider);
-            _currentTheme = provider.LightTheme;
+            IThemeContext context = provider.LightTheme;
+            _currentTheme = context;
+            UpdateDarkModeState(context);
         }
 
         public static void RegisterThemeProvider(IThemeProvider provider)
@@ -53,6 +58,24 @@ namespace ConcreteUI.Theme
             HashSet<IThemeProvider> providers = _providers;
             lock (providers)
                 providers.Remove(provider);
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static void OnThemeChanging(IThemeContext context) => ThemeChanging?.Invoke(context);
+
+        [Inline(InlineBehavior.Remove)]
+        private static void OnThemeChanged(IThemeContext context)
+        {
+            ThemeChanged?.Invoke(null, EventArgs.Empty);
+            CoreWindow.NotifyThemeChanged(context);
+            UpdateDarkModeState(context);
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static void UpdateDarkModeState(IThemeContext context)
+        {
+            if (SystemConstants.VersionLevel >= SystemVersionLevel.Windows_10_19H1)
+                UxTheme.SetPreferredAppMode(context.IsDarkTheme ? PreferredAppMode.ForceDark : PreferredAppMode.ForceLight);
         }
 
         public static bool TryGetThemeContext(string themeId, [NotNullWhen(true)] out IThemeContext? theme)

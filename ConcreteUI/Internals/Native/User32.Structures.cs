@@ -45,7 +45,7 @@ namespace ConcreteUI.Internals.Native
     internal unsafe struct WindowCompositionAttributeData
     {
         public WindowCompositionAttribute Attribute;
-        public AccentPolicy* Data;
+        public void* Data;
         public int SizeOfData;
     }
 

@@ -5,11 +5,14 @@ using System.Threading;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
+using ConcreteUI.Internals;
 using ConcreteUI.Layout;
 using ConcreteUI.Layout.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
+
+using InlineIL;
 
 using InlineMethod;
 
@@ -20,7 +23,7 @@ using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Controls
 {
-    public abstract partial class UIElement
+    public abstract unsafe partial class UIElement
     {
         private static int _identifierGenerator = 0;
 
@@ -32,9 +35,8 @@ namespace ConcreteUI.Controls
 
         private IElementContainer? _parent;
         private IThemeContext? _themeContext;
-        private Rectangle _bounds;
         private string _themePrefix;
-        private ulong _requestRedraw;
+        private ulong _requestRedraw, _location, _size;
 
         public UIElement(IRenderer renderer, string themePrefix)
         {
@@ -251,5 +253,67 @@ namespace ConcreteUI.Controls
         public override int GetHashCode() => _identifier;
 
         public override bool Equals(object? obj) => ReferenceEquals(obj, this);
+
+        [Inline(InlineBehavior.Remove)]
+        private Point GetLocationCore() => ConvertUInt64ToPoint(InterlockedHelper.Read(ref _location));
+
+        [Inline(InlineBehavior.Remove)]
+        private void SetLocationCore(in Point value)
+        {
+            if (SetLocationCore_Pure(in value))
+                OnLocationChanged();
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private bool SetLocationCore_Pure(in Point value)
+        {
+            ulong val = ConvertPointToUInt64(value);
+            return InterlockedHelper.Exchange(ref _location, val) != val;
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private Size GetSizeCore() => ConvertUInt64ToSize(InterlockedHelper.Read(ref _size));
+
+        [Inline(InlineBehavior.Remove)]
+        private void SetSizeCore(in Size value)
+        {
+            if (SetSizeCore_Pure(in value))
+                OnSizeChanged();
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private bool SetSizeCore_Pure(in Size value)
+        {
+            ulong val = ConvertSizeToUInt64(value);
+            return InterlockedHelper.Exchange(ref _size, val) != val;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ref readonly ulong ConvertPointToUInt64(in Point value)
+        {
+            IL.PushInRef(in value);
+            return ref IL.ReturnRef<ulong>();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ref readonly ulong ConvertSizeToUInt64(in Size value)
+        {
+            IL.PushInRef(in value);
+            return ref IL.ReturnRef<ulong>();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ref readonly Point ConvertUInt64ToPoint(in ulong value)
+        {
+            IL.PushInRef(in value);
+            return ref IL.ReturnRef<Point>();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ref readonly Size ConvertUInt64ToSize(in ulong value)
+        {
+            IL.PushInRef(in value);
+            return ref IL.ReturnRef<Size>();
+        }
     }
 }

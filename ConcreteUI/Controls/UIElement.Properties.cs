@@ -46,42 +46,31 @@ namespace ConcreteUI.Controls
         public Point Location
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _bounds.Location;
+            get => GetLocationCore();
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _bounds.Location = value;
-                OnLocationChanged();
-            }
+            set => SetLocationCore(value);
         }
 
         public Size Size
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _bounds.Size;
+            get => GetSizeCore();
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _bounds.Size = value;
-                OnSizeChanged();
-            }
+            set => SetSizeCore(value);
         }
 
         public Rectangle Bounds
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _bounds;
+            get => new Rectangle(GetLocationCore(), GetSizeCore());
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                Point location = _bounds.Location;
-                Size size = _bounds.Size;
-                _bounds = value;
-                bool isLocationChanged = location != value.Location;
-                bool isSizeChanged = size != value.Size;
-                if (isLocationChanged)
+                bool locationChanged = SetLocationCore_Pure(value.Location);
+                bool sizeChanged = SetSizeCore_Pure(value.Size);
+                if (locationChanged)
                     OnLocationChanged();
-                if (isSizeChanged)
+                if (sizeChanged) 
                     OnSizeChanged();
             }
         }
@@ -89,25 +78,17 @@ namespace ConcreteUI.Controls
         public int X
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _bounds.X;
+            get => GetLocationCore().X;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _bounds.X = value;
-                OnLocationChanged();
-            }
+            set => SetLocationCore(GetLocationCore() with { X = value });
         }
 
         public int Left
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _bounds.Left;
+            get => GetLocationCore().X;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _bounds.X = value;
-                OnLocationChanged();
-            }
+            set => SetLocationCore(GetLocationCore() with { X = value });
         }
 
         public LayoutVariable LeftReference
@@ -127,25 +108,17 @@ namespace ConcreteUI.Controls
         public int Y
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _bounds.Y;
+            get => GetLocationCore().Y;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _bounds.Y = value;
-                OnLocationChanged();
-            }
+            set => SetLocationCore(GetLocationCore() with { Y = value });
         }
 
         public int Top
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _bounds.Top;
+            get => GetLocationCore().Y;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _bounds.X = value;
-                OnLocationChanged();
-            }
+            set => SetLocationCore(GetLocationCore() with { Y = value });
         }
 
         public LayoutVariable TopReference
@@ -165,14 +138,9 @@ namespace ConcreteUI.Controls
         public int Right
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _bounds.Right;
+            get => GetLocationCore().X + GetSizeCore().Width;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                int newWidth = value - _bounds.X;
-                _bounds.Width = newWidth;
-                OnSizeChanged();
-            }
+            set => SetSizeCore(GetSizeCore() with { Width = value - GetLocationCore().X });
         }
 
         public LayoutVariable RightReference
@@ -192,14 +160,9 @@ namespace ConcreteUI.Controls
         public int Bottom
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _bounds.Bottom;
+            get => GetLocationCore().Y + GetSizeCore().Height;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                int newBottom = value - _bounds.Y;
-                _bounds.Height = newBottom;
-                OnSizeChanged();
-            }
+            set => SetSizeCore(GetSizeCore() with { Height = value - GetLocationCore().Y });
         }
 
         public LayoutVariable BottomReference
@@ -219,13 +182,9 @@ namespace ConcreteUI.Controls
         public int Height
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _bounds.Height;
+            get => GetSizeCore().Height;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _bounds.Height = value;
-                OnSizeChanged();
-            }
+            set => SetSizeCore(GetSizeCore() with { Height = value });
         }
 
         public LayoutVariable HeightReference
@@ -245,13 +204,9 @@ namespace ConcreteUI.Controls
         public int Width
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _bounds.Width;
+            get => GetSizeCore().Width;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _bounds.Width = value;
-                OnSizeChanged();
-            }
+            set => SetSizeCore(GetSizeCore() with { Width = value });
         }
 
         public LayoutVariable WidthReference
