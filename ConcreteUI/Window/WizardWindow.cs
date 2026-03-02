@@ -178,19 +178,11 @@ namespace ConcreteUI.Window
                 return;
             GetLayouts(flags, out DWriteTextLayout? titleLayout, out DWriteTextLayout? titleDescriptionLayout);
             D2D1Brush[] brushes = _brushes;
-            RectF rect;
+            RectF rect = _widePageRect;
             if (WindowMaterial == WindowMaterial.Integrated)
-            {
-                SizeF clientSize = ClientSize;
-                RectF pageRect = _pageRect;
-                rect = new RectF(0, 0, clientSize.Width, pageRect.Top);
-            }
+                rect = new RectF(0, 0, ClientSize.Width, rect.Top);
             else
-            {
-                RectF titleBarRect = _titleBarRect;
-                RectF pageRect = _pageRect;
-                rect = new RectF(pageRect.Left, titleBarRect.Bottom, pageRect.Right, pageRect.Top);
-            }
+                rect = new RectF(rect.Left, _titleBarRect.Bottom, rect.Right, rect.Top);
             deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
             ClearDC(deviceContext);
             if (titleLayout is not null)
