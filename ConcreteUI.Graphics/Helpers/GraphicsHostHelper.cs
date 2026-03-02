@@ -35,7 +35,7 @@ namespace ConcreteUI.Graphics.Helpers
             => another switch
             {
                 CompositionGraphicsHost typedAnother => new CompositionGraphicsHost(typedAnother, handle, isOpaque),
-                OptimizedGraphicsHost typedAnother => new CompositionGraphicsHost(typedAnother, handle, isOpaque),
+                OptimizedGraphicsHost typedAnother => new OptimizedGraphicsHost(typedAnother, handle, isOpaque),
                 _ => new SimpleGraphicsHost(another, handle, isOpaque)
             };
 
