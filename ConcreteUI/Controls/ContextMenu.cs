@@ -79,8 +79,8 @@ namespace ConcreteUI.Controls
             }
             float borderWidth = RenderingHelper.GetDefaultBorderWidth(pointsPerPixel.X);
             Size size = new Size(
-                width: MathI.Ceiling(itemWidth + UIConstants.ElementMargin + borderWidth * 2),
-                height: MathI.Ceiling(itemHeight * count + borderWidth * 2));
+                width: MathI.Floor(itemWidth + UIConstants.ElementMargin + borderWidth * 2),
+                height: MathI.Floor(itemHeight * count + borderWidth * 2));
             _itemHeight = itemHeight + borderWidth;
             Size = size;
             DisposeHelper.SwapDisposeInterlocked(ref _layouts, layouts);
