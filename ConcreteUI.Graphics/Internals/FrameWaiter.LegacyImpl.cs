@@ -1,10 +1,9 @@
-using System.Runtime.CompilerServices;
+using System.Threading;
 
 using ConcreteUI.Graphics.Internals.Native;
 
-using LocalsInit;
-
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics.Internals
@@ -45,32 +44,15 @@ namespace ConcreteUI.Graphics.Internals
                     _nextTime = 0;
                     return false;
                 }
-                _nextTime = GetCurrentTimeAsNativeTicks() + frameCycle;
+                _nextTime = NativeMethods.GetTicksForSystem() + frameCycle;
                 return true;
             }
 
-            public unsafe void LeaveFrameAndWait()
+            public void LeaveFrameAndWait()
             {
                 ulong nextTime = _nextTime;
-                if (nextTime <= 0)
-                    return;
-                ulong actualNextTime = GetCurrentTimeAsNativeTicks();
-                if (nextTime <= actualNextTime)
-                {
-                    Kernel32.SwitchToThread();
-                    return;
-                }
-                nextTime = UnsafeHelper.Negate(nextTime - actualNextTime);
-                NtDll.NtDelayExecution(alertable: false, (long*)&nextTime);
-            }
-
-            [LocalsInit(false)]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static unsafe ulong GetCurrentTimeAsNativeTicks()
-            {
-                ulong result;
-                Kernel32.QueryUnbiasedInterruptTime(&result);
-                return result;
+                if (nextTime > 0 && !NativeMethods.SleepInAbsoluteTicks(nextTime))
+                    Thread.Yield();
             }
 
             public void Dispose()

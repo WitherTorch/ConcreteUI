@@ -12,9 +12,6 @@ namespace ConcreteUI.Graphics.Internals.Native
         private const string LibraryName = "ntdll.dll";
 
         [DllImport(LibraryName)]
-        public static extern uint NtDelayExecution(SysBool alertable, long* delayInterval);
-
-        [DllImport(LibraryName)]
         public static extern uint NtSetTimerResolution(uint desiredTime, SysBool setResolution, uint* actualTime);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -21,10 +21,6 @@ namespace ConcreteUI.Graphics.Internals.Native
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern void QueryUnbiasedInterruptTime(ulong* lpSystemTimeAsFileTime);
-
-        [SuppressGCTransition]
-        [DllImport(LibraryName)]
         public static extern IntPtr CreateEventW(void* lpEventAttributes, SysBool bManualReset, SysBool bInitialState, char* lpName);
 
         [SuppressGCTransition]
@@ -52,8 +48,5 @@ namespace ConcreteUI.Graphics.Internals.Native
         [SuppressGCTransition]
         [DllImport(LibraryName)]
         public static extern uint GetLastError();
-
-        [DllImport(LibraryName)]
-        public static extern uint SwitchToThread();
     }
 }
