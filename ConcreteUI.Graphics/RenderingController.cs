@@ -13,8 +13,6 @@ namespace ConcreteUI.Graphics
 {
     public sealed partial class RenderingController : IDisposable
     {
-        private static readonly IWaitingEventManager _eventManager = WaitingEventManager.Create();
-
         private readonly IRenderingControl _control;
         private readonly IFrameWaiter _frameWaiter;
         private readonly RenderingThread _thread;
@@ -31,7 +29,7 @@ namespace ConcreteUI.Graphics
             _control = control;
             _state = (ulong)RenderingFlags._FlagAllTrue;
             _frameWaiter = CreateFrameWaiter(control, framesPerSecond, out _needUpdateFps);
-            _thread = new RenderingThread(this, _eventManager, _frameWaiter);
+            _thread = new RenderingThread(this, _frameWaiter);
             _waitForRenderingTrigger = new ManualResetEventSlim(true);
             _isSystemBoosting = 0;
         }

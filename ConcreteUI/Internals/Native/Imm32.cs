@@ -5,7 +5,7 @@ using System.Security;
 using ConcreteUI.Input;
 using ConcreteUI.Utils;
 
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Internals.Native
 {
@@ -18,14 +18,14 @@ namespace ConcreteUI.Internals.Native
         public static extern IntPtr ImmGetContext(IntPtr hWND);
 
         [DllImport(LibraryName)]
-        public static extern SysBool ImmReleaseContext(IntPtr hWND, IntPtr hIMC);
+        public static extern SysBool32 ImmReleaseContext(IntPtr hWND, IntPtr hIMC);
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
         public static extern IntPtr ImmCreateContext();
 
         [DllImport(LibraryName)]
-        public static extern SysBool ImmDestroyContext(IntPtr hIMC);
+        public static extern SysBool32 ImmDestroyContext(IntPtr hIMC);
 
         [DllImport(LibraryName)]
         public static extern IntPtr ImmAssociateContext(IntPtr hWND, IntPtr hIMC);
@@ -37,19 +37,19 @@ namespace ConcreteUI.Internals.Native
         public static extern IntPtr ImmAssociateContextEx(IntPtr hWND, IntPtr hIMC, ImmAssociateContextEx_Flags flag);
 
         [DllImport(LibraryName)]
-        public static extern SysBool ImmGetOpenStatus(IntPtr hIMC);
+        public static extern SysBool32 ImmGetOpenStatus(IntPtr hIMC);
 
         [DllImport(LibraryName)]
-        public static extern SysBool ImmSetOpenStatus(IntPtr hIMC, SysBool open);
+        public static extern SysBool32 ImmSetOpenStatus(IntPtr hIMC, SysBool32 open);
 
         [DllImport(LibraryName)]
         public static extern long ImmGetCompositionStringW(IntPtr hIMC, IMECompositionFlags flags, void* lpBuf, int dwBufLen);
 
         [DllImport(LibraryName)]
-        public static extern SysBool ImmSetCandidateWindow(IntPtr hIMC, IMECandidateForm* lpCandidate);
+        public static extern SysBool32 ImmSetCandidateWindow(IntPtr hIMC, IMECandidateForm* lpCandidate);
 
         [DllImport(LibraryName)]
-        public static extern SysBool ImmSetCompositionWindow(IntPtr hIMC, IMECompositionForm* lpCompForm);
+        public static extern SysBool32 ImmSetCompositionWindow(IntPtr hIMC, IMECompositionForm* lpCompForm);
 
         [DllImport(LibraryName)]
         public static extern uint ImmGetVirtualKey(IntPtr hIMC);

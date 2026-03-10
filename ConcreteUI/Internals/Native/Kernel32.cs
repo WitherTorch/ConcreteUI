@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security;
 
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Internals.Native
 {
@@ -31,19 +31,19 @@ namespace ConcreteUI.Internals.Native
         public static extern void* GlobalLock(IntPtr hMem);
 
         [DllImport(LibraryName)]
-        public static extern SysBool GlobalUnlock(IntPtr hMem);
+        public static extern SysBool32 GlobalUnlock(IntPtr hMem);
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern IntPtr CreateWaitableTimerW(void* lpTimerAttributes, SysBool bManualReset, char* lpTimerName);
+        public static extern IntPtr CreateWaitableTimerW(void* lpTimerAttributes, SysBool32 bManualReset, char* lpTimerName);
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern SysBool SetWaitableTimer(IntPtr hTimer, long* lpDueTime, nint lPeriod, void* pfnCompletionRoutine, void* lpArgToCompletionRoutine, SysBool fResume);
+        public static extern SysBool32 SetWaitableTimer(IntPtr hTimer, long* lpDueTime, nint lPeriod, void* pfnCompletionRoutine, void* lpArgToCompletionRoutine, SysBool32 fResume);
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern SysBool CloseHandle(IntPtr hObject);
+        public static extern SysBool32 CloseHandle(IntPtr hObject);
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]

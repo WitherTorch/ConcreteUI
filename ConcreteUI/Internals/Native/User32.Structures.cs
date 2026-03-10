@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using ConcreteUI.Window;
 
 using WitherTorch.Common.Structures;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Internals.Native
 {
@@ -99,10 +98,10 @@ namespace ConcreteUI.Internals.Native
     internal unsafe struct PaintStruct
     {
         public IntPtr hdc;
-        public SysBool fErase;
+        public SysBool32 fErase;
         public Rect rcPaint;
-        public SysBool fRestore;
-        public SysBool fIncUpdate;
+        public SysBool32 fRestore;
+        public SysBool32 fIncUpdate;
         public fixed byte rgbReserved[32];
     }
 }

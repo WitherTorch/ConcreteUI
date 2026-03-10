@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using System.Security;
 
 using WitherTorch.Common.Structures;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics.Internals.Native
 {
@@ -13,6 +12,6 @@ namespace ConcreteUI.Graphics.Internals.Native
         private const string LibraryName = "user32.dll";
 
         [DllImport(LibraryName)]
-        public static extern SysBool GetClientRect(IntPtr hWnd, Rect* lpRect);
+        public static extern SysBool32 GetClientRect(IntPtr hWnd, Rect* lpRect);
     }
 }

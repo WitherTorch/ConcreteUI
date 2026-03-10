@@ -2,7 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Security;
 
-using WitherTorch.Common.Windows.Helpers;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.DXGI
 {
@@ -11,7 +11,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
     {
         private const string LibraryName = "dxgi.dll";
 
-        private static readonly void*[] _pointers = MethodImportHelper.GetImportedMethodPointers(LibraryName,
+        private static readonly void*[] _pointers = NativeMethods.GetImportedMethodPointers(LibraryName,
             nameof(CreateDXGIFactory), nameof(CreateDXGIFactory1), nameof(CreateDXGIFactory2));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

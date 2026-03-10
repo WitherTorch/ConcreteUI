@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
+using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Internals.Native
@@ -9,9 +10,9 @@ namespace ConcreteUI.Internals.Native
     internal struct DWMBlurBehind
     {
         public DwmBlurBehindFlags dwFlags;
-        public SysBool fEnable;
+        public SysBool32 fEnable;
         public IntPtr hRgnBlur;
-        public SysBool fTransitionOnMaximized;
+        public SysBool32 fTransitionOnMaximized;
 
         public DWMBlurBehind(bool enabled)
         {

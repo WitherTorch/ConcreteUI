@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Internals.Native
 {
@@ -35,10 +35,10 @@ namespace ConcreteUI.Internals.Native
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern int DwmIsCompositionEnabled(SysBool* enabled);
+        public static extern int DwmIsCompositionEnabled(SysBool32* enabled);
 
         [DllImport(LibraryName)]
-        public static extern SysBool DwmDefWindowProc(IntPtr hWnd, uint msg, nint wParam, nint lParam, nint* plResult);
+        public static extern SysBool32 DwmDefWindowProc(IntPtr hWnd, uint msg, nint wParam, nint lParam, nint* plResult);
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]

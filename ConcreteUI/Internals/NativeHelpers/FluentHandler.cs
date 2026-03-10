@@ -10,7 +10,7 @@ using Microsoft.Win32;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Internals.NativeHelpers
 {
@@ -44,18 +44,18 @@ namespace ConcreteUI.Internals.NativeHelpers
         public static void SetTitleBarColor(IntPtr handle, in Color color)
             => DwmApi.DwmSetWindowAttribute(handle, DwmWindowAttribute.CaptionColor, color.A == 0 ? uint.MaxValue : color.ToBgr());
 
-        public static void SetDarkThemeInWin11(IntPtr handle, SysBool value)
+        public static void SetDarkThemeInWin11(IntPtr handle, SysBool32 value)
         {
             DwmApi.DwmSetWindowAttribute(handle, DwmWindowAttribute.UseImmersiveDarkMode, value);
         }
 
-        public static unsafe void SetDarkThemeInWin10_19H1(IntPtr handle, SysBool value)
+        public static unsafe void SetDarkThemeInWin10_19H1(IntPtr handle, SysBool32 value)
         {
             WindowCompositionAttributeData data = new WindowCompositionAttributeData()
             {
                 Attribute = WindowCompositionAttribute.UseDarkModeColors,
                 Data = &value,
-                SizeOfData = sizeof(SysBool)
+                SizeOfData = sizeof(SysBool32)
             };
             User32.SetWindowCompositionAttribute(handle, &data);
         }

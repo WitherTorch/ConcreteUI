@@ -1,6 +1,6 @@
 using System;
 
-using WitherTorch.Common.Windows.Helpers;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics.Native.DirectComposition
 {
@@ -12,7 +12,7 @@ namespace ConcreteUI.Graphics.Native.DirectComposition
 
         static DComp()
         {
-            _pointer = MethodImportHelper.GetImportedMethodPointer(LibraryName, nameof(DCompositionCreateDevice));
+            _pointer = NativeMethods.GetImportedMethodPointer(LibraryName, nameof(DCompositionCreateDevice));
         }
 
         public static int DCompositionCreateDevice(void* dxgiDevice, Guid* iid, void** dcompositionDevice)

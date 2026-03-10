@@ -5,6 +5,7 @@ using System.Threading;
 using ConcreteUI.Graphics.Internals;
 
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 using WitherTorch.Common.Windows.Helpers;
 
 namespace ConcreteUI.Graphics
@@ -16,17 +17,15 @@ namespace ConcreteUI.Graphics
             private static ulong _idCounter = 0;
 
             private readonly RenderingController _controller;
-            private readonly IWaitingEventManager _eventManager;
             private readonly IFrameWaiter _frameWaiter;
             private readonly Thread _thread;
 
             private IntPtr _renderingWaitingHandle, _exitTriggerHandle;
             private bool _disposed;
 
-            public RenderingThread(RenderingController controller, IWaitingEventManager eventManager, IFrameWaiter frameWaiter)
+            public RenderingThread(RenderingController controller, IFrameWaiter frameWaiter)
             {
                 _controller = controller;
-                _eventManager = eventManager;
                 _frameWaiter = frameWaiter;
                 _thread = new Thread(ThreadLoop)
                 {
@@ -44,7 +43,7 @@ namespace ConcreteUI.Graphics
                 IntPtr handle = InterlockedHelper.Read(ref _renderingWaitingHandle);
                 if (handle == IntPtr.Zero)
                     return;
-                _eventManager.WakeUp(handle);
+                NativeMethods.SetWaitingHandle(handle);
             }
 
             private void ThreadLoop()
@@ -53,21 +52,19 @@ namespace ConcreteUI.Graphics
 
                 ThreadHelper.SetCurrentThreadName("Concrete UI Rendering Thread #" + InterlockedHelper.GetAndIncrement(ref _idCounter).ToString("D"));
                 RenderingController controller = _controller;
-                IWaitingEventManager eventManager = _eventManager;
                 IFrameWaiter frameWaiter = _frameWaiter;
 
-
-                IntPtr exitTriggerHandle = eventManager.CreateWaitingHandle(manualReset: true);
+                IntPtr exitTriggerHandle = NativeMethods.CreateWaitingHandle(autoReset: false);
                 try
                 {
                     if (InterlockedHelper.CompareExchange(ref _exitTriggerHandle, exitTriggerHandle, IntPtr.Zero) != IntPtr.Zero)
                         return;
-                    IntPtr renderingWaitingHandle = eventManager.CreateWaitingHandle(manualReset: false);
+                    IntPtr renderingWaitingHandle = NativeMethods.CreateWaitingHandle(autoReset: true);
                     try
                     {
                         if (InterlockedHelper.CompareExchange(ref _renderingWaitingHandle, renderingWaitingHandle, IntPtr.Zero) != IntPtr.Zero)
                             return;
-                        eventManager.Wait(renderingWaitingHandle, timeout: Infinite);
+                        NativeMethods.WaitForWaitingHandle(renderingWaitingHandle, timeout: Infinite);
                         do
                         {
                             if (!frameWaiter.TryEnterFrame())
@@ -75,20 +72,20 @@ namespace ConcreteUI.Graphics
                             Thread.MemoryBarrier();
                             controller.RenderCore();
                             frameWaiter.LeaveFrameAndWait();
-                            eventManager.Wait(renderingWaitingHandle, timeout: Infinite);
+                            NativeMethods.WaitForWaitingHandle(renderingWaitingHandle, timeout: Infinite);
                         } while (true);
                     }
                     finally
                     {
                         InterlockedHelper.CompareExchange(ref _renderingWaitingHandle, IntPtr.Zero, renderingWaitingHandle);
-                        eventManager.DestroyWaitingHandle(renderingWaitingHandle);
+                        NativeMethods.DestroyWaitingHandle(renderingWaitingHandle);
                     }
                 }
                 finally
                 {
                     InterlockedHelper.CompareExchange(ref _exitTriggerHandle, IntPtr.Zero, exitTriggerHandle);
-                    eventManager.WakeUp(exitTriggerHandle);
-                    eventManager.DestroyWaitingHandle(exitTriggerHandle);
+                    NativeMethods.SetWaitingHandle(exitTriggerHandle);
+                    NativeMethods.DestroyWaitingHandle(exitTriggerHandle);
                 }
             }
 
@@ -97,7 +94,7 @@ namespace ConcreteUI.Graphics
                 IntPtr handle = InterlockedHelper.Read(ref _exitTriggerHandle);
                 if (handle == IntPtr.Zero || millisecondsTimeout < Timeout.Infinite)
                     return true;
-                return _eventManager.Wait(handle, (uint)millisecondsTimeout);
+                return NativeMethods.WaitForWaitingHandle(handle, (uint)millisecondsTimeout);
             }
 
             ~RenderingThread() => DisposeCore();

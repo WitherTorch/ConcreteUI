@@ -6,7 +6,7 @@ using ConcreteUI.Graphics;
 using LocalsInit;
 
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Helpers;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Internals.Native
 {
@@ -14,7 +14,7 @@ namespace ConcreteUI.Internals.Native
     internal static unsafe class ShCore
     {
         private const string LibraryName = "Shcore.dll";
-        private static readonly void*[] _pointers = MethodImportHelper.GetImportedMethodPointers(LibraryName,
+        private static readonly void*[] _pointers = NativeMethods.GetImportedMethodPointers(LibraryName,
             nameof(GetDpiForMonitor));
 
         [LocalsInit(false)]

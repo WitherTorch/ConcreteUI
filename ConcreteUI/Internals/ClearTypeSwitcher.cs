@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Internals.Native;
 
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Internals
 {
@@ -14,7 +14,7 @@ namespace ConcreteUI.Internals
         unsafe static ClearTypeSwitcher()
         {
             const uint SPI_GETCLEARTYPE = 0x1048;
-            SysBool enabled;
+            SysBool32 enabled;
             if (User32.SystemParametersInfoW(SPI_GETCLEARTYPE, 0, &enabled, 0) && enabled)
                 _stateDict = new ConditionalWeakTable<D2D1DeviceContext, StrongBox<bool>>();
             else

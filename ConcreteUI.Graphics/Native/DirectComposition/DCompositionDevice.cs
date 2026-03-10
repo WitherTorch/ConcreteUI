@@ -3,8 +3,8 @@ using System.Security;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
+using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.ObjectModels;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics.Native.DirectComposition
 {
@@ -70,7 +70,7 @@ namespace ConcreteUI.Graphics.Native.DirectComposition
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateTargetForHwnd);
-            int hr = ((delegate* unmanaged[Stdcall]<void*, IntPtr, SysBool, void**, int>)functionPointer)(nativePointer, hwnd, topMost, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, IntPtr, SysBool32, void**, int>)functionPointer)(nativePointer, hwnd, topMost, &nativePointer);
             ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
             return new DCompositionTarget(nativePointer, ReferenceType.Owned);
         }

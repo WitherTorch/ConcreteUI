@@ -1,6 +1,6 @@
 using System.Security;
 
-using WitherTorch.Common.Windows.Helpers;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Internals.Native
 {
@@ -13,7 +13,7 @@ namespace ConcreteUI.Internals.Native
 
         static UxTheme()
         {
-            SetPreferredAppModePtr = MethodImportHelper.GetImportedMethodPointer(LibraryName, 135);
+            SetPreferredAppModePtr = NativeMethods.GetImportedMethodPointer(LibraryName, 135);
         }
 
         public static int SetPreferredAppMode(PreferredAppMode preferredAppMode)

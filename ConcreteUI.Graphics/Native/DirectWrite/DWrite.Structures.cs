@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Graphics.Native.DirectWrite
 {
@@ -161,7 +161,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// <summary>
         /// The line is trimmed.
         /// </summary>
-        public SysBool IsTrimmed;
+        public SysBool32 IsTrimmed;
 
         public override readonly string ToString() =>
             $"{{ Length: {Length}, TrailingWhitespaceLength: {TrailingWhitespaceLength}, " +
@@ -213,12 +213,12 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// <summary>
         /// Geometry encloses text?
         /// </summary>
-        public SysBool IsText;
+        public SysBool32 IsText;
 
         /// <summary>
         /// Range is trimmed.
         /// </summary>
-        public SysBool IsTrimmed;
+        public SysBool32 IsTrimmed;
 
         public override readonly string ToString() =>
             $"{{ TextPosition: {TextPosition}, Length: {Length}, Left: {Left}, " +

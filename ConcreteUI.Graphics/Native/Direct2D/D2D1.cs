@@ -5,6 +5,7 @@ using System.Security;
 using InlineMethod;
 
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 using WitherTorch.Common.Windows.Helpers;
 
 namespace ConcreteUI.Graphics.Native.Direct2D
@@ -14,7 +15,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
     {
         private const string LibraryName = "d2d1.dll";
 
-        private static readonly void*[] _pointers = MethodImportHelper.GetImportedMethodPointers(LibraryName,
+        private static readonly void*[] _pointers = NativeMethods.GetImportedMethodPointers(LibraryName,
             nameof(D2D1CreateDevice), nameof(D2D1ComputeMaximumScaleFactor));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

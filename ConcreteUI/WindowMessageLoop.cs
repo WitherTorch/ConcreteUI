@@ -15,7 +15,7 @@ using InlineMethod;
 using WitherTorch.Common;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI
 {
@@ -104,7 +104,7 @@ namespace ConcreteUI
         private static unsafe int DoMessageLoop_Model([InlineParameter] bool catchException)
         {
             PumpingMessage msg;
-            SysBool status;
+            SysBool32 status;
             while (status = User32.GetMessageW(&msg, IntPtr.Zero, 0u, 0u))
             {
                 if (status.IsFailed)
@@ -644,7 +644,7 @@ namespace ConcreteUI
 
         private static void PostInvokeMessage(uint threadId)
         {
-            if (MathHelper.ToBoolean(InterlockedHelper.CompareExchange(ref _invokeBarrier, Booleans.TrueInt, Booleans.FalseInt), true))
+            if (MathHelper.ToBooleanUnsafe(InterlockedHelper.CompareExchange(ref _invokeBarrier, Booleans.TrueInt, Booleans.FalseInt)))
                 return;
             User32.PostThreadMessageW(threadId, CustomWindowMessages.ConcreteWindowInvoke, 0, 0);
             InterlockedHelper.Exchange(ref _invokeBarrier, Booleans.FalseInt);

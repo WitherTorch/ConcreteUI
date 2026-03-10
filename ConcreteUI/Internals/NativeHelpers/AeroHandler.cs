@@ -2,7 +2,7 @@ using System;
 
 using ConcreteUI.Internals.Native;
 
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Internals.NativeHelpers
 {
@@ -16,7 +16,7 @@ namespace ConcreteUI.Internals.NativeHelpers
 
         public static unsafe bool HasBlur()
         {
-            SysBool result;
+            SysBool32 result;
             return DwmApi.DwmIsCompositionEnabled(&result) == 0 && result;
         }
     }

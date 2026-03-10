@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security;
 
-using WitherTorch.Common.Windows.Structures;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Internals.Native
 {
@@ -17,7 +17,7 @@ namespace ConcreteUI.Internals.Native
 
         [SuppressGCTransition]
         [DllImport(LibraryName)]
-        public static extern SysBool DeleteObject(IntPtr handle);
+        public static extern SysBool32 DeleteObject(IntPtr handle);
 
         [DllImport(LibraryName)]
         public static extern int GetDeviceCaps(IntPtr hdc, int index);
