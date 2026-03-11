@@ -111,6 +111,9 @@ namespace ConcreteUI.Internals.Native
         public static extern SysBool32 IsZoomed(IntPtr hWnd);
 
         [DllImport(LibraryName)]
+        public static extern void SwitchToThisWindow(IntPtr hWnd, SysBool32 fUnknown);
+
+        [DllImport(LibraryName)]
         public static extern IntPtr GetKeyboardLayout(uint idThread);
 
         [SuppressGCTransition]
@@ -165,6 +168,9 @@ namespace ConcreteUI.Internals.Native
 
         [DllImport(LibraryName)]
         public static extern IntPtr SetActiveWindow(IntPtr hWnd);
+
+        [DllImport(LibraryName)]
+        public static extern SysBool32 SetForegroundWindow(IntPtr hWnd);
 
         [DllImport(LibraryName)]
         public static extern IntPtr UpdateWindow(IntPtr hWnd);

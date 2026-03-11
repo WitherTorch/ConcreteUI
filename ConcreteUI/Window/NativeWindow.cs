@@ -49,6 +49,8 @@ namespace ConcreteUI.Window
             _dialogTokenSource = null;
         }
 
+        public void WakeUp() => WindowMessageLoop.Invoke(WakeUpCore);
+
         public void Show()
         {
             if ((InterlockedHelper.Or(ref _windowFlags, 0b01) & 0b01) == 0b01)
@@ -77,6 +79,19 @@ namespace ConcreteUI.Window
                 return DialogResult.Invalid;
             await WindowMessageLoop.InvokeTaskAsync(ShowDialogCore);
             return (DialogResult)InterlockedHelper.Read(ref _dialogResult);
+        }
+
+        private void WakeUpCore()
+        {
+            IntPtr handle;
+            if ((InterlockedHelper.Or(ref _windowFlags, 0b01) & 0b01) == 0b01)
+                handle = Handle;
+            else
+                handle = ShowCoreWithReturn();
+            if (User32.IsIconic(handle))
+                User32.ShowWindow(handle, ShowWindowCommands.Restore);
+            User32.SwitchToThisWindow(handle, fUnknown: true);
+            User32.SetForegroundWindow(handle);
         }
 
         private void ShowCore() => ShowCoreWithReturn();
