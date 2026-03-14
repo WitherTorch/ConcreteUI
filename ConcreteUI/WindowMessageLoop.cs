@@ -94,10 +94,12 @@ namespace ConcreteUI
             return result;
         }
 
-        private static unsafe int DoMessageLoop()
+        internal static MessageLoopExceptionEventHandler? GetExceptionEventHandler() => ExceptionCaught;
+
+        private static int DoMessageLoop()
             => DoMessageLoop_Model(catchException: false);
 
-        private static unsafe int DoMessageLoop_CatchAllException()
+        private static int DoMessageLoop_CatchAllException()
             => DoMessageLoop_Model(catchException: true);
 
         [Inline(InlineBehavior.Remove)]

@@ -10,6 +10,8 @@ using ConcreteUI.Window;
 
 using InlineMethod;
 
+using WitherTorch.Common.Buffers;
+using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Threading;
 
@@ -83,19 +85,34 @@ namespace ConcreteUI.Internals
         public static void PumpExceptions()
         {
             List<Exception> exceptionList = _exceptionList;
+            ArrayPool<Exception> pool;
+            FixedArrayList<Exception> shadowList;
+            int count;
             lock (exceptionList)
             {
-                int count = exceptionList.Count;
+                count = exceptionList.Count;
                 if (count <= 0)
                     return;
-                try
+                pool = ArrayPool<Exception>.Shared;
+                Exception[] buffer = pool.Rent(count);
+                exceptionList.CopyTo(buffer);
+                exceptionList.Clear();
+                shadowList = new FixedArrayList<Exception>(buffer);
+            }
+            try
+            {
+                MessageLoopExceptionEventHandler? eventHandler = WindowMessageLoop.GetExceptionEventHandler();
+                if (eventHandler is null)
+                    throw new AggregateException(shadowList);
+                else
                 {
-                    throw new AggregateException(exceptionList);
+                    for (int i = 0; i < count; i++)
+                        eventHandler.Invoke(null, new MessageLoopExceptionEventArgs(shadowList[i]));
                 }
-                finally
-                {
-                    exceptionList.Clear();
-                }
+            }
+            finally
+            {
+                pool.Return(shadowList.AsArray());
             }
         }
 
