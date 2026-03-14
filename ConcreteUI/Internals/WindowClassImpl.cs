@@ -90,10 +90,7 @@ namespace ConcreteUI.Internals
                     return;
                 try
                 {
-                    if (count == 1)
-                        throw exceptionList[0];
-
-                    throw new AggregateException(exceptionList.ToArray());
+                    throw new AggregateException(exceptionList);
                 }
                 finally
                 {
