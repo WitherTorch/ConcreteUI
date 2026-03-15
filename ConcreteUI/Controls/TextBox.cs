@@ -12,7 +12,6 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Input;
 using ConcreteUI.Internals;
-using ConcreteUI.Internals.Native;
 using ConcreteUI.Internals.NativeHelpers;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
@@ -26,6 +25,7 @@ using LocalsInit;
 using WitherTorch.Common;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Text;
 using WitherTorch.Common.Threading;
@@ -59,14 +59,16 @@ namespace ConcreteUI.Controls
         private string? _fontName;
         private string _text, _watermark;
         private DWriteTextRange _compositionRange;
-        private SelectionRange _selectionRange;
+        private SelectionRange _selectionRange, _previousSelectionRange;
         private SystemCursorType? _cursorType;
         private TextAlignment _alignment;
+        private ulong _lastClickedTime = ulong.MinValue;
         private long _rawUpdateFlags;
         private float _fontSize;
+        private uint _clicks;
         private int _caretIndex, _compositionCaretIndex, _borderBrushIndex;
         private char _passwordChar;
-        private bool _caretState, _focused, _multiLine, _imeEnabled;
+        private bool _caretState, _focused, _multiLine, _imeEnabled, _drag;
 
         public TextBox(CoreWindow window) : base(window, "app.textBox")
         {
@@ -1189,12 +1191,6 @@ namespace ConcreteUI.Controls
         }
 
         #region Mouse Events Handling
-
-        int clicks = 0;
-        long lastClickedTime = long.MinValue;
-        bool _drag = false;
-        SelectionRange previousSelectionRange;
-
         public void OnMouseDown(in MouseNotifyEventArgs args)
         {
             _window.ClearFocusElement(this);
@@ -1220,24 +1216,19 @@ namespace ConcreteUI.Controls
                 return;
             }
             _drag = true;
-            long currentClickedTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            long lastClickedTime = Interlocked.Exchange(ref this.lastClickedTime, currentClickedTime);
-            int clicks;
-            if (lastClickedTime > long.MinValue && currentClickedTime - lastClickedTime <= SystemParameters.DoubleClickTime)
-            {
-                clicks = ++this.clicks;
-                if (clicks < 2)
-                    this.clicks = clicks = 2;
-            }
+            ulong currentClickedTime = NativeMethods.GetTicksForSystem();
+            ulong lastClickedTime = ReferenceHelper.Exchange(ref _lastClickedTime, currentClickedTime);
+            uint clicks;
+            if (lastClickedTime > ulong.MinValue && (currentClickedTime - lastClickedTime) / TimeSpan.TicksPerMillisecond <= SystemParameters.DoubleClickTime)
+                clicks = MathHelper.Max(_clicks + 1, 2);
             else
-            {
-                this.clicks = clicks = 1;
-            }
+                clicks = 1;
+            _clicks = clicks;
             int caretIndex = GetCaretIndexFromPoint(args.Location, out bool isInside);
             switch (clicks)
             {
                 case 1:
-                    previousSelectionRange = _selectionRange = new SelectionRange(caretIndex, caretIndex);
+                    _previousSelectionRange = _selectionRange = new SelectionRange(caretIndex, caretIndex);
                     break;
                 default:
                     string text = _text;
@@ -1247,7 +1238,7 @@ namespace ConcreteUI.Controls
                         switch ((clicks - 1) % 2)
                         {
                             case 0:
-                                previousSelectionRange = _selectionRange = new SelectionRange(0, textLength);
+                                _previousSelectionRange = _selectionRange = new SelectionRange(0, textLength);
                                 break;
                             case 1:
                                 {
@@ -1282,7 +1273,7 @@ namespace ConcreteUI.Controls
                                         } while (index < textLength);
                                         if (selectionStart < 0) selectionStart = 0;
                                         if (selectionEnd < 0) selectionEnd = textLength;
-                                        previousSelectionRange = _selectionRange = new SelectionRange(selectionStart, selectionEnd);
+                                        _previousSelectionRange = _selectionRange = new SelectionRange(selectionStart, selectionEnd);
                                         caretIndex = selectionEnd;
                                     }
                                     else
@@ -1291,7 +1282,7 @@ namespace ConcreteUI.Controls
                                         int selectionEnd = StringHelper.IndexOf(text, ' ', caretIndex);
                                         if (selectionStart < 0) selectionStart = 0;
                                         if (selectionEnd < 0) selectionEnd = text.Length;
-                                        previousSelectionRange = _selectionRange = new SelectionRange(selectionStart, selectionEnd);
+                                        _previousSelectionRange = _selectionRange = new SelectionRange(selectionStart, selectionEnd);
                                         caretIndex = selectionEnd;
                                     }
                                 }
@@ -1338,8 +1329,8 @@ namespace ConcreteUI.Controls
                 int newCaretIndex = GetCaretIndexFromPoint(location, out _);
                 if (_caretIndex != newCaretIndex)
                 {
-                    int previousSelectionStart = previousSelectionRange.StartPosition;
-                    int previousSelectionEnd = previousSelectionRange.EndPosition;
+                    int previousSelectionStart = _previousSelectionRange.StartPosition;
+                    int previousSelectionEnd = _previousSelectionRange.EndPosition;
                     if (newCaretIndex < previousSelectionStart)
                         _selectionRange.StartPosition = newCaretIndex;
                     else if (newCaretIndex > previousSelectionEnd)
