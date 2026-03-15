@@ -4,9 +4,9 @@ using ConcreteUI.Internals.Native;
 
 using WitherTorch.Common.Helpers;
 
-namespace ConcreteUI.Internals.NativeHelpers
+namespace ConcreteUI.Utils
 {
-    internal static class SystemParameters
+    public static class SystemParameters
     {
         private const float SpeedInterval = (400f - 33f) / 31f;
 

@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -12,7 +13,6 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Input;
 using ConcreteUI.Internals;
-using ConcreteUI.Internals.NativeHelpers;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
@@ -60,6 +60,7 @@ namespace ConcreteUI.Controls
         private string _text, _watermark;
         private DWriteTextRange _compositionRange;
         private SelectionRange _selectionRange, _previousSelectionRange;
+        private Point _previousMouseDownLocation;
         private SystemCursorType? _cursorType;
         private TextAlignment _alignment;
         private ulong _lastClickedTime = ulong.MinValue;
@@ -68,7 +69,7 @@ namespace ConcreteUI.Controls
         private uint _clicks;
         private int _caretIndex, _compositionCaretIndex, _borderBrushIndex;
         private char _passwordChar;
-        private bool _caretState, _focused, _multiLine, _imeEnabled, _drag;
+        private bool _caretState, _focused, _multiLine, _imeEnabled, _drag, _isEnter;
 
         public TextBox(CoreWindow window) : base(window, "app.textBox")
         {
@@ -938,7 +939,7 @@ namespace ConcreteUI.Controls
             return AdjustCaretIndexCore(caretIndex, length, indices, takeGreaterIfNotExists);
         }
 
-        private int AdjustCaretIndexCore(int caretIndex, int originalStringLength, int[] graphemeIndices, bool takeGreaterIfNotExists)
+        private static int AdjustCaretIndexCore(int caretIndex, int originalStringLength, int[] graphemeIndices, bool takeGreaterIfNotExists)
         {
             int index = Array.BinarySearch(graphemeIndices, caretIndex);
             if (index >= 0)
@@ -1202,6 +1203,8 @@ namespace ConcreteUI.Controls
             if (args.Handled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton) || !Enabled)
             {
                 _drag = false;
+                _lastClickedTime = 0;
+                _clicks = 0;
                 if (_selectionRange.Length > 0)
                 {
                     _selectionRange.Length = 0;
@@ -1210,19 +1213,29 @@ namespace ConcreteUI.Controls
                 return;
             }
             _window.ChangeFocusElement(this);
-            if (!ContentBounds.Contains(args.Location))
+            Point location = args.Location;
+            if (!ContentBounds.Contains(location))
             {
                 _drag = false;
                 return;
             }
             _drag = true;
-            ulong currentClickedTime = NativeMethods.GetTicksForSystem();
-            ulong lastClickedTime = ReferenceHelper.Exchange(ref _lastClickedTime, currentClickedTime);
-            uint clicks;
-            if (lastClickedTime > ulong.MinValue && (currentClickedTime - lastClickedTime) / TimeSpan.TicksPerMillisecond <= SystemParameters.DoubleClickTime)
-                clicks = MathHelper.Max(_clicks + 1, 2);
-            else
+            uint clicks; 
+            if (_previousMouseDownLocation != location)
+            {
+                _previousMouseDownLocation = location;
+                _lastClickedTime = NativeMethods.GetTicksForSystem();
                 clicks = 1;
+            }
+            else
+            {
+                ulong currentClickedTime = NativeMethods.GetTicksForSystem();
+                ulong lastClickedTime = ReferenceHelper.Exchange(ref _lastClickedTime, currentClickedTime);
+                if (lastClickedTime > ulong.MinValue && (currentClickedTime - lastClickedTime) / TimeSpan.TicksPerMillisecond <= SystemParameters.DoubleClickTime)
+                    clicks = MathHelper.Max(_clicks + 1, 2);
+                else
+                    clicks = 1;
+            }
             _clicks = clicks;
             int caretIndex = GetCaretIndexFromPoint(args.Location, out bool isInside);
             switch (clicks)
@@ -1242,15 +1255,14 @@ namespace ConcreteUI.Controls
                                 break;
                             case 1:
                                 {
-                                    if (caretIndex >= textLength)
-                                        caretIndex = textLength - 1;
-                                    if (text[caretIndex] == ' ')
+                                    caretIndex = MathHelper.Clamp(caretIndex, 0, textLength - 1);
+                                    if (CharHelper.IsWhiteSpace(text[caretIndex]))
                                     {
                                         int selectionStart = -1, selectionEnd = -1;
                                         int index = caretIndex - 1;
                                         do
                                         {
-                                            int searchingIndex = text.LastIndexOf(' ', index);
+                                            int searchingIndex = IndexOfWhiteSpace(text, startIndex: index, endIndex: -1, step: -1);
                                             if (searchingIndex < index)
                                             {
                                                 selectionStart = index + 1;
@@ -1262,7 +1274,7 @@ namespace ConcreteUI.Controls
                                         index = caretIndex + 1;
                                         do
                                         {
-                                            int searchingIndex = StringHelper.IndexOf(text, ' ', index);
+                                            int searchingIndex = IndexOfWhiteSpace(text, startIndex: index, endIndex: textLength, step: 1);
                                             if (searchingIndex > index || searchingIndex == -1)
                                             {
                                                 selectionEnd = index;
@@ -1278,8 +1290,8 @@ namespace ConcreteUI.Controls
                                     }
                                     else
                                     {
-                                        int selectionStart = text.LastIndexOf(' ', caretIndex) + 1;
-                                        int selectionEnd = StringHelper.IndexOf(text, ' ', caretIndex);
+                                        int selectionStart = IndexOfWhiteSpace(text, startIndex: caretIndex, endIndex: -1, step: -1) + 1;
+                                        int selectionEnd = IndexOfWhiteSpace(text, startIndex: caretIndex, endIndex: textLength, step: 1);
                                         if (selectionStart < 0) selectionStart = 0;
                                         if (selectionEnd < 0) selectionEnd = text.Length;
                                         _previousSelectionRange = _selectionRange = new SelectionRange(selectionStart, selectionEnd);
@@ -1295,24 +1307,23 @@ namespace ConcreteUI.Controls
                 UpdateCaretIndex(caretIndex);
         }
 
-        bool isEnter = false;
         public override void OnMouseMove(in MouseNotifyEventArgs args)
         {
             base.OnMouseMove(args);
             if (ContentBounds.Contains(args.Location))
             {
-                if (!isEnter)
+                if (!_isEnter)
                 {
                     _cursorType = SystemCursorType.IBeam;
-                    isEnter = true;
+                    _isEnter = true;
                 }
             }
             else
             {
-                if (isEnter)
+                if (_isEnter)
                 {
                     _cursorType = null;
-                    isEnter = false;
+                    _isEnter = false;
                 }
             }
             if (_drag)
@@ -1350,6 +1361,30 @@ namespace ConcreteUI.Controls
             if (eventHandler is null || !ContentBounds.Contains(args.Location))
                 return;
             eventHandler.Invoke(this, in args);
+        }
+
+        private static unsafe int IndexOfWhiteSpace(string text, int startIndex, int endIndex, int step)
+        {
+            fixed (char* ptr = text)
+            {
+                if (step > 0)
+                {
+                    for (int i = startIndex; i < endIndex; i += step)
+                    {
+                        if (CharHelper.IsWhiteSpace(ptr[i]))
+                            return i;
+                    }
+                }
+                else
+                {
+                    for (int i = startIndex; i > endIndex; i += step)
+                    {
+                        if (CharHelper.IsWhiteSpace(ptr[i]))
+                            return i;
+                    }
+                }
+            }
+            return -1;
         }
         #endregion
 

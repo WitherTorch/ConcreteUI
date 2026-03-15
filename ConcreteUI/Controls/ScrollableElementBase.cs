@@ -9,7 +9,6 @@ using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Internals;
-using ConcreteUI.Internals.NativeHelpers;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
