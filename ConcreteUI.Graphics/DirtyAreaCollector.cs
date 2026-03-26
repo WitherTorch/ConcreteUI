@@ -75,10 +75,7 @@ namespace ConcreteUI.Graphics
             RectF[] array = list.Unwrap();
             int count = list.Count;
             if (count <= 0)
-            {
-                host1.Present(new DXGIPresentParameters(0u, null));
                 return;
-            }
             fixed (RectF* ptr = array)
             {
                 uint length = unchecked((uint)count);
@@ -111,7 +108,7 @@ namespace ConcreteUI.Graphics
             RectF[] array = list.Unwrap();
             int count = list.Count;
             if (count <= 0)
-                return host1.TryPresent(new DXGIPresentParameters(0u, null));
+                return true;
             bool result;
             fixed (RectF* ptr = array)
             {
@@ -129,23 +126,30 @@ namespace ConcreteUI.Graphics
         {
             for (; length >= 4; length -= 4, ptr += 4)
             {
-                if (!ptr[0].IsValid) ptr[0] = default;
-                if (!ptr[1].IsValid) ptr[1] = default;
-                if (!ptr[2].IsValid) ptr[2] = default;
-                if (!ptr[3].IsValid) ptr[3] = default;
+                if (!ptr[0].IsValid)
+                    ptr[0] = default;
+                if (!ptr[1].IsValid) 
+                    ptr[1] = default;
+                if (!ptr[2].IsValid) 
+                    ptr[2] = default;
+                if (!ptr[3].IsValid) 
+                    ptr[3] = default;
             }
             Rect* ptrEnd = ptr + length;
             if (ptr >= ptrEnd)
                 return;
-            if (!ptr->IsValid) *ptr = default;
+            if (!ptr->IsValid)
+                *ptr = default;
             ptr++;
             if (ptr >= ptrEnd)
                 return;
-            if (!ptr->IsValid) *ptr = default;
+            if (!ptr->IsValid) 
+                *ptr = default;
             ptr++;
             if (ptr >= ptrEnd)
                 return;
-            if (!ptr->IsValid) *ptr = default;
+            if (!ptr->IsValid) 
+                *ptr = default;
         }
 
         private static unsafe void ScaleRects(RectF* ptr, nuint length, Vector2 pointsPerPixel)
