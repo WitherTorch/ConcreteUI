@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -5,8 +6,12 @@ using System.Runtime.CompilerServices;
 using ConcreteUI.Graphics.Hosts;
 using ConcreteUI.Graphics.Native.DXGI;
 
+using InlineMethod;
+
+using WitherTorch.Common;
 using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
@@ -67,16 +72,26 @@ namespace ConcreteUI.Graphics
                 host.Present();
                 return;
             }
-            if (!TryGetPresentingRects(pointsPerPixel, out ArrayPool<Rect>? pool, out Rect[]? rects, out uint count))
+            RectF[] array = list.Unwrap();
+            int count = list.Count;
+            if (count <= 0)
+            {
+                host1.Present(new DXGIPresentParameters(0u, null));
                 return;
-            try
-            {
-                fixed (Rect* ptr = rects)
-                    host1.Present(new DXGIPresentParameters(count, ptr));
             }
-            finally
+            fixed (RectF* ptr = array)
             {
-                pool.Return(rects);
+                uint length = unchecked((uint)count);
+                ScaleRects(ptr, length, pointsPerPixel);
+                CleanInvalidRect((Rect*)ptr, length);
+                try
+                {
+                    host1.Present(new DXGIPresentParameters(length, (Rect*)ptr));
+                }
+                finally
+                {
+                    list.Clear();
+                }
             }
         }
 
@@ -93,60 +108,102 @@ namespace ConcreteUI.Graphics
                 list.Clear();
                 return host.TryPresent();
             }
-            if (!TryGetPresentingRects(pointsPerPixel, out ArrayPool<Rect>? pool, out Rect[]? rects, out uint count))
-                return false;
-            try
+            RectF[] array = list.Unwrap();
+            int count = list.Count;
+            if (count <= 0)
+                return host1.TryPresent(new DXGIPresentParameters(0u, null));
+            bool result;
+            fixed (RectF* ptr = array)
             {
-                fixed (Rect* ptr = rects)
-                    return host1.TryPresent(new DXGIPresentParameters(count, ptr));
+                uint length = unchecked((uint)count);
+                ScaleRects(ptr, length, pointsPerPixel);
+                CleanInvalidRect((Rect*)ptr, length);
+                result = host1.TryPresent(new DXGIPresentParameters(length, (Rect*)ptr));
             }
-            finally
-            {
-                pool.Return(rects);
-            }
-        }
-
-        private bool TryGetPresentingRects(Vector2 pointsPerPixel,
-            [NotNullWhen(true)] out ArrayPool<Rect>? pool, [NotNullWhen(true)] out Rect[]? rects, out uint count)
-        {
-            UnwrappableList<RectF> list = _list!;
-            int countRaw = list.Count;
-            if (countRaw <= 0)
-            {
-                pool = null;
-                rects = null;
-                count = 0;
-                return false;
-            }
-            count = (uint)countRaw;
-            RectF[] sourceRects = list.Unwrap();
-            pool = ArrayPool<Rect>.Shared;
-            rects = pool.Rent(count);
-            count = ScaleRects(rects, sourceRects, count, pointsPerPixel);
             list.Clear();
-            return true;
+            return result;
         }
 
-        private static unsafe uint ScaleRects(Rect[] destination, RectF[] source, uint count, Vector2 pointsPerPixel)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void CleanInvalidRect(Rect* ptr, nuint length)
         {
-            uint j = 0;
-            ref Rect destinationArrayRef = ref destination[0];
-
-            fixed (RectF* ptr = source)
+            for (; length >= 4; length -= 4, ptr += 4)
             {
-                ScaleRects(ptr, count, pointsPerPixel);
-                for (uint i = 0; i < count; i++)
+                if (!ptr[0].IsValid) ptr[0] = default;
+                if (!ptr[1].IsValid) ptr[1] = default;
+                if (!ptr[2].IsValid) ptr[2] = default;
+                if (!ptr[3].IsValid) ptr[3] = default;
+            }
+            Rect* ptrEnd = ptr + length;
+            if (ptr >= ptrEnd)
+                return;
+            if (!ptr->IsValid) *ptr = default;
+            ptr++;
+            if (ptr >= ptrEnd)
+                return;
+            if (!ptr->IsValid) *ptr = default;
+            ptr++;
+            if (ptr >= ptrEnd)
+                return;
+            if (!ptr->IsValid) *ptr = default;
+        }
+
+        private static unsafe void ScaleRects(RectF* ptr, nuint length, Vector2 pointsPerPixel)
+        {
+            DebugHelper.ThrowIf(sizeof(Rect) != sizeof(RectF));
+
+            if (Limits.CheckTypeCanBeVectorized<float>() && Limits.CheckTypeCanBeVectorized<int>())
+            {
+                nuint limit = Limits.GetLimitForVectorizing<float>();
+                if (limit >= UnsafeHelper.SizeOf<RectF>() - 1)
                 {
-                    Rect area = *(Rect*)(ptr + i);
-                    if (!area.IsValid)
-                        continue;
-                    UnsafeHelper.AddTypedOffset(ref destinationArrayRef, j++) = area;
+                    VectorizedScaleRects(ptr, length, pointsPerPixel);
+                    return;
                 }
             }
-
-            return j;
+            ScalarizedScaleRects(ref ptr, ref length, pointsPerPixel);
         }
 
-        private static unsafe partial void ScaleRects(RectF* source, uint count, Vector2 pointsPerPixel);
+        [Inline(InlineBehavior.Remove)]
+        private static unsafe void VectorizedScaleRects(RectF* ptr, nuint length, Vector2 pointsPerPixel)
+            => VectorizedScaleRects((float*)ptr, length * 4, pointsPerPixel);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe partial void VectorizedScaleRects(float* ptr, nuint length, Vector2 pointsPerPixel);
+
+        [Inline(InlineBehavior.Remove)]
+        private static unsafe void ScalarizedScaleRects(ref RectF* ptr, ref nuint length, Vector2 pointsPerPixel)
+        {
+            (float pointsPerPixelX, float pointsPerPixelY) = pointsPerPixel;
+            for (; length >= 4; length -= 4, ptr += 4)
+            {
+                UnsafeHelper.WriteUnaligned(ptr, ScaleRect(ptr[0], pointsPerPixelX, pointsPerPixelY));
+                UnsafeHelper.WriteUnaligned(ptr + 1, ScaleRect(ptr[1], pointsPerPixelX, pointsPerPixelY));
+                UnsafeHelper.WriteUnaligned(ptr + 2, ScaleRect(ptr[2], pointsPerPixelX, pointsPerPixelY));
+                UnsafeHelper.WriteUnaligned(ptr + 3, ScaleRect(ptr[3], pointsPerPixelX, pointsPerPixelY));
+            }
+            RectF* ptrEnd = ptr + length;
+            if (ptr >= ptrEnd)
+                return;
+            UnsafeHelper.WriteUnaligned(ptr, ScaleRect(*ptr, pointsPerPixelX, pointsPerPixelY));
+            ptr++;
+            if (ptr >= ptrEnd)
+                return;
+            UnsafeHelper.WriteUnaligned(ptr, ScaleRect(*ptr, pointsPerPixelX, pointsPerPixelY));
+            ptr++;
+            if (ptr >= ptrEnd)
+                return;
+            UnsafeHelper.WriteUnaligned(ptr, ScaleRect(*ptr, pointsPerPixelX, pointsPerPixelY));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Rect ScaleRect(RectF rect, float pointsPerPixelX, float pointsPerPixelY)
+        {
+            return new Rect(
+                left: MathI.Floor(rect.Left * pointsPerPixelX),
+                top: MathI.Floor(rect.Top * pointsPerPixelY),
+                right: MathI.Ceiling(rect.Right * pointsPerPixelX),
+                bottom: MathI.Ceiling(rect.Bottom * pointsPerPixelY));
+        }
     }
 }

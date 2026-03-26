@@ -223,17 +223,19 @@ namespace ConcreteUI.Controls
             if (backBrush is null)
                 return;
 
+            using RegionalRenderingContext clipContext = context.WithPixelAlignedClip(renderingBounds, D2D1AntialiasMode.Aliased, out RectF _);
             if (checkState)
             {
-                context.FillRectangle(renderingBounds, backBrush);
+                RectF bounds = clipContext.Bounds;
+                clipContext.FillRectangle(bounds, backBrush);
                 D2D1Brush? markBrush = brushes[(int)Brush.MarkBrush];
                 if (markBrush is null)
                     return;
-                FontIconResources.Instance.DrawCheckMark(context, renderingBounds, markBrush);
+                FontIconResources.Instance.DrawCheckMark(clipContext, new RectangleF(PointF.Empty, clipContext.Size), markBrush);
             }
             else
             {
-                context.DrawRectangle(context.GetBorderRect(renderingBounds, out float strokeWidth), backBrush, strokeWidth);
+                clipContext.DrawBorder(backBrush);
             }
         }
 

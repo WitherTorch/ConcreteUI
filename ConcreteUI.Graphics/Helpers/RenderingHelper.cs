@@ -11,7 +11,7 @@ namespace ConcreteUI.Graphics.Helpers
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float GetDefaultBorderWidth(float pointsPerPixel)
-            => MathF.Round(pointsPerPixel) / pointsPerPixel;
+            => MathF.Round(pointsPerPixel, MidpointRounding.AwayFromZero) / pointsPerPixel;
 
         public static float FloorInPixel(float valueInPoints, float pointsPerPixel)
         {

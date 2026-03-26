@@ -1,167 +1,279 @@
 #if NET8_0_OR_GREATER
+using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
+using InlineMethod;
+
 using WitherTorch.Common;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Graphics
 {
     partial class DirtyAreaCollector
     {
-        private static unsafe partial void ScaleRects(RectF* source, uint count, Vector2 pointsPerPixel)
-        {
-            DebugHelper.ThrowIf(sizeof(Rect) != sizeof(RectF));
+        private static readonly Vector512<int> _blendVector_512 = CreateBlendVector_512();
+        private static readonly Vector256<int> _blendVector_256 = CreateBlendVector_256();
+        private static readonly Vector128<int> _blendVector_128 = CreateBlendVector_128();
 
+        private static unsafe partial void VectorizedScaleRects(float* ptr, nuint length, Vector2 pointsPerPixel)
+        {
             (float pointsPerPixelX, float pointsPerPixelY) = pointsPerPixel;
-
-            RectF* sourceEnd = source + count;
-            if (Limits.UseVector512())
-            {
-                Vector512<float>* sourceLimit = ((Vector512<float>*)source) + 1;
-                if (sourceLimit < sourceEnd)
-                {
-                    Vector512<float> zeroVector = Vector512.Create<float>(0.0f);
-                    Vector512<float> multiplierVector = CreateVector512(pointsPerPixelX, pointsPerPixelY);
-                    Vector512<float> roundAdditionVector = Vector512.Create<float>(0.5f);
-                    do
-                    {
-                        Vector512<float> sourceVector = Vector512.Load((float*)source);
-                        Vector512<int> resultVector = Vector512.ConvertToInt32((Vector512.Max(sourceVector, zeroVector) * multiplierVector) + roundAdditionVector);
-                        resultVector.Store((int*)source);
-                        source = (RectF*)sourceLimit;
-                    } while (++sourceLimit < sourceEnd);
-                }
-                if (source >= sourceEnd)
-                    return;
-            }
-            if (Limits.UseVector256())
-            {
-                Vector256<float>* sourceLimit = ((Vector256<float>*)source) + 1;
-                if (sourceLimit < sourceEnd)
-                {
-                    Vector256<float> zeroVector = Vector256.Create<float>(0.0f);
-                    Vector256<float> multiplierVector = CreateVector256(pointsPerPixelX, pointsPerPixelY);
-                    Vector256<float> roundAdditionVector = Vector256.Create<float>(0.5f);
-                    do
-                    {
-                        Vector256<float> sourceVector = Vector256.Load((float*)source);
-                        Vector256<int> resultVector = Vector256.ConvertToInt32((Vector256.Max(sourceVector, zeroVector) * multiplierVector) + roundAdditionVector);
-                        resultVector.Store((int*)source);
-                        source = (RectF*)sourceLimit;
-                    } while (++sourceLimit < sourceEnd);
-                }
-                if (source >= sourceEnd)
-                    return;
-            }
-            if (Limits.UseVector128())
-            {
-                Vector128<float>* sourceLimit = ((Vector128<float>*)source) + 1;
-                if (sourceLimit < sourceEnd)
-                {
-                    Vector128<float> zeroVector = Vector128.Create<float>(0.0f);
-                    Vector128<float> multiplierVector = CreateVector128(pointsPerPixelX, pointsPerPixelY);
-                    Vector128<float> roundAdditionVector = Vector128.Create<float>(0.5f);
-                    do
-                    {
-                        Vector128<float> sourceVector = Vector128.Load((float*)source);
-                        Vector128<int> resultVector = Vector128.ConvertToInt32((Vector128.Max(sourceVector, zeroVector) * multiplierVector) + roundAdditionVector);
-                        resultVector.Store((int*)source);
-                        source = (RectF*)sourceLimit;
-                    } while (++sourceLimit < sourceEnd);
-                }
-                if (source >= sourceEnd)
-                    return;
-            }
-            if (Limits.UseVector64())
-            {
-                Vector64<float>* sourceLimit = ((Vector64<float>*)source) + 1;
-                if (sourceLimit < sourceEnd)
-                {
-                    Vector64<float> zeroVector = Vector64.Create<float>(0.0f);
-                    Vector64<float> multiplierVector = CreateVector64(pointsPerPixelX, pointsPerPixelY);
-                    Vector64<float> roundAdditionVector = Vector64.Create<float>(0.5f);
-                    do
-                    {
-                        Vector64<float> sourceVector = Vector64.Load((float*)source);
-                        Vector64<int> resultVector = Vector64.ConvertToInt32((Vector64.Max(sourceVector, zeroVector) * multiplierVector) + roundAdditionVector);
-                        resultVector.Store((int*)source);
-                        source = (RectF*)sourceLimit;
-                    } while (++sourceLimit < sourceEnd);
-                }
-                if (source >= sourceEnd)
-                    return;
-            }
-
-            for (; source < sourceEnd; source++)
-            {
-                RectF sourceRect = *source;
-                Rect destinationRect = new Rect(
-                    MathI.Round(MathHelper.Max(sourceRect.Left, 0f) * pointsPerPixelX),
-                    MathI.Round(MathHelper.Max(sourceRect.Top, 0f) * pointsPerPixelY),
-                    MathI.Round(MathHelper.Max(sourceRect.Right, 0f) * pointsPerPixelX),
-                    MathI.Round(MathHelper.Max(sourceRect.Bottom, 0f) * pointsPerPixelY));
-                *(Rect*)source = destinationRect;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector64<float> CreateVector64(float x, float y)
-        {
-            if (x == y)
-                return Vector64.Create(x);
+            if (Limits.UseVector512() && length >= (nuint)Vector512<float>.Count)
+                VectorizedScaleRects_512(ref ptr, ref length, pointsPerPixelX, pointsPerPixelY);
+            else if (Limits.UseVector256() && length >= (nuint)Vector256<float>.Count)
+                VectorizedScaleRects_256(ref ptr, ref length, pointsPerPixelX, pointsPerPixelY);
             else
-                return Vector64.Create([
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y
-                    ]);
+                VectorizedScaleRects_128(ref ptr, ref length, pointsPerPixelX, pointsPerPixelY);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector128<float> CreateVector128(float x, float y)
+        [Inline(InlineBehavior.Remove)]
+        private static unsafe void VectorizedScaleRects_512(ref float* ptr, ref nuint length, float pointsPerPixelX, float pointsPerPixelY)
         {
-            if (x == y)
-                return Vector128.Create(x);
+            Vector512<float> multiplierVector = CreatePointVector_512(pointsPerPixelX, pointsPerPixelY);
+            Vector512<int> blendVector = _blendVector_512;
+
+            nuint headRemainder = (nuint)ptr % UnsafeHelper.SizeOf<Vector512<float>>();
+            if (headRemainder == 0)
+                goto VectorizedLoop;
             else
-                return Vector128.Create([
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y
-                    ]);
+            {
+                Vector512<float> sourceVector = Vector512.Load(ptr) * multiplierVector;
+                Vector512<int> resultVector = Vector512.ConvertToInt32(sourceVector);
+                Vector512<float> resultVectorAsFloat = Vector512.ConvertToSingle(resultVector);
+                resultVector += Vector512.ConditionalSelect(
+                        condition: blendVector,
+                        left: Vector512.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
+                        right: -Vector512.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
+                        );
+                resultVector.Store((int*)ptr);
+                if (length > (nuint)Vector512<float>.Count * 2)
+                {
+                    headRemainder = (UnsafeHelper.SizeOf<Vector512<float>>() - headRemainder) / UnsafeHelper.SizeOf<float>(); // 取得數量
+                    ptr += headRemainder;
+                    length -= headRemainder;
+                    goto VectorizedLoop;
+                }
+                else
+                {
+                    ptr += (nuint)Vector512<float>.Count;
+                    length -= (nuint)Vector512<float>.Count;
+                    goto TailProcess;
+                }
+            }
+
+        VectorizedLoop:
+            do
+            {
+                Vector512<float> sourceVector = Vector512.LoadAligned(ptr) * multiplierVector;
+                Vector512<int> resultVector = Vector512.ConvertToInt32(sourceVector);
+                Vector512<float> resultVectorAsFloat = Vector512.ConvertToSingle(resultVector);
+                resultVector += Vector512.ConditionalSelect(
+                        condition: blendVector,
+                        left: Vector512.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
+                        right: -Vector512.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
+                        );
+                resultVector.StoreAligned((int*)ptr);
+                ptr += (nuint)Vector512<float>.Count;
+                length -= (nuint)Vector512<float>.Count;
+                continue;
+            } while (length >= (nuint)Vector512<float>.Count);
+            goto TailProcess;
+
+        TailProcess:
+            if (length > 0)
+            {
+                ptr = ptr + length - (nuint)Vector512<float>.Count;
+                Vector512<float> sourceVector = Vector512.Load(ptr) * multiplierVector;
+                Vector512<int> resultVector = Vector512.ConvertToInt32(sourceVector);
+                Vector512<float> resultVectorAsFloat = Vector512.ConvertToSingle(resultVector);
+                resultVector += Vector512.ConditionalSelect(
+                        condition: blendVector,
+                        left: Vector512.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
+                        right: -Vector512.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
+                        );
+                resultVector.Store((int*)ptr);
+            }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector256<float> CreateVector256(float x, float y)
+        [Inline(InlineBehavior.Remove)]
+        private static unsafe void VectorizedScaleRects_256(ref float* ptr, ref nuint length, float pointsPerPixelX, float pointsPerPixelY)
         {
-            if (x == y)
-                return Vector256.Create(x);
+            Vector256<float> multiplierVector = CreatePointVector_256(pointsPerPixelX, pointsPerPixelY);
+            Vector256<int> blendVector = _blendVector_256;
+
+            nuint headRemainder = (nuint)ptr % UnsafeHelper.SizeOf<Vector256<float>>();
+            if (headRemainder == 0)
+                goto VectorizedLoop;
             else
-                return Vector256.Create([
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y
-                    ]);
+            {
+                Vector256<float> sourceVector = Vector256.Load(ptr) * multiplierVector;
+                Vector256<int> resultVector = Vector256.ConvertToInt32(sourceVector);
+                Vector256<float> resultVectorAsFloat = Vector256.ConvertToSingle(resultVector);
+                resultVector += Vector256.ConditionalSelect(
+                        condition: blendVector,
+                        left: Vector256.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
+                        right: -Vector256.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
+                        );
+                resultVector.Store((int*)ptr);
+                if (length > (nuint)Vector256<float>.Count * 2)
+                {
+                    headRemainder = (UnsafeHelper.SizeOf<Vector256<float>>() - headRemainder) / UnsafeHelper.SizeOf<float>(); // 取得數量
+                    ptr += headRemainder;
+                    length -= headRemainder;
+                    goto VectorizedLoop;
+                }
+                else
+                {
+                    ptr += (nuint)Vector256<float>.Count;
+                    length -= (nuint)Vector256<float>.Count;
+                    goto TailProcess;
+                }
+            }
+
+        VectorizedLoop:
+            do
+            {
+                Vector256<float> sourceVector = Vector256.LoadAligned(ptr) * multiplierVector;
+                Vector256<int> resultVector = Vector256.ConvertToInt32(sourceVector);
+                Vector256<float> resultVectorAsFloat = Vector256.ConvertToSingle(resultVector);
+                resultVector += Vector256.ConditionalSelect(
+                        condition: blendVector,
+                        left: Vector256.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
+                        right: -Vector256.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
+                        );
+                resultVector.StoreAligned((int*)ptr);
+                ptr += (nuint)Vector256<float>.Count;
+                length -= (nuint)Vector256<float>.Count;
+                continue;
+            } while (length >= (nuint)Vector256<float>.Count);
+            goto TailProcess;
+
+        TailProcess:
+            if (length > 0)
+            {
+                ptr = ptr + length - (nuint)Vector256<float>.Count;
+                Vector256<float> sourceVector = Vector256.Load(ptr) * multiplierVector;
+                Vector256<int> resultVector = Vector256.ConvertToInt32(sourceVector);
+                Vector256<float> resultVectorAsFloat = Vector256.ConvertToSingle(resultVector);
+                resultVector += Vector256.ConditionalSelect(
+                        condition: blendVector,
+                        left: Vector256.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
+                        right: -Vector256.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
+                        );
+                resultVector.Store((int*)ptr);
+            }
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static unsafe void VectorizedScaleRects_128(ref float* ptr, ref nuint length, float pointsPerPixelX, float pointsPerPixelY)
+        {
+            Vector128<float> multiplierVector = CreatePointVector_128(pointsPerPixelX, pointsPerPixelY);
+            Vector128<int> blendVector = _blendVector_128;
+
+            nuint headRemainder = (nuint)ptr % UnsafeHelper.SizeOf<Vector128<float>>();
+            if (headRemainder == 0)
+                goto VectorizedLoop;
+            else
+            {
+                Vector128<float> sourceVector = Vector128.Load(ptr) * multiplierVector;
+                Vector128<int> resultVector = Vector128.ConvertToInt32(sourceVector);
+                Vector128<float> resultVectorAsFloat = Vector128.ConvertToSingle(resultVector);
+                resultVector += Vector128.ConditionalSelect(
+                        condition: blendVector,
+                        left: Vector128.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
+                        right: -Vector128.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
+                        );
+                resultVector.Store((int*)ptr);
+                if (length > (nuint)Vector128<float>.Count * 2)
+                {
+                    headRemainder = (UnsafeHelper.SizeOf<Vector128<float>>() - headRemainder) / UnsafeHelper.SizeOf<float>(); // 取得數量
+                    ptr += headRemainder;
+                    length -= headRemainder;
+                    goto VectorizedLoop;
+                }
+                else
+                {
+                    ptr += (nuint)Vector128<float>.Count;
+                    length -= (nuint)Vector128<float>.Count;
+                    goto TailProcess;
+                }
+            }
+
+        VectorizedLoop:
+            do
+            {
+                Vector128<float> sourceVector = Vector128.LoadAligned(ptr) * multiplierVector;
+                Vector128<int> resultVector = Vector128.ConvertToInt32(sourceVector);
+                Vector128<float> resultVectorAsFloat = Vector128.ConvertToSingle(resultVector);
+                resultVector += Vector128.ConditionalSelect(
+                        condition: blendVector,
+                        left: Vector128.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
+                        right: -Vector128.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
+                        );
+                resultVector.StoreAligned((int*)ptr);
+                ptr += (nuint)Vector128<float>.Count;
+                length -= (nuint)Vector128<float>.Count;
+                continue;
+            } while (length >= (nuint)Vector128<float>.Count);
+            goto TailProcess;
+
+        TailProcess:
+            if (length > 0)
+            {
+                ptr = ptr + length - (nuint)Vector128<float>.Count;
+                Vector128<float> sourceVector = Vector128.Load(ptr) * multiplierVector;
+                Vector128<int> resultVector = Vector128.ConvertToInt32(sourceVector);
+                Vector128<float> resultVectorAsFloat = Vector128.ConvertToSingle(resultVector);
+                resultVector += Vector128.ConditionalSelect(
+                        condition: blendVector,
+                        left: Vector128.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
+                        right: -Vector128.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
+                        );
+                resultVector.Store((int*)ptr);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector512<float> CreateVector512(float x, float y)
+        private static Vector512<float> CreatePointVector_512(float x, float y)
         {
             if (x == y)
                 return Vector512.Create(x);
             else
-                return Vector512.Create([
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y,
-                    x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y
-                    ]);
+                return Vector512.Create(x, y, x, y, x, y, x, y, x, y, x, y, x, y, x, y);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<float> CreatePointVector_256(float x, float y)
+        {
+            if (x == y)
+                return Vector256.Create(x);
+            else
+                return Vector256.Create(x, y, x, y, x, y, x, y);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<float> CreatePointVector_128(float x, float y)
+        {
+            if (x == y)
+                return Vector128.Create(x);
+            else
+                return Vector128.Create(x, y, x, y);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector512<int> CreateBlendVector_512()
+            => Vector512.Create(-1, -1, 0, 0, -1, -1, 0, 0, -1, -1, 0, 0, -1, -1, 0, 0);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<int> CreateBlendVector_256()
+            => Vector256.Create(-1, -1, 0, 0, -1, -1, 0, 0);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<int> CreateBlendVector_128()
+            => Vector128.Create(-1, -1, 0, 0);
     }
 }
 #endif

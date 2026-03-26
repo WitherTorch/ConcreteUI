@@ -84,7 +84,10 @@ namespace ConcreteUI.Utils
         public static Point ScalingPoint(Point original, Vector2 scaleFactor)
         {
             (float factorX, float factorY) = scaleFactor;
-            return new Point(MathI.Floor(original.X * factorX), MathI.Floor(original.Y * factorY));
+            return new Point(
+                MathI.Round(original.X * factorX, MidpointRounding.AwayFromZero), 
+                MathI.Round(original.Y * factorY, MidpointRounding.AwayFromZero)
+                );
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -98,7 +101,10 @@ namespace ConcreteUI.Utils
         public static Point ScalingPointAndConvert(PointF original, Vector2 scaleFactor)
         {
             (float factorX, float factorY) = scaleFactor;
-            return new Point(MathI.Floor(original.X * factorX), MathI.Floor(original.Y * factorY));
+            return new Point(
+                MathI.Round(original.X * factorX, MidpointRounding.AwayFromZero),
+                MathI.Round(original.Y * factorY, MidpointRounding.AwayFromZero)
+                );
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -114,8 +120,8 @@ namespace ConcreteUI.Utils
             (float factorX, float factorY) = scaleFactor;
             if (factorX == 1.0f && factorY == 1.0f)
                 return original;
-            return new Rect(left: MathI.FloorPositive(original.Left * factorX),
-                top: MathI.FloorPositive(original.Top * factorY),
+            return new Rect(left: MathI.Floor(original.Left * factorX),
+                top: MathI.Floor(original.Top * factorY),
                 right: MathI.Ceiling(original.Right * factorX),
                 bottom: MathI.Ceiling(original.Bottom * factorY));
         }
@@ -136,8 +142,8 @@ namespace ConcreteUI.Utils
         public static Rect ScalingRectAndConvert(RectF original, Vector2 scaleFactor)
         {
             (float factorX, float factorY) = scaleFactor;
-            return new Rect(left: MathI.FloorPositive(original.Left * factorX),
-                top: MathI.FloorPositive(original.Top * factorY),
+            return new Rect(left: MathI.Floor(original.Left * factorX),
+                top: MathI.Floor(original.Top * factorY),
                 right: MathI.Ceiling(original.Right * factorX),
                 bottom: MathI.Ceiling(original.Bottom * factorY));
         }

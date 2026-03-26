@@ -1,57 +1,88 @@
 #if NET472_OR_GREATER
+using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-using WitherTorch.Common;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Graphics
 {
     partial class DirtyAreaCollector
     {
-        private static unsafe partial void ScaleRects(RectF* source, uint count, Vector2 pointsPerPixel)
+        private static readonly Vector<int> _blendVector = CreateBlendVector();
+
+        private static unsafe partial void VectorizedScaleRects(float* ptr, nuint length, Vector2 pointsPerPixel)
         {
-            DebugHelper.ThrowIf(sizeof(Rect) != sizeof(RectF));
-
             (float pointsPerPixelX, float pointsPerPixelY) = pointsPerPixel;
+            Vector<float> multiplierVector = CreatePointVector(pointsPerPixelX, pointsPerPixelY);
+            Vector<int> blendVector = _blendVector;
 
-            RectF* sourceEnd = source + count;
-            if (Limits.UseVector())
+            nuint headRemainder = (nuint)ptr % UnsafeHelper.SizeOf<Vector<float>>();
+            if (headRemainder == 0)
+                goto VectorizedLoop;
+            else
             {
-                Vector<float>* sourceLimit = ((Vector<float>*)source) + 1;
-                if (sourceLimit < sourceEnd)
+                Vector<float> sourceVector = UnsafeHelper.ReadUnaligned<Vector<float>>(ptr) * multiplierVector;
+                Vector<int> resultVector = Vector.ConvertToInt32(sourceVector);
+                Vector<float> resultVectorAsFloat = Vector.ConvertToSingle(resultVector);
+                resultVector += Vector.ConditionalSelect(
+                        condition: blendVector,
+                        left: Vector.LessThan(sourceVector, resultVectorAsFloat),
+                        right: -Vector.GreaterThan(sourceVector, resultVectorAsFloat)
+                        );
+                UnsafeHelper.WriteUnaligned(ptr, resultVector);
+                if (length > (nuint)Vector<float>.Count * 2)
                 {
-                    Vector<float> zeroVector = new Vector<float>(0.0f);
-                    Vector<float> multiplierVector = CreateVector(pointsPerPixelX, pointsPerPixelY);
-                    Vector<float> roundAdditionVector = new Vector<float>(0.5f);
-                    do
-                    {
-                        Vector<float> sourceVector = UnsafeHelper.ReadUnaligned<Vector<float>>(source);
-                        Vector<int> resultVector = Vector.ConvertToInt32((Vector.Max(sourceVector, zeroVector) * multiplierVector) + roundAdditionVector);
-                        UnsafeHelper.WriteUnaligned(source, resultVector);
-                        source = (RectF*)sourceLimit;
-                    } while (++sourceLimit < sourceEnd);
+                    headRemainder = (UnsafeHelper.SizeOf<Vector<float>>() - headRemainder) / UnsafeHelper.SizeOf<float>(); // 取得數量
+                    ptr += headRemainder;
+                    length -= headRemainder;
+                    goto VectorizedLoop;
                 }
-                if (source >= sourceEnd)
-                    return;
+                else
+                {
+                    ptr += (nuint)Vector<float>.Count;
+                    length -= (nuint)Vector<float>.Count;
+                    goto TailProcess;
+                }
             }
 
-            for (; source < sourceEnd; source++)
+        VectorizedLoop:
+            do
             {
-                RectF sourceRect = *source;
-                Rect destinationRect = new Rect(
-                    MathI.Round(MathHelper.Max(sourceRect.Left, 0f) * pointsPerPixelX),
-                    MathI.Round(MathHelper.Max(sourceRect.Top, 0f) * pointsPerPixelY),
-                    MathI.Round(MathHelper.Max(sourceRect.Right, 0f) * pointsPerPixelX),
-                    MathI.Round(MathHelper.Max(sourceRect.Bottom, 0f) * pointsPerPixelY));
-                *(Rect*)source = destinationRect;
+                Vector<float> sourceVector = UnsafeHelper.Read<Vector<float>>(ptr) * multiplierVector;
+                Vector<int> resultVector = Vector.ConvertToInt32(sourceVector);
+                Vector<float> resultVectorAsFloat = Vector.ConvertToSingle(resultVector);
+                resultVector += Vector.ConditionalSelect(
+                        condition: blendVector,
+                        left: Vector.LessThan(sourceVector, resultVectorAsFloat),
+                        right: -Vector.GreaterThan(sourceVector, resultVectorAsFloat)
+                        );
+                UnsafeHelper.Write(ptr, resultVector);
+                ptr += (nuint)Vector<float>.Count;
+                length -= (nuint)Vector<float>.Count;
+                continue;
+            } while (length >= (nuint)Vector<float>.Count);
+            goto TailProcess;
+
+        TailProcess:
+            if (length > 0)
+            {
+                ptr = ptr + length - (nuint)Vector<float>.Count;
+                Vector<float> sourceVector = UnsafeHelper.ReadUnaligned<Vector<float>>(ptr) * multiplierVector;
+                Vector<int> resultVector = Vector.ConvertToInt32(sourceVector);
+                Vector<float> resultVectorAsFloat = Vector.ConvertToSingle(resultVector);
+                resultVector += Vector.ConditionalSelect(
+                        condition: blendVector,
+                        left: Vector.LessThan(sourceVector, resultVectorAsFloat),
+                        right: -Vector.GreaterThan(sourceVector, resultVectorAsFloat)
+                        );
+                UnsafeHelper.WriteUnaligned(ptr, resultVector);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector<float> CreateVector(float x, float y)
+        private static unsafe Vector<float> CreatePointVector(float x, float y)
         {
             Vector<float> result = new Vector<float>(x);
             if (x == y)
@@ -60,6 +91,19 @@ namespace ConcreteUI.Graphics
             float* ptr = (float*)&result;
             for (int i = 1; i < Vector<float>.Count; i += 2)
                 ptr[i] = y;
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector<int> CreateBlendVector()
+        {
+            Vector<int> result = Vector<int>.Zero;
+            int* ptr = (int*)&result;
+            for (int i = 0; i < Vector<int>.Count; i += 4)
+            {
+                ptr[i] = -1;
+                ptr[i + 1] = -1;
+            }
             return result;
         }
     }

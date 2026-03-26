@@ -127,7 +127,7 @@ namespace ConcreteUI.Controls
             int viewportY = ViewportPoint.Y;
             float startIndexRaw = viewportY / itemHeight;
             float offsetY = (startIndexRaw - MathF.Floor(startIndexRaw)) * itemHeight;
-            int startIndex = MathHelper.Clamp(MathI.FloorPositive(startIndexRaw), 0, count - maxViewCount);
+            int startIndex = MathHelper.Clamp(MathI.Truncate(startIndexRaw), 0, count - maxViewCount);
             int endIndex = MathHelper.Clamp(MathI.Ceiling((viewportY + renderSize.Height) / itemHeight), maxViewCount - 1, count - 1);
             int selectedIndex = SelectedIndex;
             D2D1Brush[] brushes = _brushes;
