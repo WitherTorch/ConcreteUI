@@ -12,7 +12,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public abstract partial class AppendOnlyListBase<TItem, TMeasuringContext> : ScrollableElementBase 
+    public abstract partial class AppendOnlyListBase<TItem, TMeasuringContext> : ScrollableElementBase
         where TItem : IMeasurableListItem<TMeasuringContext> where TMeasuringContext : IMeasuringContext
     {
         protected readonly AppendOnlyListItemStore<TItem, TMeasuringContext> _itemStore;
@@ -85,23 +85,40 @@ namespace ConcreteUI.Controls
             Rect bounds = ContentBounds;
             int viewportY = MathHelper.Max(ViewportPoint.Y, 0);
             int renderLeft = 0, renderRight = bounds.Width, boundsHeight = bounds.Height;
-            using PooledList<(TItem item, int itemTop, int itemHeight)> list = new PooledList<(TItem item, int itemTop, int itemHeight)>(capacity: 0);
-            _itemStore.EnumerateItemsToList(viewportY, boundsHeight, list);
-            for (int i = 0, count = list.Count; i < count; i++)
+
+            (TItem item, int itemTop, int itemHeight)[] array; int count;
+            ArrayPool<(TItem item, int itemTop, int itemHeight)> pool = ArrayPool<(TItem item, int itemTop, int itemHeight)>.Shared;
+            using (PooledList<(TItem item, int itemTop, int itemHeight)> list = new(pool, capacity: 0))
             {
-                (TItem item, int itemTop, int itemHeight) = list[i];
-                if (!ignoreNeedRefresh && !item.NeedRefresh())
-                    continue;
-                int renderTop = itemTop - viewportY;
-                int renderBottom = renderTop + itemHeight;
-                RectF itemBounds = new RectF(renderLeft, renderTop, renderRight, renderBottom);
-                using RegionalRenderingContext clipContext = context.WithAxisAlignedClip(itemBounds, D2D1AntialiasMode.Aliased);
-                if (needRenderBackgroundPerItem)
+                _itemStore.EnumerateItemsToList(viewportY, boundsHeight, list);
+                (array, count) = list;
+            }
+            try
+            {
+                if (count <= 0)
+                    return true;
+                ref (TItem item, int itemTop, int itemHeight) itemRef = ref array[0];
+                int i = 0;
+                do
                 {
-                    RenderBackground(clipContext, backBrush);
-                    clipContext.MarkAsDirty();
-                }
-                RenderItem(in clipContext, item, itemBounds.Size);
+                    (TItem item, int itemTop, int itemHeight) = UnsafeHelper.AddTypedOffset(ref itemRef, i);
+                    if (!ignoreNeedRefresh && !item.NeedRefresh())
+                        continue;
+                    int renderTop = itemTop - viewportY;
+                    int renderBottom = renderTop + itemHeight;
+                    RectF itemBounds = new RectF(renderLeft, renderTop, renderRight, renderBottom);
+                    using RegionalRenderingContext clipContext = context.WithAxisAlignedClip(itemBounds, D2D1AntialiasMode.Aliased);
+                    if (needRenderBackgroundPerItem)
+                    {
+                        RenderBackground(clipContext, backBrush);
+                        clipContext.MarkAsDirty();
+                    }
+                    RenderItem(in clipContext, item, itemBounds.Size);
+                } while (++i < count);
+            }
+            finally
+            {
+                pool.Return(array);
             }
 
             return true;
