@@ -72,7 +72,6 @@ namespace ConcreteUI.Graphics
             _context = context;
             _collector = collector;
             _pointsPerPixel = pointsPerPixel;
-            _clipScope = RenderingClipScope.Enter(context, in clipRect, antialiasMode);
 
             Matrix3x2 transformMatrix = context.Transform;
             _originalTransform = transformMatrix;
@@ -81,6 +80,7 @@ namespace ConcreteUI.Graphics
             transformMatrix.Translation = translation;
             _offsetPoint = new PointF(translation.X, translation.Y);
             context.Transform = transformMatrix;
+            _clipScope = RenderingClipScope.Enter(context, RectF.FromXYWH(PointF.Empty, clipRect.Size), antialiasMode);
             _isPixelAligned = isPixelAligned;
             _isOpaque = isOpaque;
             _disposed = false;
@@ -440,8 +440,8 @@ namespace ConcreteUI.Graphics
                 return;
             _disposed = true;
 
-            _context.Transform = _originalTransform;
             _clipScope.Dispose();
+            _context.Transform = _originalTransform;
         }
     }
 }
