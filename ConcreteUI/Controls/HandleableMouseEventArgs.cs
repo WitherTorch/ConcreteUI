@@ -9,25 +9,25 @@ using WitherTorch.Common.Helpers;
 namespace ConcreteUI.Controls
 {
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    public struct MouseInteractEventArgs : IInteractEventArgs
+    public struct HandleableMouseEventArgs : IHandleableEventArgs
     {
         private readonly MouseEventData _data;
 
         private bool _handled;
 
-        public readonly Point Location
+        public readonly PointF Location
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _data._location;
         }
 
-        public readonly int X
+        public readonly float X
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _data._location.X;
         }
 
-        public readonly int Y
+        public readonly float Y
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _data._location.Y;
@@ -52,27 +52,27 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MouseInteractEventArgs(Point point) : this(point, MouseButtons.None, 0) { }
+        public HandleableMouseEventArgs(PointF point) : this(point, MouseButtons.None, 0) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MouseInteractEventArgs(Point point, MouseButtons buttons) : this(point, buttons, 0) { }
+        public HandleableMouseEventArgs(PointF point, MouseButtons buttons) : this(point, buttons, 0) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MouseInteractEventArgs(Point point, short delta) : this(point, MouseButtons.None, delta) { }
+        public HandleableMouseEventArgs(PointF point, short delta) : this(point, MouseButtons.None, delta) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MouseInteractEventArgs(Point point, MouseButtons buttons, short delta) : this(new MouseEventData(point, buttons, delta)) { }
+        public HandleableMouseEventArgs(PointF point, MouseButtons buttons, short delta) : this(new MouseEventData(point, buttons, delta)) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal MouseInteractEventArgs(in MouseEventData data)
+        internal HandleableMouseEventArgs(in MouseEventData data)
         {
             _data = data;
             _handled = false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator MouseInteractEventArgs(in MouseNotifyEventArgs args)
-            => new MouseInteractEventArgs(UnsafeHelper.As<MouseNotifyEventArgs, MouseEventData>(ref UnsafeHelper.AsRefIn(in args)));
+        public static explicit operator HandleableMouseEventArgs(in MouseEventArgs args)
+            => new HandleableMouseEventArgs(UnsafeHelper.As<MouseEventArgs, MouseEventData>(ref UnsafeHelper.AsRefIn(in args)));
 
         public void Handle() => _handled = true;
     }

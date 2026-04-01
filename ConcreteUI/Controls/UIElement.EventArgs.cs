@@ -3,10 +3,10 @@ using System.Runtime.CompilerServices;
 
 namespace ConcreteUI.Controls
 {
-    public delegate void MouseInteractEventHandler(UIElement sender, ref MouseInteractEventArgs args);
-    public delegate void MouseNotifyEventHandler(UIElement sender, in MouseNotifyEventArgs args);
-    public delegate void KeyInteractEventHandler(UIElement sender, ref KeyInteractEventArgs args);
-    public delegate void CharacterInteractEventHandler(UIElement sender, ref KeyInteractEventArgs args);
+    public delegate void MouseInteractEventHandler(UIElement sender, ref HandleableMouseEventArgs args);
+    public delegate void MouseNotifyEventHandler(UIElement sender, in MouseEventArgs args);
+    public delegate void KeyInteractEventHandler(UIElement sender, ref KeyEventArgs args);
+    public delegate void CharacterInteractEventHandler(UIElement sender, ref KeyEventArgs args);
 
     public delegate void CancelableEventHandler(object sender, CancelableEventArgs e);
     public delegate void TextChangingEventHandler(object sender, TextChangingEventArgs e);
@@ -41,7 +41,7 @@ namespace ConcreteUI.Controls
         public bool IsEdited { get; private set; }
     }
 
-    public interface IInteractEventArgs
+    public interface IHandleableEventArgs
     {
         bool Handled { get; }
 

@@ -240,7 +240,7 @@ namespace ConcreteUI.Window
                 #region Normal input events
                 case WindowMessage.Char:
                     {
-                        CharacterInteractEventArgs args = new CharacterInteractEventArgs((char)wParam);
+                        CharacterEventArgs args = new CharacterEventArgs((char)wParam);
                         OnCharacterInputForElements(ref args);
                         if (args.Handled)
                             break;
@@ -248,7 +248,7 @@ namespace ConcreteUI.Window
                     }
                 case WindowMessage.KeyDown:
                     {
-                        KeyInteractEventArgs args = new KeyInteractEventArgs((VirtualKey)wParam, (ushort)lParam);
+                        KeyEventArgs args = new KeyEventArgs((VirtualKey)wParam, (ushort)lParam);
                         OnKeyDown(ref args);
                         if (args.Handled)
                             break;
@@ -256,7 +256,7 @@ namespace ConcreteUI.Window
                     }
                 case WindowMessage.KeyUp:
                     {
-                        KeyInteractEventArgs args = new KeyInteractEventArgs((VirtualKey)wParam, (ushort)lParam);
+                        KeyEventArgs args = new KeyEventArgs((VirtualKey)wParam, (ushort)lParam);
                         OnKeyUp(ref args);
                         if (args.Handled)
                             break;
@@ -266,7 +266,7 @@ namespace ConcreteUI.Window
                     {
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
                         (ushort buttons, ushort delta) = wParam.GetWords();
-                        MouseInteractEventArgs args = new MouseInteractEventArgs(
+                        HandleableMouseEventArgs args = new HandleableMouseEventArgs(
                             point: PointToClient(point),
                             buttons: (MouseButtons)buttons,
                             delta: UnsafeHelper.As<ushort, short>(delta));
@@ -298,8 +298,8 @@ namespace ConcreteUI.Window
                             _hasMouseCapture = true;
                             User32.SetCapture(hwnd);
                         }
-                        MouseInteractEventArgs args = new MouseInteractEventArgs(
-                            point: GraphicsUtils.ScalingPoint(point, _pixelsPerPoint),
+                        HandleableMouseEventArgs args = new HandleableMouseEventArgs(
+                            point: GraphicsUtils.ScalingPointAndConvert(point, _pixelsPerPoint),
                             buttons: buttons);
                         OnMouseDown(ref args);
                         if (args.Handled)
@@ -324,8 +324,8 @@ namespace ConcreteUI.Window
                         }
                         if (buttons == MouseButtons.None)
                             goto default;
-                        MouseNotifyEventArgs args = new MouseNotifyEventArgs(
-                            point: GraphicsUtils.ScalingPoint(point, _pixelsPerPoint),
+                        MouseEventArgs args = new MouseEventArgs(
+                            point: GraphicsUtils.ScalingPointAndConvert(point, _pixelsPerPoint),
                             buttons: buttons);
                         OnMouseUp(in args);
                         goto default;
@@ -371,7 +371,7 @@ namespace ConcreteUI.Window
                                 break;
                         }
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
-                        OnMouseMove(new MouseInteractEventArgs(
+                        OnMouseMove(new HandleableMouseEventArgs(
                             point: PointToClientCore(hwnd, point)));
                         _controller?.RequestUpdate(false);
                     }
@@ -379,7 +379,7 @@ namespace ConcreteUI.Window
                 case WindowMessage.MouseMove:
                     {
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
-                        OnMouseMove(new MouseInteractEventArgs(
+                        OnMouseMove(new HandleableMouseEventArgs(
                             point: GraphicsUtils.ScalingPoint(point, _pixelsPerPoint)));
                         if (_beforeHitTest != (nint)HitTestValue.Client)
                         {
@@ -840,13 +840,13 @@ namespace ConcreteUI.Window
 
         #region Thread-Safe Function Overwrite
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point PointToClient(Point point)
+        public PointF PointToClient(Point point)
         {
             IntPtr handle = Handle;
             if (handle == IntPtr.Zero)
                 return Point.Empty;
 
-            return GraphicsUtils.ScalingPoint(PointToClientCore(handle, point), _pixelsPerPoint);
+            return GraphicsUtils.ScalingPointAndConvert(PointToClientCore(handle, point), _pixelsPerPoint);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -869,13 +869,13 @@ namespace ConcreteUI.Window
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point PointToScreen(Point point)
+        public PointF PointToScreen(Point point)
         {
             IntPtr handle = Handle;
             if (handle == IntPtr.Zero)
                 return Point.Empty;
 
-            return GraphicsUtils.ScalingPoint(PointToClientCore(handle, point), _pointsPerPixel);
+            return GraphicsUtils.ScalingPointAndConvert(PointToClientCore(handle, point), _pointsPerPixel);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

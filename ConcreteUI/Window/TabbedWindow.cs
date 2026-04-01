@@ -219,7 +219,7 @@ namespace ConcreteUI.Window
             #endregion
         }
 
-        protected override void OnMouseDown(ref MouseInteractEventArgs args)
+        protected override void OnMouseDown(ref HandleableMouseEventArgs args)
         {
             MouseButtons buttons = args.Buttons;
             if (buttons.HasFlagOptimized(MouseButtons.LeftButton))

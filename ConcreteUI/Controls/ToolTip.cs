@@ -11,7 +11,7 @@ using ConcreteUI.Window;
 
 namespace ConcreteUI.Controls
 {
-    public sealed class ToolTip : UIElement, IMouseEvents
+    public sealed class ToolTip : UIElement, IMouseMoveHandler
     {
         private readonly CoreWindow window;
         private readonly Func<UIElement, bool>? checkingFunc;
@@ -98,7 +98,7 @@ namespace ConcreteUI.Controls
         protected override bool RenderCore(in RegionalRenderingContext context) => true;
 
         Point lastPoint;
-        public void OnMouseMove(in MouseNotifyEventArgs args)
+        public void OnMouseMove(in MouseEventArgs args)
         {
             Point point = args.Location;
             if (lastPoint == point)
@@ -114,7 +114,7 @@ namespace ConcreteUI.Controls
             CheckToolTip(point);
         }
 
-        public void OnMouseUp(in MouseNotifyEventArgs args) { }
+        public void OnMouseUp(in MouseEventArgs args) { }
 
     }
 }

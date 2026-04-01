@@ -19,7 +19,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class ContextMenu : PopupElementBase, ICheckableDisposable, IKeyEvents
+    public sealed partial class ContextMenu : PopupElementBase, ICheckableDisposable, IKeyboardInteractHandler
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -136,7 +136,7 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        public override void OnMouseDown(in MouseNotifyEventArgs args)
+        public override void OnMouseDown(in MouseEventArgs args)
         {
             base.OnMouseDown(args);
             if (!args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
@@ -152,7 +152,7 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        public override void OnMouseUp(in MouseNotifyEventArgs args)
+        public override void OnMouseUp(in MouseEventArgs args)
         {
             base.OnMouseUp(args);
             if (!args.Buttons.HasFlagOptimized(MouseButtons.LeftButton) || !Bounds.Contains(args.Location))
@@ -169,7 +169,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public override void OnMouseMove(in MouseNotifyEventArgs args)
+        public override void OnMouseMove(in MouseEventArgs args)
         {
             base.OnMouseMove(args);
 
@@ -193,7 +193,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public void OnKeyDown(ref KeyInteractEventArgs args)
+        public void OnKeyDown(ref KeyEventArgs args)
         {
             if (args.Key != VirtualKey.Escape ||
                 Keys.IsAltPressed() || Keys.IsControlPressed() || Keys.IsShiftPressed())
@@ -202,7 +202,7 @@ namespace ConcreteUI.Controls
             Close();
         }
 
-        public void OnKeyUp(ref KeyInteractEventArgs args)
+        public void OnKeyUp(ref KeyEventArgs args)
         {
             //Do nothing
         }

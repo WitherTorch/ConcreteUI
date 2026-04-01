@@ -32,7 +32,7 @@ using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler, IMouseInteractEvents, IMouseNotifyEvents, IKeyEvents, ICharacterEvents, ICursorPredicator
+    public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler, IMouseInteractHandler, IMouseNotifyEvents, IKeyboardInteractHandler, ICharacterInputHandler, ICursorPredicator
     {
         private static readonly LazyTiny<GraphemeInfo> EmptyGraphemeInfoLazy =
             new LazyTiny<GraphemeInfo>(new GraphemeInfo(string.Empty, Array.Empty<int>()));
@@ -522,7 +522,7 @@ namespace ConcreteUI.Controls
 
         #region Normal Key Controls
 
-        public void OnKeyDown(ref KeyInteractEventArgs args)
+        public void OnKeyDown(ref KeyEventArgs args)
         {
             if (!_focused || !Enabled)
                 return;
@@ -582,7 +582,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public void OnKeyUp(ref KeyInteractEventArgs args)
+        public void OnKeyUp(ref KeyEventArgs args)
         {
             if (!_focused || !Enabled)
                 return;
@@ -604,7 +604,7 @@ namespace ConcreteUI.Controls
                             layout.HitTestTextPosition(MathHelper.MakeUnsigned(_caretIndex), isTrailingHit: true, out float pointX, out float pointY);
                             location = new Point(layoutPoint.X + MathI.Round(pointX), layoutPoint.Y + MathI.Round(pointY));
                         }
-                        eventHandlers.Invoke(this, new MouseNotifyEventArgs(location, MouseButtons.RightButton));
+                        eventHandlers.Invoke(this, new MouseEventArgs(location, MouseButtons.RightButton));
                     }
                     break;
             }
@@ -732,7 +732,7 @@ namespace ConcreteUI.Controls
         }
 
         [LocalsInit(false)]
-        unsafe void ICharacterEvents.OnCharacterInput(ref CharacterInteractEventArgs args)
+        unsafe void ICharacterInputHandler.OnCharacterInput(ref CharacterEventArgs args)
         {
             if (!_focused || !Enabled)
                 return;
@@ -1192,12 +1192,12 @@ namespace ConcreteUI.Controls
         }
 
         #region Mouse Events Handling
-        public void OnMouseDown(in MouseNotifyEventArgs args)
+        public void OnMouseDown(in MouseEventArgs args)
         {
             _window.ClearFocusElement(this);
         }
 
-        public override void OnMouseDown(ref MouseInteractEventArgs args)
+        public override void OnMouseDown(ref HandleableMouseEventArgs args)
         {
             base.OnMouseDown(ref args);
             if (args.Handled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton) || !Enabled)
@@ -1307,7 +1307,7 @@ namespace ConcreteUI.Controls
                 UpdateCaretIndex(caretIndex);
         }
 
-        public override void OnMouseMove(in MouseNotifyEventArgs args)
+        public override void OnMouseMove(in MouseEventArgs args)
         {
             base.OnMouseMove(args);
             if (ContentBounds.Contains(args.Location))
@@ -1351,7 +1351,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public override void OnMouseUp(in MouseNotifyEventArgs args)
+        public override void OnMouseUp(in MouseEventArgs args)
         {
             base.OnMouseUp(args);
             _drag = false;

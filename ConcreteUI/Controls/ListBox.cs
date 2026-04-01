@@ -300,7 +300,7 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        public override void OnMouseMove(in MouseNotifyEventArgs args)
+        public override void OnMouseMove(in MouseEventArgs args)
         {
             base.OnMouseMove(args);
             if (!ContentBounds.Contains(args.Location))
@@ -334,7 +334,7 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        public override void OnMouseDown(ref MouseInteractEventArgs args)
+        public override void OnMouseDown(ref HandleableMouseEventArgs args)
         {
             base.OnMouseDown(ref args);
             if (args.Handled || Mode == ListBoxMode.None || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
@@ -345,7 +345,7 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        public override void OnMouseUp(in MouseNotifyEventArgs args)
+        public override void OnMouseUp(in MouseEventArgs args)
         {
             base.OnMouseUp(args);
             ListBoxMode mode = Mode;

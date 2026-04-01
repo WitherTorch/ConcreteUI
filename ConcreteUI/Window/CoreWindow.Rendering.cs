@@ -294,7 +294,7 @@ namespace ConcreteUI.Window
         private void OnShown2()
         {
             Point point = PointToClient(MouseHelper.GetMousePosition());
-            OnMouseMove(new MouseInteractEventArgs(point));
+            OnMouseMove(new HandleableMouseEventArgs(point));
         }
 
         protected override void OnClosing(ref ClosingEventArgs args)
@@ -380,7 +380,7 @@ namespace ConcreteUI.Window
             ConcreteUtils.ResetBlur(this);
         }
 
-        protected virtual void OnMouseDownForElements(ref MouseInteractEventArgs args)
+        protected virtual void OnMouseDownForElements(ref HandleableMouseEventArgs args)
         {
             IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
@@ -389,7 +389,7 @@ namespace ConcreteUI.Window
             UIElementHelper.OnMouseDownForElements(GetBackgroundElements(), ref args);
         }
 
-        protected virtual void OnMouseMoveForElements(in MouseNotifyEventArgs args)
+        protected virtual void OnMouseMoveForElements(in MouseEventArgs args)
         {
             SystemCursorType? cursorType = null;
             IEnumerable<UIElement?> elements = GetOverlayElements();
@@ -400,7 +400,7 @@ namespace ConcreteUI.Window
             Cursor = SystemCursors.GetSystemCursor(cursorType.GetValueOrDefault(SystemCursorType.Default));
         }
 
-        protected virtual void OnMouseUpForElements(in MouseNotifyEventArgs args)
+        protected virtual void OnMouseUpForElements(in MouseEventArgs args)
         {
             IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
@@ -409,7 +409,7 @@ namespace ConcreteUI.Window
             UIElementHelper.OnMouseUpForElements(GetBackgroundElements(), args);
         }
 
-        protected virtual void OnMouseScrollForElements(ref MouseInteractEventArgs args)
+        protected virtual void OnMouseScrollForElements(ref HandleableMouseEventArgs args)
         {
             IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
@@ -420,7 +420,7 @@ namespace ConcreteUI.Window
             UIElementHelper.OnMouseScrollForElements(GetBackgroundElements(), ref args);
         }
 
-        protected virtual void OnKeyDownForElements(ref KeyInteractEventArgs args)
+        protected virtual void OnKeyDownForElements(ref KeyEventArgs args)
         {
             IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
@@ -431,7 +431,7 @@ namespace ConcreteUI.Window
             UIElementHelper.OnKeyDownForElements(GetBackgroundElements(), ref args);
         }
 
-        protected virtual void OnKeyUpForElements(ref KeyInteractEventArgs args)
+        protected virtual void OnKeyUpForElements(ref KeyEventArgs args)
         {
             IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
@@ -442,7 +442,7 @@ namespace ConcreteUI.Window
             UIElementHelper.OnKeyUpForElements(GetBackgroundElements(), ref args);
         }
 
-        protected virtual void OnCharacterInputForElements(ref CharacterInteractEventArgs args)
+        protected virtual void OnCharacterInputForElements(ref CharacterEventArgs args)
         {
             IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())

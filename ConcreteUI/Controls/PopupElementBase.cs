@@ -14,14 +14,14 @@ namespace ConcreteUI.Controls
 
         public void Close() => _window.CloseOverlayElement(this);
 
-        public virtual void OnMouseDown(in MouseNotifyEventArgs args) { }
+        public virtual void OnMouseDown(in MouseEventArgs args) { }
 
-        public virtual void OnMouseUp(in MouseNotifyEventArgs args)
+        public virtual void OnMouseUp(in MouseEventArgs args)
         {
             if (!Bounds.Contains(args.Location))
                 Close();
         }
 
-        public virtual void OnMouseMove(in MouseNotifyEventArgs args) { }
+        public virtual void OnMouseMove(in MouseEventArgs args) { }
     }
 }

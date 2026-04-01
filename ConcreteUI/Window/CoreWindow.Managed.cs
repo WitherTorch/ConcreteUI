@@ -46,22 +46,22 @@ namespace ConcreteUI.Window
 
         protected virtual void OnDpiChanged() => DpiChanged?.Invoke(this, EventArgs.Empty);
 
-        protected virtual void OnMouseDown(ref MouseInteractEventArgs args)
+        protected virtual void OnMouseDown(ref HandleableMouseEventArgs args)
             => OnMouseDownForElements(ref args);
 
-        protected virtual void OnMouseUp(in MouseNotifyEventArgs args)
+        protected virtual void OnMouseUp(in MouseEventArgs args)
             => OnMouseUpForElements(in args);
 
-        protected virtual void OnMouseMove(in MouseNotifyEventArgs args)
+        protected virtual void OnMouseMove(in MouseEventArgs args)
             => OnMouseMoveForElements(in args);
 
-        protected virtual void OnMouseScroll(ref MouseInteractEventArgs args)
+        protected virtual void OnMouseScroll(ref HandleableMouseEventArgs args)
             => OnMouseScrollForElements(ref args);
 
-        protected virtual void OnKeyDown(ref KeyInteractEventArgs args)
+        protected virtual void OnKeyDown(ref KeyEventArgs args)
             => OnKeyDownForElements(ref args);
 
-        protected virtual void OnKeyUp(ref KeyInteractEventArgs args)
+        protected virtual void OnKeyUp(ref KeyEventArgs args)
             => OnKeyUpForElements(ref args);
         #endregion
 

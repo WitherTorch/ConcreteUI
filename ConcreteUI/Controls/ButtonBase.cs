@@ -1,12 +1,10 @@
 using System.Runtime.CompilerServices;
 
-using ConcreteUI.Utils;
-
 using WitherTorch.Common.Extensions;
 
 namespace ConcreteUI.Controls
 {
-    public abstract partial class ButtonBase : DisposableUIElementBase, IMouseInteractEvents
+    public abstract partial class ButtonBase : DisposableUIElementBase, IMouseInteractHandler, IMouseMoveHandler
     {
         private ButtonTriState _pressState;
         private bool _enabled, _isPressed;
@@ -19,7 +17,7 @@ namespace ConcreteUI.Controls
 
         public override void OnSizeChanged() => Update();
 
-        public void OnMouseDown(ref MouseInteractEventArgs args)
+        public void OnMouseDown(ref HandleableMouseEventArgs args)
         {
             if (!_enabled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
@@ -29,7 +27,7 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        public void OnMouseMove(in MouseNotifyEventArgs args)
+        public void OnMouseMove(in MouseEventArgs args)
         {
             ButtonTriState pressState;
             if (_enabled && Bounds.Contains(args.Location))
@@ -42,7 +40,7 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        public void OnMouseUp(in MouseNotifyEventArgs args)
+        public void OnMouseUp(in MouseEventArgs args)
         {
             if (!_enabled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
@@ -57,6 +55,6 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void OnClick(in MouseNotifyEventArgs args) => Click?.Invoke(this, args);
+        protected void OnClick(in MouseEventArgs args) => Click?.Invoke(this, args);
     }
 }

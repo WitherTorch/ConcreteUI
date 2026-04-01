@@ -23,7 +23,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class ComboBox : DisposableUIElementBase, IMouseInteractEvents
+    public sealed partial class ComboBox : DisposableUIElementBase, IMouseInteractHandler
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -176,7 +176,7 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        public void OnMouseDown(ref MouseInteractEventArgs args)
+        public void OnMouseDown(ref HandleableMouseEventArgs args)
         {
             if (!_enabled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
@@ -198,7 +198,7 @@ namespace ConcreteUI.Controls
             });
         }
 
-        public void OnMouseUp(in MouseNotifyEventArgs args)
+        public void OnMouseUp(in MouseEventArgs args)
         {
             if (!_enabled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
@@ -212,7 +212,7 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        public void OnMouseMove(in MouseNotifyEventArgs args)
+        public void OnMouseMove(in MouseEventArgs args)
         {
             if (!_enabled)
                 return;

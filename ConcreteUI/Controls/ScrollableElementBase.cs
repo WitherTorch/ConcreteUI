@@ -20,7 +20,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public abstract partial class ScrollableElementBase : DisposableUIElementBase, IMouseInteractEvents, IMouseScrollEvent
+    public abstract partial class ScrollableElementBase : DisposableUIElementBase, IMouseInteractHandler, IMouseScrollHandler
     {
         protected const string DefaultPrefixForScrollBar = "app.scrollBar";
 
@@ -393,7 +393,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public virtual void OnMouseScroll(ref MouseInteractEventArgs args)
+        public virtual void OnMouseScroll(ref HandleableMouseEventArgs args)
         {
             if (!_enabled || !_hasScrollBar || _scrollButtonState == ButtonTriState.Pressed)
                 return;
@@ -404,7 +404,7 @@ namespace ConcreteUI.Controls
 
         private void RepeatingTimer_Tick(object? state) => _repeatingAction?.Invoke();
 
-        public virtual void OnMouseDown(ref MouseInteractEventArgs args)
+        public virtual void OnMouseDown(ref HandleableMouseEventArgs args)
         {
             if (!_enabled || !_hasScrollBar || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
@@ -444,7 +444,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public virtual void OnMouseUp(in MouseNotifyEventArgs args)
+        public virtual void OnMouseUp(in MouseEventArgs args)
         {
             if (_enabled && _hasScrollBar)
             {
@@ -474,7 +474,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public virtual void OnMouseMove(in MouseNotifyEventArgs args)
+        public virtual void OnMouseMove(in MouseEventArgs args)
         {
             if (!_enabled) return;
             if (_hasScrollBar)

@@ -4,16 +4,23 @@ using System.Runtime.InteropServices;
 namespace ConcreteUI.Controls
 {
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    public struct CharacterInteractEventArgs : IInteractEventArgs
+    public struct KeyEventArgs : IHandleableEventArgs
     {
-        private readonly char _character;
+        private readonly VirtualKey _key;
+        private readonly ushort _repeatCount;
 
         private bool _handled;
 
-        public readonly char Character
+        public readonly VirtualKey Key
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _character;
+            get => _key;
+        }
+
+        public readonly ushort RepeatCount
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _repeatCount;
         }
 
         public readonly bool Handled
@@ -23,9 +30,12 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CharacterInteractEventArgs(char character)
+        public KeyEventArgs(VirtualKey key) : this(key, 0) { }
+
+        public KeyEventArgs(VirtualKey key, ushort repeatCount)
         {
-            _character = character;
+            _key = key;
+            _repeatCount = repeatCount;
             _handled = false;
         }
 

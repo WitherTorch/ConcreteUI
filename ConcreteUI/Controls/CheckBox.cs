@@ -22,7 +22,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class CheckBox : DisposableUIElementBase, IMouseInteractEvents
+    public sealed partial class CheckBox : DisposableUIElementBase, IMouseInteractHandler
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -239,7 +239,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public void OnMouseMove(in MouseNotifyEventArgs args)
+        public void OnMouseMove(in MouseEventArgs args)
         {
             ButtonTriState oldButtonState = _buttonState;
             ButtonTriState newButtonState;
@@ -253,7 +253,7 @@ namespace ConcreteUI.Controls
             Update(RedrawType.RedrawCheckBox);
         }
 
-        public void OnMouseDown(ref MouseInteractEventArgs args)
+        public void OnMouseDown(ref HandleableMouseEventArgs args)
         {
             if (_buttonState != ButtonTriState.Hovered || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
@@ -264,7 +264,7 @@ namespace ConcreteUI.Controls
             Checked = !Checked;
         }
 
-        public void OnMouseUp(in MouseNotifyEventArgs args)
+        public void OnMouseUp(in MouseEventArgs args)
         {
             if (!args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
