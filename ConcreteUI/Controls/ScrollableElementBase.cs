@@ -20,7 +20,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public abstract partial class ScrollableElementBase : DisposableUIElementBase, IMouseInteractHandler, IMouseScrollHandler
+    public abstract partial class ScrollableElementBase : DisposableUIElementBase, IMouseInteractHandler, IMouseMoveHandler, IMouseScrollHandler
     {
         protected const string DefaultPrefixForScrollBar = "app.scrollBar";
 
