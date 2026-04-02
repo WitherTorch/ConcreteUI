@@ -85,19 +85,6 @@ namespace ConcreteUI.Controls
             CopySelectedItemsToBufferCore(items, count, destination, startIndex, out itemCopied);
         }
 
-        public void CopySelectedIndicesToBuffer(int[] destination, int startIndex, out int itemCopied)
-        {
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex));
-            int count = _items.Count;
-            if (count <= 0)
-            {
-                itemCopied = 0;
-                return;
-            }
-            CopySelectedIndicesToBufferCore(count, destination, startIndex, out itemCopied);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CopySelectedItemsToBufferCore(ObservableList<string> items, int count, string[] destination, int startIndex, out int itemCopied)
         {
@@ -113,7 +100,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void CopySelectedIndicesToBufferCore(int count, int[] destination, int startIndex, out int itemCopied)
+        private unsafe void CopySelectedIndicesToBufferCore(int count, int* destination, int startIndex, out int itemCopied)
         {
             BitList stateVectorList = _stateVectorList;
             itemCopied = 0;

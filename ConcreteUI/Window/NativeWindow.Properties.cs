@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -12,6 +13,7 @@ using LocalsInit;
 using WitherTorch.Common;
 using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Window
@@ -208,7 +210,7 @@ namespace ConcreteUI.Window
                 if (User32.IsZoomed(handle))
                     return WindowState.Maximized;
 
-                Failed:
+            Failed:
                 return WindowState.Normal;
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -311,41 +313,43 @@ namespace ConcreteUI.Window
             fixed (char* ptr = result)
             {
                 int charsWritten = User32.GetWindowTextW(handle, ptr, stringLength + 1);
+                if (charsWritten <= 0)
+                    throw new Win32Exception(Kernel32.GetLastError());
                 if (charsWritten == stringLength)
                     return result;
                 if (charsWritten < stringLength)
                     return new string(ptr, 0, charsWritten);
-                return GetTextCoreSlow(handle, charsWritten);
+                return GetTextCoreSlow(handle, (nuint)charsWritten);
             }
         }
 
-        private static unsafe string GetTextCoreSlow(IntPtr handle, int predictedLength)
+        private static unsafe string GetTextCoreSlow(IntPtr handle, nuint predictedLength)
         {
-            ArrayPool<char> pool = ArrayPool<char>.Shared;
-            char[] buffer;
+            NativeMemoryPool pool = NativeMemoryPool.Shared;
+            TypedNativeMemoryBlock<char> buffer;
             do
             {
-                buffer = pool.Rent(predictedLength);
-                fixed (char* ptr = buffer)
+                buffer = pool.Rent<char>(predictedLength);
+                char* ptr = buffer.NativePointer;
+                int charsWritten = User32.GetWindowTextW(handle, ptr, (int)buffer.Length);
+                if (charsWritten <= 0)
+                    throw new Win32Exception(Kernel32.GetLastError());
+                if ((nuint)charsWritten < buffer.Length)
                 {
-                    int charsWritten = User32.GetWindowTextW(handle, ptr, buffer.Length);
-                    if (charsWritten < buffer.Length)
+                    try
                     {
-                        try
-                        {
-                            return new string(ptr, 0, charsWritten);
-                        }
-                        finally
-                        {
-                            pool.Return(buffer);
-                        }
+                        return new string(ptr, 0, charsWritten);
+                    }
+                    finally
+                    {
+                        pool.Return(buffer);
                     }
                 }
                 predictedLength = buffer.Length + 1;
-            } while (predictedLength <= Limits.MaxStringLength);
+            } while (predictedLength <= (nuint)Limits.MaxStringLength);
             try
             {
-                return new string(buffer, 0, buffer.Length);
+                return new string(buffer.NativePointer, 0, (int)buffer.Length);
             }
             finally
             {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -8,6 +8,7 @@ using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Controls
 {
@@ -41,7 +42,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public int[] SelectedIndices
+        public unsafe int[] SelectedIndices
         {
             get
             {
@@ -49,15 +50,17 @@ namespace ConcreteUI.Controls
                 int count = items.Count;
                 if (count <= 0)
                     return Array.Empty<int>();
-                ArrayPool<int> pool = ArrayPool<int>.Shared;
-                int[] buffer = pool.Rent(count);
+                NativeMemoryPool pool = NativeMemoryPool.Shared;
+                TypedNativeMemoryBlock<int> buffer = pool.Rent<int>(count);
+                int* ptr = buffer.NativePointer;
                 try
                 {
-                    CopySelectedIndicesToBufferCore(count, buffer, 0, out int resultLength);
+                    CopySelectedIndicesToBufferCore(count, ptr, 0, out int resultLength);
                     if (resultLength <= 0)
                         return Array.Empty<int>();
                     int[] result = new int[resultLength];
-                    Array.Copy(buffer, result, resultLength);
+                    fixed (int* destination = result)
+                        UnsafeHelper.CopyBlock(destination, ptr, (nuint)resultLength * sizeof(int));
                     return result;
                 }
                 finally

@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
-using ConcreteUI.Graphics.Native.Direct2D.Geometry;
 using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 
@@ -63,7 +61,7 @@ namespace ConcreteUI.Controls
             => DisposeHelper.SwapDispose(ref brush, provider.TryGetBrush(node, out D2D1Brush? result) ? result.Clone() : null);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void ApplyTheme<TEnumerable>(IThemeResourceProvider provider, TEnumerable elements)
+        public static void ApplyTheme<TEnumerable>(IThemeResourceProvider provider, TEnumerable elements)
             where TEnumerable : IEnumerable<UIElement>
         {
             UIElement[] array;
@@ -141,7 +139,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void RenderElements<TEnumerable>(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pointPerPixel,
+        public static void RenderElements<TEnumerable>(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pointPerPixel,
             TEnumerable elements, bool ignoreNeedRefresh) where TEnumerable : IEnumerable<UIElement?>
         {
             UIElement?[] array;

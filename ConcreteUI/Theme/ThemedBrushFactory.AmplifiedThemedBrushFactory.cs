@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 
 using WitherTorch.Common.Buffers;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Theme
 {
@@ -67,19 +68,25 @@ namespace ConcreteUI.Theme
                             uint count = collection.Count;
                             if (count == 0)
                                 break;
-                            ArrayPool<D2D1GradientStop> pool = ArrayPool<D2D1GradientStop>.Shared;
-                            D2D1GradientStop[] stops = pool.Rent(count);
-                            for (uint i = 0; i < count; i++)
-                            {
-                                D2D1GradientStop stop = collection[i];
-                                stop.Color = GetColorAmplified(stop.Color, amplifier);
-                                stops[i++] = stop;
-                            }
                             D2D1GradientStopCollection newCollection;
-                            fixed (D2D1GradientStop* ptr = stops)
-                                newCollection = context.CreateGradientStopCollection(stops, collection.ColorInterpolationGamma, collection.ExtendMode);
-                            collection.Dispose();
-                            pool.Return(stops);
+                            NativeMemoryPool pool = NativeMemoryPool.Shared;
+                            TypedNativeMemoryBlock<D2D1GradientStop> stops = pool.Rent<D2D1GradientStop>(count);
+                            D2D1GradientStop* ptr = stops.NativePointer;
+                            try
+                            {
+                                for (uint i = 0; i < count; i++)
+                                {
+                                    D2D1GradientStop stop = collection[i];
+                                    stop.Color = GetColorAmplified(stop.Color, amplifier);
+                                    ptr[i++] = stop;
+                                }
+                                newCollection = context.CreateGradientStopCollection(ptr, count, collection.ColorInterpolationGamma, collection.ExtendMode);
+                                collection.Dispose();
+                            }
+                            finally
+                            {
+                                pool.Return(stops);
+                            }
                             brush = context.CreateLinearGradientBrush(
                                 new D2D1LinearGradientBrushProperties(castedBrush.StartPoint, castedBrush.EndPoint),
                                 new D2D1BrushProperties(castedBrush.Opacity, castedBrush.Transform), newCollection);
@@ -94,19 +101,25 @@ namespace ConcreteUI.Theme
                             uint count = collection.Count;
                             if (count == 0)
                                 break;
-                            ArrayPool<D2D1GradientStop> pool = ArrayPool<D2D1GradientStop>.Shared;
-                            D2D1GradientStop[] stops = pool.Rent(count);
-                            for (uint i = 0; i < count; i++)
-                            {
-                                D2D1GradientStop stop = collection[i];
-                                stop.Color = GetColorAmplified(stop.Color, amplifier);
-                                stops[i++] = stop;
-                            }
                             D2D1GradientStopCollection newCollection;
-                            fixed (D2D1GradientStop* ptr = stops)
-                                newCollection = context.CreateGradientStopCollection(stops, collection.ColorInterpolationGamma, collection.ExtendMode);
-                            collection.Dispose();
-                            pool.Return(stops);
+                            NativeMemoryPool pool = NativeMemoryPool.Shared;
+                            TypedNativeMemoryBlock<D2D1GradientStop> stops = pool.Rent<D2D1GradientStop>(count);
+                            D2D1GradientStop* ptr = stops.NativePointer;
+                            try
+                            {
+                                for (uint i = 0; i < count; i++)
+                                {
+                                    D2D1GradientStop stop = collection[i];
+                                    stop.Color = GetColorAmplified(stop.Color, amplifier);
+                                    ptr[i++] = stop;
+                                }
+                                newCollection = context.CreateGradientStopCollection(ptr, count, collection.ColorInterpolationGamma, collection.ExtendMode);
+                                collection.Dispose();
+                            }
+                            finally
+                            {
+                                pool.Return(stops);
+                            }
                             brush = context.CreateRadialGradientBrush(
                                 new D2D1RadialGradientBrushProperties(castedBrush.Center, castedBrush.GradientOriginOffset, castedBrush.RadiusX, castedBrush.RadiusY),
                                 new D2D1BrushProperties(castedBrush.Opacity, castedBrush.Transform), newCollection);

@@ -8,6 +8,7 @@ using ConcreteUI.Internals;
 using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 using WitherTorch.Common.Structures;
 
 #pragma warning disable CS8500
@@ -830,38 +831,36 @@ namespace ConcreteUI.Controls
             ref TEventArgs args, PointF focusPoint, delegate* managed<UIElement, ref TEventArgs, bool, void> eventHandler) where TEventArgs : struct
         {
             DebugHelper.ThrowIf(length < 1);
-            ArrayPool<Rect> pool = ArrayPool<Rect>.Shared;
-            Rect[] buffer = pool.Rent(length);
+            NativeMemoryPool pool = NativeMemoryPool.Shared;
+            TypedNativeMemoryBlock<Rect> buffer = pool.Rent<Rect>(length);
+            Rect* ptr = buffer.NativePointer;
             try
             {
-                fixed (Rect* ptr = buffer)
+                BoundsHelper.CopyBoundsInElementsIntoBuffer(ptr, in elementArrayRef, length);
+                BoundsHelper.BulkContains(ptr, length, focusPoint);
+                Rect filter = AllBitSetsRect;
+                Rect* pFilter = &filter;
+                for (; length >= 4; length -= 4)
                 {
-                    BoundsHelper.CopyBoundsInElementsIntoBuffer(ptr, in elementArrayRef, length);
-                    BoundsHelper.BulkContains(ptr, length, focusPoint);
-                    Rect filter = AllBitSetsRect;
-                    Rect* pFilter = &filter;
-                    for (; length >= 4; length -= 4)
-                    {
+                    CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, ref args, eventHandler);
+                    CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, ref args, eventHandler);
+                    CallEventHandler(in elementArrayRef, length - 3, ptr, pFilter, ref args, eventHandler);
+                    CallEventHandler(in elementArrayRef, length - 4, ptr, pFilter, ref args, eventHandler);
+                }
+                switch (length)
+                {
+                    case 3:
                         CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, ref args, eventHandler);
                         CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, ref args, eventHandler);
                         CallEventHandler(in elementArrayRef, length - 3, ptr, pFilter, ref args, eventHandler);
-                        CallEventHandler(in elementArrayRef, length - 4, ptr, pFilter, ref args, eventHandler);
-                    }
-                    switch (length)
-                    {
-                        case 3:
-                            CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, ref args, eventHandler);
-                            CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, ref args, eventHandler);
-                            CallEventHandler(in elementArrayRef, length - 3, ptr, pFilter, ref args, eventHandler);
-                            break;
-                        case 2:
-                            CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, ref args, eventHandler);
-                            CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, ref args, eventHandler);
-                            break;
-                        case 1:
-                            CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, ref args, eventHandler);
-                            break;
-                    }
+                        break;
+                    case 2:
+                        CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, ref args, eventHandler);
+                        CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, ref args, eventHandler);
+                        break;
+                    case 1:
+                        CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, ref args, eventHandler);
+                        break;
                 }
             }
             finally
@@ -883,38 +882,36 @@ namespace ConcreteUI.Controls
             in TEventArgs args, ref TData data, PointF focusPoint, delegate* managed<UIElement, in TEventArgs, ref TData, bool, void> eventHandler) where TEventArgs : struct
         {
             DebugHelper.ThrowIf(length < 1);
-            ArrayPool<Rect> pool = ArrayPool<Rect>.Shared;
-            Rect[] buffer = pool.Rent(length);
+            NativeMemoryPool pool = NativeMemoryPool.Shared;
+            TypedNativeMemoryBlock<Rect> buffer = pool.Rent<Rect>(length);
+            Rect* ptr = buffer.NativePointer;
             try
             {
-                fixed (Rect* ptr = buffer)
+                BoundsHelper.CopyBoundsInElementsIntoBuffer(ptr, in elementArrayRef, length);
+                BoundsHelper.BulkContains(ptr, length, focusPoint);
+                Rect filter = AllBitSetsRect;
+                Rect* pFilter = &filter;
+                for (; length >= 4; length -= 4)
                 {
-                    BoundsHelper.CopyBoundsInElementsIntoBuffer(ptr, in elementArrayRef, length);
-                    BoundsHelper.BulkContains(ptr, length, focusPoint);
-                    Rect filter = AllBitSetsRect;
-                    Rect* pFilter = &filter;
-                    for (; length >= 4; length -= 4)
-                    {
+                    CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, in args, ref data, eventHandler);
+                    CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, in args, ref data, eventHandler);
+                    CallEventHandler(in elementArrayRef, length - 3, ptr, pFilter, in args, ref data, eventHandler);
+                    CallEventHandler(in elementArrayRef, length - 4, ptr, pFilter, in args, ref data, eventHandler);
+                }
+                switch (length)
+                {
+                    case 3:
                         CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, in args, ref data, eventHandler);
                         CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, in args, ref data, eventHandler);
                         CallEventHandler(in elementArrayRef, length - 3, ptr, pFilter, in args, ref data, eventHandler);
-                        CallEventHandler(in elementArrayRef, length - 4, ptr, pFilter, in args, ref data, eventHandler);
-                    }
-                    switch (length)
-                    {
-                        case 3:
-                            CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, in args, ref data, eventHandler);
-                            CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, in args, ref data, eventHandler);
-                            CallEventHandler(in elementArrayRef, length - 3, ptr, pFilter, in args, ref data, eventHandler);
-                            break;
-                        case 2:
-                            CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, in args, ref data, eventHandler);
-                            CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, in args, ref data, eventHandler);
-                            break;
-                        case 1:
-                            CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, in args, ref data, eventHandler);
-                            break;
-                    }
+                        break;
+                    case 2:
+                        CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, in args, ref data, eventHandler);
+                        CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, in args, ref data, eventHandler);
+                        break;
+                    case 1:
+                        CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, in args, ref data, eventHandler);
+                        break;
                 }
             }
             finally
