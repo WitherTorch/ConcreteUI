@@ -8,6 +8,8 @@ namespace ConcreteUI.Controls
 {
     public interface IRenderer : IRenderingControl, IElementContainer
     {
+        Vector2 GetPixelsPerPoint();
+
         Vector2 GetPointsPerPixel();
 
         ToolTip? GetToolTip();

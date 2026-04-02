@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
@@ -97,10 +97,10 @@ namespace ConcreteUI.Controls
 
         protected override bool RenderCore(in RegionalRenderingContext context) => true;
 
-        Point lastPoint;
+        PointF lastPoint;
         public void OnMouseMove(in MouseEventArgs args)
         {
-            Point point = args.Location;
+            PointF point = args.Location;
             if (lastPoint == point)
                 return;
             lastPoint = point;

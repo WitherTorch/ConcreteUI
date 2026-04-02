@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
 
@@ -37,22 +38,12 @@ namespace ConcreteUI.Controls
             FontIcon? icon = Interlocked.Exchange(ref _icon, null);
             if (icon is null)
                 return true;
-            D2D1Brush brush;
-            switch (PressState)
-            {
-                case ButtonTriState.None:
-                    brush = _brushes[(int)Brush.ButtonBrush];
-                    break;
-                case ButtonTriState.Hovered:
-                    brush = _brushes[(int)Brush.ButtonHoveredBrush];
-                    break;
-                case ButtonTriState.Pressed:
-                    brush = _brushes[(int)Brush.ButtonPressedBrush];
-                    break;
-                default:
-                    return true;
-            }
-            icon.Render(context, new RectangleF(PointF.Empty, context.Size), brush);
+
+            uint pressState = (uint)PressState;
+            if (pressState >= 3)
+                return true;
+            
+            icon.Render(context, new RectangleF(PointF.Empty, context.Size), UnsafeHelper.AddTypedOffset(ref _brushes[0], pressState));
             DisposeHelper.NullSwapOrDispose(ref _icon, icon);
             return true;
         }

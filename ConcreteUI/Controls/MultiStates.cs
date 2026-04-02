@@ -1,6 +1,6 @@
-﻿namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls
 {
-    public enum ButtonTriState
+    public enum ButtonTriState : uint
     {
         None,
         Hovered,

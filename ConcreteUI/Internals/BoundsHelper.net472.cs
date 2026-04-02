@@ -1,49 +1,94 @@
-﻿#if NET472_OR_GREATER
+#if NET472_OR_GREATER
 using System;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Internals
 {
-    partial class BoundsHelper
+    unsafe partial class BoundsHelper
     {
         private static readonly Vector<int> _blendVector = CreateBlendVector();
 
-        private static unsafe partial void VectorizedBulkContains(int* ptr, nuint length, PointF point)
+        private static partial void VectorizedBulkContains(int* ptr, nuint length, PointF point)
         {
-            Vector<float> filterVector = CreatePointVector(point.X, point.Y);
+            (float x, float y) = point;
+            Vector<float> filterVector = CreatePointVector(x, y);
             Vector<int> blendVector = _blendVector;
 
             nuint headRemainder = (nuint)ptr % UnsafeHelper.SizeOf<Vector<int>>();
             if (headRemainder == 0)
                 goto VectorizedLoop;
+            else if (headRemainder % UnsafeHelper.SizeOf<Rect>() != 0)
+                goto VectorizedLoop_Unaligned;
             else
+            {
+                if (length > (nuint)Vector<int>.Count * 2)
+                {
+                    headRemainder = (UnsafeHelper.SizeOf<Vector<int>>() - headRemainder) / UnsafeHelper.SizeOf<int>(); // 取得數量
+                    DebugHelper.ThrowIf(headRemainder % 4 != 0);
+                    ScalarizedBulkContains((Rect*)ptr, headRemainder / 4, x, y);
+                    ptr += headRemainder;
+                    length -= headRemainder;
+                    goto VectorizedLoop;
+                }
+                else if (length == (nuint)Vector<int>.Count * 2)
+                {
+                    int* ptr2 = ptr + Vector<int>.Count;
+                    Vector<int> sourceVector = UnsafeHelper.ReadUnaligned<Vector<int>>(ptr);
+                    Vector<int> sourceVector2 = UnsafeHelper.ReadUnaligned<Vector<int>>(ptr2);
+                    Vector<float> sourceVectorAsFloat = Vector.ConvertToSingle(sourceVector);
+                    Vector<float> sourceVectorAsFloat2 = Vector.ConvertToSingle(sourceVector2);
+                    Vector<int> resultVector = Vector.ConditionalSelect(
+                            condition: blendVector,
+                            left: Vector.LessThanOrEqual(sourceVectorAsFloat, filterVector),
+                            right: Vector.GreaterThanOrEqual(sourceVectorAsFloat, filterVector)
+                            );
+                    Vector<int> resultVector2 = Vector.ConditionalSelect(
+                            condition: blendVector,
+                            left: Vector.LessThanOrEqual(sourceVectorAsFloat2, filterVector),
+                            right: Vector.GreaterThanOrEqual(sourceVectorAsFloat2, filterVector)
+                            );
+                    UnsafeHelper.WriteUnaligned(ptr, resultVector);
+                    UnsafeHelper.WriteUnaligned(ptr2, resultVector2);
+                    return;
+                }
+                else
+                {
+                    Vector<int> sourceVector = UnsafeHelper.ReadUnaligned<Vector<int>>(ptr);
+                    Vector<float> sourceVectorAsFloat = Vector.ConvertToSingle(sourceVector);
+                    Vector<int> resultVector = Vector.ConditionalSelect(
+                            condition: blendVector,
+                            left: Vector.LessThanOrEqual(sourceVectorAsFloat, filterVector),
+                            right: Vector.GreaterThanOrEqual(sourceVectorAsFloat, filterVector)
+                            );
+                    UnsafeHelper.WriteUnaligned(ptr, resultVector);
+                    ptr += (nuint)Vector<int>.Count;
+                    length -= (nuint)Vector<int>.Count;
+                    goto TailProcess;
+                }
+            }
+
+        VectorizedLoop_Unaligned:
+            do
             {
                 Vector<int> sourceVector = UnsafeHelper.ReadUnaligned<Vector<int>>(ptr);
                 Vector<float> sourceVectorAsFloat = Vector.ConvertToSingle(sourceVector);
                 Vector<int> resultVector = Vector.ConditionalSelect(
                         condition: blendVector,
-                        left: Vector.GreaterThanOrEqual(sourceVectorAsFloat, filterVector),
-                        right: Vector.LessThanOrEqual(sourceVectorAsFloat, filterVector)
+                        left: Vector.LessThanOrEqual(sourceVectorAsFloat, filterVector),
+                        right: Vector.GreaterThanOrEqual(sourceVectorAsFloat, filterVector)
                         );
                 UnsafeHelper.WriteUnaligned(ptr, resultVector);
-                if (length > (nuint)Vector<float>.Count * 2)
-                {
-                    headRemainder = (UnsafeHelper.SizeOf<Vector<int>>() - headRemainder) / UnsafeHelper.SizeOf<int>(); // 取得數量
-                    ptr += headRemainder;
-                    length -= headRemainder;
-                    goto VectorizedLoop;
-                }
-                else
-                {
-                    ptr += (nuint)Vector<float>.Count;
-                    length -= (nuint)Vector<float>.Count;
-                    goto TailProcess;
-                }
-            }
+                ptr += (nuint)Vector<int>.Count;
+                length -= (nuint)Vector<int>.Count;
+                continue;
+            } while (length >= (nuint)Vector<int>.Count);
+            goto TailProcess;
 
         VectorizedLoop:
             do
@@ -52,8 +97,8 @@ namespace ConcreteUI.Internals
                 Vector<float> sourceVectorAsFloat = Vector.ConvertToSingle(sourceVector);
                 Vector<int> resultVector = Vector.ConditionalSelect(
                         condition: blendVector,
-                        left: Vector.GreaterThanOrEqual(sourceVectorAsFloat, filterVector),
-                        right: Vector.LessThanOrEqual(sourceVectorAsFloat, filterVector)
+                        left: Vector.LessThanOrEqual(sourceVectorAsFloat, filterVector),
+                        right: Vector.GreaterThanOrEqual(sourceVectorAsFloat, filterVector)
                         );
                 UnsafeHelper.Write(ptr, resultVector);
                 ptr += (nuint)Vector<int>.Count;
@@ -63,22 +108,12 @@ namespace ConcreteUI.Internals
             goto TailProcess;
 
         TailProcess:
-            if (length > 0)
-            {
-                ptr = ptr + length - (nuint)Vector<int>.Count;
-                Vector<int> sourceVector = UnsafeHelper.ReadUnaligned<Vector<int>>(ptr);
-                Vector<float> sourceVectorAsFloat = Vector.ConvertToSingle(sourceVector);
-                Vector<int> resultVector = Vector.ConditionalSelect(
-                        condition: blendVector,
-                        left: Vector.GreaterThanOrEqual(sourceVectorAsFloat, filterVector),
-                        right: Vector.LessThanOrEqual(sourceVectorAsFloat, filterVector)
-                        );
-                UnsafeHelper.WriteUnaligned(ptr, resultVector);
-            }
+            DebugHelper.ThrowIf(length % 4 != 0);
+            ScalarizedBulkContains((Rect*)ptr, length / 4, x, y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector<float> CreatePointVector(float x, float y)
+        private static Vector<float> CreatePointVector(float x, float y)
         {
             Vector<float> result = new Vector<float>(x);
             if (x == y)
@@ -91,7 +126,7 @@ namespace ConcreteUI.Internals
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector<int> CreateBlendVector()
+        private static Vector<int> CreateBlendVector()
         {
             Vector<int> result = Vector<int>.Zero;
             int* ptr = (int*)&result;

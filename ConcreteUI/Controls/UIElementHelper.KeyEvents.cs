@@ -7,7 +7,7 @@ namespace ConcreteUI.Controls
     {
         public static unsafe void OnKeyDownForElements<TEnumerable>(TEnumerable elements, ref KeyEventArgs args)
             where TEnumerable : IEnumerable<UIElement?>
-            => DoInteractEventForElements(elements, ref args, &OnKeyDownForElement);
+            => DispatchHandleableEvent(elements, ref args, &OnKeyDownForElement);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnKeyDownForElement(UIElement? element, ref KeyEventArgs args)
@@ -24,7 +24,7 @@ namespace ConcreteUI.Controls
 
         public static unsafe void OnKeyUpForElements<TEnumerable>(TEnumerable elements, ref KeyEventArgs args)
             where TEnumerable : IEnumerable<UIElement?>
-            => DoInteractEventForElements(elements, ref args, &OnKeyUpForElement);
+            => DispatchHandleableEvent(elements, ref args, &OnKeyUpForElement);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnKeyUpForElement(UIElement? element, ref KeyEventArgs args)
@@ -41,7 +41,7 @@ namespace ConcreteUI.Controls
 
         public static unsafe void OnCharacterInputForElements<TEnumerable>(TEnumerable elements, ref CharacterEventArgs args)
             where TEnumerable : IEnumerable<UIElement?>
-            => DoInteractEventForElements(elements, ref args, &OnCharacterInputForElement);
+            => DispatchHandleableEvent(elements, ref args, &OnCharacterInputForElement);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnCharacterInputForElement(UIElement? element, ref CharacterEventArgs args)

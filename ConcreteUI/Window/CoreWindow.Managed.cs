@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 using ConcreteUI.Controls;
@@ -15,6 +16,7 @@ using InlineMethod;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
+using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Window
 {
@@ -28,8 +30,8 @@ namespace ConcreteUI.Window
         private readonly List<WeakReference<CoreWindow>> _childrenReferenceList = new List<WeakReference<CoreWindow>>();
         private readonly CoreWindow? _parent;
         private PointU _dpi = SystemConstants.DefaultDpi;
-        private Vector2 _pointsPerPixel = Vector2.One; // 螢幕DPI / 96
-        private Vector2 _pixelsPerPoint = Vector2.One; //  96 / 螢幕DPI
+        private Vector2 _pixelsPerPoint = Vector2.One; // 螢幕DPI / 96
+        private Vector2 _pointsPerPixel = Vector2.One; //  96 / 螢幕DPI
         private BitVector64 _titleBarStates = ulong.MaxValue;
         #endregion
 
@@ -69,18 +71,18 @@ namespace ConcreteUI.Window
         public CoreWindow? Parent => _parent;
         public IThemeContext? CurrentTheme => _resourceProvider?.ThemeContext;
         public PointU Dpi => _dpi;
-        public Vector2 DpiScaleFactor => _pointsPerPixel;
-        public Vector2 WindowScaleFactor => _pixelsPerPoint;
+        public Vector2 PixelsPerPoint => _pixelsPerPoint;
+        public Vector2 PointsPerPixel => _pointsPerPixel;
 
         public new RectangleF Bounds
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (RectangleF)GraphicsUtils.ScalingRect((Rect)base.Bounds, _pixelsPerPoint);
+            get => (RectangleF)GraphicsUtils.ScalingRect((Rect)base.Bounds, _pointsPerPixel);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => base.Bounds = (Rectangle)GraphicsUtils.ScalingRect((RectF)value, _pointsPerPixel);
+            set => base.Bounds = (Rectangle)GraphicsUtils.ScalingRect((RectF)value, _pixelsPerPoint);
         }
 
-        public new RectangleF ClientBounds => (RectangleF)GraphicsUtils.ScalingRect((Rect)base.ClientBounds, _pixelsPerPoint);
+        public new RectangleF ClientBounds => (RectangleF)GraphicsUtils.ScalingRect((Rect)base.ClientBounds, _pointsPerPixel);
         public new PointF Location => Bounds.Location;
         public new SizeF Size => Bounds.Size;
         public new SizeF ClientSize => ClientBounds.Size;
@@ -249,6 +251,8 @@ namespace ConcreteUI.Window
         protected CoreWindow(CoreWindow? parent, bool passParentToUnderlyingWindow = false) : base(passParentToUnderlyingWindow ? parent : null)
         {
             _parent = parent;
+            _focusElementRefLazy = new LazyTiny<WeakReference>(static () => new WeakReference(null), LazyThreadSafetyMode.PublicationOnly);
+            _lastHitElementRefLazy = new LazyTiny<WeakReference>(static () => new WeakReference(null), LazyThreadSafetyMode.None);
             List<WeakReference<CoreWindow>> windowList = parent is null ? _rootWindowList : parent._childrenReferenceList;
             lock (windowList)
                 windowList.Add(new WeakReference<CoreWindow>(this));

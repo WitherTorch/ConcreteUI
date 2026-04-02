@@ -80,11 +80,11 @@ namespace ConcreteUI.Window
         private readonly ConcurrentDictionary<Type, UIElement> _backgroundElementDict = new ConcurrentDictionary<Type, UIElement>();
         private readonly UnwrappableList<UIElement> _overlayElementList = new UnwrappableList<UIElement>();
         private readonly UnwrappableList<UIElement> _backgroundElementList = new UnwrappableList<UIElement>();
+        private readonly LazyTiny<WeakReference> _focusElementRefLazy, _lastHitElementRefLazy;
         private readonly WindowMaterial _windowMaterial;
         private SimpleGraphicsHost? _host;
         private DirtyAreaCollector? _collector;
         private RenderingController? _controller;
-        private UIElement? _focusElement;
         private IThemeResourceProvider? _resourceProvider;
         private bool _isShown;
         private long _updateFlags = Booleans.TrueLong;
@@ -101,11 +101,17 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Properties
-#pragma warning disable CS0109
-        public new ContextMenu? ContextMenu => GetOverlayElement<ContextMenu>();
-#pragma warning restore CS0109
+
+        public ContextMenu? ContextMenu => GetOverlayElement<ContextMenu>();
+
         public ToolTip? ToolTip => GetBackgroundElement<ToolTip>();
-        public UIElement? FocusedElement => _focusElement;
+
+        public UIElement? FocusedElement
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _focusElementRefLazy.GetValueDirectly()?.Target as UIElement;
+        }
+
         public WindowMaterial WindowMaterial => _windowMaterial;
         #endregion
 
@@ -293,7 +299,7 @@ namespace ConcreteUI.Window
 
         private void OnShown2()
         {
-            Point point = PointToClient(MouseHelper.GetMousePosition());
+            PointF point = PointToClient(MouseHelper.GetMousePosition());
             OnMouseMove(new HandleableMouseEventArgs(point));
         }
 
@@ -343,18 +349,26 @@ namespace ConcreteUI.Window
 
         public IThemeResourceProvider? GetThemeResourceProvider() => InterlockedHelper.Read(ref _resourceProvider);
 
-        public Vector2 GetPointsPerPixel() => _pointsPerPixel;
+        Vector2 IRenderer.GetPixelsPerPoint() => _pixelsPerPoint;
+
+        Vector2 IRenderer.GetPointsPerPixel() => _pointsPerPixel;
 
         IEnumerable<UIElement?> IElementContainer.GetActiveElements() => GetActiveElements();
 
-        Point IElementContainer.PointToGlobal(Point point) => point;
+#if NET472_OR_GREATER
+        Point IElementContainer.PointToGlobal(UIElement element, Point point) => ElementContainerDefaults.PointToGlobal(element, point);
 
-        PointF IElementContainer.PointToGlobal(PointF point) => point;
+        PointF IElementContainer.PointToGlobal(UIElement element, PointF point) => ElementContainerDefaults.PointToGlobal(element, point);
+
+        Point IElementContainer.PointToLocal(UIElement element, Point point) => ElementContainerDefaults.PointToLocal(element, point);
+
+        PointF IElementContainer.PointToLocal(UIElement element, PointF point) => ElementContainerDefaults.PointToLocal(element, point);
+#endif
 
         bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
 
         private bool IsBackgroundOpaque() => _windowMaterial == WindowMaterial.None;
-        #endregion
+#endregion
 
         #region Abstract Methods
         protected abstract void InitializeElements();
@@ -391,13 +405,35 @@ namespace ConcreteUI.Window
 
         protected virtual void OnMouseMoveForElements(in MouseEventArgs args)
         {
-            SystemCursorType? cursorType = null;
             IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetActiveElements();
-            UIElementHelper.OnMouseMoveForElements(elements, args, ref cursorType);
-            UIElementHelper.OnMouseMoveForElements(GetBackgroundElements(), args, ref cursorType);
-            Cursor = SystemCursors.GetSystemCursor(cursorType.GetValueOrDefault(SystemCursorType.Default));
+            UIElementHelper.MouseMoveData data = default;
+            UIElementHelper.OnMouseMoveForElements(elements, args, ref data);
+            UIElementHelper.OnMouseMoveForElements(GetBackgroundElements(), args, ref data);
+            (SystemCursorType? cursorType, UIElement? hitElement) = data;
+            LazyTiny<WeakReference> lastHitElementRefLazy = _lastHitElementRefLazy;
+            if (hitElement is null)
+            {
+                WeakReference? lastHitElementRef = lastHitElementRefLazy.GetValueDirectly();
+                if (lastHitElementRef is not null)
+                {
+                    object? target = lastHitElementRef.Target;
+                    if (target is UIElement lastHitElement && target is IMouseMoveHandler handler)
+                        handler.OnMouseMove(new MouseEventArgs(lastHitElement.PointToLocal(args.Location), args.Buttons, args.Delta));
+                    lastHitElementRef.Target = null;
+                }
+            }
+            else
+            {
+                WeakReference lastHitElementRef = lastHitElementRefLazy.Value;
+                object? target = lastHitElementRef.Target;
+                if (!ReferenceEquals(hitElement, target) && target is UIElement lastHitElement && target is IMouseMoveHandler handler)
+                    handler.OnMouseMove(new MouseEventArgs(lastHitElement.PointToLocal(args.Location), args.Buttons, args.Delta));
+                lastHitElementRef.Target = hitElement;
+            }
+
+            Cursor = SystemCursors.GetSystemCursor(cursorType ?? SystemCursorType.Default);
         }
 
         protected virtual void OnMouseUpForElements(in MouseEventArgs args)
@@ -464,7 +500,7 @@ namespace ConcreteUI.Window
         {
             if (_windowMaterial == WindowMaterial.Integrated)
             {
-                _pageRect = RenderingHelper.CeilingInPixel(RectF.FromXYWH(PointF.Empty, ClientSize), _pointsPerPixel);
+                _pageRect = RenderingHelper.CeilingInPixel(RectF.FromXYWH(PointF.Empty, ClientSize), _pixelsPerPoint);
             }
             else
             {
@@ -472,7 +508,7 @@ namespace ConcreteUI.Window
                 if (handle == IntPtr.Zero)
                     return;
 
-                Vector2 pixelsPerPoint = _pixelsPerPoint;
+                Vector2 pixelsPerPoint = _pointsPerPixel;
                 float borderWidthInPointsX, borderWidthInPointsY;
                 float drawingOffsetX, drawingOffsetY;
                 if (User32.IsZoomed(handle))
@@ -490,7 +526,7 @@ namespace ConcreteUI.Window
                 }
                 else
                 {
-                    Vector2 pointsPerPixel = _pointsPerPixel;
+                    Vector2 pointsPerPixel = _pixelsPerPoint;
                     float borderWidthInPixels = _borderWidthInPixels;
                     borderWidthInPointsX = borderWidthInPixels * RenderingHelper.GetDefaultBorderWidth(pointsPerPixel.X);
                     borderWidthInPointsY = borderWidthInPixels * RenderingHelper.GetDefaultBorderWidth(pointsPerPixel.Y);
@@ -510,7 +546,7 @@ namespace ConcreteUI.Window
                     left: drawingOffsetX + borderWidthInPointsX,
                     top: titleBarRect.Bottom + 1,
                     right: windowSize.Width - drawingOffsetX - borderWidthInPointsX,
-                    bottom: windowSize.Height - borderWidthInPointsY), _pointsPerPixel);
+                    bottom: windowSize.Height - borderWidthInPointsY), _pixelsPerPoint);
             }
             if (callRecalculatePageLayout && _pageRect.IsValid)
                 RecalculatePageLayout(_pageRect);
@@ -551,7 +587,7 @@ namespace ConcreteUI.Window
                     host.ResizeTemporarily(size);
                 else
                     host.Resize(size);
-                RecalculateLayout(GraphicsUtils.ScalingSize(size, _pixelsPerPoint), true);
+                RecalculateLayout(GraphicsUtils.ScalingSize(size, _pointsPerPixel), true);
             }
             D2D1DeviceContext? deviceContext = host.GetDeviceContext();
             if (deviceContext is null || deviceContext.IsDisposed)
@@ -583,7 +619,7 @@ namespace ConcreteUI.Window
 
         private bool RenderCore_Normal(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector)
         {
-            Vector2 pointsPerPixel = _pointsPerPixel;
+            Vector2 pointsPerPixel = _pixelsPerPoint;
 
             RenderTitle(deviceContext, collector, force: false);
             RectF pageRect = _pageRect;
@@ -616,7 +652,7 @@ namespace ConcreteUI.Window
                 RenderPageBackground(deviceContext, collector, pageRect);
                 RenderOnceContent(deviceContext, collector, pageRect);
             }
-            Vector2 pointPerPixel = _pointsPerPixel;
+            Vector2 pointPerPixel = _pixelsPerPoint;
             UIElementHelper.RenderElements(deviceContext, collector, pointPerPixel, GetActiveElements(), ignoreNeedRefresh: force);
             UIElementHelper.RenderElements(deviceContext, collector, pointPerPixel, GetOverlayElements(), ignoreNeedRefresh: force || collector.HasAnyDirtyArea());
         }
@@ -865,21 +901,23 @@ namespace ConcreteUI.Window
 
         public void ChangeFocusElement(UIElement element)
         {
-            if (_focusElement == element)
+            WeakReference reference = _focusElementRefLazy.Value;
+            if (ReferenceEquals(reference.Target, element))
                 return;
-            _focusElement = element;
+            reference.Target = element;
             FocusElementChanged?.Invoke(this, element);
         }
 
         protected void ClearFocusElement()
         {
-            _focusElement = null;
+            _focusElementRefLazy.GetValueDirectly()?.Target = null;
             FocusElementChanged?.Invoke(this, null);
         }
 
         public void ClearFocusElement(UIElement elementForValidation)
         {
-            if (_focusElement != elementForValidation)
+            WeakReference? reference = _focusElementRefLazy.GetValueDirectly();
+            if (reference is null || !ReferenceEquals(reference.Target, elementForValidation))
                 return;
             ClearFocusElement();
         }
@@ -998,11 +1036,26 @@ namespace ConcreteUI.Window
             return null;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void OpenContextMenu(UIElement elementRelativeTo, ContextMenu.ContextMenuItem[] items, Point location)
+        {
+            if (!items.HasAnyItem())
+                return;
+
+            OpenContextMenuCore(items, elementRelativeTo.PointToGlobal(location));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void OpenContextMenu(ContextMenu.ContextMenuItem[] items, Point location)
         {
             if (!items.HasAnyItem())
                 return;
 
+            OpenContextMenuCore(items, location);
+        }
+
+        private void OpenContextMenuCore(ContextMenu.ContextMenuItem[] items, Point location)
+        {
             ContextMenu contextMenu = new ContextMenu(this, items);
             ChangeOverlayElement(contextMenu)?.Dispose();
             RectF pageRect = _pageRect;
@@ -1019,7 +1072,7 @@ namespace ConcreteUI.Window
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CloseOverlayElement(Type elementType, UIElement elementForValidate)
-            => (ChangeOverlayElement(elementType, null, _element => Equals(_element, elementForValidate)) as IDisposable)?.Dispose();
+            => (ChangeOverlayElement(elementType, null, _element => ReferenceEquals(_element, elementForValidate)) as IDisposable)?.Dispose();
 
         protected void ApplyTheme(IThemeResourceProvider provider)
         {

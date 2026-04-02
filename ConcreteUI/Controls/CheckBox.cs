@@ -22,7 +22,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class CheckBox : DisposableUIElementBase, IMouseInteractHandler
+    public sealed partial class CheckBox : DisposableUIElementBase, IMouseInteractHandler, IMouseMoveHandler
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -243,7 +243,7 @@ namespace ConcreteUI.Controls
         {
             ButtonTriState oldButtonState = _buttonState;
             ButtonTriState newButtonState;
-            if (Bounds.Contains(args.Location))
+            if (args.IsInSpecificSize(Size))
                 newButtonState = _isPressed ? ButtonTriState.Pressed : ButtonTriState.Hovered;
             else
                 newButtonState = ButtonTriState.None;

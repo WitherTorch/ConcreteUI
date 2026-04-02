@@ -1,4 +1,4 @@
-﻿namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls
 {
     public interface IMouseMoveHandler
     {

@@ -22,7 +22,7 @@ namespace ConcreteUI.Controls
         #endregion
 
         #region Properties
-        public SystemCursorType? PredicatedCursor => _cursorType;
+        public SystemCursorType? PredicatedCursor => SystemCursorType.IBeam;
 
         public TextAlignment Alignment
         {

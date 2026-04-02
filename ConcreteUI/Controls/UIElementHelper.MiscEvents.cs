@@ -7,7 +7,7 @@ namespace ConcreteUI.Controls
     {
         public static unsafe void OnDpiChangedForElements<TEnumerable>(TEnumerable elements, in DpiChangedEventArgs args)
             where TEnumerable : IEnumerable<UIElement?>
-            => DoNotifyEventForElements(elements, in args, &OnDpiChangedForElement);
+            => DispatchReadOnlyEvent(elements, in args, &OnDpiChangedForElement);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void OnDpiChangedForElement(UIElement? element, in DpiChangedEventArgs args)

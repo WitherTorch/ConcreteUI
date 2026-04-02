@@ -1,4 +1,4 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -75,5 +75,25 @@ namespace ConcreteUI.Controls
             => new HandleableMouseEventArgs(UnsafeHelper.As<MouseEventArgs, MouseEventData>(ref UnsafeHelper.AsRefIn(in args)));
 
         public void Handle() => _handled = true;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsInSpecificSize(Size size) => IsInSpecificSize(size.Width, size.Height);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsInSpecificSize(int width, int height)
+        {
+            PointF location = Location;
+            return location.X >= 0 && location.Y >= 0 && location.X < width && location.Y < height;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsInSpecificSize(SizeF size) => IsInSpecificSize(size.Width, size.Height);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsInSpecificSize(float width, float height)
+        {
+            PointF location = Location;
+            return location.X >= 0 && location.Y >= 0 && location.X < width && location.Y < height;
+        }
     }
 }

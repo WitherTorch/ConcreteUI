@@ -85,19 +85,15 @@ namespace ConcreteUI.Internals
         public static void PumpExceptions()
         {
             List<Exception> exceptionList = _exceptionList;
-            ArrayPool<Exception> pool;
-            FixedArrayList<Exception> shadowList;
+            PooledList<Exception> shadowList;
             int count;
             lock (exceptionList)
             {
                 count = exceptionList.Count;
                 if (count <= 0)
                     return;
-                pool = ArrayPool<Exception>.Shared;
-                Exception[] buffer = pool.Rent(count);
-                exceptionList.CopyTo(buffer);
-                exceptionList.Clear();
-                shadowList = new FixedArrayList<Exception>(buffer);
+                shadowList = new PooledList<Exception>(count);
+                shadowList.AddRange(exceptionList);
             }
             try
             {
@@ -112,7 +108,7 @@ namespace ConcreteUI.Internals
             }
             finally
             {
-                pool.Return(shadowList.AsArray());
+                shadowList.Dispose();
             }
         }
 

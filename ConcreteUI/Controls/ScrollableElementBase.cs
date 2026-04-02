@@ -20,7 +20,8 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public abstract partial class ScrollableElementBase : DisposableUIElementBase, IMouseInteractHandler, IMouseMoveHandler, IMouseScrollHandler
+    public abstract partial class ScrollableElementBase : DisposableUIElementBase,
+        IMouseInteractHandler, IMouseMoveHandler, IGlobalMouseMoveHandler, IMouseScrollHandler
     {
         protected const string DefaultPrefixForScrollBar = "app.scrollBar";
 
@@ -180,19 +181,10 @@ namespace ConcreteUI.Controls
             {
                 if (recalcScrollBar)
                     RecalculateScrollBarButton();
-                Rect scrollBarBoundsRaw = _scrollBarBounds;
-                RectF scrollButtonBoundsRaw = _scrollBarScrollButtonBounds;
-                RectF upButtonBoundsRaw = _scrollBarUpButtonBounds;
-                RectF downButtonBoundsRaw = _scrollBarDownButtonBounds;
-
-                RectF scrollBarBounds = new RectF(scrollBarBoundsRaw.Left - bounds.Left, scrollBarBoundsRaw.Top - bounds.Top,
-                    scrollBarBoundsRaw.Right - bounds.Left, scrollBarBoundsRaw.Bottom - bounds.Top);
-                RectF scrollButtonBounds = new RectF(scrollButtonBoundsRaw.Left - bounds.Left, scrollButtonBoundsRaw.Top - bounds.Top,
-                    scrollButtonBoundsRaw.Right - bounds.Left, scrollButtonBoundsRaw.Bottom - bounds.Top);
-                RectF upButtonBounds = new RectF(upButtonBoundsRaw.Left - bounds.Left, upButtonBoundsRaw.Top - bounds.Top,
-                    upButtonBoundsRaw.Right - bounds.Left, upButtonBoundsRaw.Bottom - bounds.Top);
-                RectF downButtonBounds = new RectF(downButtonBoundsRaw.Left - bounds.Left, downButtonBoundsRaw.Top - bounds.Top,
-                    downButtonBoundsRaw.Right - bounds.Left, downButtonBoundsRaw.Bottom - bounds.Top);
+                RectF scrollBarBounds = (RectF)_scrollBarBounds;
+                RectF scrollButtonBounds = _scrollBarScrollButtonBounds;
+                RectF upButtonBounds = _scrollBarUpButtonBounds;
+                RectF downButtonBounds = _scrollBarDownButtonBounds;
 
                 if (scrollBarBounds.IsValid && scrollButtonBounds.IsValid && upButtonBounds.IsValid && downButtonBounds.IsValid)
                 {
@@ -317,9 +309,8 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RecalculateScrollBarButton()
         {
-            Rect bounds = Bounds;
-            Rect contentBounds = _contentBounds;
-            Rect scrollBarBounds = new Rect(contentBounds.Right, contentBounds.Top, contentBounds.Right + UIConstantsPrivate.ScrollBarWidth, contentBounds.Bottom);
+            Size contentSize = _contentBounds.Size;
+            Rect scrollBarBounds = Rect.FromXYWH(contentSize.Width, 0, UIConstantsPrivate.ScrollBarWidth, contentSize.Height);
             int baseX = scrollBarBounds.X;
             _scrollBarUpButtonBounds = RectF.FromXYWH(baseX, scrollBarBounds.Y, UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth);
             _scrollBarDownButtonBounds = RectF.FromXYWH(baseX, scrollBarBounds.Bottom - UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth);
@@ -327,8 +318,8 @@ namespace ConcreteUI.Controls
             int surfaceHeight = _surfaceSize.Height;
             if (surfaceHeight == 0) surfaceHeight = 1;
             double surfaceHeightPerBarHeight = scrollBarMaxHeight < surfaceHeight ? scrollBarMaxHeight * 1.0 / surfaceHeight : 1.0;
-            float height = MathHelper.Max((float)(bounds.Height * surfaceHeightPerBarHeight), 10.0f);
-            surfaceHeightPerBarHeight = (scrollBarMaxHeight - height) * 1.0 / (surfaceHeight - bounds.Height);
+            float height = MathHelper.Max((float)(contentSize.Height * surfaceHeightPerBarHeight), 10.0f);
+            surfaceHeightPerBarHeight = (scrollBarMaxHeight - height) * 1.0 / (surfaceHeight - contentSize.Height);
             float Y = _scrollBarUpButtonBounds.Bottom + (float)(_viewportPoint.Y * surfaceHeightPerBarHeight);
             _scrollBarScrollButtonBounds = RectF.FromXYWH(baseX, Y, UIConstantsPrivate.ScrollBarWidth, height);
             _scrollBarBounds = scrollBarBounds;
@@ -393,33 +384,32 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public virtual void OnMouseScroll(ref HandleableMouseEventArgs args)
-        {
-            if (!_enabled || !_hasScrollBar || _scrollButtonState == ButtonTriState.Pressed)
-                return;
-            args.Handle();
-            Scrolling(-args.Delta);
-            OnMouseMove(args);
-        }
-
         private void RepeatingTimer_Tick(object? state) => _repeatingAction?.Invoke();
 
-        public virtual void OnMouseDown(ref HandleableMouseEventArgs args)
+        void IMouseInteractHandler.OnMouseDown(ref HandleableMouseEventArgs args) => OnMouseDown(ref args);
+        void IMouseInteractHandler.OnMouseUp(in MouseEventArgs args) => OnMouseUp(in args);
+        void IMouseMoveHandler.OnMouseMove(in MouseEventArgs args) => OnMouseMove(in args);
+        void IMouseScrollHandler.OnMouseScroll(ref HandleableMouseEventArgs args) => OnMouseScroll(ref args);
+        void IGlobalMouseMoveHandler.OnMouseMoveGlobally(in MouseEventArgs args) => OnMouseMoveGlobally(in args);
+
+        protected virtual void OnMouseDown(ref HandleableMouseEventArgs args)
         {
             if (!_enabled || !_hasScrollBar || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
 
-            if (_scrollBarScrollButtonBounds.Contains(args.Location))
+            PointF location = args.Location;
+
+            if (_scrollBarScrollButtonBounds.Contains(location))
             {
                 args.Handle();
 
                 _scrollButtonState = ButtonTriState.Pressed;
-                _pinY = args.Y;
+                _pinY = Y + args.Y;
                 Update(ScrollableElementUpdateFlags.ScrollBar);
                 return;
             }
 
-            if (_scrollBarUpButtonBounds.Contains(args.Location))
+            if (_scrollBarUpButtonBounds.Contains(location))
             {
                 args.Handle();
 
@@ -431,7 +421,7 @@ namespace ConcreteUI.Controls
                 return;
             }
 
-            if (_scrollBarDownButtonBounds.Contains(args.Location))
+            if (_scrollBarDownButtonBounds.Contains(location))
             {
                 args.Handle();
 
@@ -444,7 +434,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public virtual void OnMouseUp(in MouseEventArgs args)
+        protected virtual void OnMouseUp(in MouseEventArgs args)
         {
             if (_enabled && _hasScrollBar)
             {
@@ -474,71 +464,88 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public virtual void OnMouseMove(in MouseEventArgs args)
+        protected virtual void OnMouseMove(in MouseEventArgs args)
         {
-            if (!_enabled) return;
-            if (_hasScrollBar)
+            if (!_enabled || !_hasScrollBar)
+                return;
+            bool updateScrollBar = false;
+            if (_scrollButtonState != ButtonTriState.Pressed)
             {
-                bool updateScrollBar = false;
-                if (_scrollButtonState == ButtonTriState.Pressed)
+                ButtonTriState newState;
+                if (_scrollBarScrollButtonBounds.Contains(args.Location))
                 {
-                    MoveScrollBarButtonY(MathI.Ceiling(args.Y - _pinY));
-                    _pinY = args.Y;
+                    newState = ButtonTriState.Hovered;
                 }
                 else
                 {
-                    ButtonTriState newState;
-                    if (_scrollBarScrollButtonBounds.Contains(args.Location))
-                    {
-                        newState = ButtonTriState.Hovered;
-                    }
-                    else
-                    {
-                        newState = ButtonTriState.None;
-                    }
-                    if (_scrollButtonState != newState)
-                    {
-                        _scrollButtonState = newState;
-                        updateScrollBar = true;
-                    }
+                    newState = ButtonTriState.None;
                 }
-                if (_scrollUpButtonState != ButtonTriState.Pressed)
+                if (_scrollButtonState != newState)
                 {
-                    ButtonTriState newState;
-                    if (_scrollBarUpButtonBounds.Contains(args.Location))
-                    {
-                        newState = ButtonTriState.Hovered;
-                    }
-                    else
-                    {
-                        newState = ButtonTriState.None;
-                    }
-                    if (_scrollUpButtonState != newState)
-                    {
-                        _scrollUpButtonState = newState;
-                        updateScrollBar = true;
-                    }
+                    _scrollButtonState = newState;
+                    updateScrollBar = true;
                 }
-                if (_scrollDownButtonState != ButtonTriState.Pressed)
-                {
-                    ButtonTriState newState;
-                    if (_scrollBarDownButtonBounds.Contains(args.Location))
-                    {
-                        newState = ButtonTriState.Hovered;
-                    }
-                    else
-                    {
-                        newState = ButtonTriState.None;
-                    }
-                    if (_scrollDownButtonState != newState)
-                    {
-                        _scrollDownButtonState = newState;
-                        updateScrollBar = true;
-                    }
-                }
-                if (updateScrollBar)
-                    Update(ScrollableElementUpdateFlags.ScrollBar);
             }
+            if (_scrollUpButtonState != ButtonTriState.Pressed)
+            {
+                ButtonTriState newState;
+                if (_scrollBarUpButtonBounds.Contains(args.Location))
+                {
+                    newState = ButtonTriState.Hovered;
+                }
+                else
+                {
+                    newState = ButtonTriState.None;
+                }
+                if (_scrollUpButtonState != newState)
+                {
+                    _scrollUpButtonState = newState;
+                    updateScrollBar = true;
+                }
+            }
+            if (_scrollDownButtonState != ButtonTriState.Pressed)
+            {
+                ButtonTriState newState;
+                if (_scrollBarDownButtonBounds.Contains(args.Location))
+                {
+                    newState = ButtonTriState.Hovered;
+                }
+                else
+                {
+                    newState = ButtonTriState.None;
+                }
+                if (_scrollDownButtonState != newState)
+                {
+                    _scrollDownButtonState = newState;
+                    updateScrollBar = true;
+                }
+            }
+            if (updateScrollBar)
+                Update(ScrollableElementUpdateFlags.ScrollBar);
+        }
+
+        protected virtual void OnMouseMoveGlobally(in MouseEventArgs args)
+        {
+            if (!_enabled || !_hasScrollBar || _scrollButtonState != ButtonTriState.Pressed)
+                return;
+            float currentY = args.Y;
+            float oldY = ReferenceHelper.Exchange(ref _pinY, currentY);
+            MoveScrollBarButtonY(MathI.Ceiling(currentY - oldY));
+        }
+
+        protected virtual void OnMouseScroll(ref HandleableMouseEventArgs args)
+        {
+            if (!_enabled || !_hasScrollBar || _scrollButtonState == ButtonTriState.Pressed)
+                return;
+            args.Handle();
+            Scrolling(-args.Delta);
+            CallMouseMove(args);
+        }
+
+        protected virtual void CallMouseMove(in MouseEventArgs args)
+        {
+            OnMouseMoveGlobally(new MouseEventArgs(PointToGlobal(args.Location), args.Buttons, args.Delta));
+            OnMouseMove(in args);
         }
 
         protected override void DisposeCore(bool disposing)

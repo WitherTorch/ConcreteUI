@@ -170,7 +170,7 @@ namespace ConcreteUI.Window
 
                         Rect rect = UnsafeHelper.ReadUnaligned<Rect>((void*)lParam);
                         Size oldSize = rect.Size;
-                        Size newSize = GraphicsUtils.AdjustSize(oldSize, minimumSize, maximumSize, _pointsPerPixel);
+                        Size newSize = GraphicsUtils.AdjustSize(oldSize, minimumSize, maximumSize, _pixelsPerPoint);
                         if (newSize == oldSize)
                             goto default;
 
@@ -221,7 +221,7 @@ namespace ConcreteUI.Window
 
                         (ushort width, ushort height) = lParam.GetWords();
                         Size oldSize = new Size(width, height);
-                        Size newSize = GraphicsUtils.AdjustSize(oldSize, minimumSize, maximumSize, _pointsPerPixel);
+                        Size newSize = GraphicsUtils.AdjustSize(oldSize, minimumSize, maximumSize, _pixelsPerPoint);
 
                         if (oldSize == newSize)
                             goto default;
@@ -299,7 +299,7 @@ namespace ConcreteUI.Window
                             User32.SetCapture(hwnd);
                         }
                         HandleableMouseEventArgs args = new HandleableMouseEventArgs(
-                            point: GraphicsUtils.ScalingPointAndConvert(point, _pixelsPerPoint),
+                            point: GraphicsUtils.ScalingPointAndConvert(point, _pointsPerPixel),
                             buttons: buttons);
                         OnMouseDown(ref args);
                         if (args.Handled)
@@ -325,7 +325,7 @@ namespace ConcreteUI.Window
                         if (buttons == MouseButtons.None)
                             goto default;
                         MouseEventArgs args = new MouseEventArgs(
-                            point: GraphicsUtils.ScalingPointAndConvert(point, _pixelsPerPoint),
+                            point: GraphicsUtils.ScalingPointAndConvert(point, _pointsPerPixel),
                             buttons: buttons);
                         OnMouseUp(in args);
                         goto default;
@@ -333,54 +333,56 @@ namespace ConcreteUI.Window
                 #endregion
                 #region Rendering
                 case WindowMessage.NCMouseMove:
-                    nint hitTest = wParam;
-                    if (_beforeHitTest != hitTest)
                     {
-                        switch ((HitTestValue)_beforeHitTest)
+                        nint hitTest = wParam;
+                        if (_beforeHitTest != hitTest)
                         {
-                            case HitTestValue.CloseButton:
-                                _titleBarButtonStatus[2] = false;
-                                _titleBarButtonChangedStatus[2] = true;
-                                break;
-                            case HitTestValue.MaximizeButton:
-                                _titleBarButtonStatus[1] = false;
-                                _titleBarButtonChangedStatus[1] = true;
-                                break;
-                            case HitTestValue.MinimizeButton:
-                                _titleBarButtonStatus[0] = false;
-                                _titleBarButtonChangedStatus[0] = true;
-                                break;
-                            case HitTestValue.Client:
-                                _titleBarButtonChangedStatus |= _titleBarButtonStatus.Exchange(0UL);
-                                break;
+                            switch ((HitTestValue)_beforeHitTest)
+                            {
+                                case HitTestValue.CloseButton:
+                                    _titleBarButtonStatus[2] = false;
+                                    _titleBarButtonChangedStatus[2] = true;
+                                    break;
+                                case HitTestValue.MaximizeButton:
+                                    _titleBarButtonStatus[1] = false;
+                                    _titleBarButtonChangedStatus[1] = true;
+                                    break;
+                                case HitTestValue.MinimizeButton:
+                                    _titleBarButtonStatus[0] = false;
+                                    _titleBarButtonChangedStatus[0] = true;
+                                    break;
+                                case HitTestValue.Client:
+                                    _titleBarButtonChangedStatus |= _titleBarButtonStatus.Exchange(0UL);
+                                    break;
+                            }
+                            _beforeHitTest = hitTest;
+                            switch ((HitTestValue)hitTest)
+                            {
+                                case HitTestValue.CloseButton:
+                                    _titleBarButtonStatus[2] = true;
+                                    _titleBarButtonChangedStatus[2] = true;
+                                    break;
+                                case HitTestValue.MaximizeButton:
+                                    _titleBarButtonStatus[1] = true;
+                                    _titleBarButtonChangedStatus[1] = true;
+                                    break;
+                                case HitTestValue.MinimizeButton:
+                                    _titleBarButtonStatus[0] = true;
+                                    _titleBarButtonChangedStatus[0] = true;
+                                    break;
+                            }
+                            Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
+                            OnMouseMove(new HandleableMouseEventArgs(
+                                point: PointToClientCore(hwnd, point)));
+                            Refresh();
                         }
-                        _beforeHitTest = hitTest;
-                        switch ((HitTestValue)hitTest)
-                        {
-                            case HitTestValue.CloseButton:
-                                _titleBarButtonStatus[2] = true;
-                                _titleBarButtonChangedStatus[2] = true;
-                                break;
-                            case HitTestValue.MaximizeButton:
-                                _titleBarButtonStatus[1] = true;
-                                _titleBarButtonChangedStatus[1] = true;
-                                break;
-                            case HitTestValue.MinimizeButton:
-                                _titleBarButtonStatus[0] = true;
-                                _titleBarButtonChangedStatus[0] = true;
-                                break;
-                        }
-                        Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
-                        OnMouseMove(new HandleableMouseEventArgs(
-                            point: PointToClientCore(hwnd, point)));
-                        _controller?.RequestUpdate(false);
                     }
                     goto default;
                 case WindowMessage.MouseMove:
                     {
                         Point point = UnsafeHelper.As<Words, Point16>(lParam.GetWords()).ToPoint32();
                         OnMouseMove(new HandleableMouseEventArgs(
-                            point: GraphicsUtils.ScalingPoint(point, _pixelsPerPoint)));
+                            point: GraphicsUtils.ScalingPoint(point, _pointsPerPixel)));
                         if (_beforeHitTest != (nint)HitTestValue.Client)
                         {
                             switch ((HitTestValue)_beforeHitTest)
@@ -399,17 +401,8 @@ namespace ConcreteUI.Window
                                     break;
                             }
                             _beforeHitTest = (nint)HitTestValue.Client;
-                            _controller?.RequestUpdate(false);
+                            Refresh();
                         }
-                    }
-                    goto default;
-                case WindowMessage.MouseLeave:
-                case WindowMessage.NCMouseLeave:
-                    {
-                        _beforeHitTest = (nint)HitTestValue.NoWhere;
-                        _titleBarButtonStatus.Reset();
-                        _titleBarButtonChangedStatus.Set();
-                        _controller?.RequestUpdate(false);
                     }
                     goto default;
                 case WindowMessage.Paint:
@@ -463,7 +456,7 @@ namespace ConcreteUI.Window
                                     Rect clientRect = lpParams->rcNewWindow;
                                     int metrics_paddedBorder = User32.GetSystemMetrics(SystemMetric.SM_CXPADDEDBORDER);
                                     int yBorder = User32.GetSystemMetrics(SystemMetric.SM_CYFRAME) + metrics_paddedBorder;
-                                    float factorY = _pointsPerPixel.Y;
+                                    float factorY = _pixelsPerPoint.Y;
                                     clientRect.Bottom -= yBorder + (factorY == 1.0f ? 1 : MathI.Ceiling(1 * factorY));
                                     lpParams->rcNewWindow = clientRect;
                                 }
@@ -581,7 +574,7 @@ namespace ConcreteUI.Window
                     }
                 }
             }
-            return CustomHitTest(GraphicsUtils.ScalingPoint(point, _pixelsPerPoint));
+            return CustomHitTest(GraphicsUtils.ScalingPoint(point, _pointsPerPixel));
         }
         #endregion
 
@@ -668,8 +661,8 @@ namespace ConcreteUI.Window
             Vector2 pixelsPerPoint = new Vector2(pixelsPerPointX, pixelsPerPointY);
             PointU dpi = new PointU(dpiX, dpiX);
 
-            _pointsPerPixel = pointsPerPixel;
-            _pixelsPerPoint = pixelsPerPoint;
+            _pixelsPerPoint = pointsPerPixel;
+            _pointsPerPixel = pixelsPerPoint;
             _dpi = dpi;
 
             ChangeDpi_RenderingPart(dpi, pointsPerPixel, pixelsPerPoint);
@@ -682,8 +675,6 @@ namespace ConcreteUI.Window
             switch (dpi)
             {
                 case 0:
-                    dpi = 96;
-                    goto Normal;
                 case 96:
                     goto Normal;
                 default:
@@ -691,8 +682,8 @@ namespace ConcreteUI.Window
             }
 
         Normal:
-            pixelsPerPoint = 1.0f;
             pointsPerPixel = 1.0f;
+            pixelsPerPoint = 1.0f;
             return;
 
         NeedAmplified:
@@ -812,7 +803,7 @@ namespace ConcreteUI.Window
                             WindowPositionFlags.SwapWithFrameChanged | WindowPositionFlags.SwapWithNoZOrder);
 
             UpdateDpi(handle);
-            (float factorX, float factorY) = _pointsPerPixel;
+            (float factorX, float factorY) = _pixelsPerPoint;
             if (factorX == 1.0f && factorY == 1.0f)
                 goto InitRenderObj;
 
@@ -846,7 +837,7 @@ namespace ConcreteUI.Window
             if (handle == IntPtr.Zero)
                 return Point.Empty;
 
-            return GraphicsUtils.ScalingPointAndConvert(PointToClientCore(handle, point), _pixelsPerPoint);
+            return GraphicsUtils.ScalingPointAndConvert(PointToClientCore(handle, point), _pointsPerPixel);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -875,7 +866,7 @@ namespace ConcreteUI.Window
             if (handle == IntPtr.Zero)
                 return Point.Empty;
 
-            return GraphicsUtils.ScalingPointAndConvert(PointToClientCore(handle, point), _pointsPerPixel);
+            return GraphicsUtils.ScalingPointAndConvert(PointToClientCore(handle, point), _pixelsPerPoint);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

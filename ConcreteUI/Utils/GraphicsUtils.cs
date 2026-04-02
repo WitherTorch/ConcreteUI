@@ -55,15 +55,15 @@ namespace ConcreteUI.Utils
             => new RectF(MathF.Round(rawRect.Left), MathF.Round(rawRect.Top), MathF.Round(rawRect.Right), MathF.Round(rawRect.Bottom));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Point AdjustPoint(in PointF rawPoint)
+        public static Point AdjustPoint(PointF rawPoint)
             => new Point(MathI.Floor(rawPoint.X), MathI.Floor(rawPoint.Y));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PointF AdjustPointF(in PointF rawPoint)
+        public static PointF AdjustPointF(PointF rawPoint)
             => new PointF(MathF.Floor(rawPoint.X), MathF.Floor(rawPoint.Y));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PointF AdjustPointF2(in PointF rawPoint)
+        public static PointF AdjustPointF2(PointF rawPoint)
             => new PointF(MathF.Floor(rawPoint.X), MathF.Ceiling(rawPoint.Y));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -85,7 +85,7 @@ namespace ConcreteUI.Utils
         {
             (float factorX, float factorY) = scaleFactor;
             return new Point(
-                MathI.Round(original.X * factorX, MidpointRounding.AwayFromZero), 
+                MathI.Round(original.X * factorX, MidpointRounding.AwayFromZero),
                 MathI.Round(original.Y * factorY, MidpointRounding.AwayFromZero)
                 );
         }
@@ -189,6 +189,18 @@ namespace ConcreteUI.Utils
         private static Size Clamp(Size original, Size min, Size max)
             => new Size(width: MathHelper.Clamp(original.Width, min.Width, max.Width),
                 height: MathHelper.Clamp(original.Height, min.Height, max.Height));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Point PointToGlobal(Point location, Point point) => new Point(location.X + point.X, location.Y + point.Y);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PointF PointToGlobal(PointF location, PointF point) => new PointF(location.X + point.X, location.Y + point.Y);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Point PointToLocal(Point location, Point point) => new Point(point.X - location.X, point.Y - location.Y);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PointF PointToLocal(Point location, PointF point) => new PointF(point.X - location.X, point.Y - location.Y);
 
         [Inline(InlineBehavior.Remove)]
         private static float MeasureTextWidthCore(string text, DWriteTextFormat format)

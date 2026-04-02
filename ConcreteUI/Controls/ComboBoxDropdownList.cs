@@ -21,7 +21,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IMouseNotifyEvents
+    public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGlobalMouseInteractHandler
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -41,7 +41,7 @@ namespace ConcreteUI.Controls
         private DWriteTextLayout[]? _layouts;
         private float _itemHeight;
         private int _selectedIndex, _maxViewCount;
-        private bool _isClicking, _isClickingClient, _isFirstTimeClick;
+        private bool _isClicking, _isClickingClient, _isFirstTimeClick, _prepareToClose;
 
         public ComboBoxDropdownList(ComboBox parent, CoreWindow window) : base(window, "app.comboBox")
         {
@@ -91,9 +91,9 @@ namespace ConcreteUI.Controls
             }
             DisposeHelper.SwapDispose(ref _layouts, layouts);
 
-            Vector2 pointsPerPixel = _window.GetPointsPerPixel();
-            float borderWidth = RenderingHelper.GetDefaultBorderWidth(pointsPerPixel.X);
-            itemHeight = RenderingHelper.CeilingInPixel(itemHeight, pointsPerPixel.Y) + borderWidth * 2;
+            Vector2 pixelsPerPoint = _window.PixelsPerPoint;
+            float borderWidth = RenderingHelper.GetDefaultBorderWidth(pixelsPerPoint.X);
+            itemHeight = RenderingHelper.CeilingInPixel(itemHeight, pixelsPerPoint.Y) + borderWidth * 2;
             _itemHeight = itemHeight;
 
             int maxViewCount = MathHelper.Min(parent.DropdownListVisibleCount, count);
@@ -167,25 +167,14 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        public void OnMouseDown(in MouseEventArgs args)
+        void IGlobalMouseInteractHandler.OnMouseDownGlobally(in MouseEventArgs args)
         {
             _isClicking = false;
             _isClickingClient = false;
         }
 
-        public override void OnMouseDown(ref HandleableMouseEventArgs args)
+        void IGlobalMouseInteractHandler.OnMouseUpGlobally(in MouseEventArgs args)
         {
-            base.OnMouseDown(ref args);
-            if (args.Handled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
-                return;
-            args.Handle();
-            _isClicking = true;
-            _isClickingClient = ContentBounds.Contains(args.Location);
-        }
-
-        public override void OnMouseUp(in MouseEventArgs args)
-        {
-            base.OnMouseUp(in args);
             if (!args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
             _isClickingClient = false;
@@ -202,26 +191,41 @@ namespace ConcreteUI.Controls
                 int selectedIndex = _selectedIndex;
                 if (selectedIndex >= 0)
                 {
-                    Close();
+                    _prepareToClose = true;
                     ItemClicked?.Invoke(this, selectedIndex);
                     return;
                 }
             }
             else if (!bounds.Contains(args.X, args.Y))
             {
-                Close();
+                _prepareToClose = true;
                 return;
             }
             Update();
         }
 
-        public override void OnMouseMove(in MouseEventArgs args)
+        protected override void OnMouseDown(ref HandleableMouseEventArgs args)
         {
-            base.OnMouseMove(args);
-            Rect bounds = ContentBounds;
-            if (bounds.Contains(args.Location) && (!_isClicking || _isClickingClient))
+            base.OnMouseDown(ref args);
+            if (args.Handled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+                return;
+            args.Handle();
+            _isClicking = true;
+            _isClickingClient = args.IsInSpecificSize(ContentBounds.Size);
+        }
+
+        protected override void OnMouseUp(in MouseEventArgs args)
+        {
+            base.OnMouseUp(args);
+            if (_prepareToClose)
+                Close();
+        }
+
+        protected override void OnMouseMove(in MouseEventArgs args)
+        {
+            if (args.IsInSpecificSize(ContentBounds.Size) && (!_isClicking || _isClickingClient))
             {
-                float y = args.Y - Location.Y + ViewportPoint.Y;
+                float y = args.Y + ViewportPoint.Y;
                 int hoverIndex = MathI.Floor(y / _itemHeight);
                 if (hoverIndex < 0 || hoverIndex >= _parent.Items.Count)
                     _selectedIndex = -1;
@@ -250,24 +254,6 @@ namespace ConcreteUI.Controls
                 DisposeHelper.DisposeAll(_brushes);
             }
             SequenceHelper.Clear(_brushes);
-        }
-
-        private sealed class DefaultTopVariable : LayoutVariable
-        {
-            private readonly WeakReference<ComboBoxDropdownList> _ownerRef;
-
-            public DefaultTopVariable(ComboBoxDropdownList owner)
-            {
-                _ownerRef = new WeakReference<ComboBoxDropdownList>(owner);
-            }
-
-            public override int Compute(in LayoutVariableManager manager)
-            {
-                if (!_ownerRef.TryGetTarget(out ComboBoxDropdownList? owner))
-                    return 0;
-                int val = manager.GetComputedValue(owner._parent, LayoutProperty.Bottom);
-                return val - MathI.Ceiling(RenderingHelper.GetDefaultBorderWidth(owner._window.GetPointsPerPixel().Y));
-            }
         }
     }
 }

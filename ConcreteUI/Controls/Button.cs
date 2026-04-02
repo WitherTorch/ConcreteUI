@@ -116,41 +116,26 @@ namespace ConcreteUI.Controls
 
         protected override bool IsBackgroundOpaqueCore()
         {
-            D2D1Brush[] brushes = _brushes;
-            D2D1Brush brush = PressState switch
-            {
-                ButtonTriState.Hovered => brushes[(int)Brush.FaceHoveredBrush],
-                ButtonTriState.Pressed => brushes[(int)Brush.FacePressedBrush],
-                _ => brushes[(int)Brush.FaceBrush],
-            };
-            return GraphicsUtils.CheckBrushIsSolid(brush);
+            uint pressState = (uint)PressState;
+            return GraphicsUtils.CheckBrushIsSolid(UnsafeHelper.AddTypedOffset(ref _brushes[0],
+                (uint)Brush.FaceBrush + (pressState >= 3 ? 0 : pressState)));
         }
 
         protected override bool RenderCore(in RegionalRenderingContext context)
         {
             RenderObjectUpdateFlags flags = GetAndCleanRenderObjectUpdateFlags();
-            D2D1Brush[] brushes = _brushes;
-            D2D1Brush borderBrush;
-            switch (PressState)
-            {
-                case ButtonTriState.Hovered:
-                    RenderBackground(in context, brushes[(int)Brush.FaceHoveredBrush]);
-                    borderBrush = brushes[(int)Brush.BorderHoveredBrush];
-                    break;
-                case ButtonTriState.Pressed:
-                    RenderBackground(in context, brushes[(int)Brush.FacePressedBrush]);
-                    borderBrush = brushes[(int)Brush.BorderHoveredBrush];
-                    break;
-                default:
-                    RenderBackground(in context, brushes[(int)Brush.FaceBrush]);
-                    borderBrush = brushes[(int)Brush.BorderBrush];
-                    break;
-            }
+            ref D2D1Brush brushesRef = ref _brushes[0];
+            uint pressState = (uint)PressState;
+            D2D1Brush faceBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (uint)Brush.FaceBrush + (pressState >= 3 ? 0 : pressState));
+            D2D1Brush borderBrush = UnsafeHelper.AddTypedOffset(ref brushesRef,
+                (int)Brush.BorderBrush + MathHelper.BooleanToUInt32(pressState >= (uint)ButtonTriState.Hovered));
+            RenderBackground(context, faceBrush);
+
             DWriteTextLayout? layout = GetTextLayout(flags);
             if (layout is not null)
             {
                 SizeF renderSize = context.Size;
-                D2D1Brush brush = Enabled ? brushes[(int)Brush.TextBrush] : brushes[(int)Brush.TextDisabledBrush];
+                D2D1Brush brush = UnsafeHelper.AddTypedOffset(ref brushesRef, (uint)Brush.TextBrush + MathHelper.BooleanToUInt32(!Enabled));
                 layout.MaxWidth = renderSize.Width;
                 layout.MaxHeight = renderSize.Height;
                 context.DrawTextLayout(PointF.Empty, layout, brush, D2D1DrawTextOptions.Clip);

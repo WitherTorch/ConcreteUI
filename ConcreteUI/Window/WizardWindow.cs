@@ -229,7 +229,7 @@ namespace ConcreteUI.Window
             widePageRect.Top = pageRect.Top;
             widePageRect.Bottom = pageRect.Bottom;
             _widePageRect = widePageRect;
-            _pageRect = pageRect = RenderingHelper.CeilingInPixel(pageRect, GetPointsPerPixel());
+            _pageRect = pageRect = RenderingHelper.CeilingInPixel(pageRect, PixelsPerPoint);
             if (callRecalculatePageLayout && pageRect.IsValid)
             {
                 RecalculatePageLayout(pageRect);

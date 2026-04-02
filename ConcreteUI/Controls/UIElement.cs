@@ -5,7 +5,6 @@ using System.Threading;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
-using ConcreteUI.Internals;
 using ConcreteUI.Layout;
 using ConcreteUI.Layout.Internals;
 using ConcreteUI.Theme;
@@ -23,7 +22,7 @@ using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Controls
 {
-    public abstract unsafe partial class UIElement
+    public abstract partial class UIElement
     {
         private static int _identifierGenerator = 0;
 
@@ -36,7 +35,7 @@ namespace ConcreteUI.Controls
         private IElementContainer? _parent;
         private IThemeContext? _themeContext;
         private string _themePrefix;
-        private ulong _requestRedraw, _location, _size;
+        private ulong _requestRedraw, _freeze, _location, _size;
 
         public UIElement(IRenderer renderer, string themePrefix)
         {
@@ -101,11 +100,25 @@ namespace ConcreteUI.Controls
         protected virtual bool IsBackgroundOpaqueCore() => false;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected void FreezeUpdate() => InterlockedHelper.Exchange(ref _freeze, 0b01);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected void UnfreezeUpdate(bool updateOnce)
+        {
+            if (updateOnce)
+                InterlockedHelper.Exchange(ref _freeze, 0);
+            else if (InterlockedHelper.Exchange(ref _freeze, 0) != 0b11u)
+                return;
+            Update();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual void Update()
         {
             const ulong RequestRedrawBit = 0b01;
 
-            if (!CheckIsRenderedOnce(InterlockedHelper.Or(ref _requestRedraw, RequestRedrawBit)))
+            if (InterlockedHelper.CompareExchange(ref _freeze, 0b11, 0b01) != 0UL ||
+                !CheckIsRenderedOnce(InterlockedHelper.Or(ref _requestRedraw, RequestRedrawBit)))
                 return;
             UpdateCore();
         }
@@ -245,10 +258,16 @@ namespace ConcreteUI.Controls
         protected abstract void ApplyThemeCore(IThemeResourceProvider provider);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point PointToGlobal(Point point) => (_parent ?? _renderer).PointToGlobal(point);
+        public Point PointToGlobal(Point point) => (_parent ?? _renderer).PointToGlobal(this, point);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PointF PointToGlobal(PointF point) => (_parent ?? _renderer).PointToGlobal(point);
+        public PointF PointToGlobal(PointF point) => (_parent ?? _renderer).PointToGlobal(this, point);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Point PointToLocal(Point point) => (_parent ?? _renderer).PointToLocal(this, point);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public PointF PointToLocal(PointF point) => (_parent ?? _renderer).PointToLocal(this, point);
 
         public override int GetHashCode() => _identifier;
 

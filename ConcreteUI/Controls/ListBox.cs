@@ -135,7 +135,7 @@ namespace ConcreteUI.Controls
             UIElementHelper.ApplyTheme(provider, _checkBoxBrushes, _checkBoxBrushNames, _checkBoxThemePrefix, (int)CheckBoxBrush._Last);
             DisposeHelper.SwapDisposeInterlocked(ref _format);
             Interlocked.Exchange(ref _recalcFormat, Booleans.TrueLong);
-            OnDpiChangedCore(fontName, Renderer.GetPointsPerPixel());
+            OnDpiChangedCore(fontName, Renderer.GetPixelsPerPoint());
         }
 
         protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
@@ -300,10 +300,9 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        public override void OnMouseMove(in MouseEventArgs args)
+        protected override void OnMouseMove(in MouseEventArgs args)
         {
-            base.OnMouseMove(args);
-            if (!ContentBounds.Contains(args.Location))
+            if (!args.IsInSpecificSize(ContentBounds.Size))
             {
                 if (_buttonState != ButtonTriState.None)
                 {
@@ -314,7 +313,7 @@ namespace ConcreteUI.Controls
             }
             if (Mode == ListBoxMode.None)
                 return;
-            int selectedIndex = (int)((args.Y + ViewportPoint.Y - Location.Y) / _itemHeight);
+            int selectedIndex = (int)((args.Y + ViewportPoint.Y) / _itemHeight);
             if (selectedIndex >= Items.Count) selectedIndex = -1;
             if (_selectedIndex == selectedIndex)
                 return;
@@ -334,7 +333,7 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        public override void OnMouseDown(ref HandleableMouseEventArgs args)
+        protected override void OnMouseDown(ref HandleableMouseEventArgs args)
         {
             base.OnMouseDown(ref args);
             if (args.Handled || Mode == ListBoxMode.None || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
@@ -345,13 +344,13 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        public override void OnMouseUp(in MouseEventArgs args)
+        protected override void OnMouseUp(in MouseEventArgs args)
         {
             base.OnMouseUp(args);
             ListBoxMode mode = Mode;
             if (mode == ListBoxMode.None || _buttonState != ButtonTriState.Pressed)
                 return;
-            if (ContentBounds.Contains(args.Location))
+            if (args.IsInSpecificSize(ContentBounds.Size))
                 _buttonState = ButtonTriState.Hovered;
             else
                 _buttonState = ButtonTriState.None;

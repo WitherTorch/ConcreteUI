@@ -19,7 +19,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class ContextMenu : PopupElementBase, ICheckableDisposable, IKeyboardInteractHandler
+    public sealed partial class ContextMenu : PopupElementBase, ICheckableDisposable, IGlobalMouseMoveHandler, IKeyboardInteractHandler
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -51,7 +51,7 @@ namespace ConcreteUI.Controls
 
             ContextMenuItem[] items = MenuItems;
             float itemHeight = 0f, itemWidth = 0f;
-            Vector2 pointsPerPixel = Renderer.GetPointsPerPixel();
+            Vector2 pixelsPerPoint = Renderer.GetPixelsPerPoint();
             int count = items.Length;
             DWriteTextLayout[] layouts = new DWriteTextLayout[count];
             using (DWriteTextFormat format = factory.CreateTextFormat(provider.FontName, UIConstants.BoxFontSize))
@@ -68,8 +68,8 @@ namespace ConcreteUI.Controls
                     itemHeight = MathHelper.Max(itemHeight, metrics.Height);
                     UnsafeHelper.AddTypedOffset(ref layoutArrayRef, i) = layout;
                 }
-                itemWidth = RenderingHelper.CeilingInPixel(itemWidth, pointsPerPixel.X);
-                itemHeight = RenderingHelper.CeilingInPixel(itemHeight + UIConstants.ElementMarginHalf, pointsPerPixel.Y);
+                itemWidth = RenderingHelper.CeilingInPixel(itemWidth, pixelsPerPoint.X);
+                itemHeight = RenderingHelper.CeilingInPixel(itemHeight + UIConstants.ElementMarginHalf, pixelsPerPoint.Y);
                 for (int i = 0; i < count; i++)
                 {
                     DWriteTextLayout layout = UnsafeHelper.AddTypedOffset(ref layoutArrayRef, i);
@@ -77,7 +77,7 @@ namespace ConcreteUI.Controls
                     layout.MaxHeight = itemHeight;
                 }
             }
-            float borderWidth = RenderingHelper.GetDefaultBorderWidth(pointsPerPixel.X);
+            float borderWidth = RenderingHelper.GetDefaultBorderWidth(pixelsPerPoint.X);
             Size size = new Size(
                 width: MathI.Floor(itemWidth + UIConstants.ElementMargin + borderWidth * 2),
                 height: MathI.Floor(itemHeight * count + borderWidth * 2));
@@ -136,9 +136,9 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        public override void OnMouseDown(in MouseEventArgs args)
+        protected override void OnMouseDownGlobally(in MouseEventArgs args)
         {
-            base.OnMouseDown(args);
+            base.OnMouseDownGlobally(args);
             if (!args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
 
@@ -152,9 +152,9 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        public override void OnMouseUp(in MouseEventArgs args)
+        protected override void OnMouseUpGlobally(in MouseEventArgs args)
         {
-            base.OnMouseUp(args);
+            base.OnMouseUpGlobally(args);
             if (!args.Buttons.HasFlagOptimized(MouseButtons.LeftButton) || !Bounds.Contains(args.Location))
                 return;
             _isPressed = false;
@@ -169,10 +169,8 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public override void OnMouseMove(in MouseEventArgs args)
+        void IGlobalMouseMoveHandler.OnMouseMoveGlobally(in MouseEventArgs args)
         {
-            base.OnMouseMove(args);
-
             Rectangle bounds = Bounds;
             int hoveredIndex;
 
@@ -193,7 +191,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public void OnKeyDown(ref KeyEventArgs args)
+        void IKeyboardInteractHandler.OnKeyDown(ref KeyEventArgs args)
         {
             if (args.Key != VirtualKey.Escape ||
                 Keys.IsAltPressed() || Keys.IsControlPressed() || Keys.IsShiftPressed())
@@ -202,7 +200,7 @@ namespace ConcreteUI.Controls
             Close();
         }
 
-        public void OnKeyUp(ref KeyEventArgs args)
+        void IKeyboardInteractHandler.OnKeyUp(ref KeyEventArgs args)
         {
             //Do nothing
         }

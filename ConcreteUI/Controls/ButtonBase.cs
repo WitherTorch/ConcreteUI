@@ -1,57 +1,67 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 using WitherTorch.Common.Extensions;
+using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
     public abstract partial class ButtonBase : DisposableUIElementBase, IMouseInteractHandler, IMouseMoveHandler
     {
         private ButtonTriState _pressState;
+        private uint _version;
         private bool _enabled, _isPressed;
 
         public ButtonBase(IRenderer renderer, string themePrefix) : base(renderer, themePrefix)
         {
             _enabled = true;
-            _pressState = ButtonTriState.None;
+            _pressState = (uint)ButtonTriState.None;
         }
 
         public override void OnSizeChanged() => Update();
 
-        public void OnMouseDown(ref HandleableMouseEventArgs args)
+        void IMouseMoveHandler.OnMouseMove(in MouseEventArgs args)
+        {
+            ButtonTriState pressState;
+            if (_enabled && args.IsInSpecificSize(Size))
+                pressState = _isPressed ? ButtonTriState.Pressed : ButtonTriState.Hovered;
+            else
+                pressState = ButtonTriState.None;
+            if (ReferenceHelper.Exchange(ref _pressState, pressState) != pressState)
+            {
+                _version++;
+                Update();
+            }
+        }
+
+        void IMouseInteractHandler.OnMouseDown(ref HandleableMouseEventArgs args)
         {
             if (!_enabled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
             args.Handle();
-            _pressState = ButtonTriState.Pressed;
             _isPressed = true;
-            Update();
+            if (ReferenceHelper.Exchange(ref _pressState, ButtonTriState.Pressed) != ButtonTriState.Pressed)
+            {
+                _version++;
+                Update();
+            }
         }
 
-        public void OnMouseMove(in MouseEventArgs args)
-        {
-            ButtonTriState pressState;
-            if (_enabled && Bounds.Contains(args.Location))
-                pressState = _isPressed ? ButtonTriState.Pressed : ButtonTriState.Hovered;
-            else
-                pressState = ButtonTriState.None;
-            if (_pressState == pressState)
-                return;
-            _pressState = pressState;
-            Update();
-        }
-
-        public void OnMouseUp(in MouseEventArgs args)
+        void IMouseInteractHandler.OnMouseUp(in MouseEventArgs args)
         {
             if (!_enabled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
 
             _isPressed = false;
-            if (_pressState != ButtonTriState.Pressed)
+            if (PressState != ButtonTriState.Pressed)
                 return;
 
+            if (ReferenceHelper.Exchange(ref _pressState, ButtonTriState.Hovered) != ButtonTriState.Hovered)
+            {
+                _version++;
+                Update();
+            }
             OnClick(in args);
-            _pressState = ButtonTriState.Hovered;
-            Update();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

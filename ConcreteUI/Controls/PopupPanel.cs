@@ -54,6 +54,16 @@ namespace ConcreteUI.Controls
 
         IEnumerable<UIElement> IElementContainer.GetActiveElements() => _collection;
 
+#if NET472_OR_GREATER
+        Point IElementContainer.PointToGlobal(UIElement element, Point point) => ElementContainerDefaults.PointToGlobal(element, point);
+
+        PointF IElementContainer.PointToGlobal(UIElement element, PointF point) => ElementContainerDefaults.PointToGlobal(element, point);
+
+        Point IElementContainer.PointToLocal(UIElement element, Point point) => ElementContainerDefaults.PointToLocal(element, point);
+
+        PointF IElementContainer.PointToLocal(UIElement element, PointF point) => ElementContainerDefaults.PointToLocal(element, point);
+#endif
+
         bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
 
         public void Dispose() => _collection.Dispose();

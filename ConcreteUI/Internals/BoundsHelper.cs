@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -8,6 +8,7 @@ using ConcreteUI.Controls;
 using InlineMethod;
 
 using WitherTorch.Common;
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
@@ -22,9 +23,9 @@ namespace ConcreteUI.Internals
             for (; length >= 4; length -= 4, buffer += 4, offset += 4)
             {
                 DoSingleOperation(buffer, in elementRef, offset);
-                DoSingleOperation(buffer + 1, in elementRef, offset);
-                DoSingleOperation(buffer + 2, in elementRef, offset);
-                DoSingleOperation(buffer + 3, in elementRef, offset);
+                DoSingleOperation(buffer + 1, in elementRef, offset + 1);
+                DoSingleOperation(buffer + 2, in elementRef, offset + 2);
+                DoSingleOperation(buffer + 3, in elementRef, offset + 3);
             }
             Rect* bufferEnd = buffer + length;
             if (buffer >= bufferEnd)
@@ -110,7 +111,7 @@ namespace ConcreteUI.Internals
                 VectorizedBulkContains(ptr, length, point);
                 return;
             }
-            ScalarizedBulkContains(ptr, length, point);
+            ScalarizedBulkContains(ptr, length, point.X, point.Y);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -121,35 +122,35 @@ namespace ConcreteUI.Internals
         private static partial void VectorizedBulkContains(int* ptr, nuint length, PointF point);
 
         [Inline(InlineBehavior.Remove)]
-        private static void ScalarizedBulkContains(Rect* ptr, nuint length, PointF point)
+        private static void ScalarizedBulkContains(Rect* ptr, nuint length, float x, float y)
         {
             for (; length >= 4; length -= 4, ptr += 4)
             {
-                DoSingleOperation(ptr, point);
-                DoSingleOperation(ptr + 1, point);
-                DoSingleOperation(ptr + 2, point);
-                DoSingleOperation(ptr + 3, point);
+                DoSingleOperation(ptr, x, y);
+                DoSingleOperation(ptr + 1, x, y);
+                DoSingleOperation(ptr + 2, x, y);
+                DoSingleOperation(ptr + 3, x, y);
             }
             Rect* ptrEnd = ptr + length;
             if (ptr >= ptrEnd)
                 return;
-            DoSingleOperation(ptr, point);
+            DoSingleOperation(ptr, x, y);
             ptr++;
             if (ptr >= ptrEnd)
                 return;
-            DoSingleOperation(ptr, point);
+            DoSingleOperation(ptr, x, y);
             ptr++;
             if (ptr >= ptrEnd)
                 return;
-            DoSingleOperation(ptr, point);
+            DoSingleOperation(ptr, x, y);
 
-            static void DoSingleOperation(Rect* ptr, PointF point)
+            static void DoSingleOperation(Rect* ptr, float x, float y)
             {
                 *ptr = new Rect(
-                    left: -MathHelper.BooleanToInt32(ptr->Left <= point.X),
-                    top: -MathHelper.BooleanToInt32(ptr->Top <= point.Y),
-                    right: -MathHelper.BooleanToInt32(ptr->Right >= point.X),
-                    bottom: -MathHelper.BooleanToInt32(ptr->Bottom >= point.Y)
+                    left: -MathHelper.BooleanToInt32(ptr->Left <= x),
+                    top: -MathHelper.BooleanToInt32(ptr->Top <= y),
+                    right: -MathHelper.BooleanToInt32(ptr->Right >= x),
+                    bottom: -MathHelper.BooleanToInt32(ptr->Bottom >= y)
                     );
             }
         }

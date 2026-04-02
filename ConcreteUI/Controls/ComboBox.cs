@@ -23,7 +23,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class ComboBox : DisposableUIElementBase, IMouseInteractHandler
+    public sealed partial class ComboBox : DisposableUIElementBase, IMouseInteractHandler, IMouseMoveHandler
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -176,7 +176,7 @@ namespace ConcreteUI.Controls
             return true;
         }
 
-        public void OnMouseDown(ref HandleableMouseEventArgs args)
+        void IMouseInteractHandler.OnMouseDown(ref HandleableMouseEventArgs args)
         {
             if (!_enabled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
@@ -198,7 +198,7 @@ namespace ConcreteUI.Controls
             });
         }
 
-        public void OnMouseUp(in MouseEventArgs args)
+        void IMouseInteractHandler.OnMouseUp(in MouseEventArgs args)
         {
             if (!_enabled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
                 return;
@@ -212,15 +212,15 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        public void OnMouseMove(in MouseEventArgs args)
+        void IMouseMoveHandler.OnMouseMove(in MouseEventArgs args)
         {
             if (!_enabled)
                 return;
-            Rectangle bounds = Bounds;
 
             bool newHovered;
             ButtonTriState newButtonState;
-            if (!bounds.Contains(args.Location))
+            (int width, int height) = Size;
+            if (!args.IsInSpecificSize(width, height))
             {
                 newButtonState = ButtonTriState.None;
                 newHovered = false;
@@ -234,7 +234,7 @@ namespace ConcreteUI.Controls
                 goto Update;
             }
 
-            RectangleF buttonRect = new RectangleF(bounds.Right - bounds.Height + 1, bounds.Top + 1, bounds.Height - 2, bounds.Height - 2);
+            RectangleF buttonRect = new RectangleF(width - height + 1, 1, height - 2, height - 2);
             newButtonState = buttonRect.Contains(args.Location) ? ButtonTriState.Hovered : ButtonTriState.None;
 
         Update:

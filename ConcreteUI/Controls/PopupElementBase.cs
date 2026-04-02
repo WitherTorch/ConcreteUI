@@ -1,9 +1,9 @@
-﻿using ConcreteUI.Utils;
+using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
 namespace ConcreteUI.Controls
 {
-    public abstract class PopupElementBase : UIElement, IMouseNotifyEvents
+    public abstract class PopupElementBase : UIElement, IGlobalMouseInteractHandler
     {
         private readonly CoreWindow _window;
 
@@ -14,14 +14,16 @@ namespace ConcreteUI.Controls
 
         public void Close() => _window.CloseOverlayElement(this);
 
-        public virtual void OnMouseDown(in MouseEventArgs args) { }
+        protected virtual void OnMouseDownGlobally(in MouseEventArgs args) { }
 
-        public virtual void OnMouseUp(in MouseEventArgs args)
+        protected virtual void OnMouseUpGlobally(in MouseEventArgs args)
         {
             if (!Bounds.Contains(args.Location))
                 Close();
         }
 
-        public virtual void OnMouseMove(in MouseEventArgs args) { }
+        void IGlobalMouseInteractHandler.OnMouseDownGlobally(in MouseEventArgs args) => OnMouseDownGlobally(in args);
+
+        void IGlobalMouseInteractHandler.OnMouseUpGlobally(in MouseEventArgs args) => OnMouseUpGlobally(in args);
     }
 }

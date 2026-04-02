@@ -102,7 +102,7 @@ namespace ConcreteUI.Window
                 return;
             RectF pageRect = _pageRect;
             float x, y;
-            Vector2 pointsPerPixel = GetPointsPerPixel();
+            Vector2 pixelsPerPoint = PixelsPerPoint;
             if (WindowMaterial == WindowMaterial.Integrated)
             {
                 x = 0;
@@ -110,8 +110,8 @@ namespace ConcreteUI.Window
             }
             else
             {
-                x = RenderingHelper.RoundInPixel(pageRect.Left, pointsPerPixel.X);
-                y = RenderingHelper.RoundInPixel(_titleBarRect.Height + _drawingOffsetY, pointsPerPixel.Y);
+                x = RenderingHelper.RoundInPixel(pageRect.Left, pixelsPerPoint.X);
+                y = RenderingHelper.RoundInPixel(_titleBarRect.Height + _drawingOffsetY, pixelsPerPoint.Y);
             }
             for (int i = 0, count = menuBarButtonRects.Length; i < count; i++)
             {
@@ -126,7 +126,7 @@ namespace ConcreteUI.Window
             }
             menuBarButtonLastRight = x;
             pageRect.Top = y + menuBarButtonRects.FirstOrDefault().Height;
-            _pageRect = pageRect = RenderingHelper.RoundInPixel(pageRect, pointsPerPixel);
+            _pageRect = pageRect = RenderingHelper.RoundInPixel(pageRect, pixelsPerPoint);
             if (callRecalculatePageLayout && pageRect.IsValid)
             {
                 RecalculatePageLayout(pageRect);
@@ -317,7 +317,7 @@ namespace ConcreteUI.Window
             out RectF[] menuButtonRects, out DWriteTextLayout[] menuButtonLayouts)
         {
             float menuX = baseX;
-            Vector2 pointsPerPixel = GetPointsPerPixel();
+            Vector2 pixelsPerPoint = PixelsPerPoint;
             int count = menuButtonTexts.Length;
             DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(NullSafetyHelper.ThrowIfNull(CurrentTheme).FontName, UIConstants.MenuFontSize);
             format.ParagraphAlignment = DWriteParagraphAlignment.Center;
@@ -328,7 +328,7 @@ namespace ConcreteUI.Window
             for (int i = 0; i < count; i++)
             {
                 DWriteTextLayout layout = GraphicsUtils.CreateCustomTextLayout(menuButtonTexts[i], format, menuExtraWidth, float.PositiveInfinity);
-                float height = RenderingHelper.CeilingInPixel(layout.MaxHeight, pointsPerPixel.Y);
+                float height = RenderingHelper.CeilingInPixel(layout.MaxHeight, pixelsPerPoint.Y);
                 if (menuHeight < height)
                     menuHeight = height;
                 menuButtonLayouts[i] = layout;
@@ -339,7 +339,7 @@ namespace ConcreteUI.Window
                 DWriteTextLayout layout = menuButtonLayouts[i];
                 layout.MaxHeight = menuHeight;
 
-                float width = RenderingHelper.CeilingInPixel(layout.MaxWidth, pointsPerPixel.X);
+                float width = RenderingHelper.CeilingInPixel(layout.MaxWidth, pixelsPerPoint.X);
                 layout.MaxWidth = width;
                 menuButtonRects[i] = RectF.FromXYWH(menuX, baseY, width, menuHeight);
                 menuX += width;
