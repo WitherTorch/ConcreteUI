@@ -5,6 +5,8 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Controls;
 
+using InlineIL;
+
 using InlineMethod;
 
 using WitherTorch.Common;
@@ -15,8 +17,7 @@ namespace ConcreteUI.Internals
 {
     internal static unsafe partial class BoundsHelper
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void CopyBoundsInElementsIntoBuffer(Rect* buffer, ref readonly UIElement? elementRef, nuint length)
+        public static void CopyFromElements(Rect* buffer, ref readonly UIElement? elementRef, nuint length)
         {
             nuint offset = 0;
             for (; length >= 4; length -= 4, buffer += 4, offset += 4)
@@ -40,90 +41,31 @@ namespace ConcreteUI.Internals
             static void DoSingleOperation(Rect* ptr, ref readonly UIElement? elementRef, nuint offset)
             {
                 UIElement? element = UnsafeHelper.AddTypedOffset(in elementRef, offset);
-                *ptr = element is null ? Rect.Empty : element.Bounds;
+                *ptr = element is null ? Rect.Empty : FastGetBounds(element);
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void CopyBoundsInElementsIntoBuffer_List<TList>(Rect* buffer, TList list, int length) where TList : IList<UIElement>
-        {
-            int offset = 0;
-            for (; length >= 4; length -= 4, buffer += 4, offset += 4)
-            {
-                DoSingleOperation(buffer, list, offset);
-                DoSingleOperation(buffer + 1, list, offset);
-                DoSingleOperation(buffer + 2, list, offset);
-                DoSingleOperation(buffer + 3, list, offset);
-            }
-            Rect* bufferEnd = buffer + length;
-            if (buffer >= bufferEnd)
-                return;
-            DoSingleOperation(buffer++, list, offset++);
-            if (buffer >= bufferEnd)
-                return;
-            DoSingleOperation(buffer++, list, offset++);
-            if (buffer >= bufferEnd)
-                return;
-            DoSingleOperation(buffer, list, offset);
-
-            static void DoSingleOperation(Rect* ptr, TList list, int offset)
-            {
-                UIElement? element = list[offset];
-                *ptr = element is null ? Rect.Empty : element.Bounds;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void CopyBoundsInElementsIntoBuffer_RList<TList>(Rect* buffer, TList list, int length) where TList : IReadOnlyList<UIElement>
-        {
-            int offset = 0;
-            for (; length >= 4; length -= 4, buffer += 4, offset += 4)
-            {
-                DoSingleOperation(buffer, list, offset);
-                DoSingleOperation(buffer + 1, list, offset);
-                DoSingleOperation(buffer + 2, list, offset);
-                DoSingleOperation(buffer + 3, list, offset);
-            }
-            Rect* bufferEnd = buffer + length;
-            if (buffer >= bufferEnd)
-                return;
-            DoSingleOperation(buffer++, list, offset++);
-            if (buffer >= bufferEnd)
-                return;
-            DoSingleOperation(buffer++, list, offset++);
-            if (buffer >= bufferEnd)
-                return;
-            DoSingleOperation(buffer, list, offset);
-
-            static void DoSingleOperation(Rect* ptr, TList list, int offset)
-            {
-                UIElement? element = list[offset];
-                *ptr = element is null ? Rect.Empty : element.Bounds;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void BulkAABBHitTest(Rect* ptr, nuint length, PointF point)
+        public static void HitTest(Rect* ptr, nuint length, PointF point)
         {
             int x = MathI.Truncate(point.X);
             int y = MathI.Truncate(point.Y);
-            if (length * 4 > Limits.GetLimitForVectorizing<int>())
+            if (UnsafeHelper.SizeOf<Rect>() < Limits.GetLimitForVectorizing<int>())
             {
-                VectorizedBulkAABBHitTest(ptr, length, x, y);
-                return;
+                nuint lengthOfInt32 = length * 4;
+                if (lengthOfInt32 > Limits.GetLimitForVectorizing<int>())
+                {
+                    VectorizedHitTest((int*)ptr, lengthOfInt32, x, y);
+                    return;
+                }
             }
-            ScalarizedBulkAABBHitTest(ptr, length, x, y);
+            ScalarizedHitTest(ptr, length, x, y);
         }
 
-        [Inline(InlineBehavior.Remove)]
-        private static void VectorizedBulkAABBHitTest(Rect* ptr, nuint length, int x, int y)
-            => VectorizedBulkAABBHitTest((int*)ptr, length * 4, x, y);
-
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static partial void VectorizedBulkAABBHitTest(int* ptr, nuint length, int x, int y);
+        private static partial void VectorizedHitTest(int* ptr, nuint length, int x, int y);
 
         [Inline(InlineBehavior.Remove)]
-        private static void ScalarizedBulkAABBHitTest(Rect* ptr, nuint length, int x, int y)
+        private static void ScalarizedHitTest(Rect* ptr, nuint length, int x, int y)
         {
             for (; length >= 4; length -= 4, ptr += 4)
             {
@@ -145,15 +87,30 @@ namespace ConcreteUI.Internals
                 return;
             DoSingleOperation(ptr, x, y);
 
+            [Inline(InlineBehavior.Remove)]
             static void DoSingleOperation(Rect* ptr, int x, int y)
             {
-                *ptr = new Rect(
-                    left: -MathHelper.BooleanToInt32(ptr->Left <= x),
-                    top: -MathHelper.BooleanToInt32(ptr->Top <= y),
-                    right: -MathHelper.BooleanToInt32(ptr->Right >= x),
-                    bottom: -MathHelper.BooleanToInt32(ptr->Bottom >= y)
-                    );
+                bool val = ((ptr->Left <= x) & (ptr->Top <= y)) & ((ptr->Right >= x) & (ptr->Bottom >= y));
+                StoreBooleanInRect(ptr, val);
             }
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static void StoreBooleanInRect(void* destination, bool value)
+        {
+#if DEBUG
+            UnsafeHelper.InitBlockUnaligned(destination, 0, UnsafeHelper.SizeOf<Rect>());
+#endif
+            UnsafeHelper.WriteUnaligned(destination, value);
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private static Rect FastGetBounds(UIElement element)
+        {
+            IL.Push(element);
+            IL.Emit.Call(MethodRef.PropertyGet(typeof(UIElement), nameof(UIElement.Bounds)));
+            IL.Emit.Call(MethodRef.Operator(typeof(Rect), ConversionOperator.Implicit, ConversionDirection.From, typeof(Rectangle)));
+            return IL.Return<Rect>();
         }
     }
 }

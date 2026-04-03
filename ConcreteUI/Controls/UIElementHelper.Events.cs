@@ -17,8 +17,6 @@ namespace ConcreteUI.Controls
 {
     partial class UIElementHelper
     {
-        private static readonly Rect AllBitSetsRect = new Rect(-1, -1, -1, -1);
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void DispatchHandleableEvent<TEnumerable, TEventArgs>(TEnumerable elements, ref TEventArgs args,
             delegate* managed<UIElement, ref TEventArgs, void> eventHandler) where TEnumerable : IEnumerable<UIElement?> where TEventArgs : struct, IHandleableEventArgs
@@ -836,30 +834,28 @@ namespace ConcreteUI.Controls
             Rect* ptr = buffer.NativePointer;
             try
             {
-                BoundsHelper.CopyBoundsInElementsIntoBuffer(ptr, in elementArrayRef, length);
-                BoundsHelper.BulkAABBHitTest(ptr, length, focusPoint);
-                Rect filter = AllBitSetsRect;
-                Rect* pFilter = &filter;
+                BoundsHelper.CopyFromElements(ptr, in elementArrayRef, length);
+                BoundsHelper.HitTest(ptr, length, focusPoint);
                 for (; length >= 4; length -= 4)
                 {
-                    CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, ref args, eventHandler);
-                    CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, ref args, eventHandler);
-                    CallEventHandler(in elementArrayRef, length - 3, ptr, pFilter, ref args, eventHandler);
-                    CallEventHandler(in elementArrayRef, length - 4, ptr, pFilter, ref args, eventHandler);
+                    CallEventHandler(in elementArrayRef, length - 1, ptr, ref args, eventHandler);
+                    CallEventHandler(in elementArrayRef, length - 2, ptr, ref args, eventHandler);
+                    CallEventHandler(in elementArrayRef, length - 3, ptr, ref args, eventHandler);
+                    CallEventHandler(in elementArrayRef, length - 4, ptr, ref args, eventHandler);
                 }
                 switch (length)
                 {
                     case 3:
-                        CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, ref args, eventHandler);
-                        CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, ref args, eventHandler);
-                        CallEventHandler(in elementArrayRef, length - 3, ptr, pFilter, ref args, eventHandler);
+                        CallEventHandler(in elementArrayRef, length - 1, ptr, ref args, eventHandler);
+                        CallEventHandler(in elementArrayRef, length - 2, ptr, ref args, eventHandler);
+                        CallEventHandler(in elementArrayRef, length - 3, ptr, ref args, eventHandler);
                         break;
                     case 2:
-                        CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, ref args, eventHandler);
-                        CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, ref args, eventHandler);
+                        CallEventHandler(in elementArrayRef, length - 1, ptr, ref args, eventHandler);
+                        CallEventHandler(in elementArrayRef, length - 2, ptr, ref args, eventHandler);
                         break;
                     case 1:
-                        CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, ref args, eventHandler);
+                        CallEventHandler(in elementArrayRef, length - 1, ptr, ref args, eventHandler);
                         break;
                 }
             }
@@ -868,13 +864,13 @@ namespace ConcreteUI.Controls
                 pool.Return(buffer);
             }
 
-            static void CallEventHandler(ref readonly UIElement? elementArrayRef, nuint i, Rect* boundsBuffer, Rect* comparee,
+            static void CallEventHandler(ref readonly UIElement? elementArrayRef, nuint i, Rect* boundsBuffer,
                 ref TEventArgs args, delegate* managed<UIElement, ref TEventArgs, bool, void> eventHandler)
             {
                 UIElement? element = UnsafeHelper.AddTypedOffset(in elementArrayRef, i);
                 if (element is null)
                     return;
-                eventHandler(element, ref args, SequenceHelper.Equals(boundsBuffer + i, comparee, 1u));
+                eventHandler(element, ref args, UnsafeHelper.ReadUnaligned<bool>(boundsBuffer + i));
             }
         }
 
@@ -887,30 +883,28 @@ namespace ConcreteUI.Controls
             Rect* ptr = buffer.NativePointer;
             try
             {
-                BoundsHelper.CopyBoundsInElementsIntoBuffer(ptr, in elementArrayRef, length);
-                BoundsHelper.BulkAABBHitTest(ptr, length, focusPoint);
-                Rect filter = AllBitSetsRect;
-                Rect* pFilter = &filter;
+                BoundsHelper.CopyFromElements(ptr, in elementArrayRef, length);
+                BoundsHelper.HitTest(ptr, length, focusPoint);
                 for (; length >= 4; length -= 4)
                 {
-                    CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, in args, ref data, eventHandler);
-                    CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, in args, ref data, eventHandler);
-                    CallEventHandler(in elementArrayRef, length - 3, ptr, pFilter, in args, ref data, eventHandler);
-                    CallEventHandler(in elementArrayRef, length - 4, ptr, pFilter, in args, ref data, eventHandler);
+                    CallEventHandler(in elementArrayRef, length - 1, ptr, in args, ref data, eventHandler);
+                    CallEventHandler(in elementArrayRef, length - 2, ptr, in args, ref data, eventHandler);
+                    CallEventHandler(in elementArrayRef, length - 3, ptr, in args, ref data, eventHandler);
+                    CallEventHandler(in elementArrayRef, length - 4, ptr, in args, ref data, eventHandler);
                 }
                 switch (length)
                 {
                     case 3:
-                        CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, in args, ref data, eventHandler);
-                        CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, in args, ref data, eventHandler);
-                        CallEventHandler(in elementArrayRef, length - 3, ptr, pFilter, in args, ref data, eventHandler);
+                        CallEventHandler(in elementArrayRef, length - 1, ptr, in args, ref data, eventHandler);
+                        CallEventHandler(in elementArrayRef, length - 2, ptr, in args, ref data, eventHandler);
+                        CallEventHandler(in elementArrayRef, length - 3, ptr, in args, ref data, eventHandler);
                         break;
                     case 2:
-                        CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, in args, ref data, eventHandler);
-                        CallEventHandler(in elementArrayRef, length - 2, ptr, pFilter, in args, ref data, eventHandler);
+                        CallEventHandler(in elementArrayRef, length - 1, ptr, in args, ref data, eventHandler);
+                        CallEventHandler(in elementArrayRef, length - 2, ptr, in args, ref data, eventHandler);
                         break;
                     case 1:
-                        CallEventHandler(in elementArrayRef, length - 1, ptr, pFilter, in args, ref data, eventHandler);
+                        CallEventHandler(in elementArrayRef, length - 1, ptr, in args, ref data, eventHandler);
                         break;
                 }
             }
@@ -919,13 +913,13 @@ namespace ConcreteUI.Controls
                 pool.Return(buffer);
             }
 
-            static void CallEventHandler(ref readonly UIElement? elementArrayRef, nuint i, Rect* boundsBuffer, Rect* comparee,
+            static void CallEventHandler(ref readonly UIElement? elementArrayRef, nuint i, Rect* boundsBuffer,
                 in TEventArgs args, ref TData data, delegate* managed<UIElement, in TEventArgs, ref TData, bool, void> eventHandler)
             {
                 UIElement? element = UnsafeHelper.AddTypedOffset(in elementArrayRef, i);
                 if (element is null)
                     return;
-                eventHandler(element, in args, ref data, SequenceHelper.Equals(boundsBuffer + i, comparee, 1u));
+                eventHandler(element, in args, ref data, UnsafeHelper.ReadUnaligned<bool>(boundsBuffer + i));
             }
 
         }

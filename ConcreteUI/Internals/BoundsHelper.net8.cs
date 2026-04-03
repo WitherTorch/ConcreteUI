@@ -7,7 +7,6 @@ using System.Runtime.Intrinsics;
 using InlineMethod;
 
 using WitherTorch.Common;
-using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
@@ -19,7 +18,7 @@ namespace ConcreteUI.Internals
         private static readonly Vector256<int> _blendVector_256 = CreateBlendVector_256();
         private static readonly Vector128<int> _blendVector_128 = CreateBlendVector_128();
 
-        private static partial void VectorizedBulkAABBHitTest(int* ptr, nuint length, int x, int y)
+        private static partial void VectorizedHitTest(int* ptr, nuint length, int x, int y)
         {
             if (Limits.UseVector512() && length >= (nuint)Vector512<float>.Count)
                 VectorizedBulkAABBHitTest_512(ref ptr, ref length, x, y);
@@ -38,15 +37,15 @@ namespace ConcreteUI.Internals
             nuint headRemainder = (nuint)ptr % UnsafeHelper.SizeOf<Vector512<int>>();
             if (headRemainder == 0)
                 goto VectorizedLoop;
-            else if (headRemainder % UnsafeHelper.SizeOf<Rect>() != 0)
-                goto VectorizedLoop_Unaligned;
+            else if (headRemainder % UnsafeHelper.SizeOf<Rect>() != 0) // 不可能對齊
+                goto VectorizedLoop_Unaligned; // 放棄對齊，直接向量化
             else
             {
                 if (length > (nuint)Vector512<float>.Count * 2)
                 {
                     headRemainder = (UnsafeHelper.SizeOf<Vector512<int>>() - headRemainder) / UnsafeHelper.SizeOf<int>(); // 取得數量
                     DebugHelper.ThrowIf(headRemainder % 4 != 0);
-                    ScalarizedBulkAABBHitTest((Rect*)ptr, headRemainder / 4, x, y);
+                    ScalarizedHitTest((Rect*)ptr, headRemainder / 4, x, y);
                     ptr += headRemainder;
                     length -= headRemainder;
                     goto VectorizedLoop;
@@ -66,8 +65,8 @@ namespace ConcreteUI.Internals
                             left: Vector512.LessThanOrEqual(sourceVector2, filterVector),
                             right: Vector512.GreaterThanOrEqual(sourceVector2, filterVector)
                             );
-                    resultVector.Store(ptr);
-                    resultVector2.Store(ptr2);
+                    CheckAndStore_512(resultVector, ptr);
+                    CheckAndStore_512(resultVector2, ptr2);
                     return;
                 }
                 else
@@ -78,7 +77,7 @@ namespace ConcreteUI.Internals
                             left: Vector512.LessThanOrEqual(sourceVector, filterVector),
                             right: Vector512.GreaterThanOrEqual(sourceVector, filterVector)
                             );
-                    resultVector.Store(ptr);
+                    CheckAndStore_512(resultVector, ptr);
                     ptr += (nuint)Vector512<float>.Count;
                     length -= (nuint)Vector512<float>.Count;
                     goto TailProcess;
@@ -94,7 +93,7 @@ namespace ConcreteUI.Internals
                         left: Vector512.LessThanOrEqual(sourceVector, filterVector),
                         right: Vector512.GreaterThanOrEqual(sourceVector, filterVector)
                         );
-                resultVector.Store(ptr);
+                CheckAndStore_512(resultVector, ptr);
                 ptr += (nuint)Vector512<int>.Count;
                 length -= (nuint)Vector512<int>.Count;
                 continue;
@@ -110,7 +109,7 @@ namespace ConcreteUI.Internals
                         left: Vector512.LessThanOrEqual(sourceVector, filterVector),
                         right: Vector512.GreaterThanOrEqual(sourceVector, filterVector)
                         );
-                resultVector.StoreAligned(ptr);
+                CheckAndStore_512(resultVector, ptr);
                 ptr += (nuint)Vector512<int>.Count;
                 length -= (nuint)Vector512<int>.Count;
                 continue;
@@ -119,7 +118,7 @@ namespace ConcreteUI.Internals
 
         TailProcess:
             DebugHelper.ThrowIf(length % 4 != 0);
-            ScalarizedBulkAABBHitTest((Rect*)ptr, length / 4, x, y);
+            ScalarizedHitTest((Rect*)ptr, length / 4, x, y);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -131,15 +130,15 @@ namespace ConcreteUI.Internals
             nuint headRemainder = (nuint)ptr % UnsafeHelper.SizeOf<Vector256<int>>();
             if (headRemainder == 0)
                 goto VectorizedLoop;
-            else if (headRemainder % UnsafeHelper.SizeOf<Rect>() != 0)
-                goto VectorizedLoop_Unaligned;
+            else if (headRemainder % UnsafeHelper.SizeOf<Rect>() != 0) // 不可能對齊
+                goto VectorizedLoop_Unaligned; // 放棄對齊，直接向量化
             else
             {
                 if (length > (nuint)Vector256<float>.Count * 2)
                 {
                     headRemainder = (UnsafeHelper.SizeOf<Vector256<int>>() - headRemainder) / UnsafeHelper.SizeOf<int>(); // 取得數量
                     DebugHelper.ThrowIf(headRemainder % 4 != 0);
-                    ScalarizedBulkAABBHitTest((Rect*)ptr, headRemainder / 4, x, y);
+                    ScalarizedHitTest((Rect*)ptr, headRemainder / 4, x, y);
                     ptr += headRemainder;
                     length -= headRemainder;
                     goto VectorizedLoop;
@@ -159,8 +158,8 @@ namespace ConcreteUI.Internals
                             left: Vector256.LessThanOrEqual(sourceVector2, filterVector),
                             right: Vector256.GreaterThanOrEqual(sourceVector2, filterVector)
                             );
-                    resultVector.Store(ptr);
-                    resultVector2.Store(ptr2);
+                    CheckAndStore_256(resultVector, ptr);
+                    CheckAndStore_256(resultVector2, ptr2);
                     return;
                 }
                 else
@@ -171,7 +170,7 @@ namespace ConcreteUI.Internals
                             left: Vector256.LessThanOrEqual(sourceVector, filterVector),
                             right: Vector256.GreaterThanOrEqual(sourceVector, filterVector)
                             );
-                    resultVector.Store(ptr);
+                    CheckAndStore_256(resultVector, ptr);
                     ptr += (nuint)Vector256<float>.Count;
                     length -= (nuint)Vector256<float>.Count;
                     goto TailProcess;
@@ -187,7 +186,7 @@ namespace ConcreteUI.Internals
                         left: Vector256.LessThanOrEqual(sourceVector, filterVector),
                         right: Vector256.GreaterThanOrEqual(sourceVector, filterVector)
                         );
-                resultVector.Store(ptr);
+                CheckAndStore_256(resultVector, ptr);
                 ptr += (nuint)Vector256<int>.Count;
                 length -= (nuint)Vector256<int>.Count;
                 continue;
@@ -203,7 +202,7 @@ namespace ConcreteUI.Internals
                         left: Vector256.LessThanOrEqual(sourceVector, filterVector),
                         right: Vector256.GreaterThanOrEqual(sourceVector, filterVector)
                         );
-                resultVector.StoreAligned(ptr);
+                CheckAndStore_256(resultVector, ptr);
                 ptr += (nuint)Vector256<int>.Count;
                 length -= (nuint)Vector256<int>.Count;
                 continue;
@@ -212,7 +211,7 @@ namespace ConcreteUI.Internals
 
         TailProcess:
             DebugHelper.ThrowIf(length % 4 != 0);
-            ScalarizedBulkAABBHitTest((Rect*)ptr, length / 4, x, y);
+            ScalarizedHitTest((Rect*)ptr, length / 4, x, y);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -224,15 +223,15 @@ namespace ConcreteUI.Internals
             nuint headRemainder = (nuint)ptr % UnsafeHelper.SizeOf<Vector128<int>>();
             if (headRemainder == 0)
                 goto VectorizedLoop;
-            else if (headRemainder % UnsafeHelper.SizeOf<Rect>() != 0)
-                goto VectorizedLoop_Unaligned;
+            else if (headRemainder % UnsafeHelper.SizeOf<Rect>() != 0) // 不可能對齊
+                goto VectorizedLoop_Unaligned; // 放棄對齊，直接向量化
             else
             {
                 if (length > (nuint)Vector128<float>.Count * 2)
                 {
                     headRemainder = (UnsafeHelper.SizeOf<Vector128<int>>() - headRemainder) / UnsafeHelper.SizeOf<int>(); // 取得數量
                     DebugHelper.ThrowIf(headRemainder % 4 != 0);
-                    ScalarizedBulkAABBHitTest((Rect*)ptr, headRemainder / 4, x, y);
+                    ScalarizedHitTest((Rect*)ptr, headRemainder / 4, x, y);
                     ptr += headRemainder;
                     length -= headRemainder;
                     goto VectorizedLoop;
@@ -252,8 +251,8 @@ namespace ConcreteUI.Internals
                             left: Vector128.LessThanOrEqual(sourceVector2, filterVector),
                             right: Vector128.GreaterThanOrEqual(sourceVector2, filterVector)
                             );
-                    resultVector.Store(ptr);
-                    resultVector2.Store(ptr2);
+                    CheckAndStore_128(resultVector, ptr);
+                    CheckAndStore_128(resultVector2, ptr2);
                     return;
                 }
                 else
@@ -264,7 +263,7 @@ namespace ConcreteUI.Internals
                             left: Vector128.LessThanOrEqual(sourceVector, filterVector),
                             right: Vector128.GreaterThanOrEqual(sourceVector, filterVector)
                             );
-                    resultVector.Store(ptr);
+                    CheckAndStore_128(resultVector, ptr);
                     ptr += (nuint)Vector128<float>.Count;
                     length -= (nuint)Vector128<float>.Count;
                     goto TailProcess;
@@ -280,7 +279,7 @@ namespace ConcreteUI.Internals
                         left: Vector128.LessThanOrEqual(sourceVector, filterVector),
                         right: Vector128.GreaterThanOrEqual(sourceVector, filterVector)
                         );
-                resultVector.Store(ptr);
+                CheckAndStore_128(resultVector, ptr);
                 ptr += (nuint)Vector128<int>.Count;
                 length -= (nuint)Vector128<int>.Count;
                 continue;
@@ -296,7 +295,7 @@ namespace ConcreteUI.Internals
                         left: Vector128.LessThanOrEqual(sourceVector, filterVector),
                         right: Vector128.GreaterThanOrEqual(sourceVector, filterVector)
                         );
-                resultVector.StoreAligned(ptr);
+                CheckAndStore_128(resultVector, ptr);
                 ptr += (nuint)Vector128<int>.Count;
                 length -= (nuint)Vector128<int>.Count;
                 continue;
@@ -305,7 +304,7 @@ namespace ConcreteUI.Internals
 
         TailProcess:
             DebugHelper.ThrowIf(length % 4 != 0);
-            ScalarizedBulkAABBHitTest((Rect*)ptr, length / 4, x, y);
+            ScalarizedHitTest((Rect*)ptr, length / 4, x, y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -346,6 +345,30 @@ namespace ConcreteUI.Internals
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<int> CreateBlendVector_128()
             => Vector128.Create(-1, -1, 0, 0);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckAndStore_512(Vector512<int> vector, int* destination)
+        {
+            ulong extractBits = vector.AsUInt64().ExtractMostSignificantBits();
+            StoreBooleanInRect(destination, (extractBits & 0b00000011) == 0b00000011);
+            StoreBooleanInRect(destination + 4, (extractBits & 0b00001100) == 0b00001100);
+            StoreBooleanInRect(destination + 8, (extractBits & 0b00110000) == 0b00110000);
+            StoreBooleanInRect(destination + 12, (extractBits & 0b11000000) == 0b11000000);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckAndStore_256(Vector256<int> vector, int* destination)
+        {
+            uint extractBits = vector.AsUInt64().ExtractMostSignificantBits();
+            StoreBooleanInRect(destination, (extractBits & 0b0011) == 0b0011);
+            StoreBooleanInRect(destination + 4, (extractBits & 0b1100) == 0b1100);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckAndStore_128(Vector128<int> vector, int* destination)
+        {
+            StoreBooleanInRect(destination, vector.AsUInt64().ExtractMostSignificantBits() == 0b11);
+        }
     }
 }
 #endif
