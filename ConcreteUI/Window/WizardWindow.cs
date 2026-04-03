@@ -56,8 +56,8 @@ namespace ConcreteUI.Window
         private string _title, _titleDescription;
         private long _updateFlags = -1L;
         private D2D1ColorF _wizardBaseColor;
-        private PointF _titleLocation, _titleDescriptionLocation;
-        private RectF _widePageRect;
+        private Point _titleLocation, _titleDescriptionLocation;
+        private Rect _widePageRect;
         #endregion
 
         #region Constructor
@@ -118,11 +118,11 @@ namespace ConcreteUI.Window
             Interlocked.Exchange(ref _updateFlags, -1L);
         }
 
-        protected override void RenderPageCore(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in RectF pageRect, bool force)
+        protected override void RenderPageCore(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect, bool force)
         {
             if (force)
             {
-                using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, _widePageRect, D2D1AntialiasMode.Aliased);
+                using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.CeilingInPixel((RectF)_widePageRect, PixelsPerPoint), D2D1AntialiasMode.Aliased);
                 ClearDC(deviceContext);
             }
             base.RenderPageCore(deviceContext, collector, pageRect, force);
@@ -133,7 +133,7 @@ namespace ConcreteUI.Window
             ClearDC(context.DeviceContext);
         }
 
-        protected override void RenderPageBackground(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in RectF pageRect)
+        protected override void RenderPageBackground(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect)
         {
             ClearDC(deviceContext);
         }
@@ -178,11 +178,7 @@ namespace ConcreteUI.Window
                 return;
             GetLayouts(flags, out DWriteTextLayout? titleLayout, out DWriteTextLayout? titleDescriptionLayout);
             D2D1Brush[] brushes = _brushes;
-            RectF rect = _widePageRect;
-            if (WindowMaterial == WindowMaterial.Integrated)
-                rect = new RectF(0, 0, ClientSize.Width, rect.Top);
-            else
-                rect = new RectF(rect.Left, _titleBarRect.Bottom, rect.Right, rect.Top);
+            RectF rect = RenderingHelper.RoundInPixel(_widePageRect, PixelsPerPoint);
             deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
             ClearDC(deviceContext);
             if (titleLayout is not null)
@@ -199,11 +195,11 @@ namespace ConcreteUI.Window
             collector.MarkAsDirty(rect);
         }
 
-        protected override void RecalculateLayout(in SizeF windowSize, bool callRecalculatePageLayout)
+        protected override void RecalculateLayout(Size windowSize, bool callRecalculatePageLayout)
         {
             base.RecalculateLayout(windowSize, false);
-            RectF pageRect = _pageRect;
-            RectF widePageRect = pageRect;
+            Rect pageRect = _pageRect;
+            Rect widePageRect = pageRect;
             pageRect.Left += UIConstantsPrivate.WizardLeftPadding;
             pageRect.Top += UIConstantsPrivate.WizardPadding;
             pageRect.Right -= UIConstantsPrivate.WizardPadding;
@@ -213,14 +209,14 @@ namespace ConcreteUI.Window
             if (titleLayout is not null)
             {
                 titleLayout.MaxWidth = pageRect.Width;
-                float descriptionLocY = MathF.Ceiling(pageRect.Y + titleLayout.GetMetrics().Height + UIConstantsPrivate.WizardSubtitleMargin);
+                int descriptionLocY = MathI.Ceiling(pageRect.Y + titleLayout.GetMetrics().Height + UIConstantsPrivate.WizardSubtitleMargin);
                 if (titleDescriptionLayout is null)
                     pageRect.Top = descriptionLocY;
                 else
                 {
-                    _titleDescriptionLocation = new PointF(pageRect.X + UIConstantsPrivate.WizardSubtitleLeftMargin, descriptionLocY);
+                    _titleDescriptionLocation = new Point(pageRect.X + UIConstantsPrivate.WizardSubtitleLeftMargin, descriptionLocY);
                     titleDescriptionLayout.MaxWidth = pageRect.Width - UIConstantsPrivate.WizardSubtitleLeftMargin;
-                    pageRect.Top = descriptionLocY + titleDescriptionLayout.GetMetrics().Height;
+                    pageRect.Top = descriptionLocY + MathI.Ceiling(titleDescriptionLayout.GetMetrics().Height);
                     DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
                 }
                 DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
@@ -229,7 +225,7 @@ namespace ConcreteUI.Window
             widePageRect.Top = pageRect.Top;
             widePageRect.Bottom = pageRect.Bottom;
             _widePageRect = widePageRect;
-            _pageRect = pageRect = RenderingHelper.CeilingInPixel(pageRect, PixelsPerPoint);
+            _pageRect = pageRect;
             if (callRecalculatePageLayout && pageRect.IsValid)
             {
                 RecalculatePageLayout(pageRect);

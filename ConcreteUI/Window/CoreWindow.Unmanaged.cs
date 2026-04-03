@@ -31,7 +31,7 @@ namespace ConcreteUI.Window
         private IntPtr _associatedMonitor;
         private nint _beforeHitTest;
         private uint _sizeModeState;
-        private int _borderWidthInPixels;
+        private int _borderWidth;
         private bool _isMaximized, _isCreateByDefaultX, _isCreateByDefaultY, _hasMouseCapture, _isSystemPrepareBoosting;
         #endregion
 
@@ -91,7 +91,7 @@ namespace ConcreteUI.Window
             }
         }
 
-        protected int FormBorderWidth => _borderWidthInPixels;
+        protected int FormBorderWidth => _borderWidth;
         #endregion
 
         #region Initialize
@@ -548,7 +548,7 @@ namespace ConcreteUI.Window
             {
                 if (HasSizableBorder)
                 {
-                    int borderWidth = _borderWidthInPixels;
+                    int borderWidth = _borderWidth;
                     int x = point.X;
                     int y = point.Y;
                     int topBorder = borderWidth;
@@ -650,7 +650,7 @@ namespace ConcreteUI.Window
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ChangeDpi(uint dpiX, uint dpiY)
         {
-            _borderWidthInPixels = User32.GetSystemMetrics(SystemMetric.SM_CXBORDER) + User32.GetSystemMetrics(SystemMetric.SM_CXPADDEDBORDER);
+            _borderWidth = User32.GetSystemMetrics(SystemMetric.SM_CXBORDER) + User32.GetSystemMetrics(SystemMetric.SM_CXPADDEDBORDER);
 
             dpiX = MathHelper.Min(dpiX, SystemConstants.Float32IntegerLimit);
             dpiY = MathHelper.Min(dpiY, SystemConstants.Float32IntegerLimit);
@@ -712,21 +712,20 @@ namespace ConcreteUI.Window
             BitVector64 titleBarStates = _titleBarStates;
             bool hasMinimum = titleBarStates[1];
             bool hasMaximum = titleBarStates[2];
-            float clientX = clientPoint.X;
-            float clientY = clientPoint.Y;
-            float borderWidthInPointsX = _borderWidthInPointsX;
-            float borderWidthInPointsY = _borderWidthInPointsY;
-            float titleRightLoc;
-            RectF minRect = _minRect;
-            RectF maxRect = _maxRect;
-            RectF closeRect = _closeRect;
+            int clientX = MathI.Truncate(clientPoint.X);
+            int clientY = MathI.Truncate(clientPoint.Y);
+            int activeBorderWidth = _activeBorderWidth;
+            int titleRightLoc;
+            Rect minRect = _minRect;
+            Rect maxRect = _maxRect;
+            Rect closeRect = _closeRect;
             if (hasMinimum)
                 titleRightLoc = minRect.X;
             else if (hasMaximum)
                 titleRightLoc = maxRect.X;
             else
                 titleRightLoc = closeRect.X;
-            if (clientX < titleRightLoc && clientY <= _titleBarRect.Bottom && clientX >= borderWidthInPointsX && clientY >= borderWidthInPointsY)
+            if (clientX < titleRightLoc && clientY <= _titleBarRect.Bottom && clientX >= activeBorderWidth && clientY >= activeBorderWidth)
             {
                 return HitTestValue.Caption;
             }

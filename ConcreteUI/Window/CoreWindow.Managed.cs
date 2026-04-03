@@ -74,22 +74,22 @@ namespace ConcreteUI.Window
         public Vector2 PixelsPerPoint => _pixelsPerPoint;
         public Vector2 PointsPerPixel => _pointsPerPixel;
 
-        public new RectangleF Bounds
+        public new Rectangle Bounds
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (RectangleF)GraphicsUtils.ScalingRect((Rect)base.Bounds, _pointsPerPixel);
+            get => (Rectangle)GraphicsUtils.ScalingRect(base.Bounds, _pointsPerPixel);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => base.Bounds = (Rectangle)GraphicsUtils.ScalingRect((RectF)value, _pixelsPerPoint);
+            set => base.Bounds = (Rectangle)GraphicsUtils.ScalingRect(value, _pixelsPerPoint);
         }
 
-        public new RectangleF ClientBounds => (RectangleF)GraphicsUtils.ScalingRect((Rect)base.ClientBounds, _pointsPerPixel);
-        public new PointF Location => Bounds.Location;
-        public new SizeF Size => Bounds.Size;
-        public new SizeF ClientSize => ClientBounds.Size;
-        public new float X => Bounds.X;
-        public new float Y => Bounds.Y;
-        public new float Width => Bounds.Width;
-        public new float Height => Bounds.Height;
+        public new Rectangle ClientBounds => (Rectangle)GraphicsUtils.ScalingRect(base.ClientBounds, _pointsPerPixel);
+        public new Point Location => Bounds.Location;
+        public new Size Size => Bounds.Size;
+        public new Size ClientSize => ClientBounds.Size;
+        public new int X => Bounds.X;
+        public new int Y => Bounds.Y;
+        public new int Width => Bounds.Width;
+        public new int Height => Bounds.Height;
 
         public Rectangle RawBounds
         {

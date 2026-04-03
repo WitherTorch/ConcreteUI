@@ -1,4 +1,4 @@
-﻿using System.Drawing;
+using System.Drawing;
 
 namespace ConcreteUI.Internals
 {
@@ -18,10 +18,10 @@ namespace ConcreteUI.Internals
         public const int ScrollBarWidth = 14;
         public const int ScrollBarButtonWidth = ScrollBarWidth - 4;
         public const int ScrollBarScrollButtonWidth = ScrollBarWidth - UIConstants.ElementMargin;
-        public const float TitleBarButtonSizeHeight = 26;
-        public const float TitleBarButtonSizeWidth = 36;
-        public const float TitleBarIconSizeHeight = 10;
-        public const float TitleBarIconSizeWidth = 10;
+        public const int TitleBarButtonSizeHeight = 26;
+        public const int TitleBarButtonSizeWidth = 36;
+        public const int TitleBarIconSizeHeight = 10;
+        public const int TitleBarIconSizeWidth = 10;
 
         public static readonly SizeF ScrollBarScrollButtonSize = new SizeF(ScrollBarScrollButtonWidth, ScrollBarScrollButtonWidth);
         public static readonly SizeF TitleBarButtonSize = new SizeF(TitleBarButtonSizeWidth, TitleBarButtonSizeHeight);

@@ -108,6 +108,16 @@ namespace ConcreteUI.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Size ScalingSizeAndConvert(SizeF original, Vector2 scaleFactor)
+        {
+            (float factorX, float factorY) = scaleFactor;
+            return new Size(
+                MathI.Round(original.Width * factorX, MidpointRounding.AwayFromZero),
+                MathI.Round(original.Height * factorY, MidpointRounding.AwayFromZero)
+                );
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PointF ScalingPointAndConvert(Point original, Vector2 scaleFactor)
         {
             (float factorX, float factorY) = scaleFactor;

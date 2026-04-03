@@ -77,7 +77,7 @@ namespace ConcreteUI.Window
             .ConcatOptimized(GetOverlayElements())
             .ConcatOptimized(GetBackgroundElements());
 
-        protected override void RecalculatePageLayout(in RectF pageRect)
+        protected override void RecalculatePageLayout(in Rect pageRect)
         {
             int pageIndex = _pageIndex;
             if (pageIndex < 0)
@@ -86,14 +86,14 @@ namespace ConcreteUI.Window
             _recalcState.InterlockedExchange(1UL << pageIndex);
         }
 
-        protected override void RenderPage(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in RectF pageRect, bool force)
+        protected override void RenderPage(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect, bool force)
         {
             if (RecalculateLayoutIfPageChanged(pageRect))
                 force = true;
             RenderPageCore(deviceContext, collector, pageRect, force);
         }
 
-        protected virtual void RenderPageCore(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in RectF pageRect, bool force)
+        protected virtual void RenderPageCore(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect, bool force)
             => base.RenderPage(deviceContext, collector, pageRect, force);
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
@@ -105,12 +105,11 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Virtual Methods
-        protected virtual void RecalculatePageLayout(in RectF pageRect, int pageIndex)
+        protected virtual void RecalculatePageLayout(in Rect pageRect, int pageIndex)
         {
-            Rect flooredPageRect = (Rect)pageRect;
             LayoutEngine layoutEngine = RentLayoutEngine();
-            layoutEngine.RecalculateLayout(flooredPageRect, GetActiveElements(pageIndex));
-            layoutEngine.RecalculateLayout(flooredPageRect, GetOverlayElements());
+            layoutEngine.RecalculateLayout(pageRect, GetActiveElements(pageIndex));
+            layoutEngine.RecalculateLayout(pageRect, GetOverlayElements());
             ReturnLayoutEngine(layoutEngine);
         }
 
@@ -130,7 +129,7 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Normal Methods
-        protected bool RecalculateLayoutIfPageChanged(in RectF pageRect)
+        protected bool RecalculateLayoutIfPageChanged(in Rect pageRect)
         {
             if (isPageChanged)
             {

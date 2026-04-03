@@ -95,9 +95,9 @@ namespace ConcreteUI.Window
         private D2D1DeviceContext? _deviceContext;
         private DWriteTextLayout? _titleLayout;
         protected D2D1ColorF _clearDCColor, _windowBaseColor;
-        protected RectF _minRect, _maxRect, _closeRect, _pageRect, _titleBarRect;
+        protected Rect _minRect, _maxRect, _closeRect, _pageRect, _titleBarRect;
         protected BitVector64 _titleBarButtonStatus, _titleBarButtonChangedStatus;
-        protected float _drawingOffsetX, _drawingOffsetY, _borderWidthInPointsX, _borderWidthInPointsY;
+        protected int _drawingOffsetX, _drawingOffsetY, _activeBorderWidth;
         #endregion
 
         #region Properties
@@ -496,12 +496,10 @@ namespace ConcreteUI.Window
             UIElementHelper.OnDpiChangedForElements(GetBackgroundElements(), in args);
         }
 
-        protected virtual unsafe void RecalculateLayout(in SizeF windowSize, bool callRecalculatePageLayout)
+        protected virtual unsafe void RecalculateLayout(Size windowSize, bool callRecalculatePageLayout)
         {
             if (_windowMaterial == WindowMaterial.Integrated)
-            {
-                _pageRect = RenderingHelper.CeilingInPixel(RectF.FromXYWH(PointF.Empty, ClientSize), _pixelsPerPoint);
-            }
+                _pageRect = Rect.FromXYWH(Point.Empty, ClientSize);
             else
             {
                 IntPtr handle = Handle;
@@ -509,8 +507,7 @@ namespace ConcreteUI.Window
                     return;
 
                 Vector2 pixelsPerPoint = _pointsPerPixel;
-                float borderWidthInPointsX, borderWidthInPointsY;
-                float drawingOffsetX, drawingOffsetY;
+                int activeBorderWidth, drawingOffsetX, drawingOffsetY;
                 if (User32.IsZoomed(handle))
                 {
                     Rect windowRect;
@@ -519,45 +516,40 @@ namespace ConcreteUI.Window
                     if (!Screen.TryGetScreenInfoFromHwnd(handle, out ScreenInfo screenInfo))
                         screenInfo = default;
                     Rect workingArea = screenInfo.WorkingArea;
-                    drawingOffsetX = (workingArea.Left - windowRect.Left) * pixelsPerPoint.X;
-                    drawingOffsetY = (workingArea.Top - windowRect.Top) * pixelsPerPoint.Y;
-                    borderWidthInPointsX = _borderWidthInPointsX = 0;
-                    borderWidthInPointsY = _borderWidthInPointsY = 0;
+                    drawingOffsetX = MathI.Round((workingArea.Left - windowRect.Left) * pixelsPerPoint.X, MidpointRounding.AwayFromZero);
+                    drawingOffsetY = MathI.Round((workingArea.Top - windowRect.Top) * pixelsPerPoint.Y, MidpointRounding.AwayFromZero);
+                    activeBorderWidth = 0;
                 }
                 else
                 {
                     Vector2 pointsPerPixel = _pixelsPerPoint;
-                    float borderWidthInPixels = _borderWidthInPixels;
-                    borderWidthInPointsX = borderWidthInPixels * RenderingHelper.GetDefaultBorderWidth(pointsPerPixel.X);
-                    borderWidthInPointsY = borderWidthInPixels * RenderingHelper.GetDefaultBorderWidth(pointsPerPixel.Y);
-                    _borderWidthInPointsX = borderWidthInPointsX;
-                    _borderWidthInPointsY = borderWidthInPointsY;
+                    activeBorderWidth = _borderWidth;
                     drawingOffsetX = 0;
                     drawingOffsetY = 0;
                 }
+                _activeBorderWidth = activeBorderWidth;
                 _drawingOffsetX = drawingOffsetX;
                 _drawingOffsetY = drawingOffsetY;
-                float x = windowSize.Width - 1 - drawingOffsetX, y = drawingOffsetY;
-                _closeRect = RectF.FromXYWH(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
-                _maxRect = RectF.FromXYWH(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
-                _minRect = RectF.FromXYWH(x - UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
-                RectF titleBarRect = _titleBarRect = RectF.FromXYWH(drawingOffsetX + 1, drawingOffsetY + 1, Size.Width - 2, 26);
-                _pageRect = RenderingHelper.CeilingInPixel(new RectF(
-                    left: drawingOffsetX + borderWidthInPointsX,
+                int x = windowSize.Width - 1 - drawingOffsetX, y = drawingOffsetY;
+                _closeRect = Rect.FromXYWH(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
+                _maxRect = Rect.FromXYWH(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
+                _minRect = Rect.FromXYWH(x - UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
+                Rect titleBarRect = _titleBarRect = Rect.FromXYWH(drawingOffsetX + 1, drawingOffsetY + 1, Size.Width - 2, 26);
+                _pageRect = new Rect(
+                    left: drawingOffsetX + activeBorderWidth,
                     top: titleBarRect.Bottom + 1,
-                    right: windowSize.Width - drawingOffsetX - borderWidthInPointsX,
-                    bottom: windowSize.Height - borderWidthInPointsY), _pixelsPerPoint);
+                    right: windowSize.Width - drawingOffsetX - activeBorderWidth,
+                    bottom: windowSize.Height - activeBorderWidth);
             }
             if (callRecalculatePageLayout && _pageRect.IsValid)
                 RecalculatePageLayout(_pageRect);
         }
 
-        protected virtual void RecalculatePageLayout(in RectF pageRect)
+        protected virtual void RecalculatePageLayout(in Rect pageRect)
         {
-            Rect flooredPageRect = (Rect)pageRect;
             LayoutEngine layoutEngine = RentLayoutEngine();
-            layoutEngine.RecalculateLayout(flooredPageRect, GetActiveElements());
-            layoutEngine.RecalculateLayout(flooredPageRect, GetOverlayElements());
+            layoutEngine.RecalculateLayout(pageRect, GetActiveElements());
+            layoutEngine.RecalculateLayout(pageRect, GetOverlayElements());
             ReturnLayoutEngine(layoutEngine);
         }
         #endregion
@@ -587,7 +579,7 @@ namespace ConcreteUI.Window
                     host.ResizeTemporarily(size);
                 else
                     host.Resize(size);
-                RecalculateLayout(GraphicsUtils.ScalingSize(size, _pointsPerPixel), true);
+                RecalculateLayout(GraphicsUtils.ScalingSizeAndConvert(size, _pointsPerPixel), true);
             }
             D2D1DeviceContext? deviceContext = host.GetDeviceContext();
             if (deviceContext is null || deviceContext.IsDisposed)
@@ -604,7 +596,7 @@ namespace ConcreteUI.Window
         {
             DirtyAreaCollector collector = DirtyAreaCollector.Empty;
             RenderTitle(deviceContext, collector, force: true);
-            RectF pageRect = _pageRect;
+            Rect pageRect = _pageRect;
             if (pageRect.IsValid)
                 RenderPage(deviceContext, collector, pageRect, force: true);
             host.Flush();
@@ -622,7 +614,7 @@ namespace ConcreteUI.Window
             Vector2 pointsPerPixel = _pixelsPerPoint;
 
             RenderTitle(deviceContext, collector, force: false);
-            RectF pageRect = _pageRect;
+            Rect pageRect = _pageRect;
             if (pageRect.IsValid)
                 RenderPage(deviceContext, collector, pageRect, force: false);
             host.Flush();
@@ -636,16 +628,16 @@ namespace ConcreteUI.Window
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void RenderPageBackground(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in RectF pageRect)
+        protected virtual void RenderPageBackground(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect)
             => deviceContext.Clear(_windowBaseColor);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void RenderOnceContent(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in RectF pageRect) { }
+        protected virtual void RenderOnceContent(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void RenderPage(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in RectF pageRect, bool force)
+        protected virtual void RenderPage(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect, bool force)
         {
-            using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, pageRect, D2D1AntialiasMode.Aliased);
+            using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.RoundInPixel((RectF)pageRect, _pixelsPerPoint), D2D1AntialiasMode.Aliased);
             if (force)
             {
                 collector.UsePresentAllModeOnce();
@@ -672,6 +664,7 @@ namespace ConcreteUI.Window
             if (_windowMaterial == WindowMaterial.Integrated)
                 return;
             D2D1Brush[] brushes = _brushes;
+            Vector2 pixelsPerPoint = _pixelsPerPoint;
 
             BitVector64 TitleBarButtonChangedStatus = _titleBarButtonChangedStatus;
             BitVector64 titleBarStates = _titleBarStates;
@@ -695,7 +688,8 @@ namespace ConcreteUI.Window
                 ClearDCForTitle(deviceContext);
                 if (titleBarStates[0])
                 {
-                    deviceContext.PushAxisAlignedClip(_titleBarRect, D2D1AntialiasMode.Aliased);
+                    RectF titleBarRect = RenderingHelper.RoundInPixel(_titleBarRect, pixelsPerPoint);
+                    deviceContext.PushAxisAlignedClip(titleBarRect, D2D1AntialiasMode.Aliased);
                     deviceContext.DrawTextLayout(new PointF(_drawingOffsetX + 7.5f, _drawingOffsetY + 1.5f), titleLayout, brushes[(int)Brush.TitleForeBrush]);
                     deviceContext.PopAxisAlignedClip();
                 }
@@ -707,7 +701,7 @@ namespace ConcreteUI.Window
             {
                 if (titleBarStates[1] && (TitleBarButtonChangedStatus[0] || force))
                 {
-                    RectF minRect = _minRect;
+                    RectF minRect = RenderingHelper.RoundInPixel(_minRect, pixelsPerPoint);
                     deviceContext.PushAxisAlignedClip(minRect, D2D1AntialiasMode.Aliased);
                     if (!force)
                         ClearDCForTitle(deviceContext);
@@ -718,7 +712,7 @@ namespace ConcreteUI.Window
                 }
                 if (titleBarStates[2] && (TitleBarButtonChangedStatus[1] || force))
                 {
-                    RectF maxRect = _maxRect;
+                    RectF maxRect = RenderingHelper.RoundInPixel(_maxRect, pixelsPerPoint);
                     deviceContext.PushAxisAlignedClip(maxRect, D2D1AntialiasMode.Aliased);
                     if (!force)
                     {
@@ -735,7 +729,7 @@ namespace ConcreteUI.Window
             }
             if (TitleBarButtonChangedStatus[2] || force)
             {
-                RectF closeRect = _closeRect;
+                RectF closeRect = RenderingHelper.RoundInPixel(_closeRect, pixelsPerPoint);
                 deviceContext.PushAxisAlignedClip(closeRect, D2D1AntialiasMode.Aliased);
                 if (!force)
                 {
@@ -1078,7 +1072,7 @@ namespace ConcreteUI.Window
         {
             ContextMenu contextMenu = new ContextMenu(this, items);
             ChangeOverlayElement(contextMenu)?.Dispose();
-            RectF pageRect = _pageRect;
+            Rect pageRect = _pageRect;
             if (location.X + contextMenu.Width >= pageRect.Right)
                 location.X = location.X - contextMenu.Width + 1;
             if (location.Y + contextMenu.Height >= pageRect.Bottom)

@@ -48,7 +48,7 @@ namespace ConcreteUI.Window
         private readonly string[] _menuTitles;
         private DWriteTextLayout[]? menuBarButtonLayouts;
         private float menuBarButtonLastRight;
-        private RectF[]? _menuBarButtonRects;
+        private Rect[]? _menuBarButtonRects;
         #endregion
 
         #region Rendering Fields
@@ -58,7 +58,7 @@ namespace ConcreteUI.Window
         #region Properties
         public override int PageCount => _menuTitles.Length;
 
-        public RectF[] MenuBarButtonBounds => NullSafetyHelper.ThrowIfNull(InterlockedHelper.Read(ref _menuBarButtonRects));
+        public Rect[] MenuBarButtonBounds => NullSafetyHelper.ThrowIfNull(InterlockedHelper.Read(ref _menuBarButtonRects));
         #endregion
 
         #region Constructor
@@ -85,23 +85,23 @@ namespace ConcreteUI.Window
             if (MousePositionChangedForMenuBar(clientPoint, false))
                 return HitTestValue.Client;
             float clientY = clientPoint.Y;
-            RectF[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
+            Rect[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
             if (menuBarButtonRects is null)
                 return HitTestValue.NoWhere;
-            RectF templateMenuBarButtonRect = menuBarButtonRects.LastOrDefault();
+            Rect templateMenuBarButtonRect = menuBarButtonRects.LastOrDefault();
             if (clientY <= templateMenuBarButtonRect.Bottom && clientY > _titleBarRect.Bottom)
                 return HitTestValue.Caption;
             return HitTestValue.NoWhere;
         }
 
-        protected override void RecalculateLayout(in SizeF windowSize, bool callRecalculatePageLayout)
+        protected override void RecalculateLayout(Size windowSize, bool callRecalculatePageLayout)
         {
             base.RecalculateLayout(windowSize, false);
-            RectF[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
+            Rect[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
             if (menuBarButtonRects is null)
                 return;
-            RectF pageRect = _pageRect;
-            float x, y;
+            Rect pageRect = _pageRect;
+            int x, y;
             Vector2 pixelsPerPoint = PixelsPerPoint;
             if (WindowMaterial == WindowMaterial.Integrated)
             {
@@ -110,14 +110,14 @@ namespace ConcreteUI.Window
             }
             else
             {
-                x = RenderingHelper.RoundInPixel(pageRect.Left, pixelsPerPoint.X);
-                y = RenderingHelper.RoundInPixel(_titleBarRect.Height + _drawingOffsetY, pixelsPerPoint.Y);
+                x = pageRect.Left;
+                y = _titleBarRect.Height + _drawingOffsetY;
             }
             for (int i = 0, count = menuBarButtonRects.Length; i < count; i++)
             {
-                RectF rect = menuBarButtonRects[i];
-                float width = rect.Width;
-                float height = rect.Height;
+                Rect rect = menuBarButtonRects[i];
+                int width = rect.Width;
+                int height = rect.Height;
                 rect.Left = x;
                 rect.Top = y;
                 x = rect.Right = x + width;
@@ -126,7 +126,7 @@ namespace ConcreteUI.Window
             }
             menuBarButtonLastRight = x;
             pageRect.Top = y + menuBarButtonRects.FirstOrDefault().Height;
-            _pageRect = pageRect = RenderingHelper.RoundInPixel(pageRect, pixelsPerPoint);
+            _pageRect = pageRect;
             if (callRecalculatePageLayout && pageRect.IsValid)
             {
                 RecalculatePageLayout(pageRect);
@@ -138,7 +138,7 @@ namespace ConcreteUI.Window
             base.ApplyThemeCore(provider);
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
             GenerateMenu(_menuTitles, baseX: 0, baseY: 27, menuExtraWidth: UIConstants.ElementMarginDouble,
-                out RectF[] menuBarButtonRects, out DWriteTextLayout[] menuBarButtonLayouts);
+                out Rect[] menuBarButtonRects, out DWriteTextLayout[] menuBarButtonLayouts);
             _menuBarButtonRects = menuBarButtonRects;
             DisposeHelper.SwapDispose(ref this.menuBarButtonLayouts, menuBarButtonLayouts);
         }
@@ -149,7 +149,7 @@ namespace ConcreteUI.Window
             BitVector64 MenuBarButtonChangedStatus = this.MenuBarButtonChangedStatus;
             base.RenderTitle(deviceContext, collector, force);
             #region 繪製主選單
-            RectF[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
+            Rect[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
             if (menuBarButtonRects is null)
                 return;
             DWriteTextLayout[]? menuBarButtonLayouts = Interlocked.Exchange(ref this.menuBarButtonLayouts, null);
@@ -163,11 +163,12 @@ namespace ConcreteUI.Window
             D2D1Brush menuSelectBrush = brushes[(int)Brush.MenuSelectBrush];
             D2D1Brush menuHoverBrush = brushes[(int)Brush.MenuHoverBrush];
             D2D1Brush menuHoverForeBrush = brushes[(int)Brush.MenuHoverForeBrush];
+            Vector2 pointsPerPixel = PixelsPerPoint;
             if (force)
             {
-                RectF firstRect = menuBarButtonRects.FirstOrDefault();
-                RectF lastRect = menuBarButtonRects.LastOrDefault();
-                RectF menuBarRect = new RectF(firstRect.X, firstRect.Top, lastRect.Right, lastRect.Bottom);
+                Rect firstRect = menuBarButtonRects.FirstOrDefault();
+                Rect lastRect = menuBarButtonRects.LastOrDefault();
+                RectF menuBarRect = RenderingHelper.RoundInPixel(new RectF(firstRect.X, firstRect.Top, lastRect.Right, lastRect.Bottom), pointsPerPixel);
                 deviceContext.PushAxisAlignedClip(menuBarRect, D2D1AntialiasMode.Aliased);
                 if (WindowMaterial != WindowMaterial.Integrated)
                     GraphicsUtils.ClearAndFill(deviceContext, menuBackBrush, clearDCColor);
@@ -182,7 +183,7 @@ namespace ConcreteUI.Window
             bool menuRedraw = isPageChanged || force;
             for (int i = 0, currentPageIndex = CurrentPage, count = menuBarButtonRects.Length; i < count; i++)
             {
-                RectF rect = menuBarButtonRects[i];
+                RectF rect = RenderingHelper.RoundInPixel(menuBarButtonRects[i], pointsPerPixel);
                 DWriteTextLayout layout = menuBarButtonLayouts[i];
                 bool isSelected = currentPageIndex == i;
                 if (isSelected)
@@ -224,7 +225,7 @@ namespace ConcreteUI.Window
             MouseButtons buttons = args.Buttons;
             if (buttons.HasFlagOptimized(MouseButtons.LeftButton))
             {
-                RectF[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
+                Rect[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
                 if (menuBarButtonRects is null)
                     return;
                 for (int i = 0, count = menuBarButtonRects.Length; i < count; i++)
@@ -274,14 +275,14 @@ namespace ConcreteUI.Window
 
         protected virtual bool MousePositionChangedForMenuBar(PointF point, bool requireUpdate)
         {
-            RectF[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
+            Rect[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
             if (menuBarButtonRects is null)
                 return false;
             bool result = false;
             int length = menuBarButtonRects.Length;
-            RectF firstRect = menuBarButtonRects.FirstOrDefault();
-            RectF lastRect = menuBarButtonRects.LastOrDefault();
-            RectF menuBarRect = new RectF(firstRect.X, firstRect.Top, lastRect.Right, lastRect.Bottom);
+            Rect firstRect = menuBarButtonRects.FirstOrDefault();
+            Rect lastRect = menuBarButtonRects.LastOrDefault();
+            Rect menuBarRect = new Rect(firstRect.X, firstRect.Top, lastRect.Right, lastRect.Bottom);
             BitVector64 templateVector = MenuBarButtonStatus, operateVector = templateVector & ~((1UL << length) - 1);
             BitVector64 changeVector = ReferenceHelper.Exchange(ref MenuBarButtonChangedStatus, default);
             if (changeVector > 0)
@@ -313,22 +314,22 @@ namespace ConcreteUI.Window
         #region Utility Methods
         protected D2D1Brush GetBrush(Brush brush) => _brushes[(int)brush];
 
-        protected void GenerateMenu(string[] menuButtonTexts, float baseX, float baseY, float menuExtraWidth,
-            out RectF[] menuButtonRects, out DWriteTextLayout[] menuButtonLayouts)
+        protected void GenerateMenu(string[] menuButtonTexts, int baseX, int baseY, int menuExtraWidth,
+            out Rect[] menuButtonRects, out DWriteTextLayout[] menuButtonLayouts)
         {
-            float menuX = baseX;
+            int menuX = baseX;
             Vector2 pixelsPerPoint = PixelsPerPoint;
             int count = menuButtonTexts.Length;
             DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(NullSafetyHelper.ThrowIfNull(CurrentTheme).FontName, UIConstants.MenuFontSize);
             format.ParagraphAlignment = DWriteParagraphAlignment.Center;
             format.TextAlignment = DWriteTextAlignment.Center;
             menuButtonLayouts = new DWriteTextLayout[count];
-            menuButtonRects = new RectF[count];
-            float menuHeight = 0.0f;
+            menuButtonRects = new Rect[count];
+            int menuHeight = 0;
             for (int i = 0; i < count; i++)
             {
                 DWriteTextLayout layout = GraphicsUtils.CreateCustomTextLayout(menuButtonTexts[i], format, menuExtraWidth, float.PositiveInfinity);
-                float height = RenderingHelper.CeilingInPixel(layout.MaxHeight, pixelsPerPoint.Y);
+                int height = MathI.Ceiling(layout.MaxHeight);
                 if (menuHeight < height)
                     menuHeight = height;
                 menuButtonLayouts[i] = layout;
@@ -339,9 +340,9 @@ namespace ConcreteUI.Window
                 DWriteTextLayout layout = menuButtonLayouts[i];
                 layout.MaxHeight = menuHeight;
 
-                float width = RenderingHelper.CeilingInPixel(layout.MaxWidth, pixelsPerPoint.X);
+                int width = MathI.Ceiling(layout.MaxWidth);
                 layout.MaxWidth = width;
-                menuButtonRects[i] = RectF.FromXYWH(menuX, baseY, width, menuHeight);
+                menuButtonRects[i] = Rect.FromXYWH(menuX, baseY, width, menuHeight);
                 menuX += width;
             }
             format.Dispose();
