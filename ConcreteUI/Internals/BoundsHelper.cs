@@ -8,7 +8,6 @@ using ConcreteUI.Controls;
 using InlineMethod;
 
 using WitherTorch.Common;
-using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
@@ -104,25 +103,27 @@ namespace ConcreteUI.Internals
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void BulkContains(Rect* ptr, nuint length, PointF point)
+        public static void BulkAABBHitTest(Rect* ptr, nuint length, PointF point)
         {
+            int x = MathI.Truncate(point.X);
+            int y = MathI.Truncate(point.Y);
             if (length * 4 > Limits.GetLimitForVectorizing<int>())
             {
-                VectorizedBulkContains(ptr, length, point);
+                VectorizedBulkAABBHitTest(ptr, length, x, y);
                 return;
             }
-            ScalarizedBulkContains(ptr, length, point.X, point.Y);
+            ScalarizedBulkAABBHitTest(ptr, length, x, y);
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static void VectorizedBulkContains(Rect* ptr, nuint length, PointF point)
-            => VectorizedBulkContains((int*)ptr, length * 4, point);
+        private static void VectorizedBulkAABBHitTest(Rect* ptr, nuint length, int x, int y)
+            => VectorizedBulkAABBHitTest((int*)ptr, length * 4, x, y);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static partial void VectorizedBulkContains(int* ptr, nuint length, PointF point);
+        private static partial void VectorizedBulkAABBHitTest(int* ptr, nuint length, int x, int y);
 
         [Inline(InlineBehavior.Remove)]
-        private static void ScalarizedBulkContains(Rect* ptr, nuint length, float x, float y)
+        private static void ScalarizedBulkAABBHitTest(Rect* ptr, nuint length, int x, int y)
         {
             for (; length >= 4; length -= 4, ptr += 4)
             {
@@ -144,7 +145,7 @@ namespace ConcreteUI.Internals
                 return;
             DoSingleOperation(ptr, x, y);
 
-            static void DoSingleOperation(Rect* ptr, float x, float y)
+            static void DoSingleOperation(Rect* ptr, int x, int y)
             {
                 *ptr = new Rect(
                     left: -MathHelper.BooleanToInt32(ptr->Left <= x),

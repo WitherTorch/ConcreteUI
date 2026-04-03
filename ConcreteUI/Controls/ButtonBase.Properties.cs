@@ -14,13 +14,12 @@ namespace ConcreteUI.Controls
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                ButtonTriState result;
-                OptimisticLock.Enter(ref _version, out uint version);
-                do
-                {
-                    result = _pressState;
-                } while (OptimisticLock.TryLeave(ref _version, ref version));
-                return result;
+                ref readonly uint valueRef = ref _pressState;
+                ref readonly uint versionRef = ref _version;
+
+                uint value = OptimisticLock.EnterWithPrimitive(in valueRef, in versionRef, out uint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in valueRef, in versionRef, ref value, ref version)) ;
+                return (ButtonTriState)value;
             }
         }
 
@@ -29,19 +28,18 @@ namespace ConcreteUI.Controls
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                bool result;
-                OptimisticLock.Enter(ref _version, out uint version);
-                do
-                {
-                    result = _enabled;
-                } while (OptimisticLock.TryLeave(ref _version, ref version));
-                return result;
+                ref readonly bool valueRef = ref _enabled;
+                ref readonly uint versionRef = ref _version;
+
+                bool value = OptimisticLock.EnterWithPrimitive(in valueRef, in versionRef, out uint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in valueRef, in versionRef, ref value, ref version)) ;
+                return value;
             }
             set
             {
                 if (ReferenceHelper.Exchange(ref _enabled, value) == value)
                     return;
-                _version++;
+                OptimisticLock.Increase(ref _version);
                 Update();
             }
         }

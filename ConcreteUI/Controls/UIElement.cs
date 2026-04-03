@@ -35,7 +35,8 @@ namespace ConcreteUI.Controls
         private IElementContainer? _parent;
         private IThemeContext? _themeContext;
         private string _themePrefix;
-        private ulong _requestRedraw, _freeze, _location, _size;
+        private ulong _location, _size;
+        private nuint _requestRedraw, _freeze, _version;
 
         public UIElement(IRenderer renderer, string themePrefix)
         {
@@ -44,7 +45,7 @@ namespace ConcreteUI.Controls
             _identifier = InterlockedHelper.GetAndIncrement(ref _identifierGenerator);
             _themePrefix = themePrefix.ToLowerAscii();
             _layoutReferences = CreateLayoutReferenceLazies();
-            _requestRedraw = ulong.MaxValue;
+            _requestRedraw = UnsafeHelper.GetMaxValue<nuint>();
         }
 
         private LazyTiny<LayoutVariable>[] CreateLayoutReferenceLazies()
@@ -115,7 +116,7 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual void Update()
         {
-            const ulong RequestRedrawBit = 0b01;
+            const nuint RequestRedrawBit = 0b01;
 
             if (InterlockedHelper.CompareExchange(ref _freeze, 0b11, 0b01) != 0UL ||
                 !CheckIsRenderedOnce(InterlockedHelper.Or(ref _requestRedraw, RequestRedrawBit)))
@@ -177,10 +178,10 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual bool NeedRefresh() => InterlockedHelper.Read(ref _requestRedraw) != 0UL;
+        public virtual bool NeedRefresh() => InterlockedHelper.Read(ref _requestRedraw) != default;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void ResetNeedRefreshFlag() => InterlockedHelper.Exchange(ref _requestRedraw, 0UL);
+        protected void ResetNeedRefreshFlag() => InterlockedHelper.Exchange(ref _requestRedraw, default);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool CheckIsRenderedOnce(ulong requestRedraw)
@@ -274,13 +275,23 @@ namespace ConcreteUI.Controls
         public override bool Equals(object? obj) => ReferenceEquals(obj, this);
 
         [Inline(InlineBehavior.Remove)]
-        private Point GetLocationCore() => ConvertUInt64ToPoint(InterlockedHelper.Read(ref _location));
+        private Point GetLocationCore()
+        {
+            ref readonly ulong valRef = ref _location;
+            ref readonly nuint versionRef = ref _version;
+            ulong val = OptimisticLock.EnterWithPrimitive(in valRef, in versionRef, out nuint version);
+            while (!OptimisticLock.TryLeaveWithPrimitive(in valRef, in versionRef, ref val, ref version)) ;
+            return ConvertUInt64ToPoint(in val);
+        }
 
         [Inline(InlineBehavior.Remove)]
         private void SetLocationCore(in Point value)
         {
             if (SetLocationCore_Pure(in value))
+            {
                 OnLocationChanged();
+                OptimisticLock.Increase(ref _version);
+            }
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -291,13 +302,23 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Remove)]
-        private Size GetSizeCore() => ConvertUInt64ToSize(InterlockedHelper.Read(ref _size));
+        private Size GetSizeCore()
+        {
+            ref readonly ulong valRef = ref _size;
+            ref readonly nuint versionRef = ref _version;
+            ulong val = OptimisticLock.EnterWithPrimitive(in valRef, in versionRef, out nuint version);
+            while (!OptimisticLock.TryLeaveWithPrimitive(in valRef, in versionRef, ref val, ref version)) ;
+            return ConvertUInt64ToSize(in val);
+        }
 
         [Inline(InlineBehavior.Remove)]
         private void SetSizeCore(in Size value)
         {
             if (SetSizeCore_Pure(in value))
+            {
                 OnSizeChanged();
+                OptimisticLock.Increase(ref _version);
+            }
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -307,32 +328,16 @@ namespace ConcreteUI.Controls
             return InterlockedHelper.Exchange(ref _size, val) != val;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref readonly ulong ConvertPointToUInt64(in Point value)
-        {
-            IL.PushInRef(in value);
-            return ref IL.ReturnRef<ulong>();
-        }
+        [Inline(InlineBehavior.Remove)]
+        private static ref readonly ulong ConvertPointToUInt64(in Point value) => ref UnsafeHelper.As<Point, ulong>(ref UnsafeHelper.AsRefIn(in value));
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref readonly ulong ConvertSizeToUInt64(in Size value)
-        {
-            IL.PushInRef(in value);
-            return ref IL.ReturnRef<ulong>();
-        }
+        [Inline(InlineBehavior.Remove)]
+        private static ref readonly ulong ConvertSizeToUInt64(in Size value) => ref UnsafeHelper.As<Size, ulong>(ref UnsafeHelper.AsRefIn(in value));
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref readonly Point ConvertUInt64ToPoint(in ulong value)
-        {
-            IL.PushInRef(in value);
-            return ref IL.ReturnRef<Point>();
-        }
+        [Inline(InlineBehavior.Remove)]
+        private static ref readonly Point ConvertUInt64ToPoint(in ulong value) => ref UnsafeHelper.As<ulong, Point>(ref UnsafeHelper.AsRefIn(in value));
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref readonly Size ConvertUInt64ToSize(in ulong value)
-        {
-            IL.PushInRef(in value);
-            return ref IL.ReturnRef<Size>();
-        }
+        [Inline(InlineBehavior.Remove)]
+        private static ref readonly Size ConvertUInt64ToSize(in ulong value) => ref UnsafeHelper.As<ulong, Size>(ref UnsafeHelper.AsRefIn(in value));
     }
 }

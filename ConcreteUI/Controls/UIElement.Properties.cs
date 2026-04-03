@@ -8,6 +8,7 @@ using InlineMethod;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Controls
 {
@@ -69,9 +70,17 @@ namespace ConcreteUI.Controls
                 bool locationChanged = SetLocationCore_Pure(value.Location);
                 bool sizeChanged = SetSizeCore_Pure(value.Size);
                 if (locationChanged)
+                {
+                    OptimisticLock.Increase(ref _version);
                     OnLocationChanged();
-                if (sizeChanged) 
+                    if (sizeChanged)
+                        OnSizeChanged();
+                }
+                else if (sizeChanged)
+                {
+                    OptimisticLock.Increase(ref _version);
                     OnSizeChanged();
+                }
             }
         }
 

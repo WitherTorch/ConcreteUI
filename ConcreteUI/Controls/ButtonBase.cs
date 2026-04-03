@@ -3,13 +3,13 @@ using System.Runtime.CompilerServices;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Controls
 {
     public abstract partial class ButtonBase : DisposableUIElementBase, IMouseInteractHandler, IMouseMoveHandler
     {
-        private ButtonTriState _pressState;
-        private uint _version;
+        private uint _version, _pressState;
         private bool _enabled, _isPressed;
 
         public ButtonBase(IRenderer renderer, string themePrefix) : base(renderer, themePrefix)
@@ -22,14 +22,14 @@ namespace ConcreteUI.Controls
 
         void IMouseMoveHandler.OnMouseMove(in MouseEventArgs args)
         {
-            ButtonTriState pressState;
+            uint pressState;
             if (_enabled && args.IsInSpecificSize(Size))
-                pressState = _isPressed ? ButtonTriState.Pressed : ButtonTriState.Hovered;
+                pressState = _isPressed ? (uint)ButtonTriState.Pressed : (uint)ButtonTriState.Hovered;
             else
-                pressState = ButtonTriState.None;
+                pressState = (uint)ButtonTriState.None;
             if (ReferenceHelper.Exchange(ref _pressState, pressState) != pressState)
             {
-                _version++;
+                OptimisticLock.Increase(ref _version);
                 Update();
             }
         }
@@ -40,9 +40,9 @@ namespace ConcreteUI.Controls
                 return;
             args.Handle();
             _isPressed = true;
-            if (ReferenceHelper.Exchange(ref _pressState, ButtonTriState.Pressed) != ButtonTriState.Pressed)
+            if (ReferenceHelper.Exchange(ref _pressState, (uint)ButtonTriState.Pressed) != (uint)ButtonTriState.Pressed)
             {
-                _version++;
+                OptimisticLock.Increase(ref _version);
                 Update();
             }
         }
@@ -56,9 +56,9 @@ namespace ConcreteUI.Controls
             if (PressState != ButtonTriState.Pressed)
                 return;
 
-            if (ReferenceHelper.Exchange(ref _pressState, ButtonTriState.Hovered) != ButtonTriState.Hovered)
+            if (ReferenceHelper.Exchange(ref _pressState, (uint)ButtonTriState.Hovered) != (uint)ButtonTriState.Hovered)
             {
-                _version++;
+                OptimisticLock.Increase(ref _version);
                 Update();
             }
             OnClick(in args);

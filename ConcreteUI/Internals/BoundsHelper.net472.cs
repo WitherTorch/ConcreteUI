@@ -14,10 +14,9 @@ namespace ConcreteUI.Internals
     {
         private static readonly Vector<int> _blendVector = CreateBlendVector();
 
-        private static partial void VectorizedBulkContains(int* ptr, nuint length, PointF point)
+        private static partial void VectorizedBulkAABBHitTest(int* ptr, nuint length, int x, int y)
         {
-            (float x, float y) = point;
-            Vector<float> filterVector = CreatePointVector(x, y);
+            Vector<int> filterVector = CreatePointVector(x, y);
             Vector<int> blendVector = _blendVector;
 
             nuint headRemainder = (nuint)ptr % UnsafeHelper.SizeOf<Vector<int>>();
@@ -31,7 +30,7 @@ namespace ConcreteUI.Internals
                 {
                     headRemainder = (UnsafeHelper.SizeOf<Vector<int>>() - headRemainder) / UnsafeHelper.SizeOf<int>(); // 取得數量
                     DebugHelper.ThrowIf(headRemainder % 4 != 0);
-                    ScalarizedBulkContains((Rect*)ptr, headRemainder / 4, x, y);
+                    ScalarizedBulkAABBHitTest((Rect*)ptr, headRemainder / 4, x, y);
                     ptr += headRemainder;
                     length -= headRemainder;
                     goto VectorizedLoop;
@@ -41,17 +40,15 @@ namespace ConcreteUI.Internals
                     int* ptr2 = ptr + Vector<int>.Count;
                     Vector<int> sourceVector = UnsafeHelper.ReadUnaligned<Vector<int>>(ptr);
                     Vector<int> sourceVector2 = UnsafeHelper.ReadUnaligned<Vector<int>>(ptr2);
-                    Vector<float> sourceVectorAsFloat = Vector.ConvertToSingle(sourceVector);
-                    Vector<float> sourceVectorAsFloat2 = Vector.ConvertToSingle(sourceVector2);
                     Vector<int> resultVector = Vector.ConditionalSelect(
                             condition: blendVector,
-                            left: Vector.LessThanOrEqual(sourceVectorAsFloat, filterVector),
-                            right: Vector.GreaterThanOrEqual(sourceVectorAsFloat, filterVector)
+                            left: Vector.LessThanOrEqual(sourceVector, filterVector),
+                            right: Vector.GreaterThanOrEqual(sourceVector, filterVector)
                             );
                     Vector<int> resultVector2 = Vector.ConditionalSelect(
                             condition: blendVector,
-                            left: Vector.LessThanOrEqual(sourceVectorAsFloat2, filterVector),
-                            right: Vector.GreaterThanOrEqual(sourceVectorAsFloat2, filterVector)
+                            left: Vector.LessThanOrEqual(sourceVector2, filterVector),
+                            right: Vector.GreaterThanOrEqual(sourceVector2, filterVector)
                             );
                     UnsafeHelper.WriteUnaligned(ptr, resultVector);
                     UnsafeHelper.WriteUnaligned(ptr2, resultVector2);
@@ -60,11 +57,10 @@ namespace ConcreteUI.Internals
                 else
                 {
                     Vector<int> sourceVector = UnsafeHelper.ReadUnaligned<Vector<int>>(ptr);
-                    Vector<float> sourceVectorAsFloat = Vector.ConvertToSingle(sourceVector);
                     Vector<int> resultVector = Vector.ConditionalSelect(
                             condition: blendVector,
-                            left: Vector.LessThanOrEqual(sourceVectorAsFloat, filterVector),
-                            right: Vector.GreaterThanOrEqual(sourceVectorAsFloat, filterVector)
+                            left: Vector.LessThanOrEqual(sourceVector, filterVector),
+                            right: Vector.GreaterThanOrEqual(sourceVector, filterVector)
                             );
                     UnsafeHelper.WriteUnaligned(ptr, resultVector);
                     ptr += (nuint)Vector<int>.Count;
@@ -77,11 +73,10 @@ namespace ConcreteUI.Internals
             do
             {
                 Vector<int> sourceVector = UnsafeHelper.ReadUnaligned<Vector<int>>(ptr);
-                Vector<float> sourceVectorAsFloat = Vector.ConvertToSingle(sourceVector);
                 Vector<int> resultVector = Vector.ConditionalSelect(
                         condition: blendVector,
-                        left: Vector.LessThanOrEqual(sourceVectorAsFloat, filterVector),
-                        right: Vector.GreaterThanOrEqual(sourceVectorAsFloat, filterVector)
+                        left: Vector.LessThanOrEqual(sourceVector, filterVector),
+                        right: Vector.GreaterThanOrEqual(sourceVector, filterVector)
                         );
                 UnsafeHelper.WriteUnaligned(ptr, resultVector);
                 ptr += (nuint)Vector<int>.Count;
@@ -94,11 +89,10 @@ namespace ConcreteUI.Internals
             do
             {
                 Vector<int> sourceVector = UnsafeHelper.Read<Vector<int>>(ptr);
-                Vector<float> sourceVectorAsFloat = Vector.ConvertToSingle(sourceVector);
                 Vector<int> resultVector = Vector.ConditionalSelect(
                         condition: blendVector,
-                        left: Vector.LessThanOrEqual(sourceVectorAsFloat, filterVector),
-                        right: Vector.GreaterThanOrEqual(sourceVectorAsFloat, filterVector)
+                        left: Vector.LessThanOrEqual(sourceVector, filterVector),
+                        right: Vector.GreaterThanOrEqual(sourceVector, filterVector)
                         );
                 UnsafeHelper.Write(ptr, resultVector);
                 ptr += (nuint)Vector<int>.Count;
@@ -109,18 +103,18 @@ namespace ConcreteUI.Internals
 
         TailProcess:
             DebugHelper.ThrowIf(length % 4 != 0);
-            ScalarizedBulkContains((Rect*)ptr, length / 4, x, y);
+            ScalarizedBulkAABBHitTest((Rect*)ptr, length / 4, x, y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector<float> CreatePointVector(float x, float y)
+        private static Vector<int> CreatePointVector(int x, int y)
         {
-            Vector<float> result = new Vector<float>(x);
+            Vector<int> result = new Vector<int>(x);
             if (x == y)
                 return result;
-            DebugHelper.ThrowIf(Vector<float>.Count % 2 != 0);
-            float* ptr = (float*)&result;
-            for (int i = 1; i < Vector<float>.Count; i += 2)
+            DebugHelper.ThrowIf(Vector<int>.Count % 2 != 0);
+            int* ptr = (int*)&result;
+            for (int i = 1; i < Vector<int>.Count; i += 2)
                 ptr[i] = y;
             return result;
         }

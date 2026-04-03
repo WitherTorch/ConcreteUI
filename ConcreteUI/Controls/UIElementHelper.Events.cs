@@ -837,7 +837,7 @@ namespace ConcreteUI.Controls
             try
             {
                 BoundsHelper.CopyBoundsInElementsIntoBuffer(ptr, in elementArrayRef, length);
-                BoundsHelper.BulkContains(ptr, length, focusPoint);
+                BoundsHelper.BulkAABBHitTest(ptr, length, focusPoint);
                 Rect filter = AllBitSetsRect;
                 Rect* pFilter = &filter;
                 for (; length >= 4; length -= 4)
@@ -888,7 +888,7 @@ namespace ConcreteUI.Controls
             try
             {
                 BoundsHelper.CopyBoundsInElementsIntoBuffer(ptr, in elementArrayRef, length);
-                BoundsHelper.BulkContains(ptr, length, focusPoint);
+                BoundsHelper.BulkAABBHitTest(ptr, length, focusPoint);
                 Rect filter = AllBitSetsRect;
                 Rect* pFilter = &filter;
                 for (; length >= 4; length -= 4)
