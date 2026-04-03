@@ -223,6 +223,7 @@ namespace ConcreteUI.Controls
 
         protected override void OnMouseMove(in MouseEventArgs args)
         {
+            base.OnMouseMove(args);
             if (args.IsInSpecificSize(ContentBounds.Size) && (!_isClicking || _isClickingClient))
             {
                 float y = args.Y + ViewportPoint.Y;
