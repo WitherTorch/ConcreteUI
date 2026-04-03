@@ -206,8 +206,8 @@ namespace ConcreteUI.Controls
             _isPressed = false;
             if (_state != ButtonTriState.Pressed)
                 return;
-            Rectangle bounds = Bounds;
-            RectangleF buttonRect = new RectangleF(bounds.Right - bounds.Height + 1, bounds.Top + 1, bounds.Height - 2, bounds.Height - 2);
+            Size size = Size;
+            RectangleF buttonRect = new RectangleF(size.Width - size.Height + 1, 1, size.Height - 2, size.Height - 2);
             _state = buttonRect.Contains(args.Location) ? ButtonTriState.Hovered : ButtonTriState.None;
             Update();
         }

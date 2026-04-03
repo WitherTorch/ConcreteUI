@@ -252,6 +252,7 @@ namespace ConcreteUI.Window
         {
             _parent = parent;
             _focusElementRefLazy = new LazyTiny<WeakReference>(static () => new WeakReference(null), LazyThreadSafetyMode.PublicationOnly);
+            _recordedLastHitElementRefLazy = new LazyTiny<WeakReference>(static () => new WeakReference(null), LazyThreadSafetyMode.PublicationOnly);
             _lastHitElementRefLazy = new LazyTiny<WeakReference>(static () => new WeakReference(null), LazyThreadSafetyMode.None);
             List<WeakReference<CoreWindow>> windowList = parent is null ? _rootWindowList : parent._childrenReferenceList;
             lock (windowList)

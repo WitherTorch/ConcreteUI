@@ -80,7 +80,7 @@ namespace ConcreteUI.Window
         private readonly ConcurrentDictionary<Type, UIElement> _backgroundElementDict = new ConcurrentDictionary<Type, UIElement>();
         private readonly UnwrappableList<UIElement> _overlayElementList = new UnwrappableList<UIElement>();
         private readonly UnwrappableList<UIElement> _backgroundElementList = new UnwrappableList<UIElement>();
-        private readonly LazyTiny<WeakReference> _focusElementRefLazy, _lastHitElementRefLazy;
+        private readonly LazyTiny<WeakReference> _focusElementRefLazy, _lastHitElementRefLazy, _recordedLastHitElementRefLazy;
         private readonly WindowMaterial _windowMaterial;
         private SimpleGraphicsHost? _host;
         private DirtyAreaCollector? _collector;
@@ -368,7 +368,7 @@ namespace ConcreteUI.Window
         bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
 
         private bool IsBackgroundOpaque() => _windowMaterial == WindowMaterial.None;
-#endregion
+        #endregion
 
         #region Abstract Methods
         protected abstract void InitializeElements();
@@ -938,55 +938,75 @@ namespace ConcreteUI.Window
 
         protected UIElement? ChangeOverlayElement(Type type, UIElement? element, Predicate<UIElement>? predicate = null)
         {
-            ConcurrentDictionary<Type, UIElement> overlayElementDict = _overlayElementDict;
-            UnwrappableList<UIElement> overlayElementList = _overlayElementList;
-            UIElement? result;
-            if (element is null)
+            _controller?.Lock();
+            try
             {
-                if (overlayElementDict.TryRemove(type, out result))
+                ConcurrentDictionary<Type, UIElement> overlayElementDict = _overlayElementDict;
+                UnwrappableList<UIElement> overlayElementList = _overlayElementList;
+                UIElement? result;
+                if (element is null)
                 {
-                    overlayElementList.Remove(result);
-                    Update();
+                    if (overlayElementDict.TryRemove(type, out result))
+                    {
+                        overlayElementList.Remove(result);
+                        _lastHitElementRefLazy.GetValueDirectly()?.Target = null;
+                        WeakReference? recordedRef = _recordedLastHitElementRefLazy.GetValueDirectly();
+                        if (recordedRef is not null)
+                        {
+                            (object? recordedTarget, recordedRef.Target) = (recordedRef.Target, null);
+                            if (recordedTarget is UIElement recordedElement && recordedTarget is IMouseMoveHandler handler)
+                                handler.OnMouseMove(new MouseEventArgs(recordedElement.PointToLocal(PointToClient(MouseHelper.GetMousePosition()))));
+                        }
+                    }
+                    return result;
                 }
-                return result;
-            }
-            if (!overlayElementDict.TryGetValue(type, out result))
-            {
-                IThemeResourceProvider? resourceProvider = _resourceProvider;
-                if (resourceProvider is not null)
-                    element.ApplyTheme(resourceProvider);
+                WeakReference? lastHitRef = _lastHitElementRefLazy.GetValueDirectly();
+                if (lastHitRef is not null)
+                {
+                    (object? recordedTarget, lastHitRef.Target) = (lastHitRef.Target, null);
+                    if (recordedTarget is not null)
+                        _recordedLastHitElementRefLazy.Value.Target = recordedTarget;
+                }
+                if (!overlayElementDict.TryGetValue(type, out result))
+                {
+                    IThemeResourceProvider? resourceProvider = _resourceProvider;
+                    if (resourceProvider is not null)
+                        element.ApplyTheme(resourceProvider);
 
-                LayoutEngine layoutEngine = RentLayoutEngine();
-                layoutEngine.RecalculateLayout((Rect)_pageRect, element);
-                ReturnLayoutEngine(layoutEngine);
+                    LayoutEngine layoutEngine = RentLayoutEngine();
+                    layoutEngine.RecalculateLayout((Rect)_pageRect, element);
+                    ReturnLayoutEngine(layoutEngine);
 
-                overlayElementDict.TryAdd(type, element);
-                overlayElementList.Add(element);
-
-                Refresh();
-                return null;
-            }
-            if (result is null || predicate is null || predicate.Invoke(result))
-            {
-                IThemeResourceProvider? resourceProvider = _resourceProvider;
-                if (resourceProvider is not null)
-                    element.ApplyTheme(resourceProvider);
-
-                LayoutEngine layoutEngine = RentLayoutEngine();
-                layoutEngine.RecalculateLayout((Rect)_pageRect, element);
-                ReturnLayoutEngine(layoutEngine);
-
-                int index = result is null ? -1 : overlayElementList.IndexOf(result);
-                overlayElementDict[type] = element;
-                if (index > -1)
-                    overlayElementList[index] = element;
-                else
+                    overlayElementDict.TryAdd(type, element);
                     overlayElementList.Add(element);
 
-                Refresh();
-                return result;
+                    return null;
+                }
+                if (result is null || predicate is null || predicate.Invoke(result))
+                {
+                    IThemeResourceProvider? resourceProvider = _resourceProvider;
+                    if (resourceProvider is not null)
+                        element.ApplyTheme(resourceProvider);
+
+                    LayoutEngine layoutEngine = RentLayoutEngine();
+                    layoutEngine.RecalculateLayout((Rect)_pageRect, element);
+                    ReturnLayoutEngine(layoutEngine);
+
+                    int index = result is null ? -1 : overlayElementList.IndexOf(result);
+                    overlayElementDict[type] = element;
+                    if (index > -1)
+                        overlayElementList[index] = element;
+                    else
+                        overlayElementList.Add(element);
+
+                    return result;
+                }
+                return null;
             }
-            return null;
+            finally
+            {
+                _controller?.Unlock();
+            }
         }
 
         protected T? GetBackgroundElement<T>() where T : UIElement => GetBackgroundElement(typeof(T)) as T;

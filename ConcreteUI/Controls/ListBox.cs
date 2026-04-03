@@ -289,6 +289,7 @@ namespace ConcreteUI.Controls
 
         protected override void OnMouseMove(in MouseEventArgs args)
         {
+            base.OnMouseMove(args);
             if (!args.IsInSpecificSize(ContentBounds.Size))
             {
                 if (_buttonState != ButtonTriState.None)
