@@ -178,8 +178,12 @@ namespace ConcreteUI.Window
                 return;
             GetLayouts(flags, out DWriteTextLayout? titleLayout, out DWriteTextLayout? titleDescriptionLayout);
             D2D1Brush[] brushes = _brushes;
-            RectF rect = RenderingHelper.RoundInPixel(_widePageRect, PixelsPerPoint);
-            deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
+            Rect rect = _widePageRect;
+            if (WindowMaterial == WindowMaterial.Integrated)
+                rect = new Rect(0, 0, ClientSize.Width, rect.Top);
+            else
+                rect = new Rect(rect.Left, _titleBarRect.Bottom, rect.Right, rect.Top);
+            using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.RoundInPixel(rect, PixelsPerPoint));
             ClearDC(deviceContext);
             if (titleLayout is not null)
             {
@@ -191,8 +195,7 @@ namespace ConcreteUI.Window
                 deviceContext.DrawTextLayout(_titleDescriptionLocation, titleDescriptionLayout, brushes[(int)Brush.WizardTitleDescriptionBrush], D2D1DrawTextOptions.None);
                 DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
             }
-            deviceContext.PopAxisAlignedClip();
-            collector.MarkAsDirty(rect);
+            collector.MarkAsDirty(scope.ClipRect);
         }
 
         protected override void RecalculateLayout(Size windowSize, bool callRecalculatePageLayout)
