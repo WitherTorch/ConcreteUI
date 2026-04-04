@@ -36,7 +36,8 @@ namespace ConcreteUI.Controls
         private IThemeContext? _themeContext;
         private string _themePrefix;
         private ulong _location, _size;
-        private nuint _requestRedraw, _freeze, _version;
+        private nuint _requestRedraw, _shouldUpdateWhenUnfreeze, _version;
+        private nint _freezeCount;
 
         public UIElement(IRenderer renderer, string themePrefix)
         {
@@ -101,16 +102,28 @@ namespace ConcreteUI.Controls
         protected virtual bool IsBackgroundOpaqueCore() => false;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void FreezeUpdate() => InterlockedHelper.Exchange(ref _freeze, 0b01);
+        protected void FreezeUpdate()
+        {
+            if (InterlockedHelper.Increment(ref _freezeCount) != 1)
+                return;
+            InterlockedHelper.Exchange(ref _shouldUpdateWhenUnfreeze, 0);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void UnfreezeUpdate(bool updateOnce)
+        protected void UnfreezeUpdate(bool forceUpdate)
         {
-            if (updateOnce)
-                InterlockedHelper.Exchange(ref _freeze, 0);
-            else if (InterlockedHelper.Exchange(ref _freeze, 0) != 0b11u)
-                return;
-            Update();
+            switch (InterlockedHelper.GetAndDecrement(ref _freezeCount))
+            {
+                case 1:
+                    if (forceUpdate || InterlockedHelper.Exchange(ref _shouldUpdateWhenUnfreeze, default) != default)
+                        Update();
+                    break;
+                case 0:
+                    InterlockedHelper.CompareExchange(ref _freezeCount, 0, -1);
+                    break;
+                default:
+                    break;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -118,7 +131,8 @@ namespace ConcreteUI.Controls
         {
             const nuint RequestRedrawBit = 0b01;
 
-            if (InterlockedHelper.CompareExchange(ref _freeze, 0b11, 0b01) != 0UL ||
+            InterlockedHelper.CompareExchange(ref _shouldUpdateWhenUnfreeze, UnsafeHelper.GetMaxValue<nuint>(), 0);
+            if (InterlockedHelper.Read(ref _freezeCount) != 0U ||
                 !CheckIsRenderedOnce(InterlockedHelper.Or(ref _requestRedraw, RequestRedrawBit)))
                 return;
             UpdateCore();

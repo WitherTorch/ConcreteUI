@@ -974,7 +974,7 @@ namespace ConcreteUI.Controls
                     UpdateIMECaret(context, caretIndex + _compositionCaretIndex);
             }
             InterlockedHelper.Or(ref _rawUpdateFlags, (long)updateFlags);
-            UnfreezeUpdate(updateOnce: true);
+            UnfreezeUpdate(forceUpdate: true);
         }
 
         [Inline(InlineBehavior.Remove)]
