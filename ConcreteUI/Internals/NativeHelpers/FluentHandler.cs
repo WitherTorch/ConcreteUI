@@ -149,10 +149,10 @@ namespace ConcreteUI.Internals.NativeHelpers
 
         public static object? FixLagForAcrylic(CoreWindow window)
             => new VisualLagFixFilter(window, isAcrylic: true,
-                fallBackToGaussian: !window.ExtendedStyles.HasFlagOptimized(WindowExtendedStyles.NoRedirectionBitmap));
+                fallBackToGaussian: !window.ExtendedStyles.HasFlagFast(WindowExtendedStyles.NoRedirectionBitmap));
 
         public static object? FixLagForBlur(CoreWindow window)
-            => window.ExtendedStyles.HasFlagOptimized(WindowExtendedStyles.NoRedirectionBitmap) ? 
+            => window.ExtendedStyles.HasFlagFast(WindowExtendedStyles.NoRedirectionBitmap) ? 
             new VisualLagFixFilter(window, isAcrylic: false, fallBackToGaussian: false) : null;
 
         private sealed class VisualLagFixFilter : IWindowMessageFilter, IDisposable

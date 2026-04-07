@@ -4,7 +4,6 @@ using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Tasks;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Helpers;
@@ -1200,7 +1199,7 @@ namespace ConcreteUI.Controls
         #region Mouse Events Handling
         void IGlobalMouseInteractHandler.OnMouseDownGlobally(in MouseEventArgs args)
         {
-            if (args.Buttons.HasFlagOptimized(MouseButtons.LeftButton) && ContentBounds.Contains(args.Location))
+            if (args.Buttons.HasFlagFast(MouseButtons.LeftButton) && ContentBounds.Contains(args.Location))
                 return;
             _window.ClearFocusElement(this);
         }
@@ -1210,7 +1209,7 @@ namespace ConcreteUI.Controls
         protected override void OnMouseDown(ref HandleableMouseEventArgs args)
         {
             base.OnMouseDown(ref args);
-            if (args.Handled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton) || !Enabled)
+            if (args.Handled || !args.Buttons.HasFlagFast(MouseButtons.LeftButton) || !Enabled)
             {
                 _drag = false;
                 _lastClickedTime = 0;
@@ -1350,7 +1349,7 @@ namespace ConcreteUI.Controls
         {
             base.OnMouseUp(args);
             _drag = false;
-            if (!Enabled || !args.Buttons.HasFlagOptimized(MouseButtons.RightButton))
+            if (!Enabled || !args.Buttons.HasFlagFast(MouseButtons.RightButton))
                 return;
             MouseNotifyEventHandler? eventHandler = RequestContextMenu;
             if (eventHandler is null || !args.IsInSpecificSize(ContentBounds.Size))

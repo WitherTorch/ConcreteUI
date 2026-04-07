@@ -255,7 +255,7 @@ namespace ConcreteUI.Controls
 
         public void OnMouseDown(ref HandleableMouseEventArgs args)
         {
-            if (_buttonState != ButtonTriState.Hovered || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+            if (_buttonState != ButtonTriState.Hovered || !args.Buttons.HasFlagFast(MouseButtons.LeftButton))
                 return;
 
             args.Handle();
@@ -266,7 +266,7 @@ namespace ConcreteUI.Controls
 
         public void OnMouseUp(in MouseEventArgs args)
         {
-            if (!args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+            if (!args.Buttons.HasFlagFast(MouseButtons.LeftButton))
                 return;
             _isPressed = false;
 

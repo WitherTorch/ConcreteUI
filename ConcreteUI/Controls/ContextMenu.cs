@@ -139,7 +139,7 @@ namespace ConcreteUI.Controls
         protected override void OnMouseDownGlobally(in MouseEventArgs args)
         {
             base.OnMouseDownGlobally(args);
-            if (!args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+            if (!args.Buttons.HasFlagFast(MouseButtons.LeftButton))
                 return;
 
             if (!Bounds.Contains(args.Location))
@@ -155,7 +155,7 @@ namespace ConcreteUI.Controls
         protected override void OnMouseUpGlobally(in MouseEventArgs args)
         {
             base.OnMouseUpGlobally(args);
-            if (!args.Buttons.HasFlagOptimized(MouseButtons.LeftButton) || !Bounds.Contains(args.Location))
+            if (!args.Buttons.HasFlagFast(MouseButtons.LeftButton) || !Bounds.Contains(args.Location))
                 return;
             _isPressed = false;
             int hoveredIndex = _hoveredIndex;

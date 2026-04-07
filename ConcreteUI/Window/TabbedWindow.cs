@@ -223,7 +223,7 @@ namespace ConcreteUI.Window
         protected override void OnMouseDown(ref HandleableMouseEventArgs args)
         {
             MouseButtons buttons = args.Buttons;
-            if (buttons.HasFlagOptimized(MouseButtons.LeftButton))
+            if (buttons.HasFlagFast(MouseButtons.LeftButton))
             {
                 Rect[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
                 if (menuBarButtonRects is null)
@@ -240,17 +240,17 @@ namespace ConcreteUI.Window
             base.OnMouseDown(ref args);
             if (args.Handled)
                 return;
-            if (buttons.HasFlagOptimized(MouseButtons.XButton2))
+            if (buttons.HasFlagFast(MouseButtons.XButton2))
             {
-                if (!buttons.HasFlagOptimized(MouseButtons.XButton1))
+                if (!buttons.HasFlagFast(MouseButtons.XButton1))
                 {
                     args.Handle();
                     NavigateBackPage(args.Location);
                 }
             }
-            if (buttons.HasFlagOptimized(MouseButtons.XButton1))
+            if (buttons.HasFlagFast(MouseButtons.XButton1))
             {
-                if (!buttons.HasFlagOptimized(MouseButtons.XButton2))
+                if (!buttons.HasFlagFast(MouseButtons.XButton2))
                 {
                     args.Handle();
                     NavigateForwardPage(args.Location);

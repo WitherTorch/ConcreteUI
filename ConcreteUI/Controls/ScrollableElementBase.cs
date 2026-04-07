@@ -394,7 +394,7 @@ namespace ConcreteUI.Controls
 
         protected virtual void OnMouseDown(ref HandleableMouseEventArgs args)
         {
-            if (!_enabled || !_hasScrollBar || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+            if (!_enabled || !_hasScrollBar || !args.Buttons.HasFlagFast(MouseButtons.LeftButton))
                 return;
 
             PointF location = args.Location;

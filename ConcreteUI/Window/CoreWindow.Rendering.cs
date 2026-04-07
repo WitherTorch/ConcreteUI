@@ -196,7 +196,7 @@ namespace ConcreteUI.Window
             {
                 SystemVersionLevel versionLevel = SystemConstants.VersionLevel;
                 GraphicsDeviceProvider provider = _graphicsDeviceProviderLazy.Value;
-                bool useFlipModel = ExtendedStyles.HasFlagOptimized(WindowExtendedStyles.NoRedirectionBitmap);
+                bool useFlipModel = ExtendedStyles.HasFlagFast(WindowExtendedStyles.NoRedirectionBitmap);
                 bool useDComp = useFlipModel && provider.IsSupportDComp && provider.IsSupportSwapChain1;
                 host = GraphicsHostHelper.CreateSwapChainGraphicsHost(handle, provider, useFlipModel, useDComp, IsBackgroundOpaque());
             }

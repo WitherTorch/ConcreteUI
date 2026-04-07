@@ -178,7 +178,7 @@ namespace ConcreteUI.Controls
 
         void IMouseInteractHandler.OnMouseDown(ref HandleableMouseEventArgs args)
         {
-            if (!_enabled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+            if (!_enabled || !args.Buttons.HasFlagFast(MouseButtons.LeftButton))
                 return;
 
             _isPressed = true;
@@ -200,7 +200,7 @@ namespace ConcreteUI.Controls
 
         void IMouseInteractHandler.OnMouseUp(in MouseEventArgs args)
         {
-            if (!_enabled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+            if (!_enabled || !args.Buttons.HasFlagFast(MouseButtons.LeftButton))
                 return;
 
             _isPressed = false;

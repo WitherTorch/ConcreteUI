@@ -324,7 +324,7 @@ namespace ConcreteUI.Controls
         protected override void OnMouseDown(ref HandleableMouseEventArgs args)
         {
             base.OnMouseDown(ref args);
-            if (args.Handled || Mode == ListBoxMode.None || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+            if (args.Handled || Mode == ListBoxMode.None || !args.Buttons.HasFlagFast(MouseButtons.LeftButton))
                 return;
             args.Handle();
             if (_buttonState == ButtonTriState.Hovered)

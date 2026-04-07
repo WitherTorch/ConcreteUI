@@ -175,7 +175,7 @@ namespace ConcreteUI.Controls
 
         void IGlobalMouseInteractHandler.OnMouseUpGlobally(in MouseEventArgs args)
         {
-            if (!args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+            if (!args.Buttons.HasFlagFast(MouseButtons.LeftButton))
                 return;
             _isClickingClient = false;
             if (_isFirstTimeClick)
@@ -207,7 +207,7 @@ namespace ConcreteUI.Controls
         protected override void OnMouseDown(ref HandleableMouseEventArgs args)
         {
             base.OnMouseDown(ref args);
-            if (args.Handled || !args.Buttons.HasFlagOptimized(MouseButtons.LeftButton))
+            if (args.Handled || !args.Buttons.HasFlagFast(MouseButtons.LeftButton))
                 return;
             args.Handle();
             _isClicking = true;
