@@ -97,7 +97,7 @@ namespace ConcreteUI.Controls
             {
                 if (count <= 0)
                     return true;
-                ref (TItem item, int itemTop, int itemHeight) itemRef = ref array[0];
+                ref (TItem item, int itemTop, int itemHeight) itemRef = ref UnsafeHelper.GetArrayDataReference(array);
                 int i = 0;
                 do
                 {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Security;
@@ -9,6 +9,7 @@ using LocalsInit;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
+using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.ObjectModels;
 
 
@@ -765,6 +766,31 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             int hr = ((delegate* unmanaged[Stdcall]<void*, DWriteTextMetrics*, int>)functionPointer)(nativePointer, &textMetrics);
             ThrowHelper.ThrowExceptionForHR(hr);
             return textMetrics;
+        }
+
+        /// <summary>
+        /// TextLayout calls this callback function to get the visible extents (in DIPs) of the inline object.<br/>
+        /// In the case of a simple bitmap, with no padding and no overhang, all the overhangs will
+        /// simply be zeroes.
+        /// </summary>
+        /// <returns>
+        /// Overshoot of visible extents (in DIPs) outside the object.
+        /// </returns>
+        /// <remarks>
+        /// The overhangs should be returned relative to the reported size of the object
+        /// (DWRITE_INLINE_OBJECT_METRICS::width/height), and should not be baseline adjusted. <br/>
+        /// If you have an image that is actually 100x100 DIPs, but you want it slightly inset (perhaps it has a glow) by 20 DIPs on each side, <br/>
+        /// you would return a width/height of 60x60 and four overhangs of 20 DIPs.
+        /// </remarks>
+        [LocalsInit(false)]
+        public RectF GetOverhangMetrics()
+        {
+            RectF result;
+            void* nativePointer = NativePointer;
+            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.GetOverhangMetrics);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, RectF*, int>)functionPointer)(nativePointer, &result);
+            ThrowHelper.ThrowExceptionForHR(hr);
+            return result;
         }
 
         /// <summary>

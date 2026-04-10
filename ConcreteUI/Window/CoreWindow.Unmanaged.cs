@@ -125,7 +125,7 @@ namespace ConcreteUI.Window
             int count = filterList.Count;
             if (count <= 0)
                 goto Default;
-            ref IWindowMessageFilter filterRef = ref filterList.Unwrap()[0];
+            ref IWindowMessageFilter filterRef = ref UnsafeHelper.GetArrayDataReference(filterList.Unwrap());
             for (nuint i = 0, limit = unchecked((nuint)count); i < limit; i++)
             {
                 if (UnsafeHelper.AddTypedOffset(ref filterRef, i).TryProcessWindowMessage(hwnd, message, wParam, lParam, out result))

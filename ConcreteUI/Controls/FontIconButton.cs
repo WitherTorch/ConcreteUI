@@ -43,7 +43,7 @@ namespace ConcreteUI.Controls
             if (pressState >= 3)
                 return true;
             
-            icon.Render(context, new RectangleF(PointF.Empty, context.Size), UnsafeHelper.AddTypedOffset(ref _brushes[0], pressState));
+            icon.Render(context, new RectangleF(PointF.Empty, context.Size), UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), pressState));
             DisposeHelper.NullSwapOrDispose(ref _icon, icon);
             return true;
         }

@@ -86,15 +86,15 @@ namespace ConcreteUI.Controls
 
         [Inline(InlineBehavior.Remove)]
         public LayoutVariable GetLayoutReferenceCore(LayoutProperty property)
-            => UnsafeHelper.AddTypedOffset(ref _layoutReferences[0], (nuint)property).Value;
+            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutReferences), (nuint)property).Value;
 
         [Inline(InlineBehavior.Remove)]
         public LayoutVariable? GetLayoutVariableCore(LayoutProperty property)
-            => UnsafeHelper.AddTypedOffset(ref _layoutVariables[0], (nuint)property);
+            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutVariables), (nuint)property);
 
         [Inline(InlineBehavior.Remove)]
         public void SetLayoutVariableCore(LayoutProperty property, LayoutVariable? variable)
-            => UnsafeHelper.AddTypedOffset(ref _layoutVariables[0], (nuint)property) = variable;
+            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutVariables), (nuint)property) = variable;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsBackgroundOpaque() => IsBackgroundOpaqueCore() || (_parent ?? _renderer).IsBackgroundOpaque(this);

@@ -223,7 +223,7 @@ namespace ConcreteUI
             WindowMessage message = msg.message;
             nint wParam = msg.wParam;
             nint lParam = msg.lParam;
-            ref IWindowMessageFilter filterRef = ref filters.Unwrap()[0];
+            ref IWindowMessageFilter filterRef = ref UnsafeHelper.GetArrayDataReference(filters.Unwrap());
             for (nuint i = 0, limit = unchecked((nuint)count); i < limit; i++)
             {
                 IWindowMessageFilter filter = UnsafeHelper.AddTypedOffset(ref filterRef, i);

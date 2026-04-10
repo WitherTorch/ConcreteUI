@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -61,7 +61,7 @@ namespace ConcreteUI.Layout
             if (value < -128 || value > 128)
                 return new FixedLayoutVariable(value);
             byte index = (byte)(sbyte)value;
-            ref LazyTiny<LayoutVariable> variableCacheRef = ref _smallValueVariableCaches[0];
+            ref LazyTiny<LayoutVariable> variableCacheRef = ref UnsafeHelper.GetArrayDataReference(_smallValueVariableCaches);
             return UnsafeHelper.AddTypedOffset(ref variableCacheRef, index).Value;
         }
 
@@ -74,7 +74,7 @@ namespace ConcreteUI.Layout
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
-            ref LazyTiny<LayoutVariable> variableCacheRef = ref _pageRectVariableCaches[0];
+            ref LazyTiny<LayoutVariable> variableCacheRef = ref UnsafeHelper.GetArrayDataReference(_pageRectVariableCaches);
             return UnsafeHelper.AddTypedOffset(ref variableCacheRef, (uint)property).Value;
         }
 

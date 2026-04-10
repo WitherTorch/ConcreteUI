@@ -140,7 +140,7 @@ namespace ConcreteUI.Controls
                 itemRight = RenderingHelper.RoundInPixel(renderSize.Width - borderWidth, pointsPerPixel.X),
                 itemWIdth = itemRight - itemLeft;
             textBrush = brushes[(int)Brush.TextBrush];
-            ref DWriteTextLayout layoutArrayRef = ref layouts[0];
+            ref DWriteTextLayout layoutArrayRef = ref UnsafeHelper.GetArrayDataReference(layouts);
             for (int i = startIndex; i <= endIndex; i++)
             {
                 RectF itemBounds = new RectF(itemLeft, itemTop, itemRight, itemTop + itemHeight);

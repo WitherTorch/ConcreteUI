@@ -117,14 +117,14 @@ namespace ConcreteUI.Controls
         protected override bool IsBackgroundOpaqueCore()
         {
             uint pressState = (uint)PressState;
-            return GraphicsUtils.CheckBrushIsSolid(UnsafeHelper.AddTypedOffset(ref _brushes[0],
+            return GraphicsUtils.CheckBrushIsSolid(UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes),
                 (uint)Brush.FaceBrush + (pressState >= 3 ? 0 : pressState)));
         }
 
         protected override bool RenderCore(in RegionalRenderingContext context)
         {
             RenderObjectUpdateFlags flags = GetAndCleanRenderObjectUpdateFlags();
-            ref D2D1Brush brushesRef = ref _brushes[0];
+            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
             uint pressState = (uint)PressState;
             D2D1Brush faceBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (uint)Brush.FaceBrush + (pressState >= 3 ? 0 : pressState));
             D2D1Brush borderBrush = UnsafeHelper.AddTypedOffset(ref brushesRef,

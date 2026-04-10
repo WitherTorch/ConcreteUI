@@ -1211,7 +1211,7 @@ namespace ConcreteUI.Window
         {
             if (length <= 0)
                 return;
-            ref UIElement? elementRef = ref elements[0];
+            ref UIElement? elementRef = ref UnsafeHelper.GetArrayDataReference(elements);
             for (int i = 0; i < length; i++)
                 (UnsafeHelper.AddTypedOffset(ref elementRef, i) as IDisposable)?.Dispose();
         }

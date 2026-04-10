@@ -12,7 +12,7 @@ namespace ConcreteUI.Internals
             {
                 if (length <= 0)
                     return;
-                CleanAllCore(ref array[0], (nuint)length, disposing);
+                CleanAllCore(ref UnsafeHelper.GetArrayDataReference(array), (nuint)length, disposing);
             }
 
             private static void CleanAllCore(ref T? arrayRef, nuint length, bool disposing)
@@ -26,11 +26,11 @@ namespace ConcreteUI.Internals
             {
                 if (length <= 0)
                     return;
-                DisposeAllCore(ref array[0], (nuint)length);
+                DisposeAllCore(ref UnsafeHelper.GetArrayDataReference(array), (nuint)length);
             }
 
             public static void DisposeAll_Unsafe(T?[] array, nuint length)
-              => DisposeAllCore(ref array[0], length);
+              => DisposeAllCore(ref UnsafeHelper.GetArrayDataReference(array), length);
 
             private static void DisposeAllCore(ref T? arrayRef, nuint length)
             {

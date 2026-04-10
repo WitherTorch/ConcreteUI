@@ -57,8 +57,8 @@ namespace ConcreteUI.Controls
             using (DWriteTextFormat format = factory.CreateTextFormat(provider.FontName, UIConstants.BoxFontSize))
             {
                 format.ParagraphAlignment = DWriteParagraphAlignment.Center;
-                ref ContextMenuItem itemArrayRef = ref items[0];
-                ref DWriteTextLayout layoutArrayRef = ref layouts[0];
+                ref ContextMenuItem itemArrayRef = ref UnsafeHelper.GetArrayDataReference(items);
+                ref DWriteTextLayout layoutArrayRef = ref UnsafeHelper.GetArrayDataReference(layouts);
                 for (int i = 0; i < count; i++)
                 {
                     string text = UnsafeHelper.AddTypedOffset(ref itemArrayRef, i).Text;
@@ -98,8 +98,8 @@ namespace ConcreteUI.Controls
             DWriteTextLayout[]? layouts = Interlocked.Exchange(ref _layouts, null);
             if (layouts is not null && layouts.Length > 0)
             {
-                ref ContextMenuItem itemArrayRef = ref MenuItems[0];
-                ref DWriteTextLayout layoutArrayRef = ref layouts[0];
+                ref ContextMenuItem itemArrayRef = ref UnsafeHelper.GetArrayDataReference(MenuItems);
+                ref DWriteTextLayout layoutArrayRef = ref UnsafeHelper.GetArrayDataReference(layouts);
                 D2D1Brush foreBrush = brushes[(int)Brush.TextBrush], foreDisabledBrush = brushes[(int)Brush.TextInactiveBrush];
                 int hoveredIndex = _hoveredIndex;
                 float itemLeft = borderWidth,

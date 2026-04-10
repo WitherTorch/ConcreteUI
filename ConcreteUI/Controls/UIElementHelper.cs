@@ -41,7 +41,7 @@ namespace ConcreteUI.Controls
         {
             if (length <= 0)
                 return;
-            ref D2D1Brush? brushRef = ref brushes[0];
+            ref D2D1Brush? brushRef = ref UnsafeHelper.GetArrayDataReference(brushes);
             for (int i = 0; i < length; i++)
                 ApplyTheme(provider, ref UnsafeHelper.AddTypedOffset(ref brushRef, i), nodes[i]);
         }
@@ -51,7 +51,7 @@ namespace ConcreteUI.Controls
         {
             if (length <= 0)
                 return;
-            ref D2D1Brush? brushRef = ref brushes[0];
+            ref D2D1Brush? brushRef = ref UnsafeHelper.GetArrayDataReference(brushes);
             for (int i = 0; i < length; i++)
                 ApplyTheme(provider, ref UnsafeHelper.AddTypedOffset(ref brushRef, i), nodePrefix + "." + nodes[i]);
         }
@@ -103,7 +103,7 @@ namespace ConcreteUI.Controls
         ArrayLike:
             if (length <= 0)
                 return;
-            ref UIElement elementRef = ref array[0];
+            ref UIElement elementRef = ref UnsafeHelper.GetArrayDataReference(array);
             for (nint i = length - 1; i >= 0; i--)
             {
                 UIElement element = UnsafeHelper.AddTypedOffset(ref elementRef, i);
@@ -181,7 +181,7 @@ namespace ConcreteUI.Controls
         ArrayLike:
             if (length <= 0)
                 return;
-            ref UIElement? elementRef = ref array[0];
+            ref UIElement? elementRef = ref UnsafeHelper.GetArrayDataReference(array);
             for (nint i = length - 1; i >= 0; i--)
             {
                 UIElement? element = UnsafeHelper.AddTypedOffset(ref elementRef, i);

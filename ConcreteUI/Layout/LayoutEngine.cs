@@ -167,7 +167,7 @@ namespace ConcreteUI.Layout
                 Rectangle bounds = default;
                 int* values = (int*)&bounds;
 
-                ref LayoutVariable? variableArrayRef = ref variables[0];
+                ref LayoutVariable? variableArrayRef = ref UnsafeHelper.GetArrayDataReference(variables);
 
                 bool hasNull = false;
                 for (nuint i = (nuint)LayoutProperty.Left; i <= (nuint)LayoutProperty.Top; i++)
