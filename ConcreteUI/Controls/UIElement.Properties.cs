@@ -103,15 +103,15 @@ namespace ConcreteUI.Controls
         public LayoutVariable LeftReference
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutReferenceCore(LayoutProperty.Left);
+            get => GetLayoutReferenceCore((nuint)LayoutProperty.Left);
         }
 
         public LayoutVariable? LeftVariable
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutVariableCore(LayoutProperty.Left);
+            get => GetLayoutVariableCore((nuint)LayoutProperty.Left);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => SetLayoutVariableCore(LayoutProperty.Left, value);
+            set => SetLayoutVariableCore((nuint)LayoutProperty.Left, value);
         }
 
         public int Y
@@ -133,15 +133,15 @@ namespace ConcreteUI.Controls
         public LayoutVariable TopReference
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutReferenceCore(LayoutProperty.Top);
+            get => GetLayoutReferenceCore((nuint)LayoutProperty.Top);
         }
 
         public LayoutVariable? TopVariable
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutVariableCore(LayoutProperty.Top);
+            get => GetLayoutVariableCore((nuint)LayoutProperty.Top);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => SetLayoutVariableCore(LayoutProperty.Top, value);
+            set => SetLayoutVariableCore((nuint)LayoutProperty.Top, value);
         }
 
         public int Right
@@ -155,15 +155,15 @@ namespace ConcreteUI.Controls
         public LayoutVariable RightReference
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutReferenceCore(LayoutProperty.Right);
+            get => GetLayoutReferenceCore((nuint)LayoutProperty.Right);
         }
 
         public LayoutVariable? RightVariable
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutVariableCore(LayoutProperty.Right);
+            get => GetLayoutVariableCore((nuint)LayoutProperty.Right);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => SetLayoutVariableCore(LayoutProperty.Right, value);
+            set => SetLayoutVariableCore((nuint)LayoutProperty.Right, value);
         }
 
         public int Bottom
@@ -177,15 +177,15 @@ namespace ConcreteUI.Controls
         public LayoutVariable BottomReference
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutReferenceCore(LayoutProperty.Bottom);
+            get => GetLayoutReferenceCore((nuint)LayoutProperty.Bottom);
         }
 
         public LayoutVariable? BottomVariable
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutVariableCore(LayoutProperty.Bottom);
+            get => GetLayoutVariableCore((nuint)LayoutProperty.Bottom);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => SetLayoutVariableCore(LayoutProperty.Bottom, value);
+            set => SetLayoutVariableCore((nuint)LayoutProperty.Bottom, value);
         }
 
         public int Height
@@ -199,15 +199,15 @@ namespace ConcreteUI.Controls
         public LayoutVariable HeightReference
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutReferenceCore(LayoutProperty.Height);
+            get => GetLayoutReferenceCore((nuint)LayoutProperty.Height);
         }
 
         public LayoutVariable? HeightVariable
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutVariableCore(LayoutProperty.Height);
+            get => GetLayoutVariableCore((nuint)LayoutProperty.Height);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => SetLayoutVariableCore(LayoutProperty.Height, value);
+            set => SetLayoutVariableCore((nuint)LayoutProperty.Height, value);
         }
 
         public int Width
@@ -221,15 +221,15 @@ namespace ConcreteUI.Controls
         public LayoutVariable WidthReference
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutReferenceCore(LayoutProperty.Width);
+            get => GetLayoutReferenceCore((nuint)LayoutProperty.Width);
         }
 
         public LayoutVariable? WidthVariable
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutVariableCore(LayoutProperty.Width);
+            get => GetLayoutVariableCore((nuint)LayoutProperty.Width);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => SetLayoutVariableCore(LayoutProperty.Width, value);
+            set => SetLayoutVariableCore((nuint)LayoutProperty.Width, value);
         }
 
         public IThemeContext? CurrentTheme

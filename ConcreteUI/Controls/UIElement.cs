@@ -11,8 +11,6 @@ using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
-using InlineIL;
-
 using InlineMethod;
 
 using WitherTorch.Common.Extensions;
@@ -51,13 +49,16 @@ namespace ConcreteUI.Controls
 
         private LazyTiny<LayoutVariable>[] CreateLayoutReferenceLazies()
         {
-            LazyTiny<LayoutVariable>[] result = new LazyTiny<LayoutVariable>[(int)LayoutProperty._Last];
-            for (int i = 0; i < (int)LayoutProperty._Last; i++)
+            WeakReference<UIElement> reference = new WeakReference<UIElement>(this, trackResurrection: false);
+            return new LazyTiny<LayoutVariable>[(int)LayoutProperty._Last]
             {
-                LayoutProperty prop = (LayoutProperty)i;
-                result[i] = new LazyTiny<LayoutVariable>(() => new UIElementLayoutVariable(this, prop), LazyThreadSafetyMode.PublicationOnly);
-            }
-            return result;
+                new (() => new UIElementLayoutVariable(reference, LayoutProperty.Left), LazyThreadSafetyMode.PublicationOnly),
+                new (() => new UIElementLayoutVariable(reference, LayoutProperty.Top), LazyThreadSafetyMode.PublicationOnly),
+                new (() => new UIElementLayoutVariable(reference, LayoutProperty.Right), LazyThreadSafetyMode.PublicationOnly),
+                new (() => new UIElementLayoutVariable(reference, LayoutProperty.Bottom), LazyThreadSafetyMode.PublicationOnly),
+                new (() => new UIElementLayoutVariable(reference, LayoutProperty.Width), LazyThreadSafetyMode.PublicationOnly),
+                new (() => new UIElementLayoutVariable(reference, LayoutProperty.Height), LazyThreadSafetyMode.PublicationOnly),
+            };
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -65,7 +66,7 @@ namespace ConcreteUI.Controls
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
-            return GetLayoutReferenceCore(property);
+            return GetLayoutReferenceCore((nuint)property);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -73,7 +74,7 @@ namespace ConcreteUI.Controls
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
-            return GetLayoutVariableCore(property);
+            return GetLayoutVariableCore((nuint)property);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -81,20 +82,20 @@ namespace ConcreteUI.Controls
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
-            SetLayoutVariableCore(property, variable);
+            SetLayoutVariableCore((nuint)property, variable);
         }
 
         [Inline(InlineBehavior.Remove)]
-        public LayoutVariable GetLayoutReferenceCore(LayoutProperty property)
-            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutReferences), (nuint)property).Value;
+        private LayoutVariable GetLayoutReferenceCore(nuint property)
+            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutReferences), property).Value;
 
         [Inline(InlineBehavior.Remove)]
-        public LayoutVariable? GetLayoutVariableCore(LayoutProperty property)
-            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutVariables), (nuint)property);
+        private LayoutVariable? GetLayoutVariableCore(nuint property)
+            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutVariables), property);
 
         [Inline(InlineBehavior.Remove)]
-        public void SetLayoutVariableCore(LayoutProperty property, LayoutVariable? variable)
-            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutVariables), (nuint)property) = variable;
+        private void SetLayoutVariableCore(nuint property, LayoutVariable? variable)
+            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutVariables), property) = variable;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsBackgroundOpaque() => IsBackgroundOpaqueCore() || (_parent ?? _renderer).IsBackgroundOpaque(this);

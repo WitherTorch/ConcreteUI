@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 using ConcreteUI.Controls;
 
@@ -11,10 +11,18 @@ namespace ConcreteUI.Layout.Internals
 
         public UIElementLayoutVariable(UIElement element, LayoutProperty property)
         {
-            _reference = new WeakReference<UIElement>(element);
             if (property < LayoutProperty.Left || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
             _property = property;
+            _reference = new WeakReference<UIElement>(element);
+        }
+
+        public UIElementLayoutVariable(WeakReference<UIElement> reference, LayoutProperty property)
+        {
+            if (property < LayoutProperty.Left || property >= LayoutProperty._Last)
+                throw new ArgumentOutOfRangeException(nameof(property));
+            _property = property;
+            _reference = reference;
         }
 
         public override int Compute(in LayoutVariableManager manager)
