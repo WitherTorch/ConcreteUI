@@ -41,7 +41,7 @@ namespace ConcreteUI.Controls
         private float _fontSize;
         private long _rawUpdateFlags;
 
-        public Button(IRenderer renderer) : base(renderer, "app.button")
+        public Button(IElementContainer parent) : base(parent, "app.button")
         {
             _fontSize = UIConstants.BoxFontSize;
             _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;

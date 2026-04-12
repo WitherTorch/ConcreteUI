@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
+using ConcreteUI.Window;
 
 using InlineMethod;
 
@@ -20,11 +21,9 @@ namespace ConcreteUI.Controls
             get => _identifier;
         }
 
-        public IRenderer Renderer
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _renderer;
-        }
+        public CoreWindow Window => Parent.GetWindow();
+
+        protected IRenderer Renderer => Parent.GetRenderer();
 
         public bool IsRenderedOnce
         {
@@ -32,14 +31,25 @@ namespace ConcreteUI.Controls
             get => CheckIsRenderedOnce(InterlockedHelper.Read(ref _requestRedraw));
         }
 
-        public IElementContainer? Parent
+        public IElementContainer Parent
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => InterlockedHelper.Read(ref _parent);
+            get
+            {
+                ref readonly IElementContainer parentRef = ref _parent;
+                ref readonly nuint versionRef = ref _parentVersion;
+                IElementContainer parent = OptimisticLock.EnterWithObject(in parentRef, in versionRef, out nuint version);
+                while (!OptimisticLock.TryLeaveWithObject(in parentRef, in versionRef, ref parent, ref version)) ;
+                return parent;
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                if (InterlockedHelper.CompareExchange(ref _parent, value, null) is not null)
+                ref IElementContainer parentRef = ref _parent;
+                ref nuint versionRef = ref _parentVersion;
+                if (ReferenceEquals(InterlockedHelper.Exchange(ref _parent, value), value))
                     return;
+                OptimisticLock.Increase(ref versionRef);
                 Update();
             }
         }
@@ -71,14 +81,14 @@ namespace ConcreteUI.Controls
                 bool sizeChanged = SetSizeCore_Pure(value.Size);
                 if (locationChanged)
                 {
-                    OptimisticLock.Increase(ref _version);
+                    OptimisticLock.Increase(ref _boundsVersion);
                     OnLocationChanged();
                     if (sizeChanged)
                         OnSizeChanged();
                 }
                 else if (sizeChanged)
                 {
-                    OptimisticLock.Increase(ref _version);
+                    OptimisticLock.Increase(ref _boundsVersion);
                     OnSizeChanged();
                 }
             }

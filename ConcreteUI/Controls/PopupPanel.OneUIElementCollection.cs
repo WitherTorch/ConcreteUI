@@ -41,7 +41,7 @@ namespace ConcreteUI.Controls
                     if (oldElement == value)
                     {
                         if (oldElement is not null)
-                            oldElement.Parent = null;
+                            oldElement.Parent = _owner.Window;
                         return;
                     }
                     _element = value;

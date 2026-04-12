@@ -14,7 +14,7 @@ namespace ConcreteUI.Controls
         {
             if (element is IElementContainer container)
             {
-                OnKeyDownForElements(container.GetElements(), ref args);
+                OnKeyDownForElements(container.GetActiveElements(), ref args);
                 if (args.Handled)
                     return;
             }
@@ -31,7 +31,7 @@ namespace ConcreteUI.Controls
         {
             if (element is IElementContainer container)
             {
-                OnKeyUpForElements(container.GetElements(), ref args);
+                OnKeyUpForElements(container.GetActiveElements(), ref args);
                 if (args.Handled)
                     return;
             }
@@ -48,7 +48,7 @@ namespace ConcreteUI.Controls
         {
             if (element is IElementContainer container)
             {
-                OnCharacterInputForElements(container.GetElements(), ref args);
+                OnCharacterInputForElements(container.GetActiveElements(), ref args);
                 if (args.Handled)
                     return;
             }

@@ -13,6 +13,7 @@ using ConcreteUI.Internals;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
+using ConcreteUI.Window;
 
 using InlineMethod;
 
@@ -43,7 +44,7 @@ namespace ConcreteUI.Controls
         private long _redrawTypeRaw, _rawUpdateFlags;
         private int _titleHeight;
 
-        public GroupBox(IRenderer renderer) : base(renderer, "app.groupBox")
+        public GroupBox(IElementContainer parent) : base(parent, "app.groupBox")
         {
             _children = new ObservableList<UIElement>(new UnwrappableList<UIElement>(capacity: 0));
             _children.BeforeAdd += Children_BeforeAdded;
@@ -105,17 +106,7 @@ namespace ConcreteUI.Controls
         public void RenderBackground(UIElement element, in RegionalRenderingContext context)
             => RenderBackground(context, _brushes[(int)Brush.BackBrush]);
 
-        private void Children_BeforeAdded(object? sender, BeforeListAddOrRemoveEventArgs<UIElement> e)
-        {
-            UIElement child = e.Item;
-            if (child.Parent is null)
-            {
-                child.Parent = this;
-                return;
-            }
-            e.Cancel = true;
-            throw new InvalidOperationException();
-        }
+        private void Children_BeforeAdded(object? sender, BeforeListAddOrRemoveEventArgs<UIElement> e) => e.Item.Parent = this;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override void Update() => Update(RedrawType.RedrawAllContent);
@@ -286,15 +277,9 @@ namespace ConcreteUI.Controls
         [Inline(InlineBehavior.Remove)]
         private int GetTextTopCore(int y) => y + InterlockedHelper.Read(ref _titleHeight);
 
-#if NET472_OR_GREATER
-        Point IElementContainer.PointToGlobal(UIElement element, Point point) => ElementContainerDefaults.PointToGlobal(element, point);
+        IRenderer IElementContainer.GetRenderer() => Renderer;
 
-        PointF IElementContainer.PointToGlobal(UIElement element, PointF point) => ElementContainerDefaults.PointToGlobal(element, point);
-
-        Point IElementContainer.PointToLocal(UIElement element, Point point) => ElementContainerDefaults.PointToLocal(element, point);
-
-        PointF IElementContainer.PointToLocal(UIElement element, PointF point) => ElementContainerDefaults.PointToLocal(element, point);
-#endif
+        CoreWindow IElementContainer.GetWindow() => Window;
 
         protected override void DisposeCore(bool disposing)
         {

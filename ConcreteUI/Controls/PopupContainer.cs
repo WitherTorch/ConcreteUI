@@ -66,16 +66,6 @@ namespace ConcreteUI.Controls
 
         bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
 
-#if NET472_OR_GREATER
-        Point IElementContainer.PointToGlobal(UIElement element, Point point) => ElementContainerDefaults.PointToGlobal(element, point);
-
-        PointF IElementContainer.PointToGlobal(UIElement element, PointF point) => ElementContainerDefaults.PointToGlobal(element, point);
-
-        Point IElementContainer.PointToLocal(UIElement element, Point point) => ElementContainerDefaults.PointToLocal(element, point);
-
-        PointF IElementContainer.PointToLocal(UIElement element, PointF point) => ElementContainerDefaults.PointToLocal(element, point);
-#endif
-
         protected override bool RenderCore(in RegionalRenderingContext context)
         {
             D2D1Brush[] brushes = _brushes;
@@ -84,6 +74,10 @@ namespace ConcreteUI.Controls
 
             return true;
         }
+
+        IRenderer IElementContainer.GetRenderer() => Renderer;
+
+        CoreWindow IElementContainer.GetWindow() => Window;
 
         private void DisposeCore(bool disposing)
         {

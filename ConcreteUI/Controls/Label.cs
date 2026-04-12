@@ -38,7 +38,7 @@ namespace ConcreteUI.Controls
         private float _fontSize;
         private bool _wordWrap;
 
-        public Label(IRenderer renderer) : base(renderer, "app.label")
+        public Label(IElementContainer parent) : base(parent, "app.label")
         {
             _fontSize = UIConstants.DefaultFontSize;
             _alignment = TextAlignment.MiddleLeft;

@@ -41,7 +41,7 @@ using ToolTip = ConcreteUI.Controls.ToolTip;
 
 namespace ConcreteUI.Window
 {
-    public abstract partial class CoreWindow : IRenderer
+    public abstract partial class CoreWindow : IRenderer, IElementContainer
     {
         #region Enums
         [Flags]
@@ -100,8 +100,45 @@ namespace ConcreteUI.Window
         protected int _drawingOffsetX, _drawingOffsetY, _activeBorderWidth;
         #endregion
 
-        #region Properties
+        #region Static Properties
+        public static LayoutVariable PageLeftReference
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => LayoutVariable.PageReference(LayoutProperty.Left);
+        }
 
+        public static LayoutVariable PageTopReference
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => LayoutVariable.PageReference(LayoutProperty.Top);
+        }
+
+        public static LayoutVariable PageRightReference
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => LayoutVariable.PageReference(LayoutProperty.Right);
+        }
+
+        public static LayoutVariable PageBottomReference
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => LayoutVariable.PageReference(LayoutProperty.Bottom);
+        }
+
+        public static LayoutVariable PageWidthReference
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => LayoutVariable.PageReference(LayoutProperty.Width);
+        }
+
+        public static LayoutVariable PageHeightReference
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => LayoutVariable.PageReference(LayoutProperty.Height);
+        }
+        #endregion
+
+        #region Properties
         public ContextMenu? ContextMenu => GetOverlayElement<ContextMenu>();
 
         public ToolTip? ToolTip => GetBackgroundElement<ToolTip>();
@@ -349,23 +386,19 @@ namespace ConcreteUI.Window
 
         public IThemeResourceProvider? GetThemeResourceProvider() => InterlockedHelper.Read(ref _resourceProvider);
 
+        IEnumerable<UIElement?> IElementContainer.GetActiveElements() => GetActiveElements();
+
+        bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
+
+        IRenderer IElementContainer.GetRenderer() => this;
+
+        CoreWindow IElementContainer.GetWindow() => this;
+
         Vector2 IRenderer.GetPixelsPerPoint() => _pixelsPerPoint;
 
         Vector2 IRenderer.GetPointsPerPixel() => _pointsPerPixel;
 
-        IEnumerable<UIElement?> IElementContainer.GetActiveElements() => GetActiveElements();
-
-#if NET472_OR_GREATER
-        Point IElementContainer.PointToGlobal(UIElement element, Point point) => ElementContainerDefaults.PointToGlobal(element, point);
-
-        PointF IElementContainer.PointToGlobal(UIElement element, PointF point) => ElementContainerDefaults.PointToGlobal(element, point);
-
-        Point IElementContainer.PointToLocal(UIElement element, Point point) => ElementContainerDefaults.PointToLocal(element, point);
-
-        PointF IElementContainer.PointToLocal(UIElement element, PointF point) => ElementContainerDefaults.PointToLocal(element, point);
-#endif
-
-        bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
+        void IRenderer.Refresh() => Refresh();
 
         private bool IsBackgroundOpaque() => _windowMaterial == WindowMaterial.None;
         #endregion

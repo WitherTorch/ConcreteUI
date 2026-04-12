@@ -48,9 +48,9 @@ namespace ConcreteUI.Controls
         private float _pinY;
         private bool _enabled, _drawWhenDisabled, _hasScrollBar, _stickBottom;
 
-        protected ScrollableElementBase(IRenderer renderer, string themePrefix) : this(renderer, themePrefix, DefaultPrefixForScrollBar) { }
+        protected ScrollableElementBase(IElementContainer parent, string themePrefix) : this(parent, themePrefix, DefaultPrefixForScrollBar) { }
 
-        protected ScrollableElementBase(IRenderer renderer, string themePrefix, string scrollBarThemePrefix) : base(renderer, themePrefix)
+        protected ScrollableElementBase(IElementContainer parent, string themePrefix, string scrollBarThemePrefix) : base(parent, themePrefix)
         {
             _enabled = true;
             _drawWhenDisabled = false;

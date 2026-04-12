@@ -48,7 +48,7 @@ namespace ConcreteUI.Controls
         private float _fontSize;
         private bool _checkState, _isPressed;
 
-        public CheckBox(IRenderer renderer) : base(renderer, "app.checkBox")
+        public CheckBox(IElementContainer parent) : base(parent, "app.checkBox")
         {
             _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
             _redrawTypeRaw = (long)RedrawType.RedrawAllContent;

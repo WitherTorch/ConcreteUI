@@ -5,14 +5,9 @@ namespace ConcreteUI.Controls
 {
     public abstract class PopupElementBase : UIElement, IGlobalMouseInteractHandler
     {
-        private readonly CoreWindow _window;
+        protected PopupElementBase(IElementContainer parent, string themePrefix) : base(parent, themePrefix) { }
 
-        protected PopupElementBase(CoreWindow window, string themePrefix) : base(window, themePrefix)
-        {
-            _window = window;
-        }
-
-        public void Close() => _window.CloseOverlayElement(this);
+        public void Close() => Window.CloseOverlayElement(this);
 
         protected virtual void OnMouseDownGlobally(in MouseEventArgs args) { }
 

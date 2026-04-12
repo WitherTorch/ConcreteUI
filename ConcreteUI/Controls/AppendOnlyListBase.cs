@@ -18,7 +18,7 @@ namespace ConcreteUI.Controls
         protected readonly AppendOnlyListItemStore<TItem, TMeasuringContext> _itemStore;
         private bool _ignoreNeedRefresh;
 
-        protected AppendOnlyListBase(IRenderer renderer, string themePrefix, AppendOnlyListItemStore<TItem, TMeasuringContext> itemStore) : base(renderer, themePrefix)
+        protected AppendOnlyListBase(IElementContainer parent, string themePrefix, AppendOnlyListItemStore<TItem, TMeasuringContext> itemStore) : base(parent, themePrefix)
         {
             _itemStore = itemStore;
             itemStore.HeightChanged += ItemStore_HeightChanged;
@@ -26,7 +26,7 @@ namespace ConcreteUI.Controls
             Initialize();
         }
 
-        protected AppendOnlyListBase(IRenderer renderer, string themePrefix, string scrollBarThemePrefix, AppendOnlyListItemStore<TItem, TMeasuringContext> itemStore) : base(renderer, themePrefix, scrollBarThemePrefix)
+        protected AppendOnlyListBase(IElementContainer parent, string themePrefix, string scrollBarThemePrefix, AppendOnlyListItemStore<TItem, TMeasuringContext> itemStore) : base(parent, themePrefix, scrollBarThemePrefix)
         {
             _itemStore = itemStore;
             itemStore.HeightChanged += ItemStore_HeightChanged;

@@ -13,7 +13,7 @@ namespace ConcreteUI.Controls
         public static void OnDpiChangedForElement(UIElement? element, in DpiChangedEventArgs args)
         {
             if (element is IElementContainer container)
-                OnDpiChangedForElements(container.GetElements(), in args);
+                OnDpiChangedForElements(container.GetActiveElements(), in args);
             if (element is IDpiAwareEvents keyEvents)
                 keyEvents.OnDpiChanged(in args);
         }

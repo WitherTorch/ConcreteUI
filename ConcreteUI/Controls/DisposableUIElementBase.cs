@@ -9,8 +9,8 @@ namespace ConcreteUI.Controls
     {
         private bool _disposed;
 
-        protected DisposableUIElementBase(IRenderer renderer, string themePrefix)
-            : base(renderer, themePrefix)
+        protected DisposableUIElementBase(IElementContainer parent, string themePrefix)
+            : base(parent, themePrefix)
         {
             _disposed = false;
         }

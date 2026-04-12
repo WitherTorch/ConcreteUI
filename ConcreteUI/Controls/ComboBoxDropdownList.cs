@@ -10,10 +10,8 @@ using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
-using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
-using ConcreteUI.Window;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
@@ -35,23 +33,21 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly ComboBox _parent;
-        private readonly CoreWindow _window;
+        private readonly ComboBox _owner;
 
         private DWriteTextLayout[]? _layouts;
         private float _itemHeight;
         private int _selectedIndex, _maxViewCount;
         private bool _isClicking, _isClickingClient, _isFirstTimeClick, _prepareToClose;
 
-        public ComboBoxDropdownList(ComboBox parent, CoreWindow window) : base(window, "app.comboBox")
+        public ComboBoxDropdownList(IElementContainer parent, ComboBox owner) : base(parent, "app.comboBox")
         {
             ScrollBarType = ScrollBarType.AutoVertial;
-            _parent = parent;
-            _window = window;
+            _owner = owner;
             _isFirstTimeClick = true;
             _selectedIndex = -1;
-            LeftVariable = parent.LeftReference;
-            RightVariable = parent.RightReference;
+            LeftVariable = owner.LeftReference;
+            RightVariable = owner.RightReference;
             TopVariable = new DefaultTopVariable(this);
         }
 
@@ -59,7 +55,7 @@ namespace ConcreteUI.Controls
         {
             base.ApplyThemeCore(provider);
             UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
-            ComboBox parent = _parent;
+            ComboBox parent = _owner;
             using DWriteTextFormat format = TextFormatHelper.CreateTextFormat(TextAlignment.MiddleLeft, provider.FontName, parent.FontSize);
             Prepare(format);
         }
@@ -70,11 +66,11 @@ namespace ConcreteUI.Controls
 
         protected override D2D1Brush GetBorderBrush() => _brushes[(int)Brush.BorderBrush];
 
-        public void Close() => _window.CloseOverlayElement(this);
+        public void Close() => Window.CloseOverlayElement(this);
 
         public void Prepare(DWriteTextFormat format)
         {
-            ComboBox parent = _parent;
+            ComboBox parent = _owner;
             DWriteFactory factory = SharedResources.DWriteFactory;
 
             float itemHeight = 0f;
@@ -91,7 +87,7 @@ namespace ConcreteUI.Controls
             }
             DisposeHelper.SwapDispose(ref _layouts, layouts);
 
-            Vector2 pixelsPerPoint = _window.PixelsPerPoint;
+            Vector2 pixelsPerPoint = Window.PixelsPerPoint;
             float borderWidth = RenderingHelper.GetDefaultBorderWidth(pixelsPerPoint.X);
             itemHeight = RenderingHelper.CeilingInPixel(itemHeight, pixelsPerPoint.Y) + borderWidth * 2;
             _itemHeight = itemHeight;
@@ -228,7 +224,7 @@ namespace ConcreteUI.Controls
             {
                 float y = args.Y + ViewportPoint.Y;
                 int hoverIndex = MathI.Floor(y / _itemHeight);
-                if (hoverIndex < 0 || hoverIndex >= _parent.Items.Count)
+                if (hoverIndex < 0 || hoverIndex >= _owner.Items.Count)
                     _selectedIndex = -1;
                 else
                     _selectedIndex = hoverIndex;

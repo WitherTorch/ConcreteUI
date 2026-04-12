@@ -40,7 +40,6 @@ namespace ConcreteUI.Controls
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
         private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[1];
         private readonly ObservableList<string> _items;
-        private readonly CoreWindow _window;
 
         private DWriteTextLayout? _layout;
         private string? _fontName;
@@ -51,10 +50,9 @@ namespace ConcreteUI.Controls
         private int _selectedIndex, _dropDownListVisibleCount;
         private bool _isPressed, _hovered, _enabled;
 
-        public ComboBox(CoreWindow window) : base(window, "app.comboBox")
+        public ComboBox(IElementContainer parent) : base(parent, "app.comboBox")
         {
             _items = new ObservableList<string>();
-            _window = window;
             _text = string.Empty;
             _selectedIndex = -1;
             _dropDownListVisibleCount = 10;
@@ -192,7 +190,7 @@ namespace ConcreteUI.Controls
                 EventHandler<DropdownListEventArgs>? eventHandler = RequestDropdownListOpening;
                 if (eventHandler is null)
                     return;
-                ComboBoxDropdownList dropdownList = new ComboBoxDropdownList(this, _window);
+                ComboBoxDropdownList dropdownList = new ComboBoxDropdownList(Parent, this);
                 dropdownList.ItemClicked += ListControl_ItemClicked;
                 eventHandler.Invoke(this, new DropdownListEventArgs(dropdownList));
             });

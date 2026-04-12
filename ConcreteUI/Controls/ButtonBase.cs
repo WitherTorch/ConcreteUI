@@ -12,7 +12,7 @@ namespace ConcreteUI.Controls
         private uint _version, _pressState;
         private bool _enabled, _isPressed;
 
-        public ButtonBase(IRenderer renderer, string themePrefix) : base(renderer, themePrefix)
+        public ButtonBase(IElementContainer parent, string themePrefix) : base(parent, themePrefix)
         {
             _enabled = true;
             _pressState = (uint)ButtonTriState.None;

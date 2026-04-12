@@ -58,7 +58,7 @@ namespace ConcreteUI.Controls
         private float _fontSize, _itemHeight;
         private int _selectedIndex;
 
-        public ListBox(IRenderer renderer) : base(renderer, "app.listBox")
+        public ListBox(IElementContainer parent) : base(parent, "app.listBox")
         {
             _stateVectorList = new BitList();
             _items = new ObservableList<string>();

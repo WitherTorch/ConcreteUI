@@ -20,8 +20,8 @@ namespace ConcreteUI.Controls
             {
                 if (!_ownerRef.TryGetTarget(out ComboBoxDropdownList? owner))
                     return 0;
-                int val = manager.GetComputedValue(owner._parent, LayoutProperty.Bottom);
-                return val - MathI.Ceiling(RenderingHelper.GetDefaultBorderWidth(owner._window.PixelsPerPoint.Y));
+                int val = manager.GetComputedValue(owner._owner, LayoutProperty.Bottom);
+                return val - MathI.Ceiling(RenderingHelper.GetDefaultBorderWidth(owner.Window.PixelsPerPoint.Y));
             }
         }
     }

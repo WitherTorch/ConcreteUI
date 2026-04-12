@@ -50,7 +50,6 @@ namespace ConcreteUI.Controls
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
         private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[1];
-        private readonly CoreWindow _window;
         private readonly InputMethod? _ime;
         private readonly Timer _caretTimer;
 
@@ -70,10 +69,9 @@ namespace ConcreteUI.Controls
         private char _passwordChar;
         private bool _caretState, _focused, _multiLine, _imeEnabled, _drag;
 
-        public TextBox(CoreWindow window) : base(window, "app.textBox")
+        public TextBox(IElementContainer parent) : base(parent, "app.textBox")
         {
-            _window = window;
-            window.FocusElementChanged += Window_FocusElementChanged;
+            Window.FocusElementChanged += Window_FocusElementChanged;
             _caretTimer = new Timer(CaretTimer_Tick, this, Timeout.Infinite, Timeout.Infinite);
             _caretState = true;
             _caretIndex = 0;
@@ -1201,7 +1199,7 @@ namespace ConcreteUI.Controls
         {
             if (args.Buttons.HasFlagFast(MouseButtons.LeftButton) && ContentBounds.Contains(args.Location))
                 return;
-            _window.ClearFocusElement(this);
+            Window.ClearFocusElement(this);
         }
 
         void IGlobalMouseInteractHandler.OnMouseUpGlobally(in MouseEventArgs args) { }
@@ -1221,7 +1219,7 @@ namespace ConcreteUI.Controls
                 }
                 return;
             }
-            _window.ChangeFocusElement(this);
+            Window.ChangeFocusElement(this);
             PointF location = PointToGlobal(args.Location);
             if (!ContentBounds.Contains(location))
             {

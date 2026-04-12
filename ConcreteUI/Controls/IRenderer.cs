@@ -6,7 +6,7 @@ using ConcreteUI.Theme;
 
 namespace ConcreteUI.Controls
 {
-    public interface IRenderer : IRenderingControl, IElementContainer
+    public interface IRenderer : IRenderingControl
     {
         Vector2 GetPixelsPerPoint();
 
@@ -17,5 +17,7 @@ namespace ConcreteUI.Controls
         PointF GetMousePosition();
 
         IThemeResourceProvider? GetThemeResourceProvider();
+
+        void Refresh();
     }
 }

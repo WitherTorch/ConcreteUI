@@ -26,20 +26,19 @@ namespace ConcreteUI.Controls
 
         private readonly LazyTiny<LayoutVariable>[] _layoutReferences;
         private readonly LayoutVariable?[] _layoutVariables = new LayoutVariable?[(int)LayoutProperty._Last];
-        private readonly IRenderer _renderer;
         private readonly object _syncLock;
         private readonly int _identifier;
 
-        private IElementContainer? _parent;
+        private IElementContainer _parent;
         private IThemeContext? _themeContext;
         private string _themePrefix;
         private ulong _location, _size;
-        private nuint _requestRedraw, _shouldUpdateWhenUnfreeze, _version;
+        private nuint _requestRedraw, _shouldUpdateWhenUnfreeze, _parentVersion, _boundsVersion;
         private nint _freezeCount;
 
-        public UIElement(IRenderer renderer, string themePrefix)
+        public UIElement(IElementContainer parent, string themePrefix)
         {
-            _renderer = renderer;
+            _parent = parent;
             _identifier = InterlockedHelper.GetAndIncrement(ref _identifierGenerator);
             _themePrefix = themePrefix.ToLowerAscii();
             _layoutReferences = CreateLayoutReferenceLazies();
@@ -98,7 +97,7 @@ namespace ConcreteUI.Controls
             => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutVariables), property) = variable;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsBackgroundOpaque() => IsBackgroundOpaqueCore() || (_parent ?? _renderer).IsBackgroundOpaque(this);
+        public bool IsBackgroundOpaque() => IsBackgroundOpaqueCore() || _parent.IsBackgroundOpaque(this);
 
         protected virtual bool IsBackgroundOpaqueCore() => false;
 
@@ -140,7 +139,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void UpdateCore() => _renderer.GetRenderingController()?.RequestUpdate(false);
+        protected void UpdateCore() => Parent.GetRenderer().Refresh();
 
         public virtual void Render(in RegionalRenderingContext context) => Render(in context, markDirty: true);
 
@@ -162,11 +161,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        protected void RenderBackground(in RegionalRenderingContext context)
-        {
-            IElementContainer parent = InterlockedHelper.Read(ref _parent) ?? _renderer;
-            parent.RenderBackground(this, in context);
-        }
+        protected void RenderBackground(in RegionalRenderingContext context) => Parent.RenderBackground(this, in context);
 
         protected void RenderBackground(in RegionalRenderingContext context, D2D1Brush backBrush)
         {
@@ -229,7 +224,7 @@ namespace ConcreteUI.Controls
                 ApplyThemeContextCore(value);
                 return;
             }
-            IThemeResourceProvider? provider = Renderer.GetThemeResourceProvider();
+            IThemeResourceProvider? provider = Parent.GetRenderer().GetThemeResourceProvider();
             if (provider is not null)
                 ApplyThemeCore(provider);
             Update();
@@ -238,7 +233,7 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ApplyThemeContextCore(IThemeContext themeContext)
         {
-            IRenderer renderer = Renderer;
+            IRenderer renderer = Parent.GetRenderer();
             lock (_syncLock)
             {
                 IThemeResourceProvider provider = ThemeResourceProvider.CreateResourceProvider(renderer.GetDeviceContext(), themeContext,
@@ -258,16 +253,16 @@ namespace ConcreteUI.Controls
         protected abstract void ApplyThemeCore(IThemeResourceProvider provider);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point PointToGlobal(Point point) => (_parent ?? _renderer).PointToGlobal(this, point);
+        public Point PointToGlobal(Point point) => GraphicsUtils.PointToGlobal(GetLocationCore(), point);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PointF PointToGlobal(PointF point) => (_parent ?? _renderer).PointToGlobal(this, point);
+        public PointF PointToGlobal(PointF point) => GraphicsUtils.PointToGlobal(GetLocationCore(), point);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point PointToLocal(Point point) => (_parent ?? _renderer).PointToLocal(this, point);
+        public Point PointToLocal(Point point) => GraphicsUtils.PointToLocal(GetLocationCore(), point);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PointF PointToLocal(PointF point) => (_parent ?? _renderer).PointToLocal(this, point);
+        public PointF PointToLocal(PointF point) => GraphicsUtils.PointToLocal(GetLocationCore(), point);
 
         public override int GetHashCode() => _identifier;
 
@@ -277,7 +272,7 @@ namespace ConcreteUI.Controls
         private Point GetLocationCore()
         {
             ref readonly ulong valRef = ref _location;
-            ref readonly nuint versionRef = ref _version;
+            ref readonly nuint versionRef = ref _boundsVersion;
             ulong val = OptimisticLock.EnterWithPrimitive(in valRef, in versionRef, out nuint version);
             while (!OptimisticLock.TryLeaveWithPrimitive(in valRef, in versionRef, ref val, ref version)) ;
             return ConvertUInt64ToPoint(in val);
@@ -289,7 +284,7 @@ namespace ConcreteUI.Controls
             if (SetLocationCore_Pure(in value))
             {
                 OnLocationChanged();
-                OptimisticLock.Increase(ref _version);
+                OptimisticLock.Increase(ref _boundsVersion);
             }
         }
 
@@ -304,7 +299,7 @@ namespace ConcreteUI.Controls
         private Size GetSizeCore()
         {
             ref readonly ulong valRef = ref _size;
-            ref readonly nuint versionRef = ref _version;
+            ref readonly nuint versionRef = ref _boundsVersion;
             ulong val = OptimisticLock.EnterWithPrimitive(in valRef, in versionRef, out nuint version);
             while (!OptimisticLock.TryLeaveWithPrimitive(in valRef, in versionRef, ref val, ref version)) ;
             return ConvertUInt64ToSize(in val);
@@ -316,7 +311,7 @@ namespace ConcreteUI.Controls
             if (SetSizeCore_Pure(in value))
             {
                 OnSizeChanged();
-                OptimisticLock.Increase(ref _version);
+                OptimisticLock.Increase(ref _boundsVersion);
             }
         }
 

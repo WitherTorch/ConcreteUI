@@ -39,7 +39,7 @@ namespace ConcreteUI.Controls
         private int _hoveredIndex;
         private bool _isPressed, _disposed;
 
-        public ContextMenu(CoreWindow window, ContextMenuItem[] items) : base(window, "app.contextMenu")
+        public ContextMenu(IElementContainer parent, ContextMenuItem[] items) : base(parent, "app.contextMenu")
         {
             MenuItems = items;
         }

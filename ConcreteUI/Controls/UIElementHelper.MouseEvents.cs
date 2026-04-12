@@ -36,7 +36,7 @@ namespace ConcreteUI.Controls
         {
             if (element is IElementContainer container)
             {
-                IEnumerable<UIElement?> elements = container.GetElements();
+                IEnumerable<UIElement?> elements = container.GetActiveElements();
                 if (isContains)
                     DispatchEvent(elements, ref args, args.Location, &OnMouseDownForElement);
                 else
@@ -61,7 +61,7 @@ namespace ConcreteUI.Controls
         public static void OnMouseUpForElement(UIElement element, in MouseEventArgs args)
         {
             if (element is IElementContainer container)
-                OnMouseUpForElements(container.GetElements(), in args);
+                OnMouseUpForElements(container.GetActiveElements(), in args);
             if (element is IGlobalMouseInteractHandler globalHandler)
                 globalHandler.OnMouseUpGlobally(in args);
             if (element is IMouseInteractHandler handler)
@@ -82,7 +82,7 @@ namespace ConcreteUI.Controls
                 data.LastHitElement = element;
                 if (element is IElementContainer container)
                 {
-                    DispatchEvent(container.GetElements(), in args, ref data, args.Location, &OnMouseMoveForElement);
+                    DispatchEvent(container.GetActiveElements(), in args, ref data, args.Location, &OnMouseMoveForElement);
 
                     isContains = ReferenceEquals(data.LastHitElement, element);
                 }
@@ -96,7 +96,7 @@ namespace ConcreteUI.Controls
             else
             {
                 if (element is IElementContainer container)
-                    DispatchEvent(container.GetElements(), in args, ref data, &OnMouseMoveForElement_OutOfBounds);
+                    DispatchEvent(container.GetActiveElements(), in args, ref data, &OnMouseMoveForElement_OutOfBounds);
                 if (element is IGlobalMouseMoveHandler globalHandler)
                     globalHandler.OnMouseMoveGlobally(in args);
             }
@@ -115,7 +115,7 @@ namespace ConcreteUI.Controls
         {
             if (element is IElementContainer container)
             {
-                IEnumerable<UIElement?> elements = container.GetElements();
+                IEnumerable<UIElement?> elements = container.GetActiveElements();
                 if (isContains)
                     DispatchEvent(elements, ref args, args.Location, &OnMouseScrollForElement);
                 else

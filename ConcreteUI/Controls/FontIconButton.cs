@@ -24,7 +24,7 @@ namespace ConcreteUI.Controls
 
         private FontIcon? _icon;
 
-        public FontIconButton(IRenderer renderer) : base(renderer, "app.fontIconButton")
+        public FontIconButton(IElementContainer parent) : base(parent, "app.fontIconButton")
         {
             _icon = null;
         }

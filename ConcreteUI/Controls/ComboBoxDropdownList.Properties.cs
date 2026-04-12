@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 
 namespace ConcreteUI.Controls
@@ -10,7 +10,7 @@ namespace ConcreteUI.Controls
         public new ComboBox Parent
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _parent;
+            get => _owner;
         }
 
         public int SelectedIndex

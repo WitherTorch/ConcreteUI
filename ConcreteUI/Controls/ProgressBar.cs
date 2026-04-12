@@ -9,7 +9,6 @@ using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
-using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Controls
 {
@@ -27,7 +26,7 @@ namespace ConcreteUI.Controls
         private double _value, _maximium;
         private bool _disposed;
 
-        public ProgressBar(IRenderer renderer) : base(renderer, "app.progressBar")
+        public ProgressBar(IElementContainer parent) : base(parent, "app.progressBar")
         {
             _value = 0.0f;
             _maximium = 100.0f;
