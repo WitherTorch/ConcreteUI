@@ -118,8 +118,8 @@ namespace ConcreteUI.Controls
             base.ApplyThemeCore(provider);
             string fontName = provider.FontName;
             _fontName = fontName;
-            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
-            UIElementHelper.ApplyTheme(provider, _checkBoxBrushes, _checkBoxBrushNames, _checkBoxThemePrefix, (int)CheckBoxBrush._Last);
+            UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
+            UIElementHelper.ApplyThemeUnsafe(provider, _checkBoxBrushes, _checkBoxBrushNames, _checkBoxThemePrefix, (nuint)CheckBoxBrush._Last);
             DisposeHelper.SwapDisposeInterlocked(ref _format);
             Interlocked.Exchange(ref _recalcFormat, Booleans.TrueLong);
             OnDpiChangedCore(fontName, Renderer.GetPixelsPerPoint());

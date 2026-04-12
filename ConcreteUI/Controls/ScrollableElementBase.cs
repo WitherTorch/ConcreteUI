@@ -68,7 +68,7 @@ namespace ConcreteUI.Controls
         protected virtual D2D1Brush? GetBorderBrush() => null;
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
-            => UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, _scrollBarThemePrefix, (int)Brush._Last);
+            => UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, _scrollBarThemePrefix, (nuint)Brush._Last);
 
         protected override void Update() => Update(ScrollableElementUpdateFlags.Content);
 

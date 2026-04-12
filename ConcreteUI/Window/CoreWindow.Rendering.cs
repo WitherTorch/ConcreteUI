@@ -418,7 +418,7 @@ namespace ConcreteUI.Window
         {
             _clearDCColor = provider.TryGetColor(ThemeConstants.ClearDCColorNode, out D2D1ColorF color) ? color : default;
             _windowBaseColor = provider.TryGetColor(ThemeConstants.WindowBaseColorNode, out color) ? color : default;
-            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+            UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
             UIElementHelper.ApplyTheme(provider, _overlayElementList);
             UIElementHelper.ApplyTheme(provider, _backgroundElementList);
             if (_brushes[(int)Brush.TitleBackBrush] is D2D1SolidColorBrush backBrush &&

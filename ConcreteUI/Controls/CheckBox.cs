@@ -73,7 +73,7 @@ namespace ConcreteUI.Controls
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
-            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
+            UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
             _fontName = provider.FontName;
             _rawUpdateFlags = -1L;
             _fontSize = UIConstants.DefaultFontSize;

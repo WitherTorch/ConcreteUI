@@ -111,7 +111,7 @@ namespace ConcreteUI.Window
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             base.ApplyThemeCore(provider);
-            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+            UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
             _wizardBaseColor = provider.TryGetColor(ThemeConstants.WizardWindowBaseColor, out D2D1ColorF color) ? color : default;
             DisposeHelper.SwapDisposeInterlocked(ref _titleLayout, null);
             DisposeHelper.SwapDisposeInterlocked(ref _titleDescriptionLayout, null);

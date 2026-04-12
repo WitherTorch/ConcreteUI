@@ -9,8 +9,6 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 
-using InlineMethod;
-
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
@@ -25,7 +23,9 @@ namespace ConcreteUI.Controls
             int length = brushes.Length;
             if (length != nodes.Length)
                 throw new ArgumentException("The length of " + nameof(nodes) + " must equals to the length of " + nameof(brushes) + " !");
-            ApplyTheme(provider, brushes, nodes, length);
+            if (length <= 0)
+                return;
+            ApplyThemeUnsafe(provider, brushes, nodes, (nuint)length);
         }
 
         public static void ApplyTheme(IThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes, string nodePrefix)
@@ -33,32 +33,32 @@ namespace ConcreteUI.Controls
             int length = brushes.Length;
             if (length != nodes.Length)
                 throw new ArgumentException("The length of " + nameof(nodes) + " must equals to the length of " + nameof(brushes) + " !");
-            ApplyTheme(provider, brushes, nodes, nodePrefix, length);
-        }
-
-        [Inline(InlineBehavior.Keep, export: true)]
-        public static void ApplyTheme(IThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes, [InlineParameter] int length)
-        {
             if (length <= 0)
                 return;
-            ref D2D1Brush? brushRef = ref UnsafeHelper.GetArrayDataReference(brushes);
-            for (int i = 0; i < length; i++)
-                ApplyTheme(provider, ref UnsafeHelper.AddTypedOffset(ref brushRef, i), nodes[i]);
+            ApplyThemeUnsafe(provider, brushes, nodes, nodePrefix, (nuint)length);
         }
 
-        [Inline(InlineBehavior.Keep, export: true)]
-        public static void ApplyTheme(IThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes, string nodePrefix, [InlineParameter] int length)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ApplyThemeUnsafe(IThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes, nuint length)
         {
-            if (length <= 0)
-                return;
-            ref D2D1Brush? brushRef = ref UnsafeHelper.GetArrayDataReference(brushes);
-            for (int i = 0; i < length; i++)
-                ApplyTheme(provider, ref UnsafeHelper.AddTypedOffset(ref brushRef, i), nodePrefix + "." + nodes[i]);
+            ref D2D1Brush? brushesRef = ref UnsafeHelper.GetArrayDataReference(brushes);
+            ref readonly string nodesRef = ref UnsafeHelper.GetArrayDataReference(nodes);
+            for (nuint i = 0; i < length; i++)
+                ApplyTheme(provider, ref UnsafeHelper.AddTypedOffset(ref brushesRef, i), UnsafeHelper.AddTypedOffset(in nodesRef, i));
         }
 
-        [Inline(InlineBehavior.Keep, export: true)]
-        public static void ApplyTheme(IThemeResourceProvider provider, ref D2D1Brush? brush, string node)
-            => DisposeHelper.SwapDispose(ref brush, provider.TryGetBrush(node, out D2D1Brush? result) ? result.Clone() : null);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ApplyThemeUnsafe(IThemeResourceProvider provider, D2D1Brush?[] brushes, string[] nodes, string nodePrefix, nuint length)
+        {
+            ref D2D1Brush? brushesRef = ref UnsafeHelper.GetArrayDataReference(brushes);
+            ref readonly string nodesRef = ref UnsafeHelper.GetArrayDataReference(nodes);
+            for (nuint i = 0; i < length; i++)
+                ApplyTheme(provider, ref UnsafeHelper.AddTypedOffset(ref brushesRef, i), nodePrefix + "." + UnsafeHelper.AddTypedOffset(in nodesRef, i));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ApplyTheme(IThemeResourceProvider provider, ref D2D1Brush? brushRef, string node)
+            => DisposeHelper.SwapDispose(ref brushRef, provider.TryGetBrush(node, out D2D1Brush? result) ? result.Clone() : null);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ApplyTheme<TEnumerable>(IThemeResourceProvider provider, TEnumerable elements)

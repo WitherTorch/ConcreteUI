@@ -105,7 +105,7 @@ namespace ConcreteUI.Controls
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             base.ApplyThemeCore(provider);
-            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, ThemePrefix, (int)Brush._Last);
+            UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
             _fontName = provider.FontName;
             DisposeHelper.SwapDispose(ref _layout);
             DisposeHelper.SwapDispose(ref _watermarkLayout);

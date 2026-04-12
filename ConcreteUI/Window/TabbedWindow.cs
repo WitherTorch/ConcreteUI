@@ -136,7 +136,7 @@ namespace ConcreteUI.Window
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
             base.ApplyThemeCore(provider);
-            UIElementHelper.ApplyTheme(provider, _brushes, _brushNames, (int)Brush._Last);
+            UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
             GenerateMenu(_menuTitles, baseX: 0, baseY: 27, menuExtraWidth: UIConstants.ElementMarginDouble,
                 out Rect[] menuBarButtonRects, out DWriteTextLayout[] menuBarButtonLayouts);
             _menuBarButtonRects = menuBarButtonRects;
