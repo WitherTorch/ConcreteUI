@@ -1,12 +1,12 @@
 using System;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Layout.Internals;
 
+using InlineMethod;
+
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Threading;
 
 #pragma warning disable CS8500
 
@@ -14,55 +14,59 @@ namespace ConcreteUI.Layout
 {
     partial class LayoutVariable
     {
-        private static readonly LazyTiny<LayoutVariable>[] _smallValueVariableCaches = CreateSmallValueVariableCaches();
-        private static readonly LazyTiny<LayoutVariable>[] _pageRectVariableCaches = CreatePageRectVariableCaches();
+        private const int FixedValueCacheLimit = 256;
 
-        private static LazyTiny<LayoutVariable>[] CreateSmallValueVariableCaches()
+        private static readonly FixedLayoutVariable[] _smallValuePositiveVariables = CreateSmallValueVariables_Positive();
+        private static readonly FixedLayoutVariable[] _smallValueNegativeVariables = CreateSmallValueVariables_Negative();
+        private static readonly PageRectLayoutVariable[] _pageRectVariables = CreatePageRectVariables();
+
+        private static FixedLayoutVariable[] CreateSmallValueVariables_Positive()
         {
-            LazyTiny<LayoutVariable>[] result = new LazyTiny<LayoutVariable>[256];
-            for (int i = 0; i < 128; i++)
-            {
-                int val = i;
-                sbyte value = (sbyte)(byte)val;
-                if (value >= 0)
-                    val = value + 1;
-                result[i] = new LazyTiny<LayoutVariable>(() => new FixedLayoutVariable(val), LazyThreadSafetyMode.PublicationOnly);
-            }
+            FixedLayoutVariable[] result = new FixedLayoutVariable[FixedValueCacheLimit];
+            ref FixedLayoutVariable resultRef = ref UnsafeHelper.GetArrayDataReference(result);
+            for (int i = 1; i <= 256; i++)
+                UnsafeHelper.AddTypedOffset(ref resultRef, i) = new FixedLayoutVariable(i);
             return result;
         }
 
-        private static LazyTiny<LayoutVariable>[] CreatePageRectVariableCaches()
+        private static FixedLayoutVariable[] CreateSmallValueVariables_Negative()
         {
-            LazyTiny<LayoutVariable>[] result = new LazyTiny<LayoutVariable>[(int)LayoutProperty._Last];
-            for (int i = 0; i < (int)LayoutProperty._Last; i++)
-            {
-                LayoutProperty prop = (LayoutProperty)i;
-                result[i] = new LazyTiny<LayoutVariable>(() => new PageRectLayoutVariable(prop), LazyThreadSafetyMode.PublicationOnly);
-            }
+            FixedLayoutVariable[] result = new FixedLayoutVariable[FixedValueCacheLimit];
+            ref FixedLayoutVariable resultRef = ref UnsafeHelper.GetArrayDataReference(result);
+            for (int i = 1; i <= 256; i++)
+                UnsafeHelper.AddTypedOffset(ref resultRef, i) = new FixedLayoutVariable(-i);
             return result;
         }
+
+        [Inline(InlineBehavior.Remove)]
+        private static PageRectLayoutVariable[] CreatePageRectVariables()
+            => new PageRectLayoutVariable[(int)LayoutProperty._Last]
+            {
+                new PageRectLayoutVariable(LayoutProperty.Left),
+                new PageRectLayoutVariable(LayoutProperty.Top),
+                new PageRectLayoutVariable(LayoutProperty.Right),
+                new PageRectLayoutVariable(LayoutProperty.Bottom),
+                new PageRectLayoutVariable(LayoutProperty.Width),
+                new PageRectLayoutVariable(LayoutProperty.Height),
+            };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe LayoutVariable Fixed(int value)
+        public static LayoutVariable Fixed(int value)
         {
             if (value == 0)
                 return _empty;
-            if (value > 0)
+            if (value < 0)
             {
-                if (value > 128)
-                    return new FixedLayoutVariable(value);
-                value--;
+                int absValue = -value;
+                if (absValue < FixedValueCacheLimit)
+                    return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_smallValueNegativeVariables), (nuint)absValue);
             }
             else
             {
-                if (value < -128)
-                    return new FixedLayoutVariable(value);
+                if (value < FixedValueCacheLimit)
+                    return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_smallValuePositiveVariables), (nuint)value);
             }
-            if (value < -128 || value > 128)
-                return new FixedLayoutVariable(value);
-            byte index = (byte)(sbyte)value;
-            ref LazyTiny<LayoutVariable> variableCacheRef = ref UnsafeHelper.GetArrayDataReference(_smallValueVariableCaches);
-            return UnsafeHelper.AddTypedOffset(ref variableCacheRef, index).Value;
+            return new FixedLayoutVariable(value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -74,8 +78,7 @@ namespace ConcreteUI.Layout
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
-            ref LazyTiny<LayoutVariable> variableCacheRef = ref UnsafeHelper.GetArrayDataReference(_pageRectVariableCaches);
-            return UnsafeHelper.AddTypedOffset(ref variableCacheRef, (uint)property).Value;
+            return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_pageRectVariables), (nuint)property);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

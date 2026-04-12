@@ -1,7 +1,6 @@
 using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
@@ -24,11 +23,12 @@ namespace ConcreteUI.Controls
     {
         private static int _identifierGenerator = 0;
 
-        private readonly LazyTiny<LayoutVariable>[] _layoutReferences;
+        private readonly LayoutVariable?[] _layoutReferences = new LayoutVariable?[(int)LayoutProperty._Last];
         private readonly LayoutVariable?[] _layoutVariables = new LayoutVariable?[(int)LayoutProperty._Last];
         private readonly object _syncLock;
         private readonly int _identifier;
 
+        private WeakReference<UIElement>? _reference;
         private IElementContainer _parent;
         private IThemeContext? _themeContext;
         private string _themePrefix;
@@ -41,24 +41,12 @@ namespace ConcreteUI.Controls
             _parent = parent;
             _identifier = InterlockedHelper.GetAndIncrement(ref _identifierGenerator);
             _themePrefix = themePrefix.ToLowerAscii();
-            _layoutReferences = CreateLayoutReferenceLazies();
             _requestRedraw = UnsafeHelper.GetMaxValue<nuint>();
             _syncLock = _layoutReferences; // 物件重用
         }
 
-        private LazyTiny<LayoutVariable>[] CreateLayoutReferenceLazies()
-        {
-            WeakReference<UIElement> reference = new WeakReference<UIElement>(this, trackResurrection: false);
-            return new LazyTiny<LayoutVariable>[(int)LayoutProperty._Last]
-            {
-                new (() => new UIElementLayoutVariable(reference, LayoutProperty.Left), LazyThreadSafetyMode.PublicationOnly),
-                new (() => new UIElementLayoutVariable(reference, LayoutProperty.Top), LazyThreadSafetyMode.PublicationOnly),
-                new (() => new UIElementLayoutVariable(reference, LayoutProperty.Right), LazyThreadSafetyMode.PublicationOnly),
-                new (() => new UIElementLayoutVariable(reference, LayoutProperty.Bottom), LazyThreadSafetyMode.PublicationOnly),
-                new (() => new UIElementLayoutVariable(reference, LayoutProperty.Width), LazyThreadSafetyMode.PublicationOnly),
-                new (() => new UIElementLayoutVariable(reference, LayoutProperty.Height), LazyThreadSafetyMode.PublicationOnly),
-            };
-        }
+        [Inline(InlineBehavior.Remove)]
+        private WeakReference<UIElement> GetWeakReference() => _reference ??= new WeakReference<UIElement>(this);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LayoutVariable GetLayoutReference(LayoutProperty property)
@@ -86,7 +74,10 @@ namespace ConcreteUI.Controls
 
         [Inline(InlineBehavior.Remove)]
         private LayoutVariable GetLayoutReferenceCore(nuint property)
-            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutReferences), property).Value;
+        {
+            ref LayoutVariable? variable = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutReferences), property);
+            return variable ??= new UIElementLayoutVariable(GetWeakReference(), (LayoutProperty)property);
+        }
 
         [Inline(InlineBehavior.Remove)]
         private LayoutVariable? GetLayoutVariableCore(nuint property)
@@ -211,7 +202,7 @@ namespace ConcreteUI.Controls
         {
             if (_themeContext is not null)
                 return;
-            lock(_syncLock)
+            lock (_syncLock)
                 ApplyThemeCore(provider);
             Update();
         }
