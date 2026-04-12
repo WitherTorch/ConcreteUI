@@ -84,7 +84,7 @@ namespace ConcreteUI.Controls
                 try
                 {
                     Array.Copy(array, buffer, length);
-                    DispatchHandleableEventCore(in buffer[0], (nuint)length, ref args, eventHandler);
+                    DispatchHandleableEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ref args, eventHandler);
                 }
                 finally
                 {
@@ -103,7 +103,7 @@ namespace ConcreteUI.Controls
                 try
                 {
                     list.CopyTo(buffer, 0);
-                    DispatchHandleableEventCore(in buffer[0], (nuint)length, ref args, eventHandler);
+                    DispatchHandleableEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ref args, eventHandler);
                 }
                 finally
                 {
@@ -123,7 +123,7 @@ namespace ConcreteUI.Controls
                 {
                     for (int i = 0, j = 0; i < length; i++)
                         buffer[j++] = readOnlyList[i];
-                    DispatchHandleableEventCore(in buffer[0], (nuint)length, ref args, eventHandler);
+                    DispatchHandleableEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ref args, eventHandler);
                 }
                 finally
                 {
@@ -146,7 +146,7 @@ namespace ConcreteUI.Controls
                 (UIElement?[] buffer, int count) = bufferList;
                 try
                 {
-                    DispatchHandleableEventCore(in buffer[0], (nuint)count, ref args, eventHandler);
+                    DispatchHandleableEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)count, ref args, eventHandler);
                 }
                 finally
                 {
@@ -229,7 +229,7 @@ namespace ConcreteUI.Controls
                 try
                 {
                     Array.Copy(array, buffer, length);
-                    DispatchEventCore(in buffer[0], (nuint)length, ref args, eventHandler);
+                    DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ref args, eventHandler);
                 }
                 finally
                 {
@@ -248,7 +248,7 @@ namespace ConcreteUI.Controls
                 try
                 {
                     list.CopyTo(buffer, 0);
-                    DispatchEventCore(in buffer[0], (nuint)length, ref args, eventHandler);
+                    DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ref args, eventHandler);
                 }
                 finally
                 {
@@ -264,11 +264,12 @@ namespace ConcreteUI.Controls
             {
                 ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
                 UIElement?[] buffer = pool.Rent(length);
+                ref UIElement? bufferRef = ref UnsafeHelper.GetArrayDataReference(buffer);
                 try
                 {
-                    for (int i = 0, j = 0; i < length; i++)
-                        buffer[j++] = readOnlyList[i];
-                    DispatchEventCore(in buffer[0], (nuint)length, ref args, eventHandler);
+                    for (int i = 0; i < length; i++)
+                        UnsafeHelper.AddTypedOffset(ref bufferRef, i) = readOnlyList[i];
+                    DispatchEventCore(ref bufferRef, (nuint)length, ref args, eventHandler);
                 }
                 finally
                 {
@@ -278,20 +279,19 @@ namespace ConcreteUI.Controls
             return;
 
         Fallback:
+            using IEnumerator<UIElement?> enumerator = elements.GetEnumerator();
+            if (enumerator.MoveNext())
             {
-                using IEnumerator<UIElement?> enumerator = elements.GetEnumerator();
-                if (!enumerator.MoveNext())
-                    return;
                 ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
                 using PooledList<UIElement?> bufferList = new(pool);
                 do
                 {
                     bufferList.Add(enumerator.Current);
                 } while (enumerator.MoveNext());
-                (UIElement?[] buffer, int count) = bufferList;
+                (UIElement?[] buffer, length) = bufferList;
                 try
                 {
-                    DispatchEventCore(in buffer[0], (nuint)count, ref args, eventHandler);
+                    DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ref args, eventHandler);
                 }
                 finally
                 {
@@ -364,7 +364,7 @@ namespace ConcreteUI.Controls
                 try
                 {
                     Array.Copy(array, buffer, length);
-                    DispatchEventCore(in buffer[0], (nuint)length, in args, ref data, eventHandler);
+                    DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, in args, ref data, eventHandler);
                 }
                 finally
                 {
@@ -383,7 +383,7 @@ namespace ConcreteUI.Controls
                 try
                 {
                     list.CopyTo(buffer, 0);
-                    DispatchEventCore(in buffer[0], (nuint)length, in args, ref data, eventHandler);
+                    DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, in args, ref data, eventHandler);
                 }
                 finally
                 {
@@ -399,11 +399,12 @@ namespace ConcreteUI.Controls
             {
                 ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
                 UIElement?[] buffer = pool.Rent(length);
+                ref UIElement? bufferRef = ref UnsafeHelper.GetArrayDataReference(buffer);
                 try
                 {
-                    for (int i = 0, j = 0; i < length; i++)
-                        buffer[j++] = readOnlyList[i];
-                    DispatchEventCore(in buffer[0], (nuint)length, in args, ref data, eventHandler);
+                    for (int i = 0; i < length; i++)
+                        UnsafeHelper.AddTypedOffset(ref bufferRef, i) = readOnlyList[i];
+                    DispatchEventCore(in bufferRef, (nuint)length, in args, ref data, eventHandler);
                 }
                 finally
                 {
@@ -426,7 +427,7 @@ namespace ConcreteUI.Controls
                 (UIElement?[] buffer, int count) = bufferList;
                 try
                 {
-                    DispatchEventCore(in buffer[0], (nuint)count, in args, ref data, eventHandler);
+                    DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)count, in args, ref data, eventHandler);
                 }
                 finally
                 {
@@ -500,7 +501,7 @@ namespace ConcreteUI.Controls
                 try
                 {
                     Array.Copy(array, buffer, length);
-                    DispatchEventCore(in buffer[0], (nuint)length, ref args, focusPoint, eventHandler);
+                    DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ref args, focusPoint, eventHandler);
                 }
                 finally
                 {
@@ -519,7 +520,7 @@ namespace ConcreteUI.Controls
                 try
                 {
                     list.CopyTo(buffer, 0);
-                    DispatchEventCore(in buffer[0], (nuint)length, ref args, focusPoint, eventHandler);
+                    DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ref args, focusPoint, eventHandler);
                 }
                 finally
                 {
@@ -535,11 +536,12 @@ namespace ConcreteUI.Controls
             {
                 ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
                 UIElement?[] buffer = pool.Rent(length);
+                ref UIElement? bufferRef = ref UnsafeHelper.GetArrayDataReference(buffer);
                 try
                 {
-                    for (int i = 0, j = 0; i < length; i++)
-                        buffer[j++] = readOnlyList[i];
-                    DispatchEventCore(in buffer[0], (nuint)length, ref args, focusPoint, eventHandler);
+                    for (int i = 0; i < length; i++)
+                        UnsafeHelper.AddTypedOffset(ref bufferRef, i) = readOnlyList[i];
+                    DispatchEventCore(in bufferRef, (nuint)length, ref args, focusPoint, eventHandler);
                 }
                 finally
                 {
@@ -562,7 +564,7 @@ namespace ConcreteUI.Controls
                 (UIElement?[] buffer, int count) = bufferList;
                 try
                 {
-                    DispatchEventCore(in buffer[0], (nuint)count, ref args, focusPoint, eventHandler);
+                    DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)count, ref args, focusPoint, eventHandler);
                 }
                 finally
                 {
@@ -635,7 +637,7 @@ namespace ConcreteUI.Controls
                 try
                 {
                     Array.Copy(array, buffer, length);
-                    DispatchEventCore(in buffer[0], (nuint)length, in args, ref data, focusPoint, eventHandler);
+                    DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, in args, ref data, focusPoint, eventHandler);
                 }
                 finally
                 {
@@ -654,7 +656,7 @@ namespace ConcreteUI.Controls
                 try
                 {
                     list.CopyTo(buffer, 0);
-                    DispatchEventCore(in buffer[0], (nuint)length, in args, ref data, focusPoint, eventHandler);
+                    DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, in args, ref data, focusPoint, eventHandler);
                 }
                 finally
                 {
@@ -670,11 +672,12 @@ namespace ConcreteUI.Controls
             {
                 ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
                 UIElement?[] buffer = pool.Rent(length);
+                ref UIElement? bufferRef = ref UnsafeHelper.GetArrayDataReference(buffer);
                 try
                 {
-                    for (int i = 0, j = 0; i < length; i++)
-                        buffer[j++] = readOnlyList[i];
-                    DispatchEventCore(in buffer[0], (nuint)length, in args, ref data, focusPoint, eventHandler);
+                    for (int i = 0; i < length; i++)
+                        UnsafeHelper.AddTypedOffset(ref bufferRef, i) = readOnlyList[i];
+                    DispatchEventCore(in bufferRef, (nuint)length, in args, ref data, focusPoint, eventHandler);
                 }
                 finally
                 {
@@ -697,7 +700,7 @@ namespace ConcreteUI.Controls
                 (UIElement?[] buffer, int count) = bufferList;
                 try
                 {
-                    DispatchEventCore(in buffer[0], (nuint)count, in args, ref data, focusPoint, eventHandler);
+                    DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)count, in args, ref data, focusPoint, eventHandler);
                 }
                 finally
                 {
