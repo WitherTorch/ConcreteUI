@@ -26,8 +26,8 @@ namespace ConcreteUI.Controls
 
         private readonly LazyTiny<LayoutVariable>[] _layoutReferences;
         private readonly LayoutVariable?[] _layoutVariables = new LayoutVariable?[(int)LayoutProperty._Last];
-        private readonly SemaphoreSlim _semaphore;
         private readonly IRenderer _renderer;
+        private readonly object _syncLock;
         private readonly int _identifier;
 
         private IElementContainer? _parent;
@@ -40,11 +40,11 @@ namespace ConcreteUI.Controls
         public UIElement(IRenderer renderer, string themePrefix)
         {
             _renderer = renderer;
-            _semaphore = new SemaphoreSlim(1, 1);
             _identifier = InterlockedHelper.GetAndIncrement(ref _identifierGenerator);
             _themePrefix = themePrefix.ToLowerAscii();
             _layoutReferences = CreateLayoutReferenceLazies();
             _requestRedraw = UnsafeHelper.GetMaxValue<nuint>();
+            _syncLock = _layoutReferences; // 物件重用
         }
 
         private LazyTiny<LayoutVariable>[] CreateLayoutReferenceLazies()
@@ -146,19 +146,19 @@ namespace ConcreteUI.Controls
 
         public void Render(in RegionalRenderingContext context, bool markDirty)
         {
-            SemaphoreSlim semaphore = _semaphore;
-            semaphore.Wait();
-            try
+            lock (_syncLock)
             {
-                ResetNeedRefreshFlag();
-                if (!RenderCore(in context))
-                    Update();
-            }
-            finally
-            {
-                semaphore.Release();
-                if (markDirty)
-                    context.MarkAsDirty();
+                try
+                {
+                    ResetNeedRefreshFlag();
+                    if (!RenderCore(in context))
+                        Update();
+                }
+                finally
+                {
+                    if (markDirty)
+                        context.MarkAsDirty();
+                }
             }
         }
 
@@ -216,20 +216,8 @@ namespace ConcreteUI.Controls
         {
             if (_themeContext is not null)
                 return;
-            SemaphoreSlim semaphore = _semaphore;
-            semaphore.Wait();
-            try
-            {
+            lock(_syncLock)
                 ApplyThemeCore(provider);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            finally
-            {
-                semaphore.Release();
-            }
             Update();
         }
 
@@ -251,22 +239,18 @@ namespace ConcreteUI.Controls
         private void ApplyThemeContextCore(IThemeContext themeContext)
         {
             IRenderer renderer = Renderer;
-            SemaphoreSlim semaphore = _semaphore;
-            semaphore.Wait();
-            IThemeResourceProvider provider = ThemeResourceProvider.CreateResourceProvider(renderer.GetDeviceContext(), themeContext,
+            lock (_syncLock)
+            {
+                IThemeResourceProvider provider = ThemeResourceProvider.CreateResourceProvider(renderer.GetDeviceContext(), themeContext,
                 (renderer as CoreWindow)?.WindowMaterial ?? WindowMaterial.Default);
-            try
-            {
-                ApplyThemeCore(provider);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            finally
-            {
-                semaphore.Release();
-                (provider as IDisposable)?.Dispose();
+                try
+                {
+                    ApplyThemeCore(provider);
+                }
+                finally
+                {
+                    (provider as IDisposable)?.Dispose();
+                }
             }
             Update();
         }
