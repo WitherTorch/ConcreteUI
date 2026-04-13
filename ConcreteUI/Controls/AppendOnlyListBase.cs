@@ -43,20 +43,42 @@ namespace ConcreteUI.Controls
 
         protected virtual void Append(TItem item)
         {
-            _itemStore.Append(item);
-            Update();
+            FreezeUpdate();
+            try
+            {
+                _itemStore.Append(item);
+            }
+            finally
+            {
+                UnfreezeUpdate(forceUpdate: true);
+            }
         }
 
         protected virtual void Append(IEnumerable<TItem> items)
         {
-            _itemStore.Append(items);
-            Update();
+            FreezeUpdate();
+            try
+            {
+                _itemStore.Append(items);
+            }
+            finally
+            {
+                UnfreezeUpdate(forceUpdate: true);
+            }
         }
 
         protected override void OnContentBoundsChanged()
         {
-            base.OnContentBoundsChanged();
-            _itemStore.AdjustAll();
+            FreezeUpdate();
+            try
+            {
+                base.OnContentBoundsChanged();
+                _itemStore.AdjustAll();
+            }
+            finally
+            {
+                UnfreezeUpdate(forceUpdate: false);
+            }
         }
 
         protected override bool RenderContent(in RegionalRenderingContext context, D2D1Brush backBrush)

@@ -15,9 +15,9 @@ namespace ConcreteUI.Controls
             get
             {
                 ref readonly uint valueRef = ref _pressState;
-                ref readonly uint versionRef = ref _version;
+                ref readonly nuint versionRef = ref _version;
 
-                uint value = OptimisticLock.EnterWithPrimitive(in valueRef, in versionRef, out uint version);
+                uint value = OptimisticLock.EnterWithPrimitive(in valueRef, in versionRef, out nuint version);
                 while (!OptimisticLock.TryLeaveWithPrimitive(in valueRef, in versionRef, ref value, ref version)) ;
                 return (ButtonTriState)value;
             }
@@ -29,9 +29,9 @@ namespace ConcreteUI.Controls
             get
             {
                 ref readonly bool valueRef = ref _enabled;
-                ref readonly uint versionRef = ref _version;
+                ref readonly nuint versionRef = ref _version;
 
-                bool value = OptimisticLock.EnterWithPrimitive(in valueRef, in versionRef, out uint version);
+                bool value = OptimisticLock.EnterWithPrimitive(in valueRef, in versionRef, out nuint version);
                 while (!OptimisticLock.TryLeaveWithPrimitive(in valueRef, in versionRef, ref value, ref version)) ;
                 return value;
             }

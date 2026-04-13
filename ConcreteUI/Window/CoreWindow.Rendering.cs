@@ -612,6 +612,7 @@ namespace ConcreteUI.Window
                     host.ResizeTemporarily(size);
                 else
                     host.Resize(size);
+                Thread.MemoryBarrier();
                 RecalculateLayout(GraphicsUtils.ScalingSizeAndConvert(size, _pointsPerPixel), true);
             }
             D2D1DeviceContext? deviceContext = host.GetDeviceContext();

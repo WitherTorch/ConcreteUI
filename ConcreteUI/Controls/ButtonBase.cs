@@ -9,7 +9,8 @@ namespace ConcreteUI.Controls
 {
     public abstract partial class ButtonBase : DisposableUIElementBase, IMouseInteractHandler, IMouseMoveHandler
     {
-        private uint _version, _pressState;
+        private nuint _version;
+        private uint _pressState;
         private bool _enabled, _isPressed;
 
         public ButtonBase(IElementContainer parent, string themePrefix) : base(parent, themePrefix)
