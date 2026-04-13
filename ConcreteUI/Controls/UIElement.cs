@@ -124,7 +124,7 @@ namespace ConcreteUI.Controls
             const nuint RequestRedrawBit = 0b01;
 
             InterlockedHelper.CompareExchange(ref _shouldUpdateWhenUnfreeze, UnsafeHelper.GetMaxValue<nuint>(), 0);
-            if (Volatile.Read(ref _freezeCount) != default ||
+            if (InterlockedHelper.Read(ref _freezeCount) != default ||
                 !CheckIsRenderedOnce(InterlockedHelper.Or(ref _requestRedraw, RequestRedrawBit)))
                 return;
             UpdateCore();
@@ -180,7 +180,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual bool NeedRefresh() => Volatile.Read(ref _requestRedraw) != default;
+        public virtual bool NeedRefresh() => InterlockedHelper.Read(ref _requestRedraw) != default;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void ResetNeedRefreshFlag() => InterlockedHelper.Exchange(ref _requestRedraw, default);
