@@ -167,11 +167,16 @@ namespace ConcreteUI.Graphics.Hosts
         [Inline(InlineBehavior.Remove)]
         private void EndDrawCore(D2D1DeviceContext context)
         {
-#if DEBUG
-            context.EndDraw();
-#else
-            context.TryEndDraw();
-#endif
+            int hr = context.TryEndDraw();
+            if (hr < 0)
+            {
+                if (IsDeviceRemovedOrReset(hr) || hr == Constants.D2DERR_RECREATE_TARGET)
+                {
+                    OnDeviceRemoved();
+                    return;
+                }
+                ThrowHelper.ThrowExceptionForHR(hr);
+            }
             context.Target = null;
             DisposeHelper.SwapDispose(ref _target);
         }
@@ -252,20 +257,35 @@ namespace ConcreteUI.Graphics.Hosts
             D2D1DeviceContext? context = _activeContext;
             if (context is null || context.IsDisposed)
                 return;
+
+            int hr;
             if (_alternateFlushing)
-            {
-                AlternativeFlush(context);
-                return;
-            }
-            int hr = context.TryFlush();
+                goto AlternativeFlush;
+            else
+                goto Flush;
+
+        Flush:
+            hr = context.TryFlush();
             if (hr >= 0)
                 return;
+
             if (hr == Constants.E_NOTIMPL)
             {
                 _alternateFlushing = true;
-                AlternativeFlush(context);
+                goto AlternativeFlush;
+            }
+            goto Tail;
+
+        AlternativeFlush:
+            hr = context.TryEndDraw();
+            if (hr >= 0)
+            {
+                context.BeginDraw();
                 return;
             }
+            goto Tail;
+
+        Tail:
             if (IsDeviceRemovedOrReset(hr) || hr == Constants.D2DERR_RECREATE_TARGET)
             {
                 OnDeviceRemoved();
@@ -274,13 +294,6 @@ namespace ConcreteUI.Graphics.Hosts
 #if DEBUG
             ThrowHelper.ThrowExceptionForHR(hr);
 #endif
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private static void AlternativeFlush(D2D1DeviceContext context)
-        {
-            context.TryEndDraw();
-            context.BeginDraw();
         }
 
         public virtual void ResizeTemporarily(Size size) => Resize(size);
@@ -328,7 +341,13 @@ namespace ConcreteUI.Graphics.Hosts
         {
             if (disposing)
                 _activeContext = null;
-            _context?.Dispose();
+            D2D1DeviceContext? context = _context;
+            if (context is not null)
+            {
+                context.TryEndDraw();
+                context.Target = null;
+                context.Dispose();
+            }
             _target?.Dispose();
             _swapChain?.Dispose();
         }

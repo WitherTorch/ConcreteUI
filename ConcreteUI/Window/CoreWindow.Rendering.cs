@@ -255,16 +255,18 @@ namespace ConcreteUI.Window
         {
             if (sender is not SimpleGraphicsHost host || !ReferenceEquals(host, _host))
                 return;
-            RecreateGraphicsDeviceProvider();
+            WindowMessageLoop.InvokeAsync(RecreateGraphicsDeviceProvider);
         }
 
         private static void RecreateGraphicsDeviceProvider()
         {
             if (InterlockedHelper.Exchange(ref _recreateGraphicsDeviceProviderBarrier, 1) != 0)
                 return;
+            DebugHelper.WriteLine("Recreating GDP...");
             GraphicsDeviceRecreating?.Invoke(null, EventArgs.Empty);
             _graphicsDeviceProviderLazy.Reset();
             GraphicsDeviceRecreated?.Invoke(null, EventArgs.Empty);
+            DebugHelper.WriteLine("Recreated GDP...");
             GC.Collect(generation: 2, GCCollectionMode.Forced, blocking: true, compacting: true);
             InterlockedHelper.Exchange(ref _recreateGraphicsDeviceProviderBarrier, 0);
         }
@@ -280,14 +282,11 @@ namespace ConcreteUI.Window
                 return;
             controller.Lock();
             controller.WaitForRendering();
+            DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider, ThemeResourceProvider.Empty);
+            ApplyThemeCore(ThemeResourceProvider.Empty);
+            DisposeHelper.SwapDisposeInterlocked(ref _host);
             InterlockedHelper.Exchange(ref _collector, null);
             InterlockedHelper.Exchange(ref _deviceContext, null);
-            SimpleGraphicsHost? host = InterlockedHelper.Exchange(ref _host, null);
-            if (host is not null)
-            {
-                host.EndDraw();
-                host.Dispose();
-            }
             if (TryGetWindowListSnapshot(_childrenReferenceList, out ArrayPool<WeakReference<CoreWindow>>? pool,
                out WeakReference<CoreWindow>[]? array, out int count))
             {
@@ -303,9 +302,13 @@ namespace ConcreteUI.Window
 
         private void RecreateResourcesFromGDREvent(IThemeResourceProvider? provider)
         {
-            RenderingController? controller = _controller;
-            if (controller is null || !InitRenderObjectsCore(Handle, out D2D1DeviceContext? deviceContext))
+            if (!InitRenderObjectsCore(Handle, out D2D1DeviceContext? deviceContext))
+            {
+                DebugHelper.WriteLine("Failed to recreate device context in GDR event.");
                 return;
+            }
+            RenderingController? controller = _controller;
+            DebugHelper.ThrowIf(controller is null);
             _deviceContext = deviceContext;
             provider ??= ThemeResourceProvider.CreateResourceProvider(this, ThemeManager.CurrentTheme);
             DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider, provider);
@@ -1206,12 +1209,7 @@ namespace ConcreteUI.Window
             {
                 DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider);
                 DisposeHelper.SwapDisposeInterlocked(ref _controller);
-                SimpleGraphicsHost? host = InterlockedHelper.Exchange(ref _host, null);
-                if (host is not null && !host.IsDisposed)
-                {
-                    host.EndDraw();
-                    host.Dispose();
-                }
+                DisposeHelper.SwapDisposeInterlocked(ref _host);
                 DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
                 DisposeHelper.DisposeAll(_brushes);
                 DisposeElements(GetElements());

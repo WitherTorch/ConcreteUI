@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
@@ -7,11 +7,11 @@ namespace ConcreteUI.Theme
 {
     partial class ThemeResourceProvider
     {
-        private sealed class ThemeResourceProviderReference : IThemeResourceProvider
+        private sealed class ReferenceImpl : IThemeResourceProvider
         {
             private readonly IThemeResourceProvider _provider;
 
-            public ThemeResourceProviderReference(IThemeResourceProvider provider)
+            public ReferenceImpl(IThemeResourceProvider provider)
             {
                 _provider = provider;
             }

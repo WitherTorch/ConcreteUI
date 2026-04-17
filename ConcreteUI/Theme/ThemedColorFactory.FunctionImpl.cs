@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -8,11 +8,11 @@ namespace ConcreteUI.Theme
 {
     partial class ThemedColorFactory
     {
-        private sealed class FunctionThemedColorFactoryImpl : IThemedColorFactory
+        private sealed class FunctionImpl : IThemedColorFactory
         {
             private readonly Func<WindowMaterial, D2D1ColorF> _func;
 
-            public FunctionThemedColorFactoryImpl(Func<WindowMaterial, D2D1ColorF> func)
+            public FunctionImpl(Func<WindowMaterial, D2D1ColorF> func)
             {
                 _func = func;
             }

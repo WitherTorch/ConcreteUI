@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -84,8 +84,8 @@ namespace ConcreteUI.Theme
             public IThemedBrushFactory Build()
             {
                 if (_variantKeyList.Count > 0)
-                    return new ThemedBrushFactoryImpl(_base, _variantKeyList.ToArray(), _variantBrushFactoryList.ToArray());
-                return new SimpleThemedBrushFactoryImpl(_base);
+                    return new NormalImpl(_base, _variantKeyList.ToArray(), _variantBrushFactoryList.ToArray());
+                return new SimpleImpl(_base);
             }
 
             object ICloneable.Clone() => Clone();

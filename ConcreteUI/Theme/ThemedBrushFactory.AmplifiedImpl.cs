@@ -3,19 +3,18 @@ using System.Collections.Generic;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 
-using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Theme
 {
     partial class ThemedBrushFactory
     {
-        private sealed class AmplifiedThemedBrushFactory : IThemedBrushFactory
+        private sealed class AmplifiedImpl : IThemedBrushFactory
         {
             private readonly IThemedBrushFactory _original;
             private readonly float _amplifier;
 
-            public AmplifiedThemedBrushFactory(IThemedBrushFactory original, float amplifier)
+            public AmplifiedImpl(IThemedBrushFactory original, float amplifier)
             {
                 _original = original;
                 _amplifier = amplifier;
@@ -24,7 +23,7 @@ namespace ConcreteUI.Theme
             public D2D1Brush CreateDefaultBrush(D2D1DeviceContext context)
                 => GetBrushAmplified(context, _original.CreateDefaultBrush(context), _amplifier);
 
-            public unsafe D2D1Brush CreateBrushByMaterial(D2D1DeviceContext context, WindowMaterial material)
+            public D2D1Brush CreateBrushByMaterial(D2D1DeviceContext context, WindowMaterial material)
                 => GetBrushAmplified(context, _original.CreateBrushByMaterial(context, material), _amplifier);
 
             public IEnumerable<WindowMaterial> GetVariants() => _original.GetVariants();

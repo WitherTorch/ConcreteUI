@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -8,13 +8,13 @@ namespace ConcreteUI.Theme
 {
     partial class ThemedColorFactory
     {
-        private sealed class ThemedColorFactoryImpl : IThemedColorFactory
+        private sealed class NormalImpl : IThemedColorFactory
         {
             private readonly D2D1ColorF _base;
             private readonly byte[] _variantKeys;
             private readonly D2D1ColorF[] _variants;
 
-            internal ThemedColorFactoryImpl(in D2D1ColorF baseColor, byte[] variantKeys, D2D1ColorF[] variantColors)
+            internal NormalImpl(in D2D1ColorF baseColor, byte[] variantKeys, D2D1ColorF[] variantColors)
             {
                 if (variantKeys.Length != variantColors.Length)
                     throw new InvalidOperationException();

@@ -1,10 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
-using ConcreteUI.Utils;
 
 namespace ConcreteUI.Theme
 {
@@ -24,15 +23,15 @@ namespace ConcreteUI.Theme
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IThemedBrushFactory FromColorFactory(IThemedColorFactory factory)
-            => new ThemedColorFactoryAdapter(factory);
+            => new Adapter(factory);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IThemedBrushFactory AmplifiedFrom(IThemedBrushFactory factory, float amplifier)
-            => new AmplifiedThemedBrushFactory(factory, amplifier);
+            => new AmplifiedImpl(factory, amplifier);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IThemedBrushFactory FromFunction(Func<D2D1DeviceContext, WindowMaterial, D2D1Brush> function)
-            => new FunctionThemedBrushFactoryImpl(function);
+            => new FunctionImpl(function);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Builder CreateBuilder(in D2D1ColorF baseBrushColor) => new Builder(CreateFactoryByColor(baseBrushColor));
@@ -45,9 +44,9 @@ namespace ConcreteUI.Theme
         {
             switch (originalFactory)
             {
-                case SimpleThemedBrushFactoryImpl factory:
+                case SimpleImpl factory:
                     return new Builder(factory.Destruct());
-                case ThemedBrushFactoryImpl factory:
+                case NormalImpl factory:
                     return new Builder(factory.Destruct(out byte[] variantKeys, out Func<D2D1DeviceContext, D2D1Brush>[] variantBrushFactories), variantKeys, variantBrushFactories);
                 default:
                     Builder builder = new Builder(originalFactory.CreateDefaultBrush);

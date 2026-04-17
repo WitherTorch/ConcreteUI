@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -9,11 +9,11 @@ namespace ConcreteUI.Theme
 {
     partial class ThemedBrushFactory
     {
-        private sealed class FunctionThemedBrushFactoryImpl : IThemedBrushFactory
+        private sealed class FunctionImpl : IThemedBrushFactory
         {
             private readonly Func<D2D1DeviceContext, WindowMaterial, D2D1Brush> _func;
 
-            public FunctionThemedBrushFactoryImpl(Func<D2D1DeviceContext, WindowMaterial, D2D1Brush> func)
+            public FunctionImpl(Func<D2D1DeviceContext, WindowMaterial, D2D1Brush> func)
             {
                 _func = func;
             }

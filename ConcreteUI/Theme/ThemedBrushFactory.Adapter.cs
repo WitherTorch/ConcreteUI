@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
@@ -7,11 +7,11 @@ namespace ConcreteUI.Theme
 {
     partial class ThemedBrushFactory
     {
-        private sealed class ThemedColorFactoryAdapter : IThemedBrushFactory, IThemedColorFactory
+        private sealed class Adapter : IThemedBrushFactory, IThemedColorFactory
         {
             private readonly IThemedColorFactory _factory;
 
-            public ThemedColorFactoryAdapter(IThemedColorFactory factory)
+            public Adapter(IThemedColorFactory factory)
             {
                 _factory = factory;
             }

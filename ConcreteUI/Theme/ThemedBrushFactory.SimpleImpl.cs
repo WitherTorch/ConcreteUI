@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,11 +10,11 @@ namespace ConcreteUI.Theme
 
     partial class ThemedBrushFactory
     {
-        private sealed class SimpleThemedBrushFactoryImpl : IThemedBrushFactory
+        private sealed class SimpleImpl : IThemedBrushFactory
         {
             private readonly Func<D2D1DeviceContext, D2D1Brush> _base;
 
-            public SimpleThemedBrushFactoryImpl(Func<D2D1DeviceContext, D2D1Brush> baseBrushFactory)
+            public SimpleImpl(Func<D2D1DeviceContext, D2D1Brush> baseBrushFactory)
             {
                 _base = baseBrushFactory;
             }

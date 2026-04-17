@@ -1,22 +1,23 @@
 using System;
 using System.Runtime.CompilerServices;
-using System.Threading;
+using System.Runtime.ConstrainedExecution;
 
 using ConcreteUI.Graphics.Internals;
 using ConcreteUI.Graphics.Native.DXGI;
 
 using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 using WitherTorch.Common.Windows.Structures;
 
 namespace ConcreteUI.Graphics
 {
-    public sealed partial class RenderingController : IDisposable
+    public sealed partial class RenderingController : CriticalFinalizerObject, IDisposable
     {
         private readonly IRenderingControl _control;
         private readonly IFrameWaiter _frameWaiter;
         private readonly RenderingThread _thread;
-        private readonly ManualResetEventSlim _waitForRenderingTrigger;
+        private readonly IntPtr _waitForRenderingTrigger;
         private readonly bool _needUpdateFps;
 
         private ulong _state, _locked, _isSystemBoosting;
@@ -30,7 +31,7 @@ namespace ConcreteUI.Graphics
             _state = (ulong)RenderingFlags._FlagAllTrue;
             _frameWaiter = CreateFrameWaiter(control, framesPerSecond, out _needUpdateFps);
             _thread = new RenderingThread(this, _frameWaiter);
-            _waitForRenderingTrigger = new ManualResetEventSlim(true);
+            _waitForRenderingTrigger = NativeMethods.CreateWaitingHandle(autoReset: false);
             _isSystemBoosting = 0;
         }
 
@@ -79,10 +80,16 @@ namespace ConcreteUI.Graphics
         {
             if (InterlockedHelper.Read(ref _locked) != 0UL)
                 return;
-            ManualResetEventSlim trigger = _waitForRenderingTrigger;
-            trigger.Reset();
-            _control.Render((RenderingFlags)InterlockedHelper.Exchange(ref _state, 0UL));
-            trigger.Set();
+            IntPtr trigger = _waitForRenderingTrigger;
+            NativeMethods.ResetWaitingHandle(trigger);
+            try
+            {
+                _control.Render((RenderingFlags)InterlockedHelper.Exchange(ref _state, 0UL));
+            }
+            finally
+            {
+                NativeMethods.SetWaitingHandle(trigger);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -98,10 +105,7 @@ namespace ConcreteUI.Graphics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WaitForRendering()
-        {
-            _waitForRenderingTrigger.Wait();
-        }
+        public void WaitForRendering() => NativeMethods.WaitForWaitingHandle(_waitForRenderingTrigger);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetFramesPerSecond(Rational value) => _frameWaiter.FramesPerSecond = value;
@@ -127,9 +131,9 @@ namespace ConcreteUI.Graphics
         {
             if (ReferenceHelper.Exchange(ref _disposed, true))
                 return;
+            NativeMethods.DestroyWaitingHandle(_waitForRenderingTrigger);
             if (disposing)
             {
-                _waitForRenderingTrigger.Dispose();
                 _frameWaiter.Dispose();
                 _thread.Dispose();
             }

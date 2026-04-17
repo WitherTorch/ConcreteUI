@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Runtime.CompilerServices;
 
@@ -89,8 +89,8 @@ namespace ConcreteUI.Theme
             public IThemedColorFactory Build()
             {
                 if (_variantKeyList.Count > 0)
-                    return new ThemedColorFactoryImpl(_base, _variantKeyList.ToArray(), _variantColorList.ToArray());
-                return new SimpleThemedColorFactoryImpl(_base);
+                    return new NormalImpl(_base, _variantKeyList.ToArray(), _variantColorList.ToArray());
+                return new SimpleImpl(_base);
             }
 
             object ICloneable.Clone() => Clone();

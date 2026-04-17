@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -10,13 +10,13 @@ namespace ConcreteUI.Theme
 
     partial class ThemedBrushFactory
     {
-        private sealed class ThemedBrushFactoryImpl : IThemedBrushFactory
+        private sealed class NormalImpl : IThemedBrushFactory
         {
             private readonly Func<D2D1DeviceContext, D2D1Brush> _base;
             private readonly byte[] _variantKeys;
             private readonly Func<D2D1DeviceContext, D2D1Brush>[] _variants;
 
-            internal ThemedBrushFactoryImpl(Func<D2D1DeviceContext, D2D1Brush> baseBrushFactory, byte[] variantKeys,
+            internal NormalImpl(Func<D2D1DeviceContext, D2D1Brush> baseBrushFactory, byte[] variantKeys,
                 Func<D2D1DeviceContext, D2D1Brush>[] variantBrushFactories)
             {
                 if (variantKeys.Length != variantBrushFactories.Length)

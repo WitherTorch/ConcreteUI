@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Utils;
@@ -10,13 +10,15 @@ namespace ConcreteUI.Theme
 {
     public static partial class ThemeResourceProvider
     {
+        public static readonly IThemeResourceProvider Empty = new EmptyImpl();
+
         [Inline(InlineBehavior.Keep, export: true)]
         public static IThemeResourceProvider CreateResourceProvider(CoreWindow window, IThemeContext themeContext)
             => CreateResourceProvider(window.GetDeviceContext(), themeContext, window.WindowMaterial);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IThemeResourceProvider CreateResourceProvider(D2D1DeviceContext deviceContext, IThemeContext themeContext, WindowMaterial windowMaterial)
-            => new ThemeResourceProviderImpl(deviceContext, themeContext,
+            => new NormalImpl(deviceContext, themeContext,
                 (windowMaterial < WindowMaterial.None || windowMaterial >= WindowMaterial._Last) ? SystemHelper.GetDefaultMaterial() : windowMaterial);
     }
 }

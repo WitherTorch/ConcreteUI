@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
@@ -9,7 +9,7 @@ namespace ConcreteUI.Theme
 {
     partial class ThemeResourceProvider
     {
-        private sealed class ThemeResourceProviderImpl : IThemeResourceProvider, IDisposable
+        private sealed class NormalImpl : IThemeResourceProvider, IDisposable
         {
             private readonly Dictionary<string, D2D1Brush> _brushDict;
             private readonly D2D1DeviceContext _deviceContext;
@@ -22,7 +22,7 @@ namespace ConcreteUI.Theme
 
             public string FontName => _themeContext.FontName;
 
-            public ThemeResourceProviderImpl(D2D1DeviceContext deviceContext, IThemeContext themeContext, WindowMaterial material)
+            public NormalImpl(D2D1DeviceContext deviceContext, IThemeContext themeContext, WindowMaterial material)
             {
                 _deviceContext = deviceContext;
                 _themeContext = themeContext;
@@ -32,7 +32,7 @@ namespace ConcreteUI.Theme
                 _disposed = false;
             }
 
-            public IThemeResourceProvider Clone() => new ThemeResourceProviderReference(this);
+            public IThemeResourceProvider Clone() => new ReferenceImpl(this);
 
             public bool TryGetColor(string node, out D2D1ColorF color)
             {
@@ -75,7 +75,7 @@ namespace ConcreteUI.Theme
                 brushDict.Clear();
             }
 
-            ~ThemeResourceProviderImpl()
+            ~NormalImpl()
             {
                 Dispose(disposing: false);
             }

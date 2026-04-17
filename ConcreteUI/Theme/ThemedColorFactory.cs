@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
-using ConcreteUI.Utils;
 
 namespace ConcreteUI.Theme
 {
@@ -20,11 +19,11 @@ namespace ConcreteUI.Theme
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IThemedColorFactory FromColor(in D2D1ColorF color)
-            => new SimpleThemedColorFactoryImpl(color);
+            => new SimpleImpl(color);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IThemedColorFactory FromFunction(Func<WindowMaterial, D2D1ColorF> function)
-            => new FunctionThemedColorFactoryImpl(function);
+            => new FunctionImpl(function);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Builder CreateBuilder(in D2D1ColorF baseColor) => new Builder(baseColor);
@@ -34,9 +33,9 @@ namespace ConcreteUI.Theme
         {
             switch (originalFactory)
             {
-                case SimpleThemedColorFactoryImpl factory:
+                case SimpleImpl factory:
                     return new Builder(factory.Destruct());
-                case ThemedColorFactoryImpl factory:
+                case NormalImpl factory:
                     return new Builder(factory.Destruct(out byte[] variantKeys, out D2D1ColorF[] variantColors), variantKeys, variantColors);
                 default:
                     D2D1ColorF baseColor = originalFactory.CreateDefaultColor();
