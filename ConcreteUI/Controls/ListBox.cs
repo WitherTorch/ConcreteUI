@@ -68,7 +68,7 @@ namespace ConcreteUI.Controls
             _fontSize = UIConstants.BoxFontSize;
             _selectedIndex = -1;
             _recalcFormat = Booleans.TrueLong;
-            _checkBoxThemePrefix = "app.checkBox".ToLowerAscii();
+            _checkBoxThemePrefix = "app.checkBox";
         }
 
         public void CopySelectedItemsToBuffer(string[] destination, int startIndex, out int itemCopied)

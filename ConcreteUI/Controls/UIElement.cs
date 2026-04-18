@@ -41,7 +41,7 @@ namespace ConcreteUI.Controls
         {
             _parent = parent;
             _identifier = InterlockedHelper.GetAndIncrement(ref _identifierGenerator);
-            _themePrefix = themePrefix.ToLowerAscii();
+            _themePrefix = themePrefix;
             _requestRedraw = UnsafeHelper.GetMaxValue<nuint>();
             _syncLock = _layoutReferences; // 物件重用
         }

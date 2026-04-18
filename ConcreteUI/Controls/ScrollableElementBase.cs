@@ -58,7 +58,7 @@ namespace ConcreteUI.Controls
             _updateFlagsRaw = (ulong)ScrollableElementUpdateFlags._NormalFlagAllTrue;
             _oldSurfaceSize = Size.Empty;
             _repeatingTimer = new Timer(RepeatingTimer_Tick, null, Timeout.Infinite, Timeout.Infinite);
-            _scrollBarThemePrefix = scrollBarThemePrefix.ToLowerAscii();
+            _scrollBarThemePrefix = scrollBarThemePrefix;
         }
 
         protected abstract D2D1Brush GetBackBrush();

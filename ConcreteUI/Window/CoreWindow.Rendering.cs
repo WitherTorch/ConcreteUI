@@ -243,18 +243,28 @@ namespace ConcreteUI.Window
         {
             if (sender is not SimpleGraphicsHost host || !ReferenceEquals(host, _host))
                 return;
-            WindowMessageLoop.InvokeAsync((Action<CoreWindow>)(static window => window.RecreateGraphicsDeviceProvider()), this);
+            WindowMessageLoop.InvokeAsync((Action<CoreWindow>)(static window => window.OnDeviveRemoved()), this);
         }
 
-        private void RecreateGraphicsDeviceProvider()
+        private void OnDeviveRemoved()
         {
             if (InterlockedHelper.Exchange(ref _recreateGraphicsDeviceProviderBarrier, UnsafeHelper.GetMaxValue<nuint>()) != 0)
                 return;
 
-            StopAllRenderingFromGDREvent();
-            RecreateResourcesFromGDREvent(null, null);
+            GraphicsDeviceProvider? collectionTarget = InterlockedHelper.Read(ref _graphicsDeviceProvider);
+            if (collectionTarget is not null)
+            {
+                StopAllRenderingFromGDREvent();
+                GC.Collect(GC.GetGeneration(collectionTarget), GCCollectionMode.Forced, blocking: true, compacting: true);
+                GC.WaitForPendingFinalizers();
+                RecreateResourcesFromGDREvent(null, null);
+            }
+            else
+            {
+                StopAllRenderingFromGDREvent();
+                RecreateResourcesFromGDREvent(null, null);
+            }
 
-            GC.Collect(generation: 2, GCCollectionMode.Forced, blocking: true, compacting: true);
             InterlockedHelper.Exchange(ref _recreateGraphicsDeviceProviderBarrier, 0);
         }
 

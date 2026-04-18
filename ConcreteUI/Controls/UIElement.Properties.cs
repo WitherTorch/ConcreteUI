@@ -265,7 +265,7 @@ namespace ConcreteUI.Controls
             {
                 if (SequenceHelper.Equals(_themePrefix, value))
                     return;
-                _themePrefix = value.ToLowerAscii();
+                _themePrefix = value;
                 ApplyThemeContext(_themeContext);
             }
         }

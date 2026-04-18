@@ -120,7 +120,7 @@ namespace ConcreteUI.Controls
             {
                 if (SequenceHelper.Equals(_checkBoxThemePrefix, value))
                     return;
-                _checkBoxThemePrefix = value.ToLowerAscii();
+                _checkBoxThemePrefix = value;
             }
         }
     }

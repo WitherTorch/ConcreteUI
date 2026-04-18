@@ -124,7 +124,7 @@ namespace ConcreteUI.Controls
             {
                 if (SequenceHelper.Equals(_scrollBarThemePrefix, value))
                     return;
-                _scrollBarThemePrefix = value.ToLowerAscii();
+                _scrollBarThemePrefix = value;
             }
         }
     }
