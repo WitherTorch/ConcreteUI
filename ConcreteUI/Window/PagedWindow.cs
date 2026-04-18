@@ -50,7 +50,11 @@ namespace ConcreteUI.Window
         public event EventHandler? CurrentPageChanged;
         #endregion
 
-        #region Constuctor
+        #region Constuctor       
+        protected PagedWindow() : base() { }
+
+        protected PagedWindow(GraphicsDeviceProvider? deviceProvider) : base(deviceProvider) { }
+
         protected PagedWindow(CoreWindow? parent, bool passParentToUnderlyingWindow = false) : base(parent, passParentToUnderlyingWindow) { }
         #endregion
 

@@ -62,10 +62,11 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Constructor
-        protected TabbedWindow(CoreWindow? parent, string[] menuTitles, bool passParentToUnderlyingWindow = false) : base(parent, passParentToUnderlyingWindow)
-        {
-            _menuTitles = menuTitles;
-        }
+        protected TabbedWindow(string[] menuTitles) : base() => _menuTitles = menuTitles;
+
+        protected TabbedWindow(GraphicsDeviceProvider? deviceProvider, string[] menuTitles) : base(deviceProvider) => _menuTitles = menuTitles;
+
+        protected TabbedWindow(CoreWindow? parent, string[] menuTitles, bool passParentToUnderlyingWindow = false) : base(parent, passParentToUnderlyingWindow) => _menuTitles = menuTitles;
         #endregion
 
         #region Override Methods

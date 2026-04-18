@@ -8,12 +8,13 @@ using ConcreteUI.Graphics.Native.Direct3D11;
 using ConcreteUI.Graphics.Native.DirectComposition;
 using ConcreteUI.Graphics.Native.DXGI;
 
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Graphics
 {
-    public unsafe sealed class GraphicsDeviceProvider : IDisposable
+    public unsafe sealed class GraphicsDeviceProvider : ICloneable, IDisposable
     {
         private const bool UseLegacyRoute = false;
 
@@ -78,6 +79,18 @@ namespace ConcreteUI.Graphics
             get => _supportDComp;
         }
 
+        private GraphicsDeviceProvider(GraphicsDeviceProvider original)
+        {
+            _adapter = original._adapter.Clone();
+            _factory = original._factory.Clone();
+            _d3dDevice = original._d3dDevice.Clone();
+            _dxgiDevice = original._dxgiDevice.Clone();
+            _d2dDevice = original._d2dDevice.Clone();
+            _dcompDevice = original._dcompDevice?.Clone();
+            _supportSwapChain1 = original._supportSwapChain1;
+            _supportDComp = original._supportDComp;
+        }
+
         private GraphicsDeviceProvider(D3D11Device? d3dDevice, DXGIAdapter? adapter, DXGIFactory? factory, bool isDebug)
         {
             // 當硬體 3D 裝置建立失敗時，改建立 WARP 3D 裝置
@@ -127,6 +140,15 @@ namespace ConcreteUI.Graphics
                 ThreadingMode = D2D1ThreadingMode.MultiThreaded
             });
         }
+
+        public GraphicsDeviceProvider Clone()
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(GraphicsDeviceProvider));
+            return new GraphicsDeviceProvider(this);
+        }
+
+        object ICloneable.Clone() => Clone();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static DXGIDevice GetLatestDXGIDeviceInterface(DXGIDevice device)

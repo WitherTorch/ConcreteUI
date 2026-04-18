@@ -776,7 +776,7 @@ namespace ConcreteUI.Window
             { }
             else
             {
-                GraphicsDeviceProvider provider = _graphicsDeviceProviderLazy.Value;
+                GraphicsDeviceProvider provider = GetGraphicsDeviceProvider();
                 if (provider.IsSupportSwapChain1 && provider.IsSupportDComp)
                     windowInfo.ExtendedStyles |= WindowExtendedStyles.NoRedirectionBitmap;
             }

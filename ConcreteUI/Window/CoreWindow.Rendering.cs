@@ -33,6 +33,7 @@ using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Threading;
 
@@ -70,9 +71,7 @@ namespace ConcreteUI.Window
             "closeButton.active",
         }.WithPrefix("app.title.").ToLowerAscii();
         private static readonly Pool<LayoutEngine> _layoutEnginePool = new Pool<LayoutEngine>(1);
-        private static readonly LazyTiny<GraphicsDeviceProvider> _graphicsDeviceProviderLazy
-            = new LazyTiny<GraphicsDeviceProvider>(CreateGraphicsDeviceProvider, LazyThreadSafetyMode.ExecutionAndPublication);
-        private static ulong _recreateGraphicsDeviceProviderBarrier = 0;
+
         #endregion
 
         #region Fields
@@ -92,8 +91,12 @@ namespace ConcreteUI.Window
 
         #region Rendering Fields
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+
+        private GraphicsDeviceProvider? _graphicsDeviceProvider;
         private D2D1DeviceContext? _deviceContext;
         private DWriteTextLayout? _titleLayout;
+        private nuint _ownedGDP, _recreateGraphicsDeviceProviderBarrier;
+
         protected D2D1ColorF _clearDCColor, _windowBaseColor;
         protected Rect _minRect, _maxRect, _closeRect, _pageRect, _titleBarRect;
         protected BitVector64 _titleBarButtonStatus, _titleBarButtonChangedStatus;
@@ -153,10 +156,6 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Events
-        public static event EventHandler? GraphicsDeviceRecreating;
-
-        public static event EventHandler? GraphicsDeviceRecreated;
-
         public event EventHandler<ContextMenu>? ContextMenuChanging;
 
         public event EventHandler<UIElement?>? FocusElementChanged;
@@ -190,7 +189,7 @@ namespace ConcreteUI.Window
         [Inline(InlineBehavior.Remove)]
         private void InitRenderObjects(IntPtr handle)
         {
-            if (!InitRenderObjectsCore(handle, out D2D1DeviceContext? deviceContext))
+            if (!InitRenderObjectsCore(handle, GetGraphicsDeviceProvider(), out D2D1DeviceContext? deviceContext))
                 return;
             _deviceContext = deviceContext;
 
@@ -201,15 +200,9 @@ namespace ConcreteUI.Window
                 ThemeResourceProvider.CreateResourceProvider(deviceContext, ThemeManager.CurrentTheme, _windowMaterial) :
                 parent._resourceProvider!.Clone());
             if (parent is null)
-            {
                 ApplyTheme(ThemeResourceProvider.CreateResourceProvider(deviceContext, ThemeManager.CurrentTheme, _windowMaterial));
-                GraphicsDeviceRecreating += CoreWindow_GraphicsDeviceRecreating;
-                GraphicsDeviceRecreated += CoreWindow_GraphicsDeviceRecreated;
-            }
             else
-            {
                 ApplyTheme(parent._resourceProvider!.Clone());
-            }
             SystemEvents.DisplaySettingsChanging += SystemEvents_DisplaySettingsChanging;
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
@@ -217,7 +210,7 @@ namespace ConcreteUI.Window
             ConcreteUtils.ApplyWindowStyle(this, out _fixLagObject);
         }
 
-        private bool InitRenderObjectsCore(IntPtr handle, [NotNullWhen(true)] out D2D1DeviceContext? deviceContext)
+        private bool InitRenderObjectsCore(IntPtr handle, GraphicsDeviceProvider provider, [NotNullWhen(true)] out D2D1DeviceContext? deviceContext)
         {
             if (handle == IntPtr.Zero)
             {
@@ -229,19 +222,14 @@ namespace ConcreteUI.Window
             CoreWindow? parent = _parent;
 
             SimpleGraphicsHost host;
-            if (parent is null)
-            {
-                SystemVersionLevel versionLevel = SystemConstants.VersionLevel;
-                GraphicsDeviceProvider provider = _graphicsDeviceProviderLazy.Value;
-                bool useFlipModel = ExtendedStyles.HasFlagFast(WindowExtendedStyles.NoRedirectionBitmap);
-                bool useDComp = useFlipModel && provider.IsSupportDComp && provider.IsSupportSwapChain1;
-                host = GraphicsHostHelper.CreateSwapChainGraphicsHost(handle, provider, useFlipModel, useDComp, IsBackgroundOpaque());
-            }
-            else
-                host = GraphicsHostHelper.FromAnotherSwapChainGraphicsHost(parent._host!, handle, IsBackgroundOpaque());
-            host.DeviceRemoved += GraphicsHost_DeviceRemoved;
+            SystemVersionLevel versionLevel = SystemConstants.VersionLevel;
+            bool useFlipModel = ExtendedStyles.HasFlagFast(WindowExtendedStyles.NoRedirectionBitmap);
+            bool useDComp = useFlipModel && provider.IsSupportDComp && provider.IsSupportSwapChain1;
+            host = GraphicsHostHelper.CreateSwapChainGraphicsHost(handle, provider, useFlipModel, useDComp, IsBackgroundOpaque());
             _host = host;
             _collector = new DirtyAreaCollector(host);
+            if (parent is null)
+                host.DeviceRemoved += GraphicsHost_DeviceRemoved;
             deviceContext = host.BeginDraw();
             if (deviceContext is null)
                 return false;
@@ -255,28 +243,25 @@ namespace ConcreteUI.Window
         {
             if (sender is not SimpleGraphicsHost host || !ReferenceEquals(host, _host))
                 return;
-            WindowMessageLoop.InvokeAsync(RecreateGraphicsDeviceProvider);
+            WindowMessageLoop.InvokeAsync((Action<CoreWindow>)(static window => window.RecreateGraphicsDeviceProvider()), this);
         }
 
-        private static void RecreateGraphicsDeviceProvider()
+        private void RecreateGraphicsDeviceProvider()
         {
-            if (InterlockedHelper.Exchange(ref _recreateGraphicsDeviceProviderBarrier, 1) != 0)
+            if (InterlockedHelper.Exchange(ref _recreateGraphicsDeviceProviderBarrier, UnsafeHelper.GetMaxValue<nuint>()) != 0)
                 return;
-            DebugHelper.WriteLine("Recreating GDP...");
-            GraphicsDeviceRecreating?.Invoke(null, EventArgs.Empty);
-            _graphicsDeviceProviderLazy.Reset();
-            GraphicsDeviceRecreated?.Invoke(null, EventArgs.Empty);
-            DebugHelper.WriteLine("Recreated GDP...");
+
+            StopAllRenderingFromGDREvent();
+            RecreateResourcesFromGDREvent(null, null);
+
             GC.Collect(generation: 2, GCCollectionMode.Forced, blocking: true, compacting: true);
             InterlockedHelper.Exchange(ref _recreateGraphicsDeviceProviderBarrier, 0);
         }
 
-        private void CoreWindow_GraphicsDeviceRecreating(object? sender, EventArgs e) => StopAllRenderingFromGDREvent();
-
-        private void CoreWindow_GraphicsDeviceRecreated(object? sender, EventArgs e) => RecreateResourcesFromGDREvent(null);
-
-        private void StopAllRenderingFromGDREvent()
+        private unsafe void StopAllRenderingFromGDREvent()
         {
+            DebugHelper.WriteLine("GDR event triggered. Stopping all rendering...");
+
             RenderingController? controller = _controller;
             if (controller is null)
                 return;
@@ -287,22 +272,45 @@ namespace ConcreteUI.Window
             DisposeHelper.SwapDisposeInterlocked(ref _host);
             InterlockedHelper.Exchange(ref _collector, null);
             InterlockedHelper.Exchange(ref _deviceContext, null);
-            if (TryGetWindowListSnapshot(_childrenReferenceList, out ArrayPool<WeakReference<CoreWindow>>? pool,
-               out WeakReference<CoreWindow>[]? array, out int count))
+            if (TryGetWindowListSnapshot(_childrenReferenceList, out NativeMemoryPool? pool,
+                out TypedNativeMemoryBlock<GCHandle> handles, out int count))
             {
-                for (int i = 0; i < count; i++)
+                try
                 {
-                    if (!array[i].TryGetTarget(out CoreWindow? window) || window is null || window.IsDisposed)
-                        continue;
-                    window.StopAllRenderingFromGDREvent();
+                    DebugHelper.ThrowIf(count <= 0);
+                    GCHandle* ptr = handles.NativePointer;
+                    for (int i = 0; i < count; i++)
+                    {
+                        GCHandle handle = ptr[i];
+                        if (!handle.IsAllocated || handle.Target is not CoreWindow window || window.IsDisposed)
+                            continue;
+                        window.StopAllRenderingFromGDREvent();
+                    }
                 }
-                pool.Return(array);
+                finally
+                {
+                    pool.Return(handles);
+                }
             }
         }
 
-        private void RecreateResourcesFromGDREvent(IThemeResourceProvider? provider)
+        private unsafe void RecreateResourcesFromGDREvent(GraphicsDeviceProvider? deviceProvider, IThemeResourceProvider? resourceProvider)
         {
-            if (!InitRenderObjectsCore(Handle, out D2D1DeviceContext? deviceContext))
+            if (deviceProvider is null)
+            {
+                DebugHelper.WriteLine("Recreating GDP...");
+                deviceProvider = CreateGraphicsDeviceProvider();
+                InterlockedHelper.Write(ref _ownedGDP, UnsafeHelper.GetMaxValue<nuint>());
+                DebugHelper.WriteLine("Recreated GDP...");
+            }
+            else
+            {
+                InterlockedHelper.Write(ref _ownedGDP, 0);
+            }
+            DisposeHelper.SwapDisposeInterlocked(ref _graphicsDeviceProvider, deviceProvider);
+
+            DebugHelper.WriteLine("Recreating device context...");
+            if (!InitRenderObjectsCore(Handle, deviceProvider, out D2D1DeviceContext? deviceContext))
             {
                 DebugHelper.WriteLine("Failed to recreate device context in GDR event.");
                 return;
@@ -310,19 +318,30 @@ namespace ConcreteUI.Window
             RenderingController? controller = _controller;
             DebugHelper.ThrowIf(controller is null);
             _deviceContext = deviceContext;
-            provider ??= ThemeResourceProvider.CreateResourceProvider(this, ThemeManager.CurrentTheme);
-            DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider, provider);
-            ApplyThemeCore(provider);
-            if (TryGetWindowListSnapshot(_childrenReferenceList, out ArrayPool<WeakReference<CoreWindow>>? pool,
-                    out WeakReference<CoreWindow>[]? array, out int count))
+
+            DebugHelper.WriteLine("Recreating resources...");
+            resourceProvider ??= ThemeResourceProvider.CreateResourceProvider(this, ThemeManager.CurrentTheme);
+            DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider, resourceProvider);
+            ApplyThemeCore(resourceProvider);
+            if (TryGetWindowListSnapshot(_childrenReferenceList, out NativeMemoryPool? pool,
+                out TypedNativeMemoryBlock<GCHandle> handles, out int count))
             {
-                for (int i = 0; i < count; i++)
+                try
                 {
-                    if (!array[i].TryGetTarget(out CoreWindow? window) || window is null || window.IsDisposed)
-                        continue;
-                    window.RecreateResourcesFromGDREvent(provider.Clone());
+                    DebugHelper.ThrowIf(count <= 0);
+                    GCHandle* ptr = handles.NativePointer;
+                    for (int i = 0; i < count; i++)
+                    {
+                        GCHandle handle = ptr[i];
+                        if (!handle.IsAllocated || handle.Target is not CoreWindow window || window.IsDisposed)
+                            continue;
+                        window.RecreateResourcesFromGDREvent(deviceProvider, resourceProvider);
+                    }
                 }
-                pool.Return(array);
+                finally
+                {
+                    pool.Return(handles);
+                }
             }
             TriggerResizeCore(controller, _sizeModeState);
             controller.Unlock();
@@ -354,14 +373,43 @@ namespace ConcreteUI.Window
             SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
             SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
             SystemEvents.SessionSwitch -= SystemEvents_SessionSwitch;
-            GraphicsDeviceRecreating -= CoreWindow_GraphicsDeviceRecreating;
-            GraphicsDeviceRecreated -= CoreWindow_GraphicsDeviceRecreated;
         }
         #endregion
 
         #region Implements Methods
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GraphicsDeviceProvider GetGraphicsDeviceProvider() => _host!.GetDeviceProvider();
+        public GraphicsDeviceProvider GetGraphicsDeviceProvider()
+        {
+            if (InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0)
+                SpinWait.SpinUntil(() => InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) == 0);
+            GraphicsDeviceProvider? deviceProvider = InterlockedHelper.Read(ref _graphicsDeviceProvider);
+            if (deviceProvider is not null)
+                goto Return;
+            deviceProvider = CreateGraphicsDeviceProvider();
+            GraphicsDeviceProvider? oldDeviceProvider = InterlockedHelper.CompareExchange(ref _graphicsDeviceProvider, deviceProvider, null);
+            if (oldDeviceProvider is null)
+            {
+                InterlockedHelper.Write(ref _ownedGDP, UnsafeHelper.GetMaxValue<nuint>());
+                goto Return;
+            }
+            deviceProvider.Dispose();
+            return oldDeviceProvider;
+
+        Return:
+            return deviceProvider;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryGetGraphicsDeviceProvider([NotNullWhen(true)] out GraphicsDeviceProvider? deviceProvider)
+        {
+            deviceProvider = InterlockedHelper.Read(ref _graphicsDeviceProvider);
+            if (deviceProvider is null)
+                return false;
+            if (InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0)
+                SpinWait.SpinUntil(() => InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) == 0);
+            deviceProvider = InterlockedHelper.Read(ref _graphicsDeviceProvider);
+            return deviceProvider is not null;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DXGISwapChain GetSwapChain() => _host!.GetSwapChain();
@@ -1125,7 +1173,7 @@ namespace ConcreteUI.Window
         public void CloseOverlayElement(Type elementType, UIElement elementForValidate)
             => (ChangeOverlayElement(elementType, null, _element => ReferenceEquals(_element, elementForValidate)) as IDisposable)?.Dispose();
 
-        protected void ApplyTheme(IThemeResourceProvider provider)
+        protected unsafe void ApplyTheme(IThemeResourceProvider provider)
         {
             RenderingController? controller = _controller;
             if (controller is not null)
@@ -1133,21 +1181,30 @@ namespace ConcreteUI.Window
                 controller.Lock();
                 controller.WaitForRendering();
             }
+            SimpleGraphicsHost? host = _host;
+            if (host is null || host.IsDisposed)
+                return;
             DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider, provider);
             ApplyThemeCore(provider);
-            if (TryGetWindowListSnapshot(_childrenReferenceList, out ArrayPool<WeakReference<CoreWindow>>? pool,
-                    out WeakReference<CoreWindow>[]? array, out int count))
+            if (TryGetWindowListSnapshot(_childrenReferenceList, out NativeMemoryPool? pool,
+                out TypedNativeMemoryBlock<GCHandle> handles, out int count))
             {
-                for (int i = 0; i < count; i++)
+                try
                 {
-                    if (!array[i].TryGetTarget(out CoreWindow? window) || window is null || window.IsDisposed)
-                        continue;
-                    D2D1DeviceContext? deviceContext = window._deviceContext;
-                    if (deviceContext is null || deviceContext.IsDisposed)
-                        continue;
-                    window.ApplyTheme(provider.Clone());
+                    DebugHelper.ThrowIf(count <= 0);
+                    GCHandle* ptr = handles.NativePointer;
+                    for (int i = 0; i < count; i++)
+                    {
+                        GCHandle handle = ptr[i];
+                        if (!handle.IsAllocated || handle.Target is not CoreWindow window || window.IsDisposed)
+                            continue;
+                        window.ApplyTheme(provider.Clone());
+                    }
                 }
-                pool.Return(array);
+                finally
+                {
+                    pool.Return(handles);
+                }
             }
             if (controller is not null)
             {
@@ -1158,46 +1215,89 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Static Methods
-        internal static void NotifyThemeChanged(IThemeContext themeContext)
+        internal static unsafe void NotifyThemeChanged(IThemeContext themeContext)
         {
-            if (!TryGetWindowListSnapshot(_rootWindowList, out ArrayPool<WeakReference<CoreWindow>>? pool,
-                    out WeakReference<CoreWindow>[]? array, out int count))
+            if (!TryGetWindowListSnapshot(_rootWindowList, out NativeMemoryPool? pool,
+                    out TypedNativeMemoryBlock<GCHandle> handles, out int count))
                 return;
-            for (int i = 0; i < count; i++)
+            try
             {
-                if (!array[i].TryGetTarget(out CoreWindow? window) || window is null || window.IsDisposed)
-                    continue;
-                D2D1DeviceContext? deviceContext = window._deviceContext;
-                if (deviceContext is null || deviceContext.IsDisposed)
-                    continue;
-                window.ApplyTheme(ThemeResourceProvider.CreateResourceProvider(window, themeContext));
+                DebugHelper.ThrowIf(count <= 0);
+                GCHandle* ptr = handles.NativePointer;
+                for (int i = 0; i < count; i++)
+                {
+                    GCHandle handle = ptr[i];
+                    if (!handle.IsAllocated || handle.Target is not CoreWindow window || window.IsDisposed)
+                        continue;
+                    D2D1DeviceContext? deviceContext = window._deviceContext;
+                    if (deviceContext is null || deviceContext.IsDisposed)
+                        continue;
+                    window.ApplyTheme(ThemeResourceProvider.CreateResourceProvider(window, themeContext));
+                }
             }
-            pool.Return(array);
+            finally
+            {
+                pool.Return(handles);
+            }
         }
 
-        private static bool TryGetWindowListSnapshot(List<WeakReference<CoreWindow>> windowList,
-            [NotNullWhen(true)] out ArrayPool<WeakReference<CoreWindow>>? pool, [NotNullWhen(true)] out WeakReference<CoreWindow>[]? array, out int count)
+        private static unsafe bool TryGetWindowListSnapshot(UnwrappableList<GCHandle> windowList,
+            [NotNullWhen(true)] out NativeMemoryPool? pool, [NotNullWhen(true)] out TypedNativeMemoryBlock<GCHandle> handles, out int count)
         {
             lock (windowList)
             {
                 count = windowList.Count;
                 if (count <= 0)
-                {
-                    pool = null;
-                    array = null;
-                    return false;
-                }
-                count -= windowList.RemoveAll(reference => !reference.TryGetTarget(out CoreWindow? window) || window is null);
+                    goto Failed;
+                pool = NativeMemoryPool.Shared;
+                count -= ClearInvalidHandles(pool, windowList, count);
                 if (count <= 0)
+                    goto Failed;
+                handles = pool.Rent<GCHandle>(count);
+                fixed (GCHandle* source = windowList.Unwrap())
                 {
-                    pool = null;
-                    array = null;
-                    return false;
+                    GCHandle* destination = handles.NativePointer;
+                    UnsafeHelper.CopyBlockUnaligned(destination, source, (uint)(count * sizeof(GCHandle)));
                 }
-                pool = ArrayPool<WeakReference<CoreWindow>>.Shared;
-                array = pool.Rent(count);
-                windowList.CopyTo(0, array, 0, count);
                 return true;
+            }
+
+        Failed:
+            pool = null;
+            handles = TypedNativeMemoryBlock<GCHandle>.Empty;
+            return false;
+
+            static int ClearInvalidHandles(NativeMemoryPool pool, UnwrappableList<GCHandle> list, int count)
+            {
+                TypedNativeMemoryBlock<int> removeIndicesBuffer = pool.Rent<int>(count);
+                try
+                {
+                    int* removeIndicesPtr = removeIndicesBuffer.NativePointer;
+                    int removeIndicesCount = 0;
+                    {
+                        ref GCHandle handleRef = ref UnsafeHelper.GetArrayDataReference(list.Unwrap());
+                        for (int i = 0; i < count; i++)
+                        {
+                            GCHandle handle = UnsafeHelper.AddTypedOffset(ref handleRef, i);
+                            if (!handle.IsAllocated || handle.Target is not CoreWindow window || window.IsDisposed)
+                            {
+                                handle.Free();
+                                removeIndicesPtr[removeIndicesCount++] = i;
+                            }
+                        }
+                    }
+                    for (int j = removeIndicesCount - 1; j >= 0; j--)
+                    {
+                        // 從最後面開始減，提高效能
+                        list.RemoveAt(removeIndicesPtr[j]);
+                    }
+                    DebugHelper.ThrowIf(removeIndicesCount > count);
+                    return removeIndicesCount;
+                }
+                finally
+                {
+                    pool.Return(removeIndicesBuffer);
+                }
             }
         }
         #endregion
@@ -1213,6 +1313,13 @@ namespace ConcreteUI.Window
                 DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
                 DisposeHelper.DisposeAll(_brushes);
                 DisposeElements(GetElements());
+
+                if (InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0)
+                    SpinWait.SpinUntil(() => InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0);
+                if (InterlockedHelper.Read(ref _ownedGDP) != 0)
+                    DisposeHelper.SwapDisposeInterlocked(ref _graphicsDeviceProvider);
+                else
+                    InterlockedHelper.Write(ref _graphicsDeviceProvider, null);
             }
             _overlayElementList.Clear();
             _backgroundElementList.Clear();

@@ -53,7 +53,7 @@ namespace ConcreteUI.Window
         #region Fields
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
         private DWriteTextLayout? _titleLayout, _titleDescriptionLayout;
-        private string _title, _titleDescription;
+        private string _title = string.Empty, _titleDescription = string.Empty;
         private long _updateFlags = -1L;
         private D2D1ColorF _wizardBaseColor;
         private Point _titleLocation, _titleDescriptionLocation;
@@ -61,14 +61,11 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Constructor
-        protected WizardWindow(CoreWindow parent, bool passParentToUnderlyingWindow = true) : base(parent, passParentToUnderlyingWindow)
-        {
-            MinimizeBox = false;
-            MaximizeBox = false;
-            ShowTitle = WindowMaterial == WindowMaterial.Integrated;
-            _title = string.Empty;
-            _titleDescription = string.Empty;
-        }
+        protected WizardWindow() : base() => Initialize();
+
+        protected WizardWindow(GraphicsDeviceProvider? deviceProvider) : base(deviceProvider) => Initialize();
+
+        protected WizardWindow(CoreWindow parent, bool passParentToUnderlyingWindow = true) : base(parent, passParentToUnderlyingWindow) => Initialize();
         #endregion
 
         #region Properties
@@ -259,6 +256,13 @@ namespace ConcreteUI.Window
                 deviceContext.Clear(_clearDCColor);
         }
         #endregion
+
+        private void Initialize()
+        {
+            MinimizeBox = false;
+            MaximizeBox = false;
+            ShowTitle = WindowMaterial == WindowMaterial.Integrated;
+        }
 
         protected D2D1Brush GetBrush(Brush brush) => _brushes[(int)brush];
 

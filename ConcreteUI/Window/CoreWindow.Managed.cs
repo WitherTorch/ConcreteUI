@@ -1,12 +1,13 @@
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 using ConcreteUI.Controls;
+using ConcreteUI.Graphics;
 using ConcreteUI.Internals;
 using ConcreteUI.Internals.Native;
 using ConcreteUI.Theme;
@@ -14,6 +15,7 @@ using ConcreteUI.Utils;
 
 using InlineMethod;
 
+using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Threading;
@@ -23,11 +25,12 @@ namespace ConcreteUI.Window
     public abstract partial class CoreWindow : NativeWindow
     {
         #region Static Fields
-        private static readonly List<WeakReference<CoreWindow>> _rootWindowList = new List<WeakReference<CoreWindow>>();
+        private static readonly UnwrappableList<GCHandle> _rootWindowList = new UnwrappableList<GCHandle>();
+        private static readonly Func<WeakReference> _weakReferenceFactory = static () => new WeakReference(null);
         #endregion
 
         #region Fields
-        private readonly List<WeakReference<CoreWindow>> _childrenReferenceList = new List<WeakReference<CoreWindow>>();
+        private readonly UnwrappableList<GCHandle> _childrenReferenceList = new UnwrappableList<GCHandle>();
         private readonly CoreWindow? _parent;
         private PointU _dpi = SystemConstants.DefaultDpi;
         private Vector2 _pixelsPerPoint = Vector2.One; // 螢幕DPI / 96
@@ -248,16 +251,45 @@ namespace ConcreteUI.Window
             }
         }
         #endregion
+        protected CoreWindow() : this(deviceProvider: null) { }
+
+        protected CoreWindow(GraphicsDeviceProvider? deviceProvider) : base(null)
+        {
+            _parent = null;
+            Func<WeakReference> weakReferenceFactory = _weakReferenceFactory;
+            _focusElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.PublicationOnly);
+            _recordedLastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.PublicationOnly);
+            _lastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.None);
+            _graphicsDeviceProvider = deviceProvider;
+            _windowMaterial = GetRealWindowMaterial(ConcreteSettings.WindowMaterial);
+            UnwrappableList<GCHandle> windowList = _rootWindowList;
+            lock (windowList)
+                windowList.Add(GCHandle.Alloc(this, GCHandleType.Weak));
+            InitUnmanagedPart();
+        }
+
         protected CoreWindow(CoreWindow? parent, bool passParentToUnderlyingWindow = false) : base(passParentToUnderlyingWindow ? parent : null)
         {
             _parent = parent;
-            _focusElementRefLazy = new LazyTiny<WeakReference>(static () => new WeakReference(null), LazyThreadSafetyMode.PublicationOnly);
-            _recordedLastHitElementRefLazy = new LazyTiny<WeakReference>(static () => new WeakReference(null), LazyThreadSafetyMode.PublicationOnly);
-            _lastHitElementRefLazy = new LazyTiny<WeakReference>(static () => new WeakReference(null), LazyThreadSafetyMode.None);
-            List<WeakReference<CoreWindow>> windowList = parent is null ? _rootWindowList : parent._childrenReferenceList;
+            Func<WeakReference> weakReferenceFactory = _weakReferenceFactory;
+            _focusElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.PublicationOnly);
+            _recordedLastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.PublicationOnly);
+            _lastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.None);
+            UnwrappableList<GCHandle> windowList;
+            if (parent is null)
+            {
+                _graphicsDeviceProvider = null;
+                _windowMaterial = GetRealWindowMaterial(ConcreteSettings.WindowMaterial);
+                windowList = _rootWindowList;
+            }
+            else
+            {
+                _graphicsDeviceProvider = parent.GetGraphicsDeviceProvider();
+                _windowMaterial = parent.WindowMaterial;
+                windowList = parent._childrenReferenceList;
+            }
             lock (windowList)
-                windowList.Add(new WeakReference<CoreWindow>(this));
-            _windowMaterial = parent is null ? GetRealWindowMaterial(ConcreteSettings.WindowMaterial) : parent.WindowMaterial;
+                windowList.Add(GCHandle.Alloc(this, GCHandleType.Weak));
             InitUnmanagedPart();
         }
 
