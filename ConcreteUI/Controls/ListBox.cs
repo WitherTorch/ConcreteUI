@@ -24,7 +24,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
-    public sealed partial class ListBox : ScrollableElementBase, IDpiAwareEvents
+    public sealed partial class ListBox : ScrollableElementBase
     {
         private static readonly string[] _brushNames = new string[(int)Brush._Last]
         {
@@ -55,8 +55,8 @@ namespace ConcreteUI.Controls
         private ListBoxMode _chooseMode;
         private ButtonTriState _buttonState;
         private long _recalcFormat;
-        private float _fontSize, _itemHeight;
-        private int _selectedIndex;
+        private float _fontSize;
+        private int _selectedIndex, _itemHeight;
 
         public ListBox(IElementContainer parent) : base(parent, "app.listBox")
         {
@@ -121,8 +121,9 @@ namespace ConcreteUI.Controls
             UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
             UIElementHelper.ApplyThemeUnsafe(provider, _checkBoxBrushes, _checkBoxBrushNames, _checkBoxThemePrefix, (nuint)CheckBoxBrush._Last);
             DisposeHelper.SwapDisposeInterlocked(ref _format);
-            Interlocked.Exchange(ref _recalcFormat, Booleans.TrueLong);
-            OnDpiChangedCore(fontName, Renderer.GetPixelsPerPoint());
+            InterlockedHelper.Write(ref _recalcFormat, Booleans.TrueLong);
+            InterlockedHelper.Write(ref _itemHeight, MathI.Ceiling(FontHeightHelper.GetFontHeight(fontName, _fontSize)) + 2);
+            RecalculateHeight();
         }
 
         protected override D2D1Brush GetBackBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush);
@@ -136,21 +137,6 @@ namespace ConcreteUI.Controls
             DWriteTextFormat textFormat = SharedResources.DWriteFactory.CreateTextFormat(NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
             textFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
             return textFormat;
-        }
-
-        public void OnDpiChanged(in DpiChangedEventArgs args)
-        {
-            string? fontName = _fontName;
-            if (fontName is null)
-                return;
-            OnDpiChangedCore(fontName, args.PointsPerPixel);
-        }
-
-        private void OnDpiChangedCore(string fontName, Vector2 pointsPerPixel)
-        {
-            Interlocked.Exchange(ref _itemHeight,
-                RenderingHelper.CeilingInPixel(FontHeightHelper.GetFontHeight(fontName, _fontSize) + 2, pointsPerPixel.Y));
-            RecalculateHeight();
         }
 
         private void Items_Updated(object? sender, EventArgs e) => RecalculateHeight();
@@ -184,7 +170,7 @@ namespace ConcreteUI.Controls
                 format = BuildTextFormat();
             SizeF renderSize = context.Size;
             ListBoxMode mode = Mode;
-            float itemHeight = _itemHeight;
+            float itemHeight = RenderingHelper.RoundInPixel(_itemHeight, Renderer.GetPixelsPerPoint().Y);
             int currentTop = ViewportPoint.Y;
             int startIndex = (int)(currentTop / itemHeight);
             int endIndex = MathI.Ceiling((currentTop + renderSize.Height) / itemHeight);
@@ -278,7 +264,7 @@ namespace ConcreteUI.Controls
             }
         }
 
-        private void RecalculateHeight() => SurfaceSize = new Size(0, MathI.Ceiling(Items.Count * _itemHeight) + UIConstants.ElementMargin);
+        private void RecalculateHeight() => SurfaceSize = new Size(0, Items.Count * _itemHeight + UIConstants.ElementMargin);
 
         protected override void OnMouseMove(in MouseEventArgs args)
         {

@@ -73,7 +73,7 @@ namespace ConcreteUI.Controls
         public int ItemHeight
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => MathI.Ceiling(_itemHeight);
+            get => InterlockedHelper.Read(ref _itemHeight);
         }
 
         public ListBoxMode Mode
