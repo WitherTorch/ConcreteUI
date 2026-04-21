@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace ConcreteUI.Controls
 {
@@ -29,8 +29,9 @@ namespace ConcreteUI.Controls
             BorderHoveredCheckedBrush,
             BorderPressedCheckedBrush,
             MarkBrush,
-            TextBrush,
-            _Last
+            _CheckBoxRenderingLast,
+            TextBrush = _CheckBoxRenderingLast,
+            _Last,
         }
     }
 }

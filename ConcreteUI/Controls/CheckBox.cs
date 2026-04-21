@@ -216,7 +216,7 @@ namespace ConcreteUI.Controls
         public static void DrawCheckBox(in RegionalRenderingContext context, D2D1Brush?[] brushes, in RectangleF renderingBounds,
             bool checkState, ButtonTriState hoverState)
         {
-            if (hoverState > ButtonTriState.Pressed || brushes.Length < (int)Brush.MarkBrush + 1)
+            if (hoverState > ButtonTriState.Pressed || brushes.Length < (int)Brush._CheckBoxRenderingLast)
                 return;
             DrawCheckBoxUnsafe(context, brushes, renderingBounds, checkState, hoverState);
         }

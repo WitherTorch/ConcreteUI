@@ -45,7 +45,7 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly D2D1Brush[] _checkBoxBrushes = new D2D1Brush[(int)CheckBoxBrush._Last];
+        private readonly D2D1Brush?[] _checkBoxBrushes = new D2D1Brush[(int)CheckBoxBrush._Last];
         private readonly BitList _stateVectorList;
         private readonly ObservableList<string> _items;
 
@@ -233,32 +233,17 @@ namespace ConcreteUI.Controls
         {
             RectangleF renderingBounds = CheckBox.GetCheckBoxRenderingBounds(in context, itemHeight);
             CheckBox.DrawCheckBox(context, _checkBoxBrushes, renderingBounds, checkState,
-                isCurrentlyItem ? _buttonState : ButtonTriState.None);
+                (ButtonTriState)((uint)_buttonState & UnsafeHelper.Negate(MathHelper.BooleanToUInt32(isCurrentlyItem))));
         }
 
         private void DrawRadioBox(in RegionalRenderingContext context, float itemHeight, bool isChecked, bool isCurrentlyItem)
+            => DrawRadioBox(context, itemHeight, isChecked, 
+                (ButtonTriState)((uint)_buttonState & UnsafeHelper.Negate(MathHelper.BooleanToUInt32(isCurrentlyItem))));
+
+        private void DrawRadioBox(in RegionalRenderingContext context, float itemHeight, bool isChecked, ButtonTriState state)
         {
-            D2D1Brush[] brushes = _checkBoxBrushes;
-            D2D1Brush? backBrush = null;
-            if (isCurrentlyItem)
-            {
-                switch (_buttonState)
-                {
-                    case ButtonTriState.None:
-                        backBrush = brushes[(int)CheckBoxBrush.BorderBrush];
-                        break;
-                    case ButtonTriState.Hovered:
-                        backBrush = brushes[(int)CheckBoxBrush.BorderHoveredBrush];
-                        break;
-                    case ButtonTriState.Pressed:
-                        backBrush = brushes[(int)CheckBoxBrush.BorderPressedBrush];
-                        break;
-                }
-            }
-            else
-            {
-                backBrush = brushes[(int)CheckBoxBrush.BorderBrush];
-            }
+            D2D1Brush? backBrush = UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_checkBoxBrushes),
+                (nuint)CheckBoxBrush.BorderBrush + (nuint)state);
             if (backBrush is null)
                 return;
             RectF renderingBounds = RectF.FromXYWH(PointF.Empty, new SizeF(itemHeight, itemHeight));
