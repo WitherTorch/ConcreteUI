@@ -237,7 +237,7 @@ namespace ConcreteUI.Controls
         }
 
         private void DrawRadioBox(in RegionalRenderingContext context, float itemHeight, bool isChecked, bool isCurrentlyItem)
-            => DrawRadioBox(context, itemHeight, isChecked, 
+            => DrawRadioBox(context, itemHeight, isChecked,
                 (ButtonTriState)((uint)_buttonState & UnsafeHelper.Negate(MathHelper.BooleanToUInt32(isCurrentlyItem))));
 
         private void DrawRadioBox(in RegionalRenderingContext context, float itemHeight, bool isChecked, ButtonTriState state)
@@ -246,33 +246,39 @@ namespace ConcreteUI.Controls
                 (nuint)CheckBoxBrush.BorderBrush + (nuint)state);
             if (backBrush is null)
                 return;
-            RectF renderingBounds = RectF.FromXYWH(PointF.Empty, new SizeF(itemHeight, itemHeight));
+            RectF renderingBounds = new RectF(0.0f, 0.0f, itemHeight, itemHeight);
             D2D1DeviceContext deviceContext = context.DeviceContext;
-            (D2D1AntialiasMode andtialiasModeBefore, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
+            using RenderingClipScope scope = context.PushPixelAlignedClip(ref renderingBounds, D2D1AntialiasMode.Aliased);
+            (D2D1AntialiasMode lastAntialiasMode, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
             try
             {
-                using RenderingClipScope scope = context.PushPixelAlignedClip(ref renderingBounds, D2D1AntialiasMode.Aliased);
                 PointF centerPoint = new PointF(renderingBounds.Width * 0.5f, renderingBounds.Height * 0.5f);
                 float borderWidth = context.DefaultBorderWidth;
-                float width = centerPoint.X - borderWidth * 2.0f;
-                context.DrawEllipse(new D2D1Ellipse(centerPoint, width, width), backBrush, borderWidth * 2.0f);
+                float radius = centerPoint.X - borderWidth * 2.0f;
+                context.DrawEllipse(GetPixelAlignedEllipse(context, centerPoint, radius), backBrush, borderWidth);
                 if (isChecked)
-                {
-                    width -= borderWidth * 2.0f;
-                    context.FillEllipse(new D2D1Ellipse(centerPoint, width, width), backBrush);
-                }
+                    context.FillEllipse(GetPixelAlignedEllipse(context, centerPoint, radius - borderWidth * 2.5f), backBrush);
             }
             finally
             {
-                deviceContext.AntialiasMode = andtialiasModeBefore;
+                deviceContext.AntialiasMode = lastAntialiasMode;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static D2D1Ellipse GetPixelAlignedEllipse(in RegionalRenderingContext context, PointF centerPoint, float radius)
+            {
+                (float centerX, float centerY) = centerPoint;
+                RectF predictedRect = context.GetPixelAlignedRect(new RectF(centerX - radius, centerY - radius, centerX + radius, centerY + radius));
+                float predictedWidth = predictedRect.Width * 0.5f;
+                float predictedHeight = predictedRect.Height * 0.5f;
+                return new D2D1Ellipse(
+                    point: new PointF(predictedRect.X + predictedWidth, predictedRect.Y + predictedHeight),
+                    radiusX: predictedWidth,
+                    radiusY: predictedHeight);
             }
         }
 
-        private void RecalculateHeight()
-        {
-            SurfaceSize = new Size(0, MathI.Ceiling(Items.Count * _itemHeight) + UIConstants.ElementMargin);
-            Update();
-        }
+        private void RecalculateHeight() => SurfaceSize = new Size(0, MathI.Ceiling(Items.Count * _itemHeight) + UIConstants.ElementMargin);
 
         protected override void OnMouseMove(in MouseEventArgs args)
         {
