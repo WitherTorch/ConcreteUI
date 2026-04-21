@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
@@ -7,7 +8,6 @@ using ConcreteUI.Window;
 
 using InlineMethod;
 
-using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Threading;
 
@@ -261,13 +261,7 @@ namespace ConcreteUI.Controls
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _themePrefix;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                if (SequenceHelper.Equals(_themePrefix, value))
-                    return;
-                _themePrefix = value;
-                ApplyThemeContext(_themeContext);
-            }
+            init => _themePrefix = value;
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
@@ -280,7 +274,7 @@ namespace ConcreteUI.Controls
                 LayoutProperty.Bottom => Bottom,
                 LayoutProperty.Height => Height,
                 LayoutProperty.Width => Width,
-                _ => 0,
+                _ => throw new ArgumentOutOfRangeException(nameof(property)),
             };
 
         [Inline(InlineBehavior.Keep, export: true)]
@@ -306,6 +300,8 @@ namespace ConcreteUI.Controls
                 case LayoutProperty.Width:
                     Width = value;
                     break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(property));
             }
         }
     }

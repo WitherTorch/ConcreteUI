@@ -2,6 +2,7 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Internals;
+using ConcreteUI.Theme;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Threading;
@@ -167,12 +168,7 @@ namespace ConcreteUI.Controls
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _scrollBarThemePrefix;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                if (SequenceHelper.Equals(_scrollBarThemePrefix, value))
-                    return;
-                _scrollBarThemePrefix = value;
-            }
+            init => _scrollBarThemePrefix = value;
         }
     }
 }
