@@ -165,7 +165,7 @@ namespace ConcreteUI.Controls
                 case RedrawType.RedrawAllContent:
                     {
                         RenderObjectUpdateFlags flags = GetAndCleanRenderObjectUpdateFlags();
-                        D2D1Brush textBrush = _brushes[(int)Brush.TextBrush];
+                        D2D1Brush textBrush = UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.TextBrush);
                         RenderBackground(context);
                         DrawCheckBox(context.WithEmptyDirtyCollector());
                         DWriteTextLayout? layout = GetTextLayout(flags);
@@ -192,6 +192,9 @@ namespace ConcreteUI.Controls
 
         private void DrawCheckBox(in RegionalRenderingContext context)
         {
+            ButtonTriState buttonState = _buttonState;
+            if (buttonState > ButtonTriState.Pressed)
+                return;
             RectangleF renderingBounds = GetCheckBoxRenderingBounds(in context, context.Size.Height);
             if (context.HasDirtyCollector)
             {
@@ -199,7 +202,7 @@ namespace ConcreteUI.Controls
                 RenderBackground(in context);
                 context.MarkAsDirty(renderingBounds);
             }
-            DrawCheckBox(context, _brushes, renderingBounds, _checkState, _buttonState);
+            DrawCheckBoxUnsafe(context, _brushes, renderingBounds, _checkState, buttonState);
         }
 
         public static RectangleF GetCheckBoxRenderingBounds(in RegionalRenderingContext context, float itemHeight)
@@ -213,13 +216,16 @@ namespace ConcreteUI.Controls
         public static void DrawCheckBox(in RegionalRenderingContext context, D2D1Brush?[] brushes, in RectangleF renderingBounds,
             bool checkState, ButtonTriState hoverState)
         {
-            if (hoverState > ButtonTriState.Pressed)
+            if (hoverState > ButtonTriState.Pressed || brushes.Length < (int)Brush._Last)
                 return;
-            D2D1Brush? backBrush;
-            if (checkState)
-                backBrush = UnsafeHelper.AddTypedOffset(ref brushes[(int)Brush.BorderCheckedBrush], (nuint)hoverState);
-            else
-                backBrush = UnsafeHelper.AddTypedOffset(ref brushes[(int)Brush.BorderBrush], (nuint)hoverState);
+            DrawCheckBoxUnsafe(context, brushes, renderingBounds, checkState, hoverState);
+        }
+
+        internal static void DrawCheckBoxUnsafe(in RegionalRenderingContext context, D2D1Brush?[] brushes, in RectangleF renderingBounds,
+            bool checkState, ButtonTriState hoverState)
+        {
+            D2D1Brush? backBrush = UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(brushes),
+                MathHelper.BooleanToNativeUnsigned(checkState) * (nuint)Brush.BorderCheckedBrush + (nuint)hoverState);
             if (backBrush is null)
                 return;
 
@@ -281,7 +287,7 @@ namespace ConcreteUI.Controls
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _layout);
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             }
             SequenceHelper.Clear(_brushes);
         }

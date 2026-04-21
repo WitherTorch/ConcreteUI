@@ -60,7 +60,7 @@ namespace ConcreteUI.Controls
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RenderBackground(UIElement element, in RegionalRenderingContext context)
-            => RenderBackground(context, _brushes[(int)Brush.BackBrush]);
+            => RenderBackground(context, UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush));
 
         protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(_brushes[(int)Brush.BackBrush]);
 
@@ -68,9 +68,9 @@ namespace ConcreteUI.Controls
 
         protected override bool RenderCore(in RegionalRenderingContext context)
         {
-            D2D1Brush[] brushes = _brushes;
-            RenderBackground(context, brushes[(int)Brush.BackBrush]);
-            context.DrawBorder(brushes[(int)Brush.BorderBrush]);
+            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
+            RenderBackground(context, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BackBrush));
+            context.DrawBorder(UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BorderBrush));
 
             return true;
         }
@@ -84,7 +84,7 @@ namespace ConcreteUI.Controls
             if (ReferenceHelper.Exchange(ref _disposed, true))
                 return;
             if (disposing)
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             SequenceHelper.Clear(_brushes);
             ListHelper.CleanAllWeak<UIElement, ObservableList<UIElement>>(_children, disposing);
         }

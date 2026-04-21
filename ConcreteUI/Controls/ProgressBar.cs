@@ -35,19 +35,20 @@ namespace ConcreteUI.Controls
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
             => UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
 
-        protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(_brushes[(int)Brush.BackBrush]);
+        protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(
+            UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush));
 
         protected override bool RenderCore(in RegionalRenderingContext context)
         {
-            D2D1Brush[] brushes = _brushes;
+            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
             SizeF renderSize = context.Size;
 
             double percentage = _value / _maximium;
-            RenderBackground(context, brushes[(int)Brush.BackBrush]);
+            RenderBackground(context, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BackBrush));
             context.FillRectangle(
                 new RectF(0, 0, RenderingHelper.RoundInPixel((float)(renderSize.Width * percentage), context.PointsPerPixel.X), renderSize.Height),
-                brushes[(int)Brush.ForeBrush]);
-            context.DrawBorder(brushes[(int)Brush.BorderBrush]);
+                UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.ForeBrush));
+            context.DrawBorder(UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BorderBrush));
             return true;
         }
 
@@ -59,7 +60,7 @@ namespace ConcreteUI.Controls
 
             if (disposing)
             {
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             }
             SequenceHelper.Clear(_brushes);
         }

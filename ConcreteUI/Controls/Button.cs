@@ -150,7 +150,7 @@ namespace ConcreteUI.Controls
             if (disposing)
             {
                 DisposeHelper.SwapDispose(ref _layout);
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             }
             SequenceHelper.Clear(_brushes);
         }

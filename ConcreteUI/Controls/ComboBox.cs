@@ -12,7 +12,6 @@ using ConcreteUI.Internals;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
-using ConcreteUI.Window;
 
 using InlineMethod;
 
@@ -122,24 +121,30 @@ namespace ConcreteUI.Controls
 
         protected override bool IsBackgroundOpaqueCore()
         {
-            D2D1Brush[] brushes = _brushes;
+            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
             D2D1Brush backBrush;
             if (Enabled)
-                backBrush = _hovered ? brushes[(int)Brush.BackHoveredBrush] : brushes[(int)Brush.BackBrush];
+            {
+                DebugHelper.ThrowUnless((nuint)Brush.BackBrush + 2 == (nuint)Brush.BackHoveredBrush);
+                backBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BackBrush + 2 * MathHelper.BooleanToNativeUnsigned(_hovered));
+            }
             else
-                backBrush = brushes[(int)Brush.BackDisabledBrush];
+                backBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BackDisabledBrush);
             return GraphicsUtils.CheckBrushIsSolid(backBrush);
         }
 
         protected override bool RenderCore(in RegionalRenderingContext context)
         {
             DWriteTextLayout? layout = GetTextLayout(GetAndCleanRenderObjectUpdateFlags());
-            D2D1Brush[] brushes = _brushes;
+            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
             D2D1Brush backBrush;
             if (Enabled)
-                backBrush = _hovered ? brushes[(int)Brush.BackHoveredBrush] : brushes[(int)Brush.BackBrush];
+            {
+                DebugHelper.ThrowUnless((nuint)Brush.BackBrush + 2 == (nuint)Brush.BackHoveredBrush);
+                backBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BackBrush + 2 * MathHelper.BooleanToNativeUnsigned(_hovered));
+            }
             else
-                backBrush = brushes[(int)Brush.BackDisabledBrush];
+                backBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BackDisabledBrush);
             RenderBackground(context, backBrush);
             SizeF renderSize = context.Size;
             float borderWidth = context.DefaultBorderWidth;
@@ -154,23 +159,18 @@ namespace ConcreteUI.Controls
                     layout.MaxHeight = layoutRect.Height;
                     layout.MaxWidth = layoutRect.Width;
                     using RenderingClipScope scope = context.PushAxisAlignedClip(layoutRect, D2D1AntialiasMode.Aliased);
-                    context.DrawTextLayout(layoutRect.Location, layout, brushes[(int)Brush.TextBrush], D2D1DrawTextOptions.Clip);
+                    context.DrawTextLayout(layoutRect.Location, layout, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TextBrush), D2D1DrawTextOptions.Clip);
                 }
                 DisposeHelper.NullSwapOrDispose(ref _layout, layout);
             }
             using (RenderingClipScope scope = context.PushAxisAlignedClip(buttonRect, D2D1AntialiasMode.Aliased))
             {
                 RenderBackground(context, backBrush);
-                D2D1Brush buttonBrush = _state switch
-                {
-                    ButtonTriState.None => brushes[(int)Brush.DropdownButtonBrush],
-                    ButtonTriState.Hovered => brushes[(int)Brush.DropdownButtonHoveredBrush],
-                    ButtonTriState.Pressed => brushes[(int)Brush.DropdownButtonPressedBrush],
-                    _ => throw new InvalidOperationException(),
-                };
+                ButtonTriState state = _state;
+                D2D1Brush buttonBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.DropdownButtonBrush + (state > ButtonTriState.Pressed ? 0u : (nuint)state));
                 FontIconResources.Instance.DrawDropDownButton(context, (RectangleF)buttonRect, buttonBrush);
             }
-            context.DrawBorder(brushes[(int)Brush.BorderBrush]);
+            context.DrawBorder(UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BorderBrush));
             return true;
         }
 
@@ -261,7 +261,7 @@ namespace ConcreteUI.Controls
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _layout);
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             }
             SequenceHelper.Clear(_brushes);
         }

@@ -122,7 +122,7 @@ namespace ConcreteUI.Controls
             bool result = GraphicsUtils.CheckBrushIsSolid(brush);
             if (!result || !_hasScrollBar)
                 return result;
-            return GraphicsUtils.CheckBrushIsSolid(_brushes[(int)Brush.ScrollBarBackBrush]);
+            return GraphicsUtils.CheckBrushIsSolid(UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.ScrollBarBackBrush));
         }
 
         public override void Render(in RegionalRenderingContext context) => Render(context, markDirty: false);
@@ -138,7 +138,7 @@ namespace ConcreteUI.Controls
             Rectangle bounds = Bounds, contentBounds;
             Point viewportPoint;
             Size surfaceSize;
-            D2D1Brush[] brushes = _brushes;
+            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
             bool enabled = _enabled;
             bool drawWhenDisabled = _drawWhenDisabled;
 
@@ -210,7 +210,7 @@ namespace ConcreteUI.Controls
                     downButtonBounds = RenderingHelper.RoundInPixel(downButtonBounds, pointsPerPixel);
 
                     using RenderingClipScope scope = context.PushAxisAlignedClip(scrollBarBounds, D2D1AntialiasMode.Aliased);
-                    RenderBackground(context, brushes[(int)Brush.ScrollBarBackBrush]);
+                    RenderBackground(context, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.ScrollBarBackBrush));
 
                     D2D1DeviceContext deviceContext = context.DeviceContext;
                     (D2D1AntialiasMode antialiasModeBefore, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
@@ -251,16 +251,7 @@ namespace ConcreteUI.Controls
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private D2D1Brush GetButtonStateBrush(ButtonTriState state)
-        {
-            D2D1Brush[] brushes = _brushes;
-            return state switch
-            {
-                ButtonTriState.None => brushes[(int)Brush.ScrollBarForeBrush],
-                ButtonTriState.Hovered => brushes[(int)Brush.ScrollBarForeBrushHovered],
-                ButtonTriState.Pressed => brushes[(int)Brush.ScrollBarForeBrushPressed],
-                _ => brushes[(int)Brush.ScrollBarForeBrush],
-            };
-        }
+            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), state > ButtonTriState.Pressed ? (nuint)ButtonTriState.None : (nuint)state);
 
         public override void OnSizeChanged() => Update(ScrollableElementUpdateFlags.RecalcLayout);
 
@@ -595,7 +586,7 @@ namespace ConcreteUI.Controls
         protected override void DisposeCore(bool disposing)
         {
             if (disposing)
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             _repeatingTimer.Dispose();
             SequenceHelper.Clear(_brushes);
         }

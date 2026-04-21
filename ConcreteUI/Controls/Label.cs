@@ -118,7 +118,7 @@ namespace ConcreteUI.Controls
         protected override bool RenderCore(in RegionalRenderingContext context)
         {
             DWriteTextLayout? layout = GetTextLayout(GetAndCleanRenderObjectUpdateFlags());
-            D2D1Brush foreBrush = _brushes[(int)Brush.ForeBrush];
+            D2D1Brush foreBrush = UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.ForeBrush);
             RenderBackground(context);
             if (layout is null)
                 return true;
@@ -136,7 +136,7 @@ namespace ConcreteUI.Controls
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _layout);
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             }
             SequenceHelper.Clear(_brushes);
         }

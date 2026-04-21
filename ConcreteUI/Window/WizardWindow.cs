@@ -174,7 +174,7 @@ namespace ConcreteUI.Window
             if (flags == 0L && !force)
                 return;
             GetLayouts(flags, out DWriteTextLayout? titleLayout, out DWriteTextLayout? titleDescriptionLayout);
-            D2D1Brush[] brushes = _brushes;
+            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
             Rect rect = _widePageRect;
             if (WindowMaterial == WindowMaterial.Integrated)
                 rect = new Rect(0, 0, ClientSize.Width, rect.Top);
@@ -184,12 +184,14 @@ namespace ConcreteUI.Window
             ClearDC(deviceContext);
             if (titleLayout is not null)
             {
-                deviceContext.DrawTextLayout(_titleLocation, titleLayout, brushes[(int)Brush.WizardTitleBrush], D2D1DrawTextOptions.None);
+                deviceContext.DrawTextLayout(_titleLocation, titleLayout, 
+                    UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.WizardTitleBrush), D2D1DrawTextOptions.None);
                 DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
             }
             if (titleDescriptionLayout is not null)
             {
-                deviceContext.DrawTextLayout(_titleDescriptionLocation, titleDescriptionLayout, brushes[(int)Brush.WizardTitleDescriptionBrush], D2D1DrawTextOptions.None);
+                deviceContext.DrawTextLayout(_titleDescriptionLocation, titleDescriptionLayout, 
+                    UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.WizardTitleDescriptionBrush), D2D1DrawTextOptions.None);
                 DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
             }
             collector.MarkAsDirty(scope.ClipRect);
@@ -264,7 +266,12 @@ namespace ConcreteUI.Window
             ShowTitle = WindowMaterial == WindowMaterial.Integrated;
         }
 
-        protected D2D1Brush GetBrush(Brush brush) => _brushes[(int)brush];
+        protected D2D1Brush GetBrush(Brush brush)
+        {
+            if (brush >= Brush._Last)
+                throw new ArgumentOutOfRangeException(nameof(brush));
+            return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)brush);
+        }
 
         protected override void DisposeCore(bool disposing)
         {
@@ -273,7 +280,7 @@ namespace ConcreteUI.Window
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
                 DisposeHelper.SwapDisposeInterlocked(ref _titleDescriptionLayout);
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             }
             SequenceHelper.Clear(_brushes);
         }

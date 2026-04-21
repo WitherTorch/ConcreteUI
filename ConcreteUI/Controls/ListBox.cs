@@ -125,9 +125,11 @@ namespace ConcreteUI.Controls
             OnDpiChangedCore(fontName, Renderer.GetPixelsPerPoint());
         }
 
-        protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
-        protected override D2D1Brush GetBackDisabledBrush() => _brushes[(int)Brush.BackDisabledBrush];
-        protected override D2D1Brush GetBorderBrush() => _brushes[(int)Brush.BorderBrush];
+        protected override D2D1Brush GetBackBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush);
+
+        protected override D2D1Brush GetBackDisabledBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackDisabledBrush);
+
+        protected override D2D1Brush GetBorderBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BorderBrush);
 
         private DWriteTextFormat BuildTextFormat()
         {
@@ -176,7 +178,7 @@ namespace ConcreteUI.Controls
                 context.MarkAsDirty();
             }
 
-            D2D1Brush[] brushes = _brushes;
+            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
             DWriteTextFormat? format = Interlocked.Exchange(ref _format, null);
             if (CheckFormatIsNotAvailable(format))
                 format = BuildTextFormat();
@@ -200,7 +202,7 @@ namespace ConcreteUI.Controls
             // itemRightEdge 無須做 round 操作，因為 renderSize.Width 與 borderWidth 均已對齊 pixel
 
             BitList stateVectorList = _stateVectorList;
-            D2D1Brush textBrush = brushes[(int)Brush.TextBrush];
+            D2D1Brush textBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TextBrush);
             IList<string> items = _items.GetUnderlyingList();
             for (int i = startIndex, count = items.Count, selectedIndex = _selectedIndex; i <= endIndex && i < count; i++)
             {
@@ -382,7 +384,7 @@ namespace ConcreteUI.Controls
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _format);
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             }
             SequenceHelper.Clear(_brushes);
         }

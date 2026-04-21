@@ -112,9 +112,9 @@ namespace ConcreteUI.Controls
             Update(RenderObjectUpdateFlags.Format);
         }
 
-        protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
+        protected override D2D1Brush GetBackBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush);
 
-        protected override D2D1Brush GetBackDisabledBrush() => _brushes[(int)Brush.BackDisabledBrush];
+        protected override D2D1Brush GetBackDisabledBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackDisabledBrush);
 
         protected override D2D1Brush GetBorderBrush() => _brushes[_borderBrushIndex];
 
@@ -352,7 +352,6 @@ namespace ConcreteUI.Controls
 
         protected override bool RenderContent(in RegionalRenderingContext context, D2D1Brush backBrush)
         {
-            D2D1Brush[] brushes = _brushes;
             SizeF renderSize = context.Size;
             bool focused = _focused;
 
@@ -370,7 +369,9 @@ namespace ConcreteUI.Controls
                     return true;
                 SetRenderingProperties(watermarkLayout, renderSize, context.PointsPerPixel, _multiLine);
                 //文字為空，繪製浮水印
-                RenderLayoutCore(context, brushes[(int)Brush.ForeInactiveBrush], watermarkLayout, PointF.Empty);
+                RenderLayoutCore(context,
+                    UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.ForeInactiveBrush),
+                    watermarkLayout, PointF.Empty);
                 if (focused)
                     DrawCaret(context, watermarkLayout, PointF.Empty, 0);
                 if (layout is not null)
@@ -390,7 +391,7 @@ namespace ConcreteUI.Controls
 
         private void RenderLayout(in RegionalRenderingContext context, bool focused, DWriteTextLayout layout, in RectF layoutRect)
         {
-            D2D1Brush[] brushes = _brushes;
+            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
             PointF viewportPoint = ViewportPoint;
             //輸出處理 (IME 作用中範圍提示、選取範圍提示、取得視角點等等)
             DWriteTextRange compositionRange = _compositionRange;
@@ -405,8 +406,8 @@ namespace ConcreteUI.Controls
             if (selectionRange.Length > 0)
             {
                 DWriteTextRange textRange = selectionRange.ToTextRange();
-                D2D1Brush selectionBackBrush = brushes[(int)Brush.SelectionBackBrush];
-                D2D1Brush selectionForeBrush = brushes[(int)Brush.SelectionForeBrush];
+                D2D1Brush selectionBackBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.SelectionBackBrush);
+                D2D1Brush selectionForeBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.SelectionForeBrush);
                 layout.SetDrawingEffect(selectionForeBrush, textRange);
                 DWriteHitTestMetrics[] metricsArray = layout.HitTestTextRange(textRange.StartPosition,
                    MathHelper.MakeUnsigned(selectionRange.Length), 0, 0);
@@ -425,7 +426,10 @@ namespace ConcreteUI.Controls
                 }
             }
             //繪製文字
-            RenderLayoutCore(context, Enabled ? brushes[(int)Brush.ForeBrush] : brushes[(int)Brush.ForeInactiveBrush], layout, layoutPoint);
+            DebugHelper.ThrowUnless((nuint)Brush.ForeInactiveBrush - 1 == (nuint)Brush.ForeBrush);
+            RenderLayoutCore(context,
+                UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.ForeInactiveBrush - MathHelper.BooleanToNativeUnsigned(Enabled)),
+                layout, layoutPoint);
             if (selectionRange.Length > 0)
             {
                 DWriteTextRange textRange = selectionRange.ToTextRange();
@@ -1400,7 +1404,7 @@ namespace ConcreteUI.Controls
                 _caretTimer.Dispose();
                 DisposeHelper.SwapDispose(ref _layout);
                 DisposeHelper.SwapDispose(ref _watermarkLayout);
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             }
             SequenceHelper.Clear(_brushes);
         }

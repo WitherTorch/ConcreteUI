@@ -21,7 +21,7 @@ namespace ConcreteUI.Window
     public abstract class TabbedWindow : PagedWindow
     {
         #region Enums
-        protected new enum Brush
+        protected new enum Brush : uint
         {
             MenuBackBrush,
             MenuForeBrush,
@@ -157,19 +157,19 @@ namespace ConcreteUI.Window
             if (menuBarButtonLayouts is null)
                 return;
             D2D1ColorF clearDCColor = _clearDCColor;
-            D2D1Brush[] brushes = _brushes;
+            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
             D2D1Brush titleBackBrush = GetBrush(CoreWindow.Brush.TitleBackBrush);
-            D2D1Brush menuBackBrush = brushes[(int)Brush.MenuBackBrush];
-            D2D1Brush menuForeBrush = brushes[(int)Brush.MenuForeBrush];
-            D2D1Brush menuSelectBrush = brushes[(int)Brush.MenuSelectBrush];
-            D2D1Brush menuHoverBrush = brushes[(int)Brush.MenuHoverBrush];
-            D2D1Brush menuHoverForeBrush = brushes[(int)Brush.MenuHoverForeBrush];
-            Vector2 pointsPerPixel = PixelsPerPoint;
+            D2D1Brush menuBackBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuBackBrush);
+            D2D1Brush menuForeBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuForeBrush);
+            D2D1Brush menuSelectBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuSelectBrush);
+            D2D1Brush menuHoverBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuHoverBrush);
+            D2D1Brush menuHoverForeBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuHoverForeBrush);
+            Vector2 pixelsPerPoint = PixelsPerPoint;
             if (force)
             {
                 Rect firstRect = menuBarButtonRects.FirstOrDefault();
                 Rect lastRect = menuBarButtonRects.LastOrDefault();
-                RectF menuBarRect = RenderingHelper.RoundInPixel(new RectF(firstRect.X, firstRect.Top, lastRect.Right, lastRect.Bottom), pointsPerPixel);
+                RectF menuBarRect = RenderingHelper.RoundInPixel(new RectF(firstRect.X, firstRect.Top, lastRect.Right, lastRect.Bottom), pixelsPerPoint);
                 deviceContext.PushAxisAlignedClip(menuBarRect, D2D1AntialiasMode.Aliased);
                 if (WindowMaterial != WindowMaterial.Integrated)
                     GraphicsUtils.ClearAndFill(deviceContext, menuBackBrush, clearDCColor);
@@ -184,7 +184,7 @@ namespace ConcreteUI.Window
             bool menuRedraw = isPageChanged || force;
             for (int i = 0, currentPageIndex = CurrentPage, count = menuBarButtonRects.Length; i < count; i++)
             {
-                RectF rect = RenderingHelper.RoundInPixel(menuBarButtonRects[i], pointsPerPixel);
+                RectF rect = RenderingHelper.RoundInPixel(menuBarButtonRects[i], pixelsPerPoint);
                 DWriteTextLayout layout = menuBarButtonLayouts[i];
                 bool isSelected = currentPageIndex == i;
                 if (isSelected)
@@ -313,7 +313,12 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Utility Methods
-        protected D2D1Brush GetBrush(Brush brush) => _brushes[(int)brush];
+        protected D2D1Brush GetBrush(Brush brush)
+        {
+            if (brush >= Brush._Last)
+                throw new ArgumentOutOfRangeException(nameof(brush));
+            return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)brush);
+        }
 
         protected void GenerateMenu(string[] menuButtonTexts, int baseX, int baseY, int menuExtraWidth,
             out Rect[] menuButtonRects, out DWriteTextLayout[] menuButtonLayouts)
@@ -377,7 +382,7 @@ namespace ConcreteUI.Window
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref menuBarButtonLayouts);
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             }
             SequenceHelper.Clear(_brushes);
         }

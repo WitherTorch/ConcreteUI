@@ -10,7 +10,6 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
-using ConcreteUI.Window;
 
 using WitherTorch.Common;
 using WitherTorch.Common.Extensions;
@@ -86,25 +85,28 @@ namespace ConcreteUI.Controls
             DisposeHelper.SwapDisposeInterlocked(ref _layouts, layouts);
         }
 
-        protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(_brushes[(int)Brush.BackBrush]);
+        protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(
+            UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush));
 
         protected override bool RenderCore(in RegionalRenderingContext context)
         {
             SizeF renderSize = context.Size;
             float borderWidth = context.DefaultBorderWidth;
-            D2D1Brush[] brushes = _brushes;
-            D2D1Brush backBrush = brushes[(int)Brush.BackBrush], borderBrush = brushes[(int)Brush.BorderBrush];
+            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
+            D2D1Brush backBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BackBrush),
+                borderBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BorderBrush);
             RenderBackground(context, backBrush);
             DWriteTextLayout[]? layouts = Interlocked.Exchange(ref _layouts, null);
             if (layouts is not null && layouts.Length > 0)
             {
                 ref ContextMenuItem itemArrayRef = ref UnsafeHelper.GetArrayDataReference(MenuItems);
                 ref DWriteTextLayout layoutArrayRef = ref UnsafeHelper.GetArrayDataReference(layouts);
-                D2D1Brush foreBrush = brushes[(int)Brush.TextBrush], foreDisabledBrush = brushes[(int)Brush.TextInactiveBrush];
+                D2D1Brush foreBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TextBrush),
+                    foreDisabledBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TextInactiveBrush);
                 int hoveredIndex = _hoveredIndex;
                 float itemLeft = borderWidth,
                     textLeft = itemLeft + UIConstants.ElementMarginHalf,
-                    itemTop = borderWidth, 
+                    itemTop = borderWidth,
                     itemRight = renderSize.Width - borderWidth;
                 for (int i = 0, count = layouts.Length; i < count; i++)
                 {
@@ -118,8 +120,8 @@ namespace ConcreteUI.Controls
                         {
                             using RenderingClipScope scope = context.PushAxisAlignedClip(
                                 new RectF(itemLeft, itemTop, itemRight, itemTop + itemHeight), D2D1AntialiasMode.Aliased);
-                            D2D1Brush currentBackBrush = _isPressed ? brushes[(int)Brush.BackPressedBrush] : brushes[(int)Brush.BackHoveredBrush];
-                            currentForeBrush = brushes[(int)Brush.TextHoveredBrush];
+                            D2D1Brush currentBackBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BackHoveredBrush + MathHelper.BooleanToNativeUnsigned(_isPressed));
+                            currentForeBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TextHoveredBrush);
                             RenderBackground(context, currentBackBrush);
                         }
                         else
@@ -214,7 +216,7 @@ namespace ConcreteUI.Controls
             if (disposing)
             {
                 DisposeHelper.DisposeAll(layouts);
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             }
             if (layouts is not null)
                 SequenceHelper.Clear(layouts);

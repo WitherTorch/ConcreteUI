@@ -2,7 +2,6 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Internals;
-using ConcreteUI.Theme;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Threading;

@@ -52,7 +52,7 @@ namespace ConcreteUI.Window
             ChangeTitle = 0b1,
         }
 
-        protected enum Brush : int
+        protected enum Brush : uint
         {
             TitleBackBrush,
             TitleForeBrush,
@@ -482,7 +482,7 @@ namespace ConcreteUI.Window
             UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
             UIElementHelper.ApplyTheme(provider, _overlayElementList);
             UIElementHelper.ApplyTheme(provider, _backgroundElementList);
-            if (_brushes[(int)Brush.TitleBackBrush] is D2D1SolidColorBrush backBrush &&
+            if (UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.TitleBackBrush) is D2D1SolidColorBrush backBrush &&
                 _windowMaterial == WindowMaterial.Integrated && SystemConstants.VersionLevel >= SystemVersionLevel.Windows_11_21H2)
                 FluentHandler.SetTitleBarColor(Handle, (Color)backBrush.Color);
             ConcreteUtils.ResetBlur(this);
@@ -654,7 +654,12 @@ namespace ConcreteUI.Window
         protected IEnumerable<UIElement> GetBackgroundElements() => _backgroundElementList;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected D2D1Brush GetBrush(Brush brush) => _brushes[(int)brush];
+        protected D2D1Brush GetBrush(Brush brush)
+        {
+            if (brush >= Brush._Last)
+                throw new ArgumentOutOfRangeException(nameof(brush));
+            return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)brush);
+        }
 
         [Inline]
         private bool RenderCore(bool force, bool resized, bool resizedTemporarily)
@@ -751,14 +756,14 @@ namespace ConcreteUI.Window
                 deviceContext.Clear();
                 return;
             }
-            GraphicsUtils.ClearAndFill(deviceContext, _brushes[(int)Brush.TitleBackBrush], _clearDCColor);
+            GraphicsUtils.ClearAndFill(deviceContext, UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.TitleBackBrush), _clearDCColor);
         }
 
         protected virtual void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force)
         {
             if (_windowMaterial == WindowMaterial.Integrated)
                 return;
-            D2D1Brush[] brushes = _brushes;
+            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
             Vector2 pixelsPerPoint = _pixelsPerPoint;
 
             BitVector64 TitleBarButtonChangedStatus = _titleBarButtonChangedStatus;
@@ -785,7 +790,7 @@ namespace ConcreteUI.Window
                 {
                     RectF titleBarRect = RenderingHelper.RoundInPixel(_titleBarRect, pixelsPerPoint);
                     deviceContext.PushAxisAlignedClip(titleBarRect, D2D1AntialiasMode.Aliased);
-                    deviceContext.DrawTextLayout(new PointF(_drawingOffsetX + 7.5f, _drawingOffsetY + 1.5f), titleLayout, brushes[(int)Brush.TitleForeBrush]);
+                    deviceContext.DrawTextLayout(new PointF(_drawingOffsetX + 7.5f, _drawingOffsetY + 1.5f), titleLayout, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeBrush));
                     deviceContext.PopAxisAlignedClip();
                 }
                 DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
@@ -800,8 +805,9 @@ namespace ConcreteUI.Window
                     deviceContext.PushAxisAlignedClip(minRect, D2D1AntialiasMode.Aliased);
                     if (!force)
                         ClearDCForTitle(deviceContext);
+                    DebugHelper.ThrowUnless((nuint)Brush.TitleForeDeactiveBrush - 1 == (nuint)Brush.TitleForeBrush);
                     iconStorer.RenderMinimizeButton(deviceContext, (RectangleF)minRect,
-                        TitleBarButtonStatus[0] ? brushes[(int)Brush.TitleForeBrush] : brushes[(int)Brush.TitleForeDeactiveBrush]);
+                        UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeDeactiveBrush - MathHelper.BooleanToNativeUnsigned(TitleBarButtonStatus[0])));
                     deviceContext.PopAxisAlignedClip();
                     collector.MarkAsDirty(minRect);
                 }
@@ -813,7 +819,8 @@ namespace ConcreteUI.Window
                     {
                         ClearDCForTitle(deviceContext);
                     }
-                    D2D1Brush foreBrush = TitleBarButtonStatus[1] ? brushes[(int)Brush.TitleForeBrush] : brushes[(int)Brush.TitleForeDeactiveBrush];
+                    DebugHelper.ThrowUnless((nuint)Brush.TitleForeDeactiveBrush - 1 == (nuint)Brush.TitleForeBrush);
+                    D2D1Brush foreBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeDeactiveBrush - MathHelper.BooleanToNativeUnsigned(TitleBarButtonStatus[1]));
                     if (_isMaximized)
                         iconStorer.RenderRestoreButton(deviceContext, (RectangleF)maxRect, foreBrush);
                     else
@@ -830,8 +837,9 @@ namespace ConcreteUI.Window
                 {
                     ClearDCForTitle(deviceContext);
                 }
+                DebugHelper.ThrowUnless((nuint)Brush.TitleForeDeactiveBrush + 1 == (nuint)Brush.TitleCloseButtonActiveBrush);
                 iconStorer.RenderCloseButton(deviceContext, (RectangleF)closeRect,
-                        TitleBarButtonStatus[2] ? brushes[(int)Brush.TitleCloseButtonActiveBrush] : brushes[(int)Brush.TitleForeDeactiveBrush]);
+                        UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeDeactiveBrush + MathHelper.BooleanToNativeUnsigned(TitleBarButtonStatus[2])));
                 deviceContext.PopAxisAlignedClip();
                 collector.MarkAsDirty(closeRect);
             }
@@ -1321,7 +1329,7 @@ namespace ConcreteUI.Window
                 DisposeHelper.SwapDisposeInterlocked(ref _controller);
                 DisposeHelper.SwapDisposeInterlocked(ref _host);
                 DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
                 DisposeElements(GetElements());
 
                 if (InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0)

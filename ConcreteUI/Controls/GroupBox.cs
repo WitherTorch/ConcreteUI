@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
@@ -104,7 +103,7 @@ namespace ConcreteUI.Controls
         }
 
         public void RenderBackground(UIElement element, in RegionalRenderingContext context)
-            => RenderBackground(context, _brushes[(int)Brush.BackBrush]);
+            => RenderBackground(context, UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush));
 
         private void Children_BeforeAdded(object? sender, BeforeListAddOrRemoveEventArgs<UIElement> e) => e.Item.Parent = this;
 
@@ -186,7 +185,8 @@ namespace ConcreteUI.Controls
             return false;
         }
 
-        protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(_brushes[(int)Brush.BackBrush]);
+        protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(
+            UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush));
 
         bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
 
@@ -200,9 +200,9 @@ namespace ConcreteUI.Controls
             else if (redrawType == RedrawType.NoRedraw)
                 return true;
             GetLayouts(GetAndCleanRenderObjectUpdateFlags(), out DWriteTextLayout? titleLayout, out DWriteTextLayout? textLayout);
-            D2D1Brush[] brushes = _brushes;
-            D2D1Brush backBrush = brushes[(int)Brush.BackBrush];
-            D2D1Brush textBrush = brushes[(int)Brush.TextBrush];
+            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
+            D2D1Brush backBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BackBrush);
+            D2D1Brush textBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TextBrush);
             switch (redrawType)
             {
                 case RedrawType.RedrawAllContent:
@@ -210,7 +210,7 @@ namespace ConcreteUI.Controls
                         SizeF renderSize = context.Size;
                         RectF borderBounds = new RectF(0, _titleHeight * 0.5f, renderSize.Width, renderSize.Height);
                         RenderBackground(context, backBrush);
-                        context.DrawBorder(borderBounds, brushes[(int)Brush.BorderBrush]);
+                        context.DrawBorder(borderBounds, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BorderBrush));
                         RenderTitle(context, backBrush, textBrush, titleLayout);
                         RenderText(context.WithEmptyDirtyCollector(), backBrush, textBrush, textLayout);
                         context.MarkAsDirty();
@@ -287,7 +287,7 @@ namespace ConcreteUI.Controls
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
                 DisposeHelper.SwapDisposeInterlocked(ref _textLayout);
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             }
             SequenceHelper.Clear(_brushes);
             ListHelper.CleanAllWeak<UIElement, ObservableList<UIElement>>(_children, disposing);

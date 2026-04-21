@@ -60,11 +60,11 @@ namespace ConcreteUI.Controls
             Prepare(format);
         }
 
-        protected override D2D1Brush GetBackBrush() => _brushes[(int)Brush.BackBrush];
+        protected override D2D1Brush GetBackBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush);
 
-        protected override D2D1Brush GetBackDisabledBrush() => _brushes[(int)Brush.BackDisabledBrush];
+        protected override D2D1Brush GetBackDisabledBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackDisabledBrush);
 
-        protected override D2D1Brush GetBorderBrush() => _brushes[(int)Brush.BorderBrush];
+        protected override D2D1Brush GetBorderBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BorderBrush);
 
         public void Close() => Window.CloseOverlayElement(this);
 
@@ -126,7 +126,7 @@ namespace ConcreteUI.Controls
             int startIndex = MathHelper.Clamp(MathI.Truncate(startIndexRaw), 0, count - maxViewCount);
             int endIndex = MathHelper.Clamp(MathI.Ceiling((viewportY + renderSize.Height) / itemHeight), maxViewCount - 1, count - 1);
             int selectedIndex = SelectedIndex;
-            D2D1Brush[] brushes = _brushes;
+            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
             D2D1Brush textBrush;
             Vector2 pointsPerPixel = context.PointsPerPixel;
             float borderWidth = context.DefaultBorderWidth;
@@ -135,7 +135,7 @@ namespace ConcreteUI.Controls
                 itemTop = RenderingHelper.RoundInPixel(-offsetY, pointsPerPixel.Y),
                 itemRight = RenderingHelper.RoundInPixel(renderSize.Width - borderWidth, pointsPerPixel.X),
                 itemWIdth = itemRight - itemLeft;
-            textBrush = brushes[(int)Brush.TextBrush];
+            textBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TextBrush);
             ref DWriteTextLayout layoutArrayRef = ref UnsafeHelper.GetArrayDataReference(layouts);
             for (int i = startIndex; i <= endIndex; i++)
             {
@@ -147,9 +147,9 @@ namespace ConcreteUI.Controls
                 D2D1Brush activeTextBrush;
                 if (i == selectedIndex)
                 {
-                    D2D1Brush activeBackBrush = isClicking ? brushes[(int)Brush.ListBackPressedBrush] : brushes[(int)Brush.ListBackHoveredBrush];
+                    D2D1Brush activeBackBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.ListBackHoveredBrush + MathHelper.BooleanToNativeUnsigned(isClicking));
                     RenderBackground(context, activeBackBrush);
-                    activeTextBrush = brushes[(int)Brush.ListTextHoveredBrush];
+                    activeTextBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.ListTextHoveredBrush);
                 }
                 else
                     activeTextBrush = textBrush;
@@ -248,7 +248,7 @@ namespace ConcreteUI.Controls
             if (disposing)
             {
                 DisposeHelper.SwapDisposeInterlocked(ref _layouts);
-                DisposeHelper.DisposeAll(_brushes);
+                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             }
             SequenceHelper.Clear(_brushes);
         }

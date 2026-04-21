@@ -1,11 +1,9 @@
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Theme;
-using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
 using WitherTorch.Common;
