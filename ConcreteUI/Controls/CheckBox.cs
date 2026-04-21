@@ -216,7 +216,7 @@ namespace ConcreteUI.Controls
         public static void DrawCheckBox(in RegionalRenderingContext context, D2D1Brush?[] brushes, in RectangleF renderingBounds,
             bool checkState, ButtonTriState hoverState)
         {
-            if (hoverState > ButtonTriState.Pressed || brushes.Length < (int)Brush._Last)
+            if (hoverState > ButtonTriState.Pressed || brushes.Length < (int)Brush.MarkBrush + 1)
                 return;
             DrawCheckBoxUnsafe(context, brushes, renderingBounds, checkState, hoverState);
         }
@@ -224,7 +224,8 @@ namespace ConcreteUI.Controls
         internal static void DrawCheckBoxUnsafe(in RegionalRenderingContext context, D2D1Brush?[] brushes, in RectangleF renderingBounds,
             bool checkState, ButtonTriState hoverState)
         {
-            D2D1Brush? backBrush = UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(brushes),
+            ref D2D1Brush? brushesRef = ref UnsafeHelper.GetArrayDataReference(brushes);
+            D2D1Brush? backBrush = UnsafeHelper.AddTypedOffset(ref brushesRef,
                 MathHelper.BooleanToNativeUnsigned(checkState) * (nuint)Brush.BorderCheckedBrush + (nuint)hoverState);
             if (backBrush is null)
                 return;
@@ -234,7 +235,7 @@ namespace ConcreteUI.Controls
             {
                 RectF bounds = clipContext.Bounds;
                 clipContext.FillRectangle(bounds, backBrush);
-                D2D1Brush? markBrush = brushes[(int)Brush.MarkBrush];
+                D2D1Brush? markBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MarkBrush);
                 if (markBrush is null)
                     return;
                 FontIconResources.Instance.DrawCheckMark(clipContext, new RectangleF(PointF.Empty, clipContext.Size), markBrush);
