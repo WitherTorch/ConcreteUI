@@ -132,12 +132,21 @@ namespace ConcreteUI.Controls
             Update();
         }
 
-        protected override Rect OnContentBoundsChanging(in Rect bounds)
+        protected override void OnContentBoundsChanging(ref Rectangle bounds)
         {
             if (bounds.Width < UIConstants.ElementMargin || bounds.Height < UIConstants.ElementMargin)
-                return default;
-            return new Rect(bounds.Left + UIConstants.ElementMarginHalf, bounds.Top + UIConstants.ElementMarginHalf,
-                bounds.Right - UIConstants.ElementMarginHalf, bounds.Bottom - UIConstants.ElementMarginHalf);
+            {
+                Point location = Location;
+                bounds = new Rectangle(location.X + UIConstants.ElementMarginHalf, location.Y + UIConstants.ElementMarginHalf, 0, 0);
+                return;
+            }
+            else
+            {
+                Point location = bounds.Location;
+                Size size = bounds.Size;
+                bounds = new Rectangle(bounds.X + UIConstants.ElementMarginHalf, bounds.Y + UIConstants.ElementMarginHalf,
+                    bounds.Width - UIConstants.ElementMargin, bounds.Height - UIConstants.ElementMargin);
+            }
         }
 
         private static GraphemeInfo CreateGraphemeInfoForString(string str)
@@ -273,7 +282,7 @@ namespace ConcreteUI.Controls
         }
 
         private void SetRenderingProperties(DWriteTextLayout layout)
-            => SetRenderingProperties(layout, ContentBounds.Size, Renderer.GetPixelsPerPoint(), _multiLine);
+            => SetRenderingProperties(layout, ContentSize, Renderer.GetPixelsPerPoint(), _multiLine);
 
         [Inline(InlineBehavior.Remove)]
         private void SetRenderingProperties(DWriteTextLayout layout, SizeF size, Vector2 pointsPerPixel, bool multiLine)
@@ -303,7 +312,7 @@ namespace ConcreteUI.Controls
         private void CalculateCurrentViewportPoint()
         {
             using DWriteTextLayout layout = CreateVirtualTextLayout();
-            Rect bounds = ContentBounds;
+            Size size = ContentSize;
             DWriteTextRange compositionRange = _compositionRange;
             bool inComposition = compositionRange.Length > 0;
             int visualCaretIndex = _caretIndex;
@@ -317,8 +326,8 @@ namespace ConcreteUI.Controls
             float viewportX = caretX - viewportPoint.X;
             float viewportY = caretY - viewportPoint.Y;
             #region 伸縮機制
-            float edgeX = bounds.Width;
-            float edgeY = bounds.Height;
+            float edgeX = size.Width;
+            float edgeY = size.Height;
             #region X方向伸縮
             if (viewportX < 0)
                 viewportPoint.X += viewportX;
@@ -501,7 +510,7 @@ namespace ConcreteUI.Controls
 
             if (_multiLine)
             {
-                float contentWidth = ContentBounds.Width;
+                float contentWidth = ContentSize.Width;
                 if (contentWidth > 0f)
                 {
                     using DWriteTextLayout layout = CreateVirtualTextLayout(text);
@@ -595,7 +604,7 @@ namespace ConcreteUI.Controls
                     MouseNotifyEventHandler? eventHandlers = RequestContextMenu;
                     if (eventHandlers is not null)
                     {
-                        Point location = ContentBounds.Location;
+                        Point location = ContentLocation;
                         Point viewportPoint = ViewportPoint;
                         Point layoutPoint = new Point(location.X - viewportPoint.X, location.Y - viewportPoint.Y);
                         using (DWriteTextLayout layout = CreateVirtualTextLayout())
@@ -1173,9 +1182,9 @@ namespace ConcreteUI.Controls
         private int GetCaretIndexFromPoint(PointF point, out bool isInside)
         {
             PointF viewportPoint = ViewportPoint;
-            Rect bounds = ContentBounds;
-            float viewportLeft = bounds.X + UIConstants.ElementMarginHalf - viewportPoint.X;
-            float viewportTop = bounds.Y + UIConstants.ElementMarginHalf - viewportPoint.Y;
+            Point location = ContentLocation;
+            float viewportLeft = location.X + UIConstants.ElementMarginHalf - viewportPoint.X;
+            float viewportTop = location.Y + UIConstants.ElementMarginHalf - viewportPoint.Y;
             string text = _text;
             using DWriteTextLayout layout = CreateVirtualTextLayout(text);
             int result = MathHelper.MakeSigned(layout.HitTestPoint(point.X - viewportLeft, point.Y - viewportTop, out bool isTrailingHit, out isInside).TextPosition);
@@ -1186,12 +1195,12 @@ namespace ConcreteUI.Controls
 
         private PointF GetPointFromCaretIndex(int caretIndex, bool isTrailingHit, out DWriteHitTestMetrics metrics)
         {
-            Rect contentBounds = ContentBounds;
+            Point contentLocation = ContentLocation;
             PointF viewportPoint = ViewportPoint;
             string text = _text;
             using DWriteTextLayout layout = CreateVirtualTextLayout(text);
             metrics = layout.HitTestTextPosition((uint)MathHelper.Clamp(0, caretIndex, MathHelper.Max(text.Length, 0)), isTrailingHit, out float x, out float y);
-            return new PointF(x - viewportPoint.X + contentBounds.X, y - viewportPoint.Y + contentBounds.Y);
+            return new PointF(x - viewportPoint.X + contentLocation.X, y - viewportPoint.Y + contentLocation.Y);
         }
 
         #region Mouse Events Handling
@@ -1318,7 +1327,7 @@ namespace ConcreteUI.Controls
         {
             base.OnMouseMoveGlobally(args);
             PointF location = args.Location;
-            Rect bounds = ContentBounds;
+            Point contentLocation = ContentLocation;
             if (_drag)
             {
                 string text = _text;
@@ -1327,7 +1336,7 @@ namespace ConcreteUI.Controls
                 if (!_multiLine)
                 {
                     using DWriteTextLayout layout = CreateVirtualTextLayout(text);
-                    location.Y = bounds.Y + UIConstants.ElementMarginHalf + layout.GetMetrics().Top;
+                    location.Y = contentLocation.Y + UIConstants.ElementMarginHalf + layout.GetMetrics().Top;
                 }
                 int newCaretIndex = GetCaretIndexFromPoint(location, out _);
                 if (_caretIndex != newCaretIndex)
@@ -1350,7 +1359,7 @@ namespace ConcreteUI.Controls
             if (!Enabled || !args.Buttons.HasFlagFast(MouseButtons.RightButton))
                 return;
             MouseNotifyEventHandler? eventHandler = RequestContextMenu;
-            if (eventHandler is null || !args.IsInSpecificSize(ContentBounds.Size))
+            if (eventHandler is null || !args.IsInSpecificSize(ContentSize))
                 return;
             eventHandler.Invoke(this, in args);
         }

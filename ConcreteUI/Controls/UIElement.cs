@@ -1,10 +1,10 @@
 using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
+using ConcreteUI.Internals;
 using ConcreteUI.Layout;
 using ConcreteUI.Layout.Internals;
 using ConcreteUI.Theme;
@@ -13,7 +13,6 @@ using ConcreteUI.Window;
 
 using InlineMethod;
 
-using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Threading;
@@ -267,7 +266,7 @@ namespace ConcreteUI.Controls
             ref readonly nuint versionRef = ref _boundsVersion;
             ulong val = OptimisticLock.EnterWithPrimitive(in valRef, in versionRef, out nuint version);
             while (!OptimisticLock.TryLeaveWithPrimitive(in valRef, in versionRef, ref val, ref version)) ;
-            return ConvertUInt64ToPoint(in val);
+            return BoundsHelper.ConvertUInt64ToPoint(in val);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -283,7 +282,7 @@ namespace ConcreteUI.Controls
         [Inline(InlineBehavior.Remove)]
         private bool SetLocationCore_Pure(in Point value)
         {
-            ulong val = ConvertPointToUInt64(value);
+            ulong val = BoundsHelper.ConvertPointToUInt64(value);
             return InterlockedHelper.Exchange(ref _location, val) != val;
         }
 
@@ -294,7 +293,7 @@ namespace ConcreteUI.Controls
             ref readonly nuint versionRef = ref _boundsVersion;
             ulong val = OptimisticLock.EnterWithPrimitive(in valRef, in versionRef, out nuint version);
             while (!OptimisticLock.TryLeaveWithPrimitive(in valRef, in versionRef, ref val, ref version)) ;
-            return ConvertUInt64ToSize(in val);
+            return BoundsHelper.ConvertUInt64ToSize(in val);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -310,20 +309,8 @@ namespace ConcreteUI.Controls
         [Inline(InlineBehavior.Remove)]
         private bool SetSizeCore_Pure(in Size value)
         {
-            ulong val = ConvertSizeToUInt64(value);
+            ulong val = BoundsHelper.ConvertSizeToUInt64(value);
             return InterlockedHelper.Exchange(ref _size, val) != val;
         }
-
-        [Inline(InlineBehavior.Remove)]
-        private static ref readonly ulong ConvertPointToUInt64(in Point value) => ref UnsafeHelper.As<Point, ulong>(ref UnsafeHelper.AsRefIn(in value));
-
-        [Inline(InlineBehavior.Remove)]
-        private static ref readonly ulong ConvertSizeToUInt64(in Size value) => ref UnsafeHelper.As<Size, ulong>(ref UnsafeHelper.AsRefIn(in value));
-
-        [Inline(InlineBehavior.Remove)]
-        private static ref readonly Point ConvertUInt64ToPoint(in ulong value) => ref UnsafeHelper.As<ulong, Point>(ref UnsafeHelper.AsRefIn(in value));
-
-        [Inline(InlineBehavior.Remove)]
-        private static ref readonly Size ConvertUInt64ToSize(in ulong value) => ref UnsafeHelper.As<ulong, Size>(ref UnsafeHelper.AsRefIn(in value));
     }
 }

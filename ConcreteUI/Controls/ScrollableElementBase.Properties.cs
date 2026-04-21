@@ -1,9 +1,10 @@
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
-using WitherTorch.Common.Extensions;
+using ConcreteUI.Internals;
+
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Structures;
+using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Controls
 {
@@ -56,13 +57,24 @@ namespace ConcreteUI.Controls
         protected Size SurfaceSize
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _surfaceSize;
+            get
+            {
+                Size result;
+                ref readonly nuint versionRef = ref _surfaceSizeVersion;
+                nuint version = OptimisticLock.Enter(in versionRef);
+                do
+                {
+                    result = BoundsHelper.ConvertUInt64ToSize(in _surfaceSizeRaw);
+                } while (!OptimisticLock.TryLeave(in versionRef, ref version));
+                return result;
+            }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                if (_surfaceSize == value)
+                ulong castedValue = BoundsHelper.ConvertSizeToUInt64(value);
+                if (InterlockedHelper.Exchange(ref _surfaceSizeRaw, castedValue) == castedValue)
                     return;
-                _surfaceSize = value;
+                OptimisticLock.Increase(ref _surfaceSizeVersion);
                 Update(ScrollableElementUpdateFlags.RecalcLayout);
             }
         }
@@ -70,41 +82,76 @@ namespace ConcreteUI.Controls
         public Point ViewportPoint
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _viewportPoint;
+            get
+            {
+                Point result;
+                ref readonly nuint versionRef = ref _viewportPointVersion;
+                nuint version = OptimisticLock.Enter(in versionRef);
+                do
+                {
+                    result = BoundsHelper.ConvertUInt64ToPoint(in _viewportPointRaw);
+                } while (!OptimisticLock.TryLeave(in versionRef, ref version));
+                return result;
+            }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             protected set
             {
-                if (_viewportPoint == value)
+                ulong castedValue = BoundsHelper.ConvertPointToUInt64(value);
+                if (InterlockedHelper.Exchange(ref _viewportPointRaw, castedValue) == castedValue)
                     return;
-                Size surfaceSize = _surfaceSize;
-                Rect bounds = _contentBounds;
-                if (value.X < 0)
-                    value.X = 0;
-                else
-                {
-                    int maxX = MathHelper.Max(surfaceSize.Width - bounds.Width, 0);
-                    if (value.X > maxX)
-                        value.X = maxX;
-                }
-                if (value.Y < 0)
-                    value.Y = 0;
-                else
-                {
-                    int maxY = MathHelper.Max(surfaceSize.Height - bounds.Height, 0);
-                    if (value.Y > maxY)
-                        value.Y = maxY;
-                }
-                if (_viewportPoint == value)
-                    return;
-                _viewportPoint = value;
+                OptimisticLock.Increase(ref _viewportPointVersion);
                 Update(ScrollableElementUpdateFlags.RecalcScrollBar | ScrollableElementUpdateFlags.TriggerViewportPointChanged | ScrollableElementUpdateFlags.All);
             }
         }
 
-        protected Rect ContentBounds
+        protected Rectangle ContentBounds
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _contentBounds;
+            get
+            {
+                Point contentLocation;
+                Size contentSize;
+                ref readonly nuint versionRef = ref _contentBoundsVersion;
+                nuint version = OptimisticLock.Enter(in versionRef);
+                do
+                {
+                    contentLocation = BoundsHelper.ConvertUInt64ToPoint(in _contentLocationRaw);
+                    contentSize = BoundsHelper.ConvertUInt64ToSize(in _contentSizeRaw);
+                } while (!OptimisticLock.TryLeave(in versionRef, ref version));
+                return new Rectangle(contentLocation, contentSize);
+            }
+        }
+
+        protected Point ContentLocation
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                Point contentLocation;
+                ref readonly nuint versionRef = ref _contentBoundsVersion;
+                nuint version = OptimisticLock.Enter(in versionRef);
+                do
+                {
+                    contentLocation = BoundsHelper.ConvertUInt64ToPoint(in _contentLocationRaw);
+                } while (!OptimisticLock.TryLeave(in versionRef, ref version));
+                return contentLocation;
+            }
+        }
+
+        protected Size ContentSize
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                Size contentSize;
+                ref readonly nuint versionRef = ref _contentBoundsVersion;
+                nuint version = OptimisticLock.Enter(in versionRef);
+                do
+                {
+                    contentSize = BoundsHelper.ConvertUInt64ToSize(in _contentSizeRaw);
+                } while (!OptimisticLock.TryLeave(in versionRef, ref version));
+                return contentSize;
+            }
         }
 
         protected bool StickBottom

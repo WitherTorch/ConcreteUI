@@ -290,7 +290,7 @@ namespace ConcreteUI.Controls
         protected override void OnMouseMove(in MouseEventArgs args)
         {
             base.OnMouseMove(args);
-            if (!args.IsInSpecificSize(ContentBounds.Size))
+            if (!args.IsInSpecificSize(ContentSize))
             {
                 if (_buttonState != ButtonTriState.None)
                 {
@@ -338,7 +338,7 @@ namespace ConcreteUI.Controls
             ListBoxMode mode = Mode;
             if (mode == ListBoxMode.None || _buttonState != ButtonTriState.Pressed)
                 return;
-            if (args.IsInSpecificSize(ContentBounds.Size))
+            if (args.IsInSpecificSize(ContentSize))
                 _buttonState = ButtonTriState.Hovered;
             else
                 _buttonState = ButtonTriState.None;

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 
 using ConcreteUI.Graphics;
@@ -104,9 +103,9 @@ namespace ConcreteUI.Controls
                 ignoreNeedRefresh = true;
             }
 
-            Rect bounds = ContentBounds;
+            Size size = ContentSize;
             int viewportY = MathHelper.Max(ViewportPoint.Y, 0);
-            int renderLeft = 0, renderRight = bounds.Width, boundsHeight = bounds.Height;
+            int renderLeft = 0, renderRight = size.Width, boundsHeight = size.Height;
 
             (TItem item, int itemTop, int itemHeight)[] array; int count;
             ArrayPool<(TItem item, int itemTop, int itemHeight)> pool = ArrayPool<(TItem item, int itemTop, int itemHeight)>.Shared;

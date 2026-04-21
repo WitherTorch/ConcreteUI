@@ -7,7 +7,6 @@ using ConcreteUI.Layout;
 using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls
 {
@@ -110,13 +109,13 @@ namespace ConcreteUI.Controls
                 string text = _text;
                 if (value)
                 {
-                    Rect bounds = ContentBounds;
-                    if (!bounds.IsValid)
+                    Size size = ContentSize;
+                    if (size.Width <= 0 || size.Height <= 0)
                         SurfaceSize = Size.Empty;
                     else
                     {
                         using DWriteTextLayout layout = CreateVirtualTextLayout(text);
-                        layout.MaxWidth = bounds.Width;
+                        layout.MaxWidth = size.Width;
 
                         SurfaceSize = new Size(0, MathI.Ceiling(layout.GetMetrics().Height) + UIConstants.ElementMargin);
                     }

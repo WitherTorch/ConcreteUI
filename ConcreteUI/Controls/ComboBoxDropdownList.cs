@@ -207,7 +207,7 @@ namespace ConcreteUI.Controls
                 return;
             args.Handle();
             _isClicking = true;
-            _isClickingClient = args.IsInSpecificSize(ContentBounds.Size);
+            _isClickingClient = args.IsInSpecificSize(ContentSize);
         }
 
         protected override void OnMouseUp(in MouseEventArgs args)
@@ -220,7 +220,7 @@ namespace ConcreteUI.Controls
         protected override void OnMouseMove(in MouseEventArgs args)
         {
             base.OnMouseMove(args);
-            if (args.IsInSpecificSize(ContentBounds.Size) && (!_isClicking || _isClickingClient))
+            if (args.IsInSpecificSize(ContentSize) && (!_isClicking || _isClickingClient))
             {
                 float y = args.Y + ViewportPoint.Y;
                 int hoverIndex = MathI.Floor(y / _itemHeight);

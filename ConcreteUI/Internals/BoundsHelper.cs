@@ -112,5 +112,17 @@ namespace ConcreteUI.Internals
             IL.Emit.Call(MethodRef.Operator(typeof(Rect), ConversionOperator.Implicit, ConversionDirection.From, typeof(Rectangle)));
             return IL.Return<Rect>();
         }
+
+        [Inline(InlineBehavior.Remove)]
+        public static ref readonly ulong ConvertPointToUInt64(in Point value) => ref UnsafeHelper.As<Point, ulong>(ref UnsafeHelper.AsRefIn(in value));
+
+        [Inline(InlineBehavior.Remove)]
+        public static ref readonly ulong ConvertSizeToUInt64(in Size value) => ref UnsafeHelper.As<Size, ulong>(ref UnsafeHelper.AsRefIn(in value));
+
+        [Inline(InlineBehavior.Remove)]
+        public static ref readonly Point ConvertUInt64ToPoint(in ulong value) => ref UnsafeHelper.As<ulong, Point>(ref UnsafeHelper.AsRefIn(in value));
+
+        [Inline(InlineBehavior.Remove)]
+        public static ref readonly Size ConvertUInt64ToSize(in ulong value) => ref UnsafeHelper.As<ulong, Size>(ref UnsafeHelper.AsRefIn(in value));
     }
 }
