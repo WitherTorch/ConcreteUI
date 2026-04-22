@@ -49,6 +49,17 @@ namespace ConcreteUI.Graphics.Helpers
             return new RectF(left, top, right, bottom);
         }
 
+        public static RectF FloorInPixel(in Rectangle valueInPoints, Vector2 pixelsPerPoint)
+        {
+            if (pixelsPerPoint == Vector2.One)
+                return (RectF)valueInPoints;
+            float left = FloorInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
+            float top = FloorInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
+            float right = FloorInPixelCore(left + valueInPoints.Width, pixelsPerPoint.X);
+            float bottom = FloorInPixelCore(top + valueInPoints.Height, pixelsPerPoint.Y);
+            return new RectF(left, top, right, bottom);
+        }
+
         public static RectF FloorInPixel(in RectF valueInPoints, Vector2 pixelsPerPoint)
         {
             if (pixelsPerPoint == Vector2.One)
@@ -57,6 +68,17 @@ namespace ConcreteUI.Graphics.Helpers
             float top = FloorInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
             float right = FloorInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pixelsPerPoint.X);
             float bottom = FloorInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pixelsPerPoint.Y);
+            return new RectF(left, top, right, bottom);
+        }
+
+        public static RectF FloorInPixel(in RectangleF valueInPoints, Vector2 pixelsPerPoint)
+        {
+            if (pixelsPerPoint == Vector2.One)
+                return valueInPoints;
+            float left = FloorInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
+            float top = FloorInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
+            float right = FloorInPixelCore(left + valueInPoints.Width, pixelsPerPoint.X);
+            float bottom = FloorInPixelCore(top + valueInPoints.Height, pixelsPerPoint.Y);
             return new RectF(left, top, right, bottom);
         }
 
@@ -96,6 +118,17 @@ namespace ConcreteUI.Graphics.Helpers
             return new RectF(left, top, right, bottom);
         }
 
+        public static RectF CeilingInPixel(in Rectangle valueInPoints, Vector2 pixelsPerPoint)
+        {
+            if (pixelsPerPoint == Vector2.One)
+                return (RectF)valueInPoints;
+            float left = CeilingInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
+            float top = CeilingInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
+            float right = CeilingInPixelCore(left + valueInPoints.Width, pixelsPerPoint.X);
+            float bottom = CeilingInPixelCore(top + valueInPoints.Height, pixelsPerPoint.Y);
+            return new RectF(left, top, right, bottom);
+        }
+
         public static RectF CeilingInPixel(in RectF valueInPoints, Vector2 pixelsPerPoint)
         {
             if (pixelsPerPoint == Vector2.One)
@@ -104,6 +137,17 @@ namespace ConcreteUI.Graphics.Helpers
             float top = CeilingInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
             float right = CeilingInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pixelsPerPoint.X);
             float bottom = CeilingInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pixelsPerPoint.Y);
+            return new RectF(left, top, right, bottom);
+        }
+
+        public static RectF CeilingInPixel(in RectangleF valueInPoints, Vector2 pixelsPerPoint)
+        {
+            if (pixelsPerPoint == Vector2.One)
+                return valueInPoints;
+            float left = CeilingInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
+            float top = CeilingInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
+            float right = CeilingInPixelCore(left + valueInPoints.Width, pixelsPerPoint.X);
+            float bottom = CeilingInPixelCore(top + valueInPoints.Height, pixelsPerPoint.Y);
             return new RectF(left, top, right, bottom);
         }
 
@@ -143,6 +187,17 @@ namespace ConcreteUI.Graphics.Helpers
             return new RectF(left, top, right, bottom);
         }
 
+        public static RectF RoundInPixel(in Rectangle valueInPoints, Vector2 pixelsPerPoint)
+        {
+            if (pixelsPerPoint == Vector2.One)
+                return (RectF)valueInPoints;
+            float left = RoundInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
+            float top = RoundInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
+            float right = RoundInPixelCore(left + valueInPoints.Width, pixelsPerPoint.X);
+            float bottom = RoundInPixelCore(top + valueInPoints.Height, pixelsPerPoint.Y);
+            return new RectF(left, top, right, bottom);
+        }
+
         public static RectF RoundInPixel(in RectF valueInPoints, Vector2 pixelsPerPoint)
         {
             if (pixelsPerPoint == Vector2.One)
@@ -154,16 +209,27 @@ namespace ConcreteUI.Graphics.Helpers
             return new RectF(left, top, right, bottom);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float FloorInPixelCore(float  valueInPoints, float pixelsPerPoint)
-            => MathF.Floor(valueInPoints / pixelsPerPoint) * pixelsPerPoint;
+        public static RectF RoundInPixel(in RectangleF valueInPoints, Vector2 pixelsPerPoint)
+        {
+            if (pixelsPerPoint == Vector2.One)
+                return valueInPoints;
+            float left = RoundInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
+            float top = RoundInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
+            float right = RoundInPixelCore(left + valueInPoints.Width, pixelsPerPoint.X);
+            float bottom = RoundInPixelCore(top + valueInPoints.Height, pixelsPerPoint.Y);
+            return new RectF(left, top, right, bottom);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float CeilingInPixelCore(float  valueInPoints, float pixelsPerPoint)
-            => MathF.Ceiling(valueInPoints / pixelsPerPoint) * pixelsPerPoint;
+        private static float FloorInPixelCore(float valueInPoints, float pixelsPerPoint)
+            => MathF.Floor(valueInPoints * pixelsPerPoint) / pixelsPerPoint;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float RoundInPixelCore(float  valueInPoints, float pixelsPerPoint)
-            => MathF.Round(valueInPoints / pixelsPerPoint, MidpointRounding.AwayFromZero) * pixelsPerPoint;
+        private static float CeilingInPixelCore(float valueInPoints, float pixelsPerPoint)
+            => MathF.Ceiling(valueInPoints * pixelsPerPoint) / pixelsPerPoint;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float RoundInPixelCore(float valueInPoints, float pixelsPerPoint)
+            => MathF.Round(valueInPoints * pixelsPerPoint, MidpointRounding.AwayFromZero) / pixelsPerPoint;
     }
 }

@@ -1,13 +1,13 @@
 using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
@@ -16,7 +16,6 @@ namespace ConcreteUI.Utils
     public sealed class FontIcon : IDisposable
     {
         private readonly DWriteTextLayout _layout;
-        private readonly SemaphoreSlim _semaphore;
         private readonly SizeF _size, _offset;
 
         private bool _disposed;
@@ -32,7 +31,6 @@ namespace ConcreteUI.Utils
         public FontIcon(string fontName, DWriteFontWeight fontWeight, DWriteFontStyle fontStyle, uint unicodeValue, SizeF size)
         {
             _layout = CreateLayoutFitInSize(fontName, fontWeight, fontStyle, unicodeValue, size, out _offset);
-            _semaphore = new SemaphoreSlim(1, 1);
             _size = size;
         }
 
@@ -83,53 +81,57 @@ namespace ConcreteUI.Utils
             throw new InvalidOperationException();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Render(D2D1DeviceContext context, PointF location, D2D1Brush brush)
-            => Render(context, new RectangleF(location, _size), brush);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Render(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush)
+        public void Render(D2D1DeviceContext context, PointF location, D2D1Brush brush, D2D1DrawTextOptions options = D2D1DrawTextOptions.None)
         {
             using ClearTypeScope scope = ClearTypeScope.Enter(context, enable: false);
 
-            SemaphoreSlim semaphore = _semaphore;
             DWriteTextLayout layout = _layout;
 
-            semaphore.Wait();
-            try
+            lock (layout)
             {
-                layout.MaxHeight = rect.Height;
-                layout.MaxWidth = rect.Width;
-                context.DrawTextLayout(PointF.Subtract(rect.Location, _offset), layout, brush, D2D1DrawTextOptions.NoSnap);
-            }
-            finally
-            {
-                semaphore.Release();
+                (layout.MaxWidth, layout.MaxHeight) = _size;
+                context.DrawTextLayout(PointF.Subtract(location, _offset), layout, brush, options);
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Render(in RegionalRenderingContext context, PointF location, D2D1Brush brush)
-            => Render(context, new RectangleF(location, _size), brush);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Render(in RegionalRenderingContext context, in RectangleF rect, D2D1Brush brush)
+        public void Render(D2D1DeviceContext context, in RectangleF rect, D2D1Brush brush, D2D1DrawTextOptions options = D2D1DrawTextOptions.None)
         {
-            using ClearTypeScope scope = ClearTypeScope.Enter(in context, enable: false);
+            using ClearTypeScope scope = ClearTypeScope.Enter(context, enable: false);
 
-            SemaphoreSlim semaphore = _semaphore;
             DWriteTextLayout layout = _layout;
 
-            semaphore.Wait();
-            try
+            lock (layout)
             {
                 layout.MaxHeight = rect.Height;
                 layout.MaxWidth = rect.Width;
-                context.DrawTextLayout(PointF.Subtract(rect.Location, _offset), layout, brush, D2D1DrawTextOptions.NoSnap);
+                context.DrawTextLayout(PointF.Subtract(rect.Location, _offset), layout, brush, options);
             }
-            finally
+        }
+
+        public void Render(in RegionalRenderingContext context, PointF location, D2D1Brush brush, D2D1DrawTextOptions options = D2D1DrawTextOptions.None)
+        {
+            using ClearTypeScope scope = ClearTypeScope.Enter(in context, enable: false);
+
+            DWriteTextLayout layout = _layout;
+
+            lock (layout)
             {
-                semaphore.Release();
+                (layout.MaxWidth, layout.MaxHeight) = _size;
+                context.DrawTextLayout(PointF.Subtract(location, _offset), layout, brush, options);
+            }
+        }
+
+        public void Render(in RegionalRenderingContext context, in RectangleF rect, D2D1Brush brush, D2D1DrawTextOptions options = D2D1DrawTextOptions.None)
+        {
+            using ClearTypeScope scope = ClearTypeScope.Enter(in context, enable: false);
+
+            DWriteTextLayout layout = _layout;
+
+            lock (layout)
+            {
+                layout.MaxHeight = rect.Height;
+                layout.MaxWidth = rect.Width;
+                context.DrawTextLayout(PointF.Subtract(rect.Location, _offset), layout, brush, options);
             }
         }
 

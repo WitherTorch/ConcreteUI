@@ -98,7 +98,8 @@ namespace ConcreteUI.Window
         private nuint _ownedGDP, _recreateGraphicsDeviceProviderBarrier;
 
         protected D2D1ColorF _clearDCColor, _windowBaseColor;
-        protected Rect _minRect, _maxRect, _closeRect, _pageRect, _titleBarRect;
+        protected Rectangle _minRect, _maxRect, _closeRect;
+        protected Rect _pageRect, _titleBarRect;
         protected BitVector64 _titleBarButtonStatus, _titleBarButtonChangedStatus;
         protected int _drawingOffsetX, _drawingOffsetY, _activeBorderWidth;
         #endregion
@@ -625,9 +626,9 @@ namespace ConcreteUI.Window
                 _drawingOffsetX = drawingOffsetX;
                 _drawingOffsetY = drawingOffsetY;
                 int x = windowSize.Width - 1 - drawingOffsetX, y = drawingOffsetY;
-                _closeRect = Rect.FromXYWH(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
-                _maxRect = Rect.FromXYWH(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
-                _minRect = Rect.FromXYWH(x - UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
+                _closeRect = new Rectangle(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
+                _maxRect = new Rectangle(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
+                _minRect = new Rectangle(x - UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
                 Rect titleBarRect = _titleBarRect = Rect.FromXYWH(drawingOffsetX + 1, drawingOffsetY + 1, Size.Width - 2, 26);
                 _pageRect = new Rect(
                     left: drawingOffsetX + activeBorderWidth,
@@ -780,7 +781,8 @@ namespace ConcreteUI.Window
                 {
                     RectF titleBarRect = RenderingHelper.RoundInPixel(_titleBarRect, pixelsPerPoint);
                     deviceContext.PushAxisAlignedClip(titleBarRect, D2D1AntialiasMode.Aliased);
-                    deviceContext.DrawTextLayout(new PointF(_drawingOffsetX + 7.5f, _drawingOffsetY + 1.5f), titleLayout, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeBrush));
+                    deviceContext.DrawTextLayout(new PointF(_drawingOffsetX + 7.5f, _drawingOffsetY + 1.5f), 
+                        titleLayout, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeBrush));
                     deviceContext.PopAxisAlignedClip();
                 }
                 DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);

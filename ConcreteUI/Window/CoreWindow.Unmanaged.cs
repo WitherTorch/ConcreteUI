@@ -716,9 +716,9 @@ namespace ConcreteUI.Window
             int clientY = MathI.Truncate(clientPoint.Y);
             int activeBorderWidth = _activeBorderWidth;
             int titleRightLoc;
-            Rect minRect = _minRect;
-            Rect maxRect = _maxRect;
-            Rect closeRect = _closeRect;
+            Rectangle minRect = _minRect;
+            Rectangle maxRect = _maxRect;
+            Rectangle closeRect = _closeRect;
             if (hasMinimum)
                 titleRightLoc = minRect.X;
             else if (hasMaximum)
