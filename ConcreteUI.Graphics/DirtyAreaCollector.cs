@@ -179,33 +179,35 @@ namespace ConcreteUI.Graphics
             (float pointsPerPixelX, float pointsPerPixelY) = pointsPerPixel;
             for (; length >= 4; length -= 4, ptr += 4)
             {
-                UnsafeHelper.WriteUnaligned(ptr, ScaleRect(ptr[0], pointsPerPixelX, pointsPerPixelY));
-                UnsafeHelper.WriteUnaligned(ptr + 1, ScaleRect(ptr[1], pointsPerPixelX, pointsPerPixelY));
-                UnsafeHelper.WriteUnaligned(ptr + 2, ScaleRect(ptr[2], pointsPerPixelX, pointsPerPixelY));
-                UnsafeHelper.WriteUnaligned(ptr + 3, ScaleRect(ptr[3], pointsPerPixelX, pointsPerPixelY));
+                ScaleRectAndStore(ptr, pointsPerPixelX, pointsPerPixelY);
+                ScaleRectAndStore(ptr + 1, pointsPerPixelX, pointsPerPixelY);
+                ScaleRectAndStore(ptr + 2, pointsPerPixelX, pointsPerPixelY);
+                ScaleRectAndStore(ptr + 3, pointsPerPixelX, pointsPerPixelY);
             }
             RectF* ptrEnd = ptr + length;
             if (ptr >= ptrEnd)
                 return;
-            UnsafeHelper.WriteUnaligned(ptr, ScaleRect(*ptr, pointsPerPixelX, pointsPerPixelY));
+            ScaleRectAndStore(ptr, pointsPerPixelX, pointsPerPixelY);
             ptr++;
             if (ptr >= ptrEnd)
                 return;
-            UnsafeHelper.WriteUnaligned(ptr, ScaleRect(*ptr, pointsPerPixelX, pointsPerPixelY));
+            ScaleRectAndStore(ptr, pointsPerPixelX, pointsPerPixelY);
             ptr++;
             if (ptr >= ptrEnd)
                 return;
-            UnsafeHelper.WriteUnaligned(ptr, ScaleRect(*ptr, pointsPerPixelX, pointsPerPixelY));
+            ScaleRectAndStore(ptr, pointsPerPixelX, pointsPerPixelY);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static Rect ScaleRect(RectF rect, float pointsPerPixelX, float pointsPerPixelY)
+            static void ScaleRectAndStore(RectF* ptr, float pointsPerPixelX, float pointsPerPixelY)
             {
-                return new Rect(
-                    left: MathI.Round(rect.Left * pointsPerPixelX, MidpointRounding.AwayFromZero),
-                    top: MathI.Round(rect.Top * pointsPerPixelY, MidpointRounding.AwayFromZero),
-                    right: MathI.Round(rect.Right * pointsPerPixelX, MidpointRounding.AwayFromZero),
-                    bottom: MathI.Round(rect.Bottom * pointsPerPixelY, MidpointRounding.AwayFromZero));
+                ScaleAndStore((float*)ptr, pointsPerPixelX);
+                ScaleAndStore(((float*)ptr) + 1, pointsPerPixelY);
+                ScaleAndStore(((float*)ptr) + 2, pointsPerPixelX);
+                ScaleAndStore(((float*)ptr) + 3, pointsPerPixelY);
             }
+
+            [Inline(InlineBehavior.Remove)]
+            static void ScaleAndStore(float* ptr, float pointsPerPixel) => *ptr = MathI.Round(*ptr * pointsPerPixel, MidpointRounding.AwayFromZero);
         }
     }
 }
