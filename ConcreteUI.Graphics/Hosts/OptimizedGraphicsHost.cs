@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.DXGI;
@@ -77,6 +78,19 @@ namespace ConcreteUI.Graphics.Hosts
             throw exception;
         }
 
+        protected override Exception? PresentCore()
+        {
+            DXGISwapChain swapChain = _swapChain;
+            if (BeforeNormalPresent(swapChain))
+                return null;
+            Exception? exception = GetExceptionHRForPresent(swapChain, PresentCore(swapChain, new DXGIPresentParameters()
+            {
+                DirtyRectsCount = 0,
+                pDirtyRects = null
+            }));
+            return exception;
+        }
+
         private Exception? PresentCore(in DXGIPresentParameters parameters)
         {
             DXGISwapChain swapChain = _swapChain;
@@ -88,7 +102,7 @@ namespace ConcreteUI.Graphics.Hosts
             return exception;
         }
 
-        [Inline(InlineBehavior.Remove)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int PresentCore(DXGISwapChain swapChain, in DXGIPresentParameters parameters)
         {
             if (swapChain is not DXGISwapChain1 swapChain1 || _switchToNormalSwapChain)
@@ -96,7 +110,11 @@ namespace ConcreteUI.Graphics.Hosts
             if (_forcePresentAll)
             {
                 _forcePresentAll = false;
-                return PresentCore(swapChain);
+                return swapChain1.TryPresent1(0, new DXGIPresentParameters()
+                {
+                    DirtyRectsCount = 0,
+                    pDirtyRects = null
+                });
             }
             return swapChain1.TryPresent1(0, parameters);
         }

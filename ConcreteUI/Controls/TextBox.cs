@@ -367,7 +367,7 @@ namespace ConcreteUI.Controls
             {
                 if (watermarkLayout is null)
                     return true;
-                SetRenderingProperties(watermarkLayout, renderSize, context.PointsPerPixel, _multiLine);
+                SetRenderingProperties(watermarkLayout, renderSize, context.PixelsPerPoint, _multiLine);
                 //文字為空，繪製浮水印
                 RenderLayoutCore(context,
                     UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.ForeInactiveBrush),
@@ -380,7 +380,7 @@ namespace ConcreteUI.Controls
                 return true;
             }
 
-            SetRenderingProperties(layout, renderSize, context.PointsPerPixel, _multiLine);
+            SetRenderingProperties(layout, renderSize, context.PixelsPerPoint, _multiLine);
             RenderLayout(context, focused, layout, RectF.FromXYWH(PointF.Empty, renderSize));
             DisposeHelper.NullSwapOrDispose(ref _layout, layout);
             if (watermarkLayout is not null)

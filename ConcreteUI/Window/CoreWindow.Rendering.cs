@@ -230,7 +230,7 @@ namespace ConcreteUI.Window
             _collector = new DirtyAreaCollector(host);
             if (parent is null)
                 host.DeviceRemoved += GraphicsHost_DeviceRemoved;
-            deviceContext = host.BeginDraw();
+            deviceContext = host.GetDeviceContext();
             if (deviceContext is null)
                 return false;
             (uint dpiX, uint dpiY) = Dpi;
@@ -681,7 +681,7 @@ namespace ConcreteUI.Window
                 Thread.MemoryBarrier();
                 RecalculateLayout(GraphicsUtils.ScalingSizeAndConvert(size, _pointsPerPixel), true);
             }
-            D2D1DeviceContext? deviceContext = host.GetDeviceContext();
+            D2D1DeviceContext? deviceContext = host.BeginDraw();
             if (deviceContext is null || deviceContext.IsDisposed)
                 return true;
 
@@ -699,13 +699,8 @@ namespace ConcreteUI.Window
             Rect pageRect = _pageRect;
             if (pageRect.IsValid)
                 RenderPage(deviceContext, collector, pageRect, force: true);
-            host.Flush();
+            host.EndDraw();
 
-            if (ConcreteSettings.UseDebugMode)
-            {
-                host.Present();
-                return true;
-            }
             return host.TryPresent();
         }
 
@@ -717,13 +712,8 @@ namespace ConcreteUI.Window
             Rect pageRect = _pageRect;
             if (pageRect.IsValid)
                 RenderPage(deviceContext, collector, pageRect, force: false);
-            host.Flush();
+            host.EndDraw();
 
-            if (ConcreteSettings.UseDebugMode)
-            {
-                collector.Present(pointsPerPixel);
-                return true;
-            }
             return collector.TryPresent(pointsPerPixel);
         }
 
@@ -1045,14 +1035,17 @@ namespace ConcreteUI.Window
                 {
                     if (overlayElementDict.TryRemove(type, out result))
                     {
-                        overlayElementList.Remove(result);
-                        _lastHitElementRefLazy.GetValueDirectly()?.Target = null;
-                        WeakReference? recordedRef = _recordedLastHitElementRefLazy.GetValueDirectly();
-                        if (recordedRef is not null)
+                        lock (overlayElementList)
                         {
-                            (object? recordedTarget, recordedRef.Target) = (recordedRef.Target, null);
-                            if (recordedTarget is UIElement recordedElement && recordedTarget is IMouseMoveHandler handler)
-                                handler.OnMouseMove(new MouseEventArgs(recordedElement.PointToLocal(PointToClient(MouseHelper.GetMousePosition()))));
+                            overlayElementList.Remove(result);
+                            _lastHitElementRefLazy.GetValueDirectly()?.Target = null;
+                            WeakReference? recordedRef = _recordedLastHitElementRefLazy.GetValueDirectly();
+                            if (recordedRef is not null)
+                            {
+                                (object? recordedTarget, recordedRef.Target) = (recordedRef.Target, null);
+                                if (recordedTarget is UIElement recordedElement && recordedTarget is IMouseMoveHandler handler)
+                                    handler.OnMouseMove(new MouseEventArgs(recordedElement.PointToLocal(PointToClient(MouseHelper.GetMousePosition()))));
+                            }
                         }
                     }
                     return result;
@@ -1066,37 +1059,42 @@ namespace ConcreteUI.Window
                 }
                 if (!overlayElementDict.TryGetValue(type, out result))
                 {
-                    IThemeResourceProvider? resourceProvider = _resourceProvider;
-                    if (resourceProvider is not null)
-                        element.ApplyTheme(resourceProvider);
+                    lock (overlayElementList)
+                    {
+                        IThemeResourceProvider? resourceProvider = _resourceProvider;
+                        if (resourceProvider is not null)
+                            element.ApplyTheme(resourceProvider);
 
-                    LayoutEngine layoutEngine = RentLayoutEngine();
-                    layoutEngine.RecalculateLayout((Rect)_pageRect, element);
-                    ReturnLayoutEngine(layoutEngine);
+                        LayoutEngine layoutEngine = RentLayoutEngine();
+                        layoutEngine.RecalculateLayout(_pageRect, element);
+                        ReturnLayoutEngine(layoutEngine);
 
-                    overlayElementDict.TryAdd(type, element);
-                    overlayElementList.Add(element);
-
+                        overlayElementDict.TryAdd(type, element);
+                        overlayElementList.Add(element);
+                    }
                     return null;
                 }
                 if (result is null || predicate is null || predicate.Invoke(result))
                 {
-                    IThemeResourceProvider? resourceProvider = _resourceProvider;
-                    if (resourceProvider is not null)
-                        element.ApplyTheme(resourceProvider);
+                    lock (overlayElementList)
+                    {
+                        IThemeResourceProvider? resourceProvider = _resourceProvider;
+                        if (resourceProvider is not null)
+                            element.ApplyTheme(resourceProvider);
 
-                    LayoutEngine layoutEngine = RentLayoutEngine();
-                    layoutEngine.RecalculateLayout((Rect)_pageRect, element);
-                    ReturnLayoutEngine(layoutEngine);
+                        LayoutEngine layoutEngine = RentLayoutEngine();
+                        layoutEngine.RecalculateLayout(_pageRect, element);
+                        ReturnLayoutEngine(layoutEngine);
 
-                    int index = result is null ? -1 : overlayElementList.IndexOf(result);
-                    overlayElementDict[type] = element;
-                    if (index > -1)
-                        overlayElementList[index] = element;
-                    else
-                        overlayElementList.Add(element);
+                        int index = result is null ? -1 : overlayElementList.IndexOf(result);
+                        overlayElementDict[type] = element;
+                        if (index > -1)
+                            overlayElementList[index] = element;
+                        else
+                            overlayElementList.Add(element);
 
-                    return result;
+                        return result;
+                    }
                 }
                 return null;
             }

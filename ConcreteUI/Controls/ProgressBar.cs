@@ -46,7 +46,7 @@ namespace ConcreteUI.Controls
             double percentage = _value / _maximium;
             RenderBackground(context, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BackBrush));
             context.FillRectangle(
-                new RectF(0, 0, RenderingHelper.RoundInPixel((float)(renderSize.Width * percentage), context.PointsPerPixel.X), renderSize.Height),
+                new RectF(0, 0, RenderingHelper.RoundInPixel((float)(renderSize.Width * percentage), context.PixelsPerPoint.X), renderSize.Height),
                 UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.ForeBrush));
             context.DrawBorder(UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BorderBrush));
             return true;

@@ -5,18 +5,19 @@ using System.Runtime.CompilerServices;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Graphics
 {
     partial class DirtyAreaCollector
     {
-        private static readonly Vector<int> _blendVector = CreateBlendVector();
+        private static readonly Vector<uint> CopySignMaskVector = new Vector<uint>(0x80000000);
+        private static readonly Vector<float> RoundVector = new Vector<float>(0.49999997f);
 
         private static unsafe partial void VectorizedScaleRects(float* ptr, nuint length, Vector2 pointsPerPixel)
         {
             (float pointsPerPixelX, float pointsPerPixelY) = pointsPerPixel;
             Vector<float> multiplierVector = CreatePointVector(pointsPerPixelX, pointsPerPixelY);
-            Vector<int> blendVector = _blendVector;
 
             nuint headRemainder = (nuint)ptr % UnsafeHelper.SizeOf<Vector<float>>();
             if (headRemainder == 0)
@@ -24,14 +25,7 @@ namespace ConcreteUI.Graphics
             else
             {
                 Vector<float> sourceVector = UnsafeHelper.ReadUnaligned<Vector<float>>(ptr) * multiplierVector;
-                Vector<int> resultVector = Vector.ConvertToInt32(sourceVector);
-                Vector<float> resultVectorAsFloat = Vector.ConvertToSingle(resultVector);
-                resultVector += Vector.ConditionalSelect(
-                        condition: blendVector,
-                        left: Vector.LessThan(sourceVector, resultVectorAsFloat),
-                        right: -Vector.GreaterThan(sourceVector, resultVectorAsFloat)
-                        );
-                UnsafeHelper.WriteUnaligned(ptr, resultVector);
+                UnsafeHelper.WriteUnaligned(ptr, Round(sourceVector));
                 if (length > (nuint)Vector<float>.Count * 2)
                 {
                     headRemainder = (UnsafeHelper.SizeOf<Vector<float>>() - headRemainder) / UnsafeHelper.SizeOf<float>(); // 取得數量
@@ -51,14 +45,7 @@ namespace ConcreteUI.Graphics
             do
             {
                 Vector<float> sourceVector = UnsafeHelper.Read<Vector<float>>(ptr) * multiplierVector;
-                Vector<int> resultVector = Vector.ConvertToInt32(sourceVector);
-                Vector<float> resultVectorAsFloat = Vector.ConvertToSingle(resultVector);
-                resultVector += Vector.ConditionalSelect(
-                        condition: blendVector,
-                        left: Vector.LessThan(sourceVector, resultVectorAsFloat),
-                        right: -Vector.GreaterThan(sourceVector, resultVectorAsFloat)
-                        );
-                UnsafeHelper.Write(ptr, resultVector);
+                UnsafeHelper.Write(ptr, Round(sourceVector));
                 ptr += (nuint)Vector<float>.Count;
                 length -= (nuint)Vector<float>.Count;
                 continue;
@@ -68,16 +55,32 @@ namespace ConcreteUI.Graphics
         TailProcess:
             if (length > 0)
             {
-                ptr = ptr + length - (nuint)Vector<float>.Count;
-                Vector<float> sourceVector = UnsafeHelper.ReadUnaligned<Vector<float>>(ptr) * multiplierVector;
-                Vector<int> resultVector = Vector.ConvertToInt32(sourceVector);
-                Vector<float> resultVectorAsFloat = Vector.ConvertToSingle(resultVector);
-                resultVector += Vector.ConditionalSelect(
-                        condition: blendVector,
-                        left: Vector.LessThan(sourceVector, resultVectorAsFloat),
-                        right: -Vector.GreaterThan(sourceVector, resultVectorAsFloat)
-                        );
-                UnsafeHelper.WriteUnaligned(ptr, resultVector);
+                RectF* ptr2 = (RectF*)ptr;
+                nuint length2 = length / 4;
+                ScalarizedScaleRects(ref ptr2, ref length2, pointsPerPixel);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector<float> CopySign(Vector<float> x, Vector<float> y) // MathF.CopySign 的向量化版本
+            {
+                Vector<uint> mask = CopySignMaskVector;
+
+                // This method is required to work for all inputs,
+                // including NaN, so we operate on the raw bits.
+                Vector<uint> xbits = Vector.AsVectorUInt32(x);
+                Vector<uint> ybits = Vector.AsVectorUInt32(y);
+
+                // Remove the sign from x, and remove everything but the sign from y
+                // Then, simply OR them to get the correct sign
+                xbits = Vector.ConditionalSelect(mask, ybits, xbits);
+                return Vector.AsVectorSingle(xbits);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector<int> Round(Vector<float> value) // MathI.Round 的向量化版本
+            {
+                // result = Truncate(value + MathF.CopySign(0.49999997f, value))
+                return Vector.ConvertToInt32(value + CopySign(RoundVector, value));
             }
         }
 

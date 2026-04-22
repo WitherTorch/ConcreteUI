@@ -649,7 +649,7 @@ namespace ConcreteUI
             if (MathHelper.ToBooleanUnsafe(InterlockedHelper.CompareExchange(ref _invokeBarrier, Booleans.TrueInt, Booleans.FalseInt)))
                 return;
             User32.PostThreadMessageW(threadId, CustomWindowMessages.ConcreteWindowInvoke, 0, 0);
-            InterlockedHelper.Exchange(ref _invokeBarrier, Booleans.FalseInt);
+            InterlockedHelper.Write(ref _invokeBarrier, Booleans.FalseInt);
         }
     }
 }

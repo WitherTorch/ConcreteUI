@@ -23,7 +23,7 @@ namespace ConcreteUI.Graphics
         private readonly RenderingClipScope _clipScope;
         private readonly Matrix3x2 _originalTransform;
         private readonly PointF _offsetPoint;
-        private readonly Vector2 _pointsPerPixel;
+        private readonly Vector2 _pixelsPerPoint;
         private readonly bool _isPixelAligned, _isOpaque;
 
         private bool _disposed;
@@ -41,10 +41,10 @@ namespace ConcreteUI.Graphics
         public readonly float DefaultBorderWidth
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => RenderingHelper.GetDefaultBorderWidth(_pointsPerPixel.X);
+            get => RenderingHelper.GetDefaultBorderWidth(_pixelsPerPoint.X);
         }
 
-        public readonly Vector2 PointsPerPixel => _pointsPerPixel;
+        public readonly Vector2 PixelsPerPoint => _pixelsPerPoint;
 
         public readonly bool HasDirtyCollector => !_collector.IsEmptyInstance;
 
@@ -58,7 +58,7 @@ namespace ConcreteUI.Graphics
             _collector = collector;
             _clipScope = original._clipScope;
             _offsetPoint = original._offsetPoint;
-            _pointsPerPixel = original._pointsPerPixel;
+            _pixelsPerPoint = original._pixelsPerPoint;
             _isPixelAligned = original._isPixelAligned;
             _originalTransform = original._originalTransform;
             _isOpaque = original._isOpaque;
@@ -66,12 +66,12 @@ namespace ConcreteUI.Graphics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private RegionalRenderingContext(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pointsPerPixel,
+        private RegionalRenderingContext(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pixelsPerPoint,
             scoped in RectF clipRect, D2D1AntialiasMode antialiasMode, bool isPixelAligned, bool isOpaque)
         {
             _context = context;
             _collector = collector;
-            _pointsPerPixel = pointsPerPixel;
+            _pixelsPerPoint = pixelsPerPoint;
 
             Matrix3x2 transformMatrix = context.Transform;
             _originalTransform = transformMatrix;
@@ -86,11 +86,11 @@ namespace ConcreteUI.Graphics
             _disposed = false;
         }
 
-        public static RegionalRenderingContext Create(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pointsPerPixel,
+        public static RegionalRenderingContext Create(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pixelsPerPoint,
             in RectF clipRect, D2D1AntialiasMode antialiasMode, bool isOpaque, out RectF actualClipRect)
         {
-            actualClipRect = RenderingHelper.RoundInPixel(in clipRect, pointsPerPixel);
-            return new RegionalRenderingContext(context, collector, pointsPerPixel, in actualClipRect, antialiasMode, isPixelAligned: true, isOpaque);
+            actualClipRect = RenderingHelper.RoundInPixel(in clipRect, pixelsPerPoint);
+            return new RegionalRenderingContext(context, collector, pixelsPerPoint, in actualClipRect, antialiasMode, isPixelAligned: true, isOpaque);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -326,7 +326,7 @@ namespace ConcreteUI.Graphics
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly RegionalRenderingContext WithAxisAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode)
-            => new RegionalRenderingContext(_context, _collector, _pointsPerPixel, in clipRect, antialiasMode, isPixelAligned: false, _isOpaque);
+            => new RegionalRenderingContext(_context, _collector, _pixelsPerPoint, in clipRect, antialiasMode, isPixelAligned: false, _isOpaque);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly RegionalRenderingContext WithPixelAlignedClip(ref RectF clipRect, D2D1AntialiasMode antialiasMode)
@@ -336,7 +336,7 @@ namespace ConcreteUI.Graphics
         public readonly RegionalRenderingContext WithPixelAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode, out RectF actualClipRect)
         {
             actualClipRect = GetPixelAlignedRect(clipRect);
-            return new RegionalRenderingContext(_context, _collector, _pointsPerPixel, in actualClipRect, antialiasMode, isPixelAligned: true, _isOpaque);
+            return new RegionalRenderingContext(_context, _collector, _pixelsPerPoint, in actualClipRect, antialiasMode, isPixelAligned: true, _isOpaque);
         }
 
         public readonly RectF GetPixelAlignedRect(in RectF rect)
@@ -349,16 +349,16 @@ namespace ConcreteUI.Graphics
             if (!adjustedRect.IsValid)
                 return default;
             if (_isPixelAligned)
-                return RenderingHelper.RoundInPixel(adjustedRect, _pointsPerPixel);
+                return RenderingHelper.RoundInPixel(adjustedRect, _pixelsPerPoint);
             return TranslateAreaToLocal(
-                RenderingHelper.RoundInPixel(TranslateAreaToGlobal(adjustedRect), _pointsPerPixel));
+                RenderingHelper.RoundInPixel(TranslateAreaToGlobal(adjustedRect), _pixelsPerPoint));
         }
 
         public readonly RectF GetBorderRect(out float strokeWidth)
         {
             if (_isPixelAligned)
             {
-                strokeWidth = RenderingHelper.GetDefaultBorderWidth(_pointsPerPixel.X);
+                strokeWidth = RenderingHelper.GetDefaultBorderWidth(_pixelsPerPoint.X);
                 return GetBorderRectCore(RectF.FromXYWH(PointF.Empty, Size), strokeWidth);
             }
             return GetBorderRect(RectF.FromXYWH(PointF.Empty, Size), out strokeWidth);
@@ -366,7 +366,7 @@ namespace ConcreteUI.Graphics
 
         public readonly RectF GetBorderRect(in RectF rect, out float strokeWidth)
         {
-            Vector2 pointsPerPixel = _pointsPerPixel;
+            Vector2 pointsPerPixel = _pixelsPerPoint;
             strokeWidth = RenderingHelper.GetDefaultBorderWidth(pointsPerPixel.X);
             if (_isPixelAligned)
                 return GetBorderRectCore(RenderingHelper.RoundInPixel(in rect, pointsPerPixel), strokeWidth);

@@ -9,15 +9,18 @@ using InlineMethod;
 using WitherTorch.Common;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Graphics
 {
     partial class DirtyAreaCollector
     {
-        private static readonly Vector512<int> _blendVector_512 = CreateBlendVector_512();
-        private static readonly Vector256<int> _blendVector_256 = CreateBlendVector_256();
-        private static readonly Vector128<int> _blendVector_128 = CreateBlendVector_128();
-
+        private static readonly Vector512<uint> CopySignMaskVector_512 = Vector512.Create(0x80000000u);
+        private static readonly Vector256<uint> CopySignMaskVector_256 = Vector256.Create(0x80000000u);
+        private static readonly Vector128<uint> CopySignMaskVector_128 = Vector128.Create(0x80000000u);
+        private static readonly Vector512<float> RoundVector_512 = Vector512.Create(0.49999997f);
+        private static readonly Vector256<float> RoundVector_256 = Vector256.Create(0.49999997f);
+        private static readonly Vector128<float> RoundVector_128 = Vector128.Create(0.49999997f);
         private static unsafe partial void VectorizedScaleRects(float* ptr, nuint length, Vector2 pointsPerPixel)
         {
             (float pointsPerPixelX, float pointsPerPixelY) = pointsPerPixel;
@@ -27,40 +30,53 @@ namespace ConcreteUI.Graphics
                 VectorizedScaleRects_256(ref ptr, ref length, pointsPerPixelX, pointsPerPixelY);
             else
                 VectorizedScaleRects_128(ref ptr, ref length, pointsPerPixelX, pointsPerPixelY);
+
+            if (length > 0)
+            {
+                RectF* ptr2 = (RectF*)ptr;
+                nuint length2 = length / 4;
+                ScalarizedScaleRects(ref ptr2, ref length2, pointsPerPixel);
+            }
         }
 
         [Inline(InlineBehavior.Remove)]
         private static unsafe void VectorizedScaleRects_512(ref float* ptr, ref nuint length, float pointsPerPixelX, float pointsPerPixelY)
         {
             Vector512<float> multiplierVector = CreatePointVector_512(pointsPerPixelX, pointsPerPixelY);
-            Vector512<int> blendVector = _blendVector_512;
 
             nuint headRemainder = (nuint)ptr % UnsafeHelper.SizeOf<Vector512<float>>();
             if (headRemainder == 0)
                 goto VectorizedLoop;
             else
             {
-                Vector512<float> sourceVector = Vector512.Load(ptr) * multiplierVector;
-                Vector512<int> resultVector = Vector512.ConvertToInt32(sourceVector);
-                Vector512<float> resultVectorAsFloat = Vector512.ConvertToSingle(resultVector);
-                resultVector += Vector512.ConditionalSelect(
-                        condition: blendVector,
-                        left: Vector512.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
-                        right: -Vector512.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
-                        );
-                resultVector.Store((int*)ptr);
                 if (length > (nuint)Vector512<float>.Count * 2)
                 {
+                    Vector512<float> sourceVector = Vector512.Load(ptr) * multiplierVector;
+                    Round(sourceVector).Store((int*)ptr);
+
                     headRemainder = (UnsafeHelper.SizeOf<Vector512<float>>() - headRemainder) / UnsafeHelper.SizeOf<float>(); // 取得數量
                     ptr += headRemainder;
                     length -= headRemainder;
                     goto VectorizedLoop;
                 }
+                else if (length == (nuint)Vector512<float>.Count * 2)
+                {
+                    float* ptr2 = ptr + (nuint)Vector512<float>.Count;
+                    Vector512<float> sourceVector = Vector512.Load(ptr) * multiplierVector;
+                    Vector512<float> sourceVector2 = Vector512.Load(ptr2) * multiplierVector;
+                    Round(sourceVector).Store((int*)ptr);
+                    Round(sourceVector2).Store((int*)ptr2);
+                    length = 0;
+                    return;
+                }
                 else
                 {
+                    Vector512<float> sourceVector = Vector512.Load(ptr) * multiplierVector;
+                    Round(sourceVector).Store((int*)ptr);
+
                     ptr += (nuint)Vector512<float>.Count;
                     length -= (nuint)Vector512<float>.Count;
-                    goto TailProcess;
+                    return;
                 }
             }
 
@@ -68,33 +84,33 @@ namespace ConcreteUI.Graphics
             do
             {
                 Vector512<float> sourceVector = Vector512.LoadAligned(ptr) * multiplierVector;
-                Vector512<int> resultVector = Vector512.ConvertToInt32(sourceVector);
-                Vector512<float> resultVectorAsFloat = Vector512.ConvertToSingle(resultVector);
-                resultVector += Vector512.ConditionalSelect(
-                        condition: blendVector,
-                        left: Vector512.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
-                        right: -Vector512.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
-                        );
-                resultVector.StoreAligned((int*)ptr);
+                Round(sourceVector).StoreAligned((int*)ptr);
                 ptr += (nuint)Vector512<float>.Count;
                 length -= (nuint)Vector512<float>.Count;
                 continue;
             } while (length >= (nuint)Vector512<float>.Count);
-            goto TailProcess;
 
-        TailProcess:
-            if (length > 0)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector512<float> CopySign(Vector512<float> x, Vector512<float> y) // MathF.CopySign 的向量化版本
             {
-                ptr = ptr + length - (nuint)Vector512<float>.Count;
-                Vector512<float> sourceVector = Vector512.Load(ptr) * multiplierVector;
-                Vector512<int> resultVector = Vector512.ConvertToInt32(sourceVector);
-                Vector512<float> resultVectorAsFloat = Vector512.ConvertToSingle(resultVector);
-                resultVector += Vector512.ConditionalSelect(
-                        condition: blendVector,
-                        left: Vector512.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
-                        right: -Vector512.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
-                        );
-                resultVector.Store((int*)ptr);
+                Vector512<uint> mask = CopySignMaskVector_512;
+
+                // This method is required to work for all inputs,
+                // including NaN, so we operate on the raw bits.
+                Vector512<uint> xbits = Vector512.As<float, uint>(x);
+                Vector512<uint> ybits = Vector512.As<float, uint>(y);
+
+                // Remove the sign from x, and remove everything but the sign from y
+                // Then, simply OR them to get the correct sign
+                xbits = Vector512.ConditionalSelect(mask, ybits, xbits);
+                return Vector512.As<uint, float>(xbits);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector512<int> Round(Vector512<float> value) // MathI.Round 的向量化版本
+            {
+                // result = Truncate(value + MathF.CopySign(0.49999997f, value))
+                return Vector512.ConvertToInt32(value + CopySign(RoundVector_512, value));
             }
         }
 
@@ -102,34 +118,40 @@ namespace ConcreteUI.Graphics
         private static unsafe void VectorizedScaleRects_256(ref float* ptr, ref nuint length, float pointsPerPixelX, float pointsPerPixelY)
         {
             Vector256<float> multiplierVector = CreatePointVector_256(pointsPerPixelX, pointsPerPixelY);
-            Vector256<int> blendVector = _blendVector_256;
 
             nuint headRemainder = (nuint)ptr % UnsafeHelper.SizeOf<Vector256<float>>();
             if (headRemainder == 0)
                 goto VectorizedLoop;
             else
             {
-                Vector256<float> sourceVector = Vector256.Load(ptr) * multiplierVector;
-                Vector256<int> resultVector = Vector256.ConvertToInt32(sourceVector);
-                Vector256<float> resultVectorAsFloat = Vector256.ConvertToSingle(resultVector);
-                resultVector += Vector256.ConditionalSelect(
-                        condition: blendVector,
-                        left: Vector256.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
-                        right: -Vector256.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
-                        );
-                resultVector.Store((int*)ptr);
                 if (length > (nuint)Vector256<float>.Count * 2)
                 {
+                    Vector256<float> sourceVector = Vector256.Load(ptr) * multiplierVector;
+                    Round(sourceVector).Store((int*)ptr);
+
                     headRemainder = (UnsafeHelper.SizeOf<Vector256<float>>() - headRemainder) / UnsafeHelper.SizeOf<float>(); // 取得數量
                     ptr += headRemainder;
                     length -= headRemainder;
                     goto VectorizedLoop;
                 }
+                else if (length == (nuint)Vector256<float>.Count * 2)
+                {
+                    float* ptr2 = ptr + (nuint)Vector256<float>.Count;
+                    Vector256<float> sourceVector = Vector256.Load(ptr) * multiplierVector;
+                    Vector256<float> sourceVector2 = Vector256.Load(ptr2) * multiplierVector;
+                    Round(sourceVector).Store((int*)ptr);
+                    Round(sourceVector2).Store((int*)ptr2);
+                    length = 0;
+                    return;
+                }
                 else
                 {
+                    Vector256<float> sourceVector = Vector256.Load(ptr) * multiplierVector;
+                    Round(sourceVector).Store((int*)ptr);
+
                     ptr += (nuint)Vector256<float>.Count;
                     length -= (nuint)Vector256<float>.Count;
-                    goto TailProcess;
+                    return;
                 }
             }
 
@@ -137,33 +159,33 @@ namespace ConcreteUI.Graphics
             do
             {
                 Vector256<float> sourceVector = Vector256.LoadAligned(ptr) * multiplierVector;
-                Vector256<int> resultVector = Vector256.ConvertToInt32(sourceVector);
-                Vector256<float> resultVectorAsFloat = Vector256.ConvertToSingle(resultVector);
-                resultVector += Vector256.ConditionalSelect(
-                        condition: blendVector,
-                        left: Vector256.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
-                        right: -Vector256.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
-                        );
-                resultVector.StoreAligned((int*)ptr);
+                Round(sourceVector).StoreAligned((int*)ptr);
                 ptr += (nuint)Vector256<float>.Count;
                 length -= (nuint)Vector256<float>.Count;
                 continue;
             } while (length >= (nuint)Vector256<float>.Count);
-            goto TailProcess;
 
-        TailProcess:
-            if (length > 0)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector256<float> CopySign(Vector256<float> x, Vector256<float> y) // MathF.CopySign 的向量化版本
             {
-                ptr = ptr + length - (nuint)Vector256<float>.Count;
-                Vector256<float> sourceVector = Vector256.Load(ptr) * multiplierVector;
-                Vector256<int> resultVector = Vector256.ConvertToInt32(sourceVector);
-                Vector256<float> resultVectorAsFloat = Vector256.ConvertToSingle(resultVector);
-                resultVector += Vector256.ConditionalSelect(
-                        condition: blendVector,
-                        left: Vector256.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
-                        right: -Vector256.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
-                        );
-                resultVector.Store((int*)ptr);
+                Vector256<uint> mask = CopySignMaskVector_256;
+
+                // This method is required to work for all inputs,
+                // including NaN, so we operate on the raw bits.
+                Vector256<uint> xbits = Vector256.As<float, uint>(x);
+                Vector256<uint> ybits = Vector256.As<float, uint>(y);
+
+                // Remove the sign from x, and remove everything but the sign from y
+                // Then, simply OR them to get the correct sign
+                xbits = Vector256.ConditionalSelect(mask, ybits, xbits);
+                return Vector256.As<uint, float>(xbits);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector256<int> Round(Vector256<float> value) // MathI.Round 的向量化版本
+            {
+                // result = Truncate(value + MathF.CopySign(0.49999997f, value))
+                return Vector256.ConvertToInt32(value + CopySign(RoundVector_256, value));
             }
         }
 
@@ -171,34 +193,40 @@ namespace ConcreteUI.Graphics
         private static unsafe void VectorizedScaleRects_128(ref float* ptr, ref nuint length, float pointsPerPixelX, float pointsPerPixelY)
         {
             Vector128<float> multiplierVector = CreatePointVector_128(pointsPerPixelX, pointsPerPixelY);
-            Vector128<int> blendVector = _blendVector_128;
 
             nuint headRemainder = (nuint)ptr % UnsafeHelper.SizeOf<Vector128<float>>();
             if (headRemainder == 0)
                 goto VectorizedLoop;
             else
             {
-                Vector128<float> sourceVector = Vector128.Load(ptr) * multiplierVector;
-                Vector128<int> resultVector = Vector128.ConvertToInt32(sourceVector);
-                Vector128<float> resultVectorAsFloat = Vector128.ConvertToSingle(resultVector);
-                resultVector += Vector128.ConditionalSelect(
-                        condition: blendVector,
-                        left: Vector128.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
-                        right: -Vector128.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
-                        );
-                resultVector.Store((int*)ptr);
                 if (length > (nuint)Vector128<float>.Count * 2)
                 {
+                    Vector128<float> sourceVector = Vector128.Load(ptr) * multiplierVector;
+                    Round(sourceVector).Store((int*)ptr);
+
                     headRemainder = (UnsafeHelper.SizeOf<Vector128<float>>() - headRemainder) / UnsafeHelper.SizeOf<float>(); // 取得數量
                     ptr += headRemainder;
                     length -= headRemainder;
                     goto VectorizedLoop;
                 }
+                else if (length == (nuint)Vector128<float>.Count * 2)
+                {
+                    float* ptr2 = ptr + (nuint)Vector128<float>.Count;
+                    Vector128<float> sourceVector = Vector128.Load(ptr) * multiplierVector;
+                    Vector128<float> sourceVector2 = Vector128.Load(ptr2) * multiplierVector;
+                    Round(sourceVector).Store((int*)ptr);
+                    Round(sourceVector2).Store((int*)ptr2);
+                    length = 0;
+                    return;
+                }
                 else
                 {
+                    Vector128<float> sourceVector = Vector128.Load(ptr) * multiplierVector;
+                    Round(sourceVector).Store((int*)ptr);
+
                     ptr += (nuint)Vector128<float>.Count;
                     length -= (nuint)Vector128<float>.Count;
-                    goto TailProcess;
+                    return;
                 }
             }
 
@@ -206,35 +234,36 @@ namespace ConcreteUI.Graphics
             do
             {
                 Vector128<float> sourceVector = Vector128.LoadAligned(ptr) * multiplierVector;
-                Vector128<int> resultVector = Vector128.ConvertToInt32(sourceVector);
-                Vector128<float> resultVectorAsFloat = Vector128.ConvertToSingle(resultVector);
-                resultVector += Vector128.ConditionalSelect(
-                        condition: blendVector,
-                        left: Vector128.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
-                        right: -Vector128.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
-                        );
-                resultVector.StoreAligned((int*)ptr);
+                Round(sourceVector).StoreAligned((int*)ptr);
                 ptr += (nuint)Vector128<float>.Count;
                 length -= (nuint)Vector128<float>.Count;
                 continue;
             } while (length >= (nuint)Vector128<float>.Count);
-            goto TailProcess;
 
-        TailProcess:
-            if (length > 0)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<float> CopySign(Vector128<float> x, Vector128<float> y) // MathF.CopySign 的向量化版本
             {
-                ptr = ptr + length - (nuint)Vector128<float>.Count;
-                Vector128<float> sourceVector = Vector128.Load(ptr) * multiplierVector;
-                Vector128<int> resultVector = Vector128.ConvertToInt32(sourceVector);
-                Vector128<float> resultVectorAsFloat = Vector128.ConvertToSingle(resultVector);
-                resultVector += Vector128.ConditionalSelect(
-                        condition: blendVector,
-                        left: Vector128.LessThan(sourceVector, resultVectorAsFloat).AsInt32(),
-                        right: -Vector128.GreaterThan(sourceVector, resultVectorAsFloat).AsInt32()
-                        );
-                resultVector.Store((int*)ptr);
+                Vector128<uint> mask = CopySignMaskVector_128;
+
+                // This method is required to work for all inputs,
+                // including NaN, so we operate on the raw bits.
+                Vector128<uint> xbits = Vector128.As<float, uint>(x);
+                Vector128<uint> ybits = Vector128.As<float, uint>(y);
+
+                // Remove the sign from x, and remove everything but the sign from y
+                // Then, simply OR them to get the correct sign
+                xbits = Vector128.ConditionalSelect(mask, ybits, xbits);
+                return Vector128.As<uint, float>(xbits);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<int> Round(Vector128<float> value) // MathI.Round 的向量化版本
+            {
+                // result = Truncate(value + MathF.CopySign(0.49999997f, value))
+                return Vector128.ConvertToInt32(value + CopySign(RoundVector_128, value));
             }
         }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<float> CreatePointVector_512(float x, float y)
@@ -262,18 +291,6 @@ namespace ConcreteUI.Graphics
             else
                 return Vector128.Create(x, y, x, y);
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<int> CreateBlendVector_512()
-            => Vector512.Create(-1, -1, 0, 0, -1, -1, 0, 0, -1, -1, 0, 0, -1, -1, 0, 0);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<int> CreateBlendVector_256()
-            => Vector256.Create(-1, -1, 0, 0, -1, -1, 0, 0);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<int> CreateBlendVector_128()
-            => Vector128.Create(-1, -1, 0, 0);
     }
 }
 #endif

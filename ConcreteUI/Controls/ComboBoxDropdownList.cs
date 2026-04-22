@@ -128,7 +128,7 @@ namespace ConcreteUI.Controls
             int selectedIndex = SelectedIndex;
             ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
             D2D1Brush textBrush;
-            Vector2 pointsPerPixel = context.PointsPerPixel;
+            Vector2 pointsPerPixel = context.PixelsPerPoint;
             float borderWidth = context.DefaultBorderWidth;
             float itemLeft = borderWidth,
                 textLeft = RenderingHelper.RoundInPixel(borderWidth + 5, pointsPerPixel.X),

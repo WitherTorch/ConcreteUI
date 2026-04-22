@@ -203,7 +203,7 @@ namespace ConcreteUI.Controls
 
                 if (scrollBarBounds.IsValid && scrollButtonBounds.IsValid && upButtonBounds.IsValid && downButtonBounds.IsValid)
                 {
-                    Vector2 pointsPerPixel = context.PointsPerPixel;
+                    Vector2 pointsPerPixel = context.PixelsPerPoint;
                     scrollBarBounds = RenderingHelper.RoundInPixel(scrollBarBounds, pointsPerPixel);
                     scrollButtonBounds = RenderingHelper.RoundInPixel(scrollButtonBounds, pointsPerPixel);
                     upButtonBounds = RenderingHelper.RoundInPixel(upButtonBounds, pointsPerPixel);

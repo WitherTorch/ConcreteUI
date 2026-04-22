@@ -207,7 +207,7 @@ namespace ConcreteUI.Controls
 
         public static RectangleF GetCheckBoxRenderingBounds(in RegionalRenderingContext context, float itemHeight)
         {
-            Vector2 pointsPerPixel = context.PointsPerPixel;
+            Vector2 pointsPerPixel = context.PixelsPerPoint;
             float borderWidth = context.DefaultBorderWidth;
             float buttonWidth = RenderingHelper.RoundInPixel(itemHeight, pointsPerPixel.Y) - borderWidth * 2;
             return new RectangleF(borderWidth, borderWidth, buttonWidth, buttonWidth);

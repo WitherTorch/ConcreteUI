@@ -196,7 +196,7 @@ namespace ConcreteUI.Graphics.Hosts
             throw exception;
         }
 
-        private Exception? PresentCore()
+        protected virtual Exception? PresentCore()
         {
             DXGISwapChain swapChain = _swapChain;
             if (BeforeNormalPresent(swapChain))
@@ -205,7 +205,7 @@ namespace ConcreteUI.Graphics.Hosts
             return exception;
         }
 
-        [Inline(InlineBehavior.Remove)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected static int PresentCore(DXGISwapChain swapChain) => swapChain.TryPresent(0, DXGIPresentFlags.None);
 
         [Inline(InlineBehavior.Remove)]

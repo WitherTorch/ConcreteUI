@@ -191,7 +191,7 @@ namespace ConcreteUI.Controls
             int currentTop = ViewportPoint.Y;
             int startIndex = (int)(currentTop / itemHeight);
             int endIndex = MathI.Ceiling((currentTop + renderSize.Height) / itemHeight);
-            Vector2 pointsPerPixel = context.PointsPerPixel;
+            Vector2 pointsPerPixel = context.PixelsPerPoint;
             float borderWidth = context.DefaultBorderWidth;
 
             float itemLeftEdge = borderWidth + 2;
@@ -257,10 +257,11 @@ namespace ConcreteUI.Controls
             {
                 PointF centerPoint = new PointF(renderingBounds.Width * 0.5f, renderingBounds.Height * 0.5f);
                 float borderWidth = context.DefaultBorderWidth;
-                float radius = centerPoint.X - borderWidth * 2.0f;
-                context.DrawEllipse(GetPixelAlignedEllipse(context, centerPoint, radius), backBrush, borderWidth);
+                float radiusX = centerPoint.X - borderWidth * 2.0f;
+                float radiusY = radiusX;
+                context.DrawEllipse(GetPixelAlignedEllipse(context, ref centerPoint, ref radiusX, ref radiusY), backBrush, borderWidth);
                 if (isChecked)
-                    context.FillEllipse(GetPixelAlignedEllipse(context, centerPoint, radius - borderWidth * 2.5f), backBrush);
+                    context.FillEllipse(new D2D1Ellipse(centerPoint, radiusX - borderWidth * 2.0f, radiusY - borderWidth * 2.0f), backBrush);
             }
             finally
             {
@@ -268,16 +269,20 @@ namespace ConcreteUI.Controls
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static D2D1Ellipse GetPixelAlignedEllipse(in RegionalRenderingContext context, PointF centerPoint, float radius)
+            static D2D1Ellipse GetPixelAlignedEllipse(in RegionalRenderingContext context, ref PointF centerPoint, ref float radiusX, ref float radiusY)
             {
+                Vector2 pixelsPerPoint = context.PixelsPerPoint;
                 (float centerX, float centerY) = centerPoint;
-                RectF predictedRect = context.GetPixelAlignedRect(new RectF(centerX - radius, centerY - radius, centerX + radius, centerY + radius));
-                float predictedWidth = predictedRect.Width * 0.5f;
-                float predictedHeight = predictedRect.Height * 0.5f;
+                PointF predicatedTopLeft = RenderingHelper.CeilingInPixel(new PointF(centerX - radiusX, centerY - radiusY), pixelsPerPoint);
+                PointF predicatedBottomRight = RenderingHelper.FloorInPixel(new PointF(centerX + radiusX, centerY + radiusY), pixelsPerPoint);
+
+                radiusX = (predicatedBottomRight.X - predicatedTopLeft.X) * 0.5f;
+                radiusY = (predicatedBottomRight.Y - predicatedTopLeft.Y) * 0.5f;
+                centerPoint = new PointF(predicatedTopLeft.X + radiusX, predicatedTopLeft.Y + radiusX);
                 return new D2D1Ellipse(
-                    point: new PointF(predictedRect.X + predictedWidth, predictedRect.Y + predictedHeight),
-                    radiusX: predictedWidth,
-                    radiusY: predictedHeight);
+                    point: centerPoint,
+                    radiusX: radiusX,
+                    radiusY: radiusY);
             }
         }
 

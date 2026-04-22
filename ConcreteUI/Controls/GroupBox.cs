@@ -65,7 +65,7 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private LayoutVariable GetContentLayoutReferenceCore(nuint property)
         {
-            ref LayoutVariable? variable = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_contentLayoutReferences), (nuint)property);
+            ref LayoutVariable? variable = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_contentLayoutReferences), property);
             if (variable is null)
             {
                 WeakReference<GroupBox>? reference = InterlockedHelper.Read(ref _reference);

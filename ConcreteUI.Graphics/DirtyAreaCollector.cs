@@ -126,11 +126,11 @@ namespace ConcreteUI.Graphics
             {
                 if (!ptr[0].IsValid)
                     ptr[0] = default;
-                if (!ptr[1].IsValid) 
+                if (!ptr[1].IsValid)
                     ptr[1] = default;
-                if (!ptr[2].IsValid) 
+                if (!ptr[2].IsValid)
                     ptr[2] = default;
-                if (!ptr[3].IsValid) 
+                if (!ptr[3].IsValid)
                     ptr[3] = default;
             }
             Rect* ptrEnd = ptr + length;
@@ -141,12 +141,12 @@ namespace ConcreteUI.Graphics
             ptr++;
             if (ptr >= ptrEnd)
                 return;
-            if (!ptr->IsValid) 
+            if (!ptr->IsValid)
                 *ptr = default;
             ptr++;
             if (ptr >= ptrEnd)
                 return;
-            if (!ptr->IsValid) 
+            if (!ptr->IsValid)
                 *ptr = default;
         }
 
@@ -196,16 +196,16 @@ namespace ConcreteUI.Graphics
             if (ptr >= ptrEnd)
                 return;
             UnsafeHelper.WriteUnaligned(ptr, ScaleRect(*ptr, pointsPerPixelX, pointsPerPixelY));
-        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Rect ScaleRect(RectF rect, float pointsPerPixelX, float pointsPerPixelY)
-        {
-            return new Rect(
-                left: MathI.Floor(rect.Left * pointsPerPixelX),
-                top: MathI.Floor(rect.Top * pointsPerPixelY),
-                right: MathI.Ceiling(rect.Right * pointsPerPixelX),
-                bottom: MathI.Ceiling(rect.Bottom * pointsPerPixelY));
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Rect ScaleRect(RectF rect, float pointsPerPixelX, float pointsPerPixelY)
+            {
+                return new Rect(
+                    left: MathI.Round(rect.Left * pointsPerPixelX, MidpointRounding.AwayFromZero),
+                    top: MathI.Round(rect.Top * pointsPerPixelY, MidpointRounding.AwayFromZero),
+                    right: MathI.Round(rect.Right * pointsPerPixelX, MidpointRounding.AwayFromZero),
+                    bottom: MathI.Round(rect.Bottom * pointsPerPixelY, MidpointRounding.AwayFromZero));
+            }
         }
     }
 }
