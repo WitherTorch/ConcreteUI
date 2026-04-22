@@ -1,28 +1,17 @@
-﻿using System;
-
-using ConcreteUI.Graphics.Native.DirectWrite;
+﻿using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Layout;
 using ConcreteUI.Utils;
-
-using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
     partial class CheckBox
     {
-        private sealed class AutoWidthVariable : LayoutVariable
+        private sealed class AutoWidthVariable : UIElementDependedVariable<CheckBox>
         {
-            private readonly WeakReference<CheckBox> _reference;
+            public AutoWidthVariable(CheckBox element) : base(element) { }
 
-            public AutoWidthVariable(CheckBox element)
+            protected override int Compute(CheckBox element, in LayoutVariableManager manager)
             {
-                _reference = new WeakReference<CheckBox>(element);
-            }
-
-            public override int Compute(in LayoutVariableManager manager)
-            {
-                if (!_reference.TryGetTarget(out CheckBox? element))
-                    return 0;
                 string? fontName = element._fontName;
                 if (fontName is null)
                     return 0;

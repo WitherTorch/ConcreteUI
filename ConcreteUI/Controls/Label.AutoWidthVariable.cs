@@ -4,25 +4,16 @@ using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Internals;
 using ConcreteUI.Layout;
 
-using WitherTorch.Common.Helpers;
-
 namespace ConcreteUI.Controls
 {
     partial class Label
     {
-        private sealed class AutoWidthVariable : LayoutVariable
+        private sealed class AutoWidthVariable : UIElementDependedVariable<Label>
         {
-            private readonly WeakReference<Label> _reference;
+            public AutoWidthVariable(Label element) : base(element) { }
 
-            public AutoWidthVariable(Label element)
+            protected override int Compute(Label element, in LayoutVariableManager manager)
             {
-                _reference = new WeakReference<Label>(element);
-            }
-
-            public override int Compute(in LayoutVariableManager manager)
-            {
-                if (!_reference.TryGetTarget(out Label? element))
-                    return 0;
                 string? fontName = element._fontName;
                 if (fontName is null)
                     return 0;

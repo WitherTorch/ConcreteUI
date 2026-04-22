@@ -7,21 +7,14 @@ namespace ConcreteUI.Controls
 {
     partial class ComboBoxDropdownList
     {
-        private sealed class DefaultTopVariable : LayoutVariable
+        private sealed class DefaultTopVariable : UIElementDependedVariable<ComboBoxDropdownList>
         {
-            private readonly WeakReference<ComboBoxDropdownList> _ownerRef;
+            public DefaultTopVariable(ComboBoxDropdownList element) : base(element) { }
 
-            public DefaultTopVariable(ComboBoxDropdownList owner)
+            protected override int Compute(ComboBoxDropdownList element, in LayoutVariableManager manager)
             {
-                _ownerRef = new WeakReference<ComboBoxDropdownList>(owner);
-            }
-
-            public override int Compute(in LayoutVariableManager manager)
-            {
-                if (!_ownerRef.TryGetTarget(out ComboBoxDropdownList? owner))
-                    return 0;
-                int val = manager.GetComputedValue(owner._owner, LayoutProperty.Bottom);
-                return val - MathI.Ceiling(RenderingHelper.GetDefaultBorderWidth(owner.Window.PixelsPerPoint.Y));
+                int val = manager.GetComputedValue(element._owner, LayoutProperty.Bottom);
+                return val - MathI.Ceiling(RenderingHelper.GetDefaultBorderWidth(element.Window.PixelsPerPoint.Y));
             }
         }
     }

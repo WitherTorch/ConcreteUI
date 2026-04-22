@@ -1,12 +1,11 @@
-using System.Collections.Generic;
+using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Layout;
 
-using InlineMethod;
-
 using WitherTorch.Common.Extensions;
+using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls
 {
@@ -58,8 +57,8 @@ namespace ConcreteUI.Controls
 
         public LayoutVariable ContentLeftReference
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetContentLayoutReference(LayoutProperty.Left);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetContentLayoutReferenceCore((nuint)LayoutProperty.Left);
         }
 
         public int ContentTop
@@ -70,8 +69,8 @@ namespace ConcreteUI.Controls
 
         public LayoutVariable ContentTopReference
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetContentLayoutReference(LayoutProperty.Top);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetContentLayoutReferenceCore((nuint)LayoutProperty.Top);
         }
 
         public int ContentRight
@@ -82,8 +81,8 @@ namespace ConcreteUI.Controls
 
         public LayoutVariable ContentRightReference
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetContentLayoutReference(LayoutProperty.Right);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetContentLayoutReferenceCore((nuint)LayoutProperty.Right);
         }
 
         public int ContentBottom
@@ -94,8 +93,8 @@ namespace ConcreteUI.Controls
 
         public LayoutVariable ContentBottomReference
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetContentLayoutReference(LayoutProperty.Bottom);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetContentLayoutReferenceCore((nuint)LayoutProperty.Bottom);
         }
 
         public int ContentWidth
@@ -112,8 +111,8 @@ namespace ConcreteUI.Controls
 
         public LayoutVariable ContentWidthReference
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetContentLayoutReference(LayoutProperty.Width);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetContentLayoutReferenceCore((nuint)LayoutProperty.Width);
         }
 
         public int ContentHeight
@@ -130,8 +129,8 @@ namespace ConcreteUI.Controls
 
         public LayoutVariable ContentHeightReference
         {
-            [Inline(InlineBehavior.Keep, export: true)]
-            get => GetContentLayoutReference(LayoutProperty.Height);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetContentLayoutReferenceCore((nuint)LayoutProperty.Height);
         }
 
         public int TextTop
@@ -143,7 +142,23 @@ namespace ConcreteUI.Controls
         public LayoutVariable TextTopReference
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _textTopVariableLazy.Value;
+            get
+            {
+                TextTopVariable? result = _textTopReference;
+                if (result is null)
+                {
+                    WeakReference<GroupBox>? reference = InterlockedHelper.Read(ref _reference);
+                    if (reference is null)
+                    {
+                        reference = new WeakReference<GroupBox>(this);
+                        WeakReference<GroupBox>? oldReference = InterlockedHelper.CompareExchange(ref _reference, reference, null);
+                        if (oldReference is not null)
+                            reference = oldReference;
+                    }
+                    _textTopReference = result = new TextTopVariable(reference);
+                }
+                return result;
+            }
         }
 
         public Point ContentLocation

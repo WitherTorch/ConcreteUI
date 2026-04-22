@@ -3,25 +3,16 @@
 using ConcreteUI.Layout;
 using ConcreteUI.Utils;
 
-using WitherTorch.Common.Helpers;
-
 namespace ConcreteUI.Controls
 {
     partial class Button
     {
-        private sealed class AutoHeightVariable : LayoutVariable
+        private sealed class AutoHeightVariable : UIElementDependedVariable<Button>
         {
-            private readonly WeakReference<Button> _reference;
+            public AutoHeightVariable(Button element) : base(element) { }
 
-            public AutoHeightVariable(Button button)
+            protected override int Compute(Button element, in LayoutVariableManager manager)
             {
-                _reference = new WeakReference<Button>(button);
-            }
-
-            public override int Compute(in LayoutVariableManager manager)
-            {
-                if (!_reference.TryGetTarget(out Button? element))
-                    return 0;
                 string? fontName = element._fontName;
                 if (fontName is null)
                     return 0;

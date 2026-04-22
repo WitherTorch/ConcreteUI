@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+using ConcreteUI.Layout;
+
 using WitherTorch.Common;
 using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
@@ -122,6 +124,18 @@ namespace ConcreteUI.Controls
                     return;
                 _checkBoxThemePrefix = value;
             }
+        }
+
+        public LayoutVariable AutoWidthReference
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _autoLayoutVariableCache[0] ??= new AutoWidthVariable(this);
+        }
+
+        public LayoutVariable AutoHeightReference
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _autoLayoutVariableCache[1] ??= new AutoHeightVariable(this);
         }
     }
 }

@@ -1,28 +1,20 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Layout;
 using ConcreteUI.Utils;
 
-using WitherTorch.Common.Helpers;
-
 namespace ConcreteUI.Controls
 {
     partial class Button
     {
-        private sealed class AutoWidthVariable : LayoutVariable
+        private sealed class AutoWidthVariable : UIElementDependedVariable<Button>
         {
-            private readonly WeakReference<Button> _reference;
+            public AutoWidthVariable(Button element) : base(element) { }
 
-            public AutoWidthVariable(Button element)
+            protected override int Compute(Button element, in LayoutVariableManager manager)
             {
-                _reference = new WeakReference<Button>(element);
-            }
-
-            public override int Compute(in LayoutVariableManager manager)
-            {
-                if (!_reference.TryGetTarget(out Button? element))
-                    return 0;
                 string? fontName = element._fontName;
                 if (fontName is null)
                     return 0;

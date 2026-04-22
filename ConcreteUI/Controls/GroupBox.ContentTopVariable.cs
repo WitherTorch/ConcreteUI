@@ -10,10 +10,7 @@ namespace ConcreteUI.Controls
         {
             private readonly WeakReference<GroupBox> _reference;
 
-            public ContentTopVariable(GroupBox element)
-            {
-                _reference = new WeakReference<GroupBox>(element);
-            }
+            public ContentTopVariable(WeakReference<GroupBox> reference) => _reference = reference;
 
             public override int Compute(in LayoutVariableManager manager)
             {

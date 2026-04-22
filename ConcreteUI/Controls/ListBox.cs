@@ -11,12 +11,14 @@ using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
+using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
 using InlineMethod;
 
 using WitherTorch.Common;
+using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
@@ -46,6 +48,7 @@ namespace ConcreteUI.Controls
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
         private readonly D2D1Brush?[] _checkBoxBrushes = new D2D1Brush[(int)CheckBoxBrush._Last];
+        private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[2];
         private readonly BitList _stateVectorList;
         private readonly ObservableList<string> _items;
 
@@ -69,6 +72,20 @@ namespace ConcreteUI.Controls
             _selectedIndex = -1;
             _recalcFormat = Booleans.TrueLong;
             _checkBoxThemePrefix = "app.checkBox";
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ListBox WithAutoWidth()
+        {
+            WidthVariable = AutoWidthReference;
+            return this;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ListBox WithAutoHeight()
+        {
+            HeightVariable = AutoHeightReference;
+            return this;
         }
 
         public void CopySelectedItemsToBuffer(string[] destination, int startIndex, out int itemCopied)
@@ -264,7 +281,38 @@ namespace ConcreteUI.Controls
             }
         }
 
-        private void RecalculateHeight() => SurfaceSize = new Size(0, Items.Count * _itemHeight + UIConstants.ElementMargin);
+        private void RecalculateHeight() => SurfaceSize = new Size(0, GetPredictedHeight());
+
+        private int GetPredictedHeight() => _items.Count * _itemHeight + UIConstants.ElementMargin;
+
+        private int GetPredictedWidth()
+        {
+            string? fontName = _fontName;
+            if (fontName is null)
+                return UIConstants.ElementMargin;
+            IList<string> items = _items.GetUnderlyingList();
+            int count = items.Count;
+            if (count <= 0)
+                return UIConstants.ElementMargin;
+
+            ArrayPool<string> pool = ArrayPool<string>.Shared;
+            using PooledList<string> list = new PooledList<string>();
+            list.AddRange(items);
+            (string[] buffer, count) = list;
+            try
+            {
+                using DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(fontName, _fontSize);
+                int maxVal = 0;
+                ref string bufferRef = ref UnsafeHelper.GetArrayDataReference(buffer);
+                for (int i = 0; i < count; i++)
+                    maxVal = MathHelper.Max(maxVal, GraphicsUtils.MeasureTextWidthAsInt(UnsafeHelper.AddTypedOffset(ref bufferRef, i), format));
+                return maxVal + UIConstants.ElementMargin;
+            }
+            finally
+            {
+                pool.Return(buffer);
+            }
+        }
 
         protected override void OnMouseMove(in MouseEventArgs args)
         {

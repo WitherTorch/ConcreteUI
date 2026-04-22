@@ -1,6 +1,6 @@
 namespace ConcreteUI.Controls
 {
-    public sealed partial class ListBox
+    partial class ListBox
     {
         private enum Brush
         {

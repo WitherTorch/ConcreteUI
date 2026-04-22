@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
@@ -19,7 +20,6 @@ using InlineMethod;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
-using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Controls
 {
@@ -33,10 +33,11 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly LazyTiny<LayoutVariable>[] _contentLayoutReferences;
+        private readonly LayoutVariable?[] _contentLayoutReferences = new LayoutVariable?[(int)LayoutProperty._Last];
         private readonly ObservableList<UIElement> _children;
 
-        private LazyTiny<LayoutVariable> _textTopVariableLazy;
+        private WeakReference<GroupBox>? _reference;
+        private TextTopVariable? _textTopReference;
         private DWriteTextLayout? _titleLayout, _textLayout;
         private string? _fontName;
         private string _title, _text;
@@ -51,21 +52,43 @@ namespace ConcreteUI.Controls
             _text = string.Empty;
             _redrawTypeRaw = (long)RedrawType.RedrawAllContent;
             _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
-
-            LazyTiny<LayoutVariable>[] contentLayoutVariables = new LazyTiny<LayoutVariable>[(int)LayoutProperty._Last];
-            contentLayoutVariables[(int)LayoutProperty.Left] = new LazyTiny<LayoutVariable>(() => new ContentLeftVariable(this), LazyThreadSafetyMode.PublicationOnly);
-            contentLayoutVariables[(int)LayoutProperty.Top] = new LazyTiny<LayoutVariable>(() => new ContentTopVariable(this), LazyThreadSafetyMode.PublicationOnly);
-            contentLayoutVariables[(int)LayoutProperty.Right] = new LazyTiny<LayoutVariable>(() => new ContentRightVariable(this), LazyThreadSafetyMode.PublicationOnly);
-            contentLayoutVariables[(int)LayoutProperty.Bottom] = new LazyTiny<LayoutVariable>(() => new ContentBottomVariable(this), LazyThreadSafetyMode.PublicationOnly);
-            contentLayoutVariables[(int)LayoutProperty.Width] = new LazyTiny<LayoutVariable>(() => new ContentWidthVariable(this), LazyThreadSafetyMode.PublicationOnly);
-            contentLayoutVariables[(int)LayoutProperty.Height] = new LazyTiny<LayoutVariable>(() => new ContentHeightVariable(this), LazyThreadSafetyMode.PublicationOnly);
-            _contentLayoutReferences = contentLayoutVariables;
-            _textTopVariableLazy = new LazyTiny<LayoutVariable>(() => new TextTopVariable(this), LazyThreadSafetyMode.PublicationOnly);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LayoutVariable GetContentLayoutReference(LayoutProperty property)
-            => _contentLayoutReferences[(int)property].Value;
+        {
+            if (property >= LayoutProperty._Last)
+                throw new ArgumentOutOfRangeException(nameof(property));
+            return GetContentLayoutReferenceCore((nuint)property);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private LayoutVariable GetContentLayoutReferenceCore(nuint property)
+        {
+            ref LayoutVariable? variable = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_contentLayoutReferences), (nuint)property);
+            if (variable is null)
+            {
+                WeakReference<GroupBox>? reference = InterlockedHelper.Read(ref _reference);
+                if (reference is null)
+                {
+                    reference = new WeakReference<GroupBox>(this);
+                    WeakReference<GroupBox>? oldReference = InterlockedHelper.CompareExchange(ref _reference, reference, null);
+                    if (oldReference is not null)
+                        reference = oldReference;
+                }
+                variable = property switch
+                {
+                    (nuint)LayoutProperty.Left => new ContentLeftVariable(reference),
+                    (nuint)LayoutProperty.Top => new ContentTopVariable(reference),
+                    (nuint)LayoutProperty.Right => new ContentRightVariable(reference),
+                    (nuint)LayoutProperty.Bottom => new ContentBottomVariable(reference),
+                    (nuint)LayoutProperty.Width => new ContentWidthVariable(reference),
+                    (nuint)LayoutProperty.Height => new ContentHeightVariable(reference),
+                    _ => throw new ArgumentOutOfRangeException(nameof(property))
+                };
+            }
+            return variable;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IEnumerable<UIElement?> GetElements() => _children;
