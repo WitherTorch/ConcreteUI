@@ -207,7 +207,7 @@ namespace ConcreteUI.Graphics
             }
 
             [Inline(InlineBehavior.Remove)]
-            static void ScaleAndStore(float* ptr, float pointsPerPixel) => *ptr = MathI.Round(*ptr * pointsPerPixel, MidpointRounding.AwayFromZero);
+            static void ScaleAndStore(float* ptr, float pointsPerPixel) => *(int*)ptr = MathI.Round(*ptr * pointsPerPixel, MidpointRounding.AwayFromZero);
         }
     }
 }
