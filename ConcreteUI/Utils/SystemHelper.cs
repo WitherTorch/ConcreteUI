@@ -2,6 +2,8 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Internals;
 
+using WitherTorch.Common.Helpers;
+
 namespace ConcreteUI.Utils
 {
     public static class SystemHelper
@@ -42,6 +44,11 @@ namespace ConcreteUI.Utils
             SystemVersionLevel.Windows_11_21H2 or SystemVersionLevel.Windows_11_After => true,
             _ => false
         };
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static WindowMaterial GetActualWindowMaterial(WindowMaterial material)
+            => material < WindowMaterial.None || material >= WindowMaterial._Last ||
+            !SequenceHelper.Contains(GetAvailableMaterials(), material) ? GetDefaultMaterial() : material;
 
         private static WindowMaterial[] GetAvailableMaterialsCore()
             => SystemConstants.VersionLevel switch

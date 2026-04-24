@@ -14,11 +14,14 @@ namespace ConcreteUI.Theme
 
         [Inline(InlineBehavior.Keep, export: true)]
         public static IThemeResourceProvider CreateResourceProvider(CoreWindow window, IThemeContext themeContext)
-            => CreateResourceProvider(window.GetDeviceContext(), themeContext, window.WindowMaterial);
+            => CreateResourceProviderUnsafe(window.GetDeviceContext(), themeContext, window.ActualWindowMaterial);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IThemeResourceProvider CreateResourceProvider(D2D1DeviceContext deviceContext, IThemeContext themeContext, WindowMaterial windowMaterial)
-            => new NormalImpl(deviceContext, themeContext,
-                (windowMaterial < WindowMaterial.None || windowMaterial >= WindowMaterial._Last) ? SystemHelper.GetDefaultMaterial() : windowMaterial);
+            => CreateResourceProviderUnsafe(deviceContext, themeContext, SystemHelper.GetActualWindowMaterial(windowMaterial));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static IThemeResourceProvider CreateResourceProviderUnsafe(D2D1DeviceContext deviceContext, IThemeContext themeContext, WindowMaterial windowMaterial)
+            => new NormalImpl(deviceContext, themeContext, windowMaterial);
     }
 }

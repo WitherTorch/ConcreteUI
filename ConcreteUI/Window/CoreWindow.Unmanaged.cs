@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
@@ -107,7 +108,7 @@ namespace ConcreteUI.Window
                 _isSystemPrepareBoosting = wParam != 0;
             else
                 controller.SetSystemBoosting(wParam != 0);
-            if (_windowMaterial == WindowMaterial.Integrated || IsUsingBackdrop())
+            if (_isIntegratedMaterial || IsUsingBackdrop())
             {
                 Margins margins = new Margins(-1);
                 DwmApi.DwmExtendFrameIntoClientArea(hwnd, &margins);
@@ -418,7 +419,7 @@ namespace ConcreteUI.Window
                     goto default;
                 #endregion
                 default:
-                    if (_windowMaterial == WindowMaterial.Integrated)
+                    if (_isIntegratedMaterial)
                         return TryProcessUIWindowMessage_Integrated(hwnd, message, wParam, lParam, out result);
                     else
                         return TryProcessUIWindowMessage_Default(hwnd, message, wParam, lParam, out result);
@@ -582,7 +583,7 @@ namespace ConcreteUI.Window
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool IsUsingBackdrop() => SystemConstants.VersionLevel switch
         {
-            SystemVersionLevel.Windows_11_After => _windowMaterial > WindowMaterial.Gaussian,
+            SystemVersionLevel.Windows_11_After => _actualWindowMaterial > WindowMaterial.Gaussian,
             _ => false,
         };
 
@@ -754,7 +755,7 @@ namespace ConcreteUI.Window
         #region Virtual Methods
         protected virtual HitTestValue CustomHitTest(PointF clientPoint)
         {
-            if (_windowMaterial == WindowMaterial.Integrated)
+            if (_isIntegratedMaterial)
                 return CustomHitTest_Integrated(clientPoint);
             else
                 return CustomHitTest_Default(clientPoint);
@@ -764,9 +765,15 @@ namespace ConcreteUI.Window
         #region Override Methods
         protected override CreateWindowInfo GetCreateWindowInfo()
         {
+            WindowMaterial material = SystemHelper.GetActualWindowMaterial(_windowMaterial);
+            bool isIntegratedMaterial = material == WindowMaterial.Integrated;
+
+            _actualWindowMaterial = material;
+            _isIntegratedMaterial = isIntegratedMaterial;
+            Thread.MemoryBarrier();
+
             CreateWindowInfo windowInfo = base.GetCreateWindowInfo();
-            WindowMaterial material = _windowMaterial;
-            if (material != WindowMaterial.Integrated)
+            if (!isIntegratedMaterial)
                 windowInfo.Styles &= ~WindowStyles.SystemMenu;
             SystemVersionLevel versionLevel = SystemConstants.VersionLevel;
             if (material == WindowMaterial.None && versionLevel == SystemVersionLevel.Windows_8)

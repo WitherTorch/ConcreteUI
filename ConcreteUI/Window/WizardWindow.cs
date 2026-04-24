@@ -176,7 +176,7 @@ namespace ConcreteUI.Window
             GetLayouts(flags, out DWriteTextLayout? titleLayout, out DWriteTextLayout? titleDescriptionLayout);
             ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
             Rect rect = _widePageRect;
-            if (WindowMaterial == WindowMaterial.Integrated)
+            if (ActualWindowMaterial == WindowMaterial.Integrated)
                 rect = new Rect(0, 0, ClientSize.Width, rect.Top);
             else
                 rect = new Rect(rect.Left, _titleBarRect.Bottom, rect.Right, rect.Top);
@@ -252,7 +252,7 @@ namespace ConcreteUI.Window
 
         protected override void ClearDCForTitle(D2D1DeviceContext deviceContext)
         {
-            if (WindowMaterial == WindowMaterial.Integrated)
+            if (ActualWindowMaterial == WindowMaterial.Integrated)
                 ClearDC(deviceContext);
             else
                 deviceContext.Clear(_clearDCColor);
@@ -263,7 +263,7 @@ namespace ConcreteUI.Window
         {
             MinimizeBox = false;
             MaximizeBox = false;
-            ShowTitle = WindowMaterial == WindowMaterial.Integrated;
+            ShowTitle = ActualWindowMaterial == WindowMaterial.Integrated;
         }
 
         protected D2D1Brush GetBrush(Brush brush)

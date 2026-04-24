@@ -111,7 +111,7 @@ namespace ConcreteUI.Window
             ref Rectangle menuBarButtonRectRef = ref UnsafeHelper.GetArrayDataReference(menuBarButtonRects);
             Rect pageRect = _pageRect;
             int x, y;
-            if (WindowMaterial == WindowMaterial.Integrated)
+            if (ActualWindowMaterial == WindowMaterial.Integrated)
             {
                 x = 0;
                 y = 0;
@@ -186,7 +186,7 @@ namespace ConcreteUI.Window
                     pixelsPerPoint);
                 menuBarRect.Bottom = actualBottom;
                 deviceContext.PushAxisAlignedClip(menuBarRect, D2D1AntialiasMode.Aliased);
-                if (WindowMaterial != WindowMaterial.Integrated)
+                if (ActualWindowMaterial != WindowMaterial.Integrated)
                     GraphicsUtils.ClearAndFill(deviceContext, menuBackBrush, clearDCColor);
                 else
                 {

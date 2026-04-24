@@ -80,7 +80,7 @@ namespace ConcreteUI.Window
         private readonly UnwrappableList<UIElement> _overlayElementList = new UnwrappableList<UIElement>();
         private readonly UnwrappableList<UIElement> _backgroundElementList = new UnwrappableList<UIElement>();
         private readonly LazyTiny<WeakReference> _focusElementRefLazy, _lastHitElementRefLazy, _recordedLastHitElementRefLazy;
-        private readonly WindowMaterial _windowMaterial;
+        private WindowMaterial _windowMaterial, _actualWindowMaterial;
         private SimpleGraphicsHost? _host;
         private DirtyAreaCollector? _collector;
         private RenderingController? _controller;
@@ -154,6 +154,8 @@ namespace ConcreteUI.Window
         }
 
         public WindowMaterial WindowMaterial => _windowMaterial;
+
+        public WindowMaterial ActualWindowMaterial => _actualWindowMaterial;
         #endregion
 
         #region Events
@@ -197,11 +199,8 @@ namespace ConcreteUI.Window
             CoreWindow? parent = _parent;
             ChangeBackgroundElement(new ToolTip(this, element => GetActiveElements().Contains(element)));
             InitializeElements();
-            ApplyTheme(parent is null ?
-                ThemeResourceProvider.CreateResourceProvider(deviceContext, ThemeManager.CurrentTheme, _windowMaterial) :
-                parent._resourceProvider!.Clone());
             if (parent is null)
-                ApplyTheme(ThemeResourceProvider.CreateResourceProvider(deviceContext, ThemeManager.CurrentTheme, _windowMaterial));
+                ApplyTheme(ThemeResourceProvider.CreateResourceProviderUnsafe(deviceContext, ThemeManager.CurrentTheme, _actualWindowMaterial));
             else
                 ApplyTheme(parent._resourceProvider!.Clone());
             SystemEvents.DisplaySettingsChanging += SystemEvents_DisplaySettingsChanging;
@@ -219,7 +218,6 @@ namespace ConcreteUI.Window
                 return false;
             }
 
-            WindowMaterial material = _windowMaterial;
             CoreWindow? parent = _parent;
 
             SimpleGraphicsHost host;
@@ -462,7 +460,7 @@ namespace ConcreteUI.Window
 
         void IRenderer.Refresh() => Refresh();
 
-        private bool IsBackgroundOpaque() => _windowMaterial == WindowMaterial.None;
+        private bool IsBackgroundOpaque() => _actualWindowMaterial == WindowMaterial.None;
         #endregion
 
         #region Abstract Methods
@@ -484,7 +482,7 @@ namespace ConcreteUI.Window
             UIElementHelper.ApplyTheme(provider, _overlayElementList);
             UIElementHelper.ApplyTheme(provider, _backgroundElementList);
             if (UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.TitleBackBrush) is D2D1SolidColorBrush backBrush &&
-                _windowMaterial == WindowMaterial.Integrated && SystemConstants.VersionLevel >= SystemVersionLevel.Windows_11_21H2)
+                _isIntegratedMaterial && SystemConstants.VersionLevel >= SystemVersionLevel.Windows_11_21H2)
                 FluentHandler.SetTitleBarColor(Handle, (Color)backBrush.Color);
             ConcreteUtils.ResetBlur(this);
         }
@@ -593,7 +591,7 @@ namespace ConcreteUI.Window
 
         protected virtual unsafe void RecalculateLayout(Size windowSize, bool callRecalculatePageLayout)
         {
-            if (_windowMaterial == WindowMaterial.Integrated)
+            if (_isIntegratedMaterial)
                 _pageRect = Rect.FromXYWH(Point.Empty, ClientSize);
             else
             {
@@ -742,7 +740,7 @@ namespace ConcreteUI.Window
 
         protected virtual void ClearDCForTitle(D2D1DeviceContext deviceContext)
         {
-            if (_windowMaterial == WindowMaterial.Integrated)
+            if (_isIntegratedMaterial)
             {
                 deviceContext.Clear();
                 return;
@@ -752,7 +750,7 @@ namespace ConcreteUI.Window
 
         protected virtual void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force)
         {
-            if (_windowMaterial == WindowMaterial.Integrated)
+            if (_isIntegratedMaterial)
                 return;
             ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
             Vector2 pixelsPerPoint = _pixelsPerPoint;
@@ -781,7 +779,7 @@ namespace ConcreteUI.Window
                 {
                     RectF titleBarRect = RenderingHelper.RoundInPixel(_titleBarRect, pixelsPerPoint);
                     deviceContext.PushAxisAlignedClip(titleBarRect, D2D1AntialiasMode.Aliased);
-                    deviceContext.DrawTextLayout(new PointF(_drawingOffsetX + 7.5f, _drawingOffsetY + 1.5f), 
+                    deviceContext.DrawTextLayout(new PointF(_drawingOffsetX + 7.5f, _drawingOffsetY + 1.5f),
                         titleLayout, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeBrush));
                     deviceContext.PopAxisAlignedClip();
                 }

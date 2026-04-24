@@ -11,7 +11,7 @@ namespace ConcreteUI.Internals
         public static void ApplyWindowStyle(CoreWindow window, out object? fixLagObject)
         {
             IntPtr handle = window.Handle;
-            WindowMaterial material = window.WindowMaterial;
+            WindowMaterial material = window.ActualWindowMaterial;
             fixLagObject = null;
             switch (SystemConstants.VersionLevel)
             {
@@ -124,7 +124,7 @@ namespace ConcreteUI.Internals
             {
                 case SystemVersionLevel.Windows_11_After:
                     FluentHandler.SetDarkThemeInWin11(handle, window.CurrentTheme?.IsDarkTheme ?? false);
-                    switch (window.WindowMaterial)
+                    switch (window.ActualWindowMaterial)
                     {
                         case WindowMaterial.Gaussian:
                             FluentHandler.EnableBlur(handle, window.CurrentTheme?.IsDarkTheme ?? false);
@@ -141,7 +141,7 @@ namespace ConcreteUI.Internals
                 case SystemVersionLevel.Windows_10:
                     goto case SystemVersionLevel.Reserved_1;
                 case SystemVersionLevel.Reserved_1:
-                    switch (window.WindowMaterial)
+                    switch (window.ActualWindowMaterial)
                     {
                         case WindowMaterial.Gaussian:
                             FluentHandler.EnableBlur(handle, window.CurrentTheme?.IsDarkTheme ?? false);
@@ -153,7 +153,7 @@ namespace ConcreteUI.Internals
                     break;
                 case SystemVersionLevel.Windows_8:
                 case SystemVersionLevel.Windows_7:
-                    if (window.WindowMaterial == WindowMaterial.Integrated)
+                    if (window.ActualWindowMaterial == WindowMaterial.Integrated)
                         if (AeroHandler.HasBlur())
                             AeroHandler.EnableBlur(handle);
                     break;

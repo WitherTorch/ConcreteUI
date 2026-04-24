@@ -224,11 +224,13 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ApplyThemeContextCore(IThemeContext themeContext)
         {
-            IRenderer renderer = Parent.GetRenderer();
+            IElementContainer parent = Parent;
+            IRenderer renderer = parent.GetRenderer();
+            CoreWindow window = parent.GetWindow();
             lock (_syncLock)
             {
-                IThemeResourceProvider provider = ThemeResourceProvider.CreateResourceProvider(renderer.GetDeviceContext(), themeContext,
-                (renderer as CoreWindow)?.WindowMaterial ?? WindowMaterial.Default);
+                IThemeResourceProvider provider = ThemeResourceProvider.CreateResourceProvider(
+                    renderer.GetDeviceContext(), themeContext, window.ActualWindowMaterial);
                 try
                 {
                     ApplyThemeCore(provider);

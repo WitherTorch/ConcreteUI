@@ -13,8 +13,6 @@ using ConcreteUI.Internals.Native;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
-using InlineMethod;
-
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
@@ -36,6 +34,7 @@ namespace ConcreteUI.Window
         private Vector2 _pixelsPerPoint = Vector2.One; // 螢幕DPI / 96
         private Vector2 _pointsPerPixel = Vector2.One; //  96 / 螢幕DPI
         private BitVector64 _titleBarStates = ulong.MaxValue;
+        private bool _isIntegratedMaterial = false;
         #endregion
 
         #region Events
@@ -114,7 +113,7 @@ namespace ConcreteUI.Window
         {
             get
             {
-                if (_windowMaterial == WindowMaterial.Integrated)
+                if (_isIntegratedMaterial)
                 {
                     IntPtr handle = Handle;
                     if (handle == IntPtr.Zero)
@@ -131,7 +130,7 @@ namespace ConcreteUI.Window
             }
             set
             {
-                if (_windowMaterial == WindowMaterial.Integrated)
+                if (_isIntegratedMaterial)
                 {
                     IntPtr handle = Handle;
                     if (handle == IntPtr.Zero)
@@ -161,7 +160,7 @@ namespace ConcreteUI.Window
         {
             get
             {
-                if (_windowMaterial == WindowMaterial.Integrated)
+                if (_isIntegratedMaterial)
                 {
                     IntPtr handle = Handle;
                     if (handle == IntPtr.Zero)
@@ -178,7 +177,7 @@ namespace ConcreteUI.Window
             }
             set
             {
-                if (_windowMaterial == WindowMaterial.Integrated)
+                if (_isIntegratedMaterial)
                 {
                     IntPtr handle = Handle;
                     if (handle == IntPtr.Zero)
@@ -208,7 +207,7 @@ namespace ConcreteUI.Window
         {
             get
             {
-                if (_windowMaterial == WindowMaterial.Integrated)
+                if (_isIntegratedMaterial)
                 {
                     IntPtr handle = Handle;
                     if (handle == IntPtr.Zero)
@@ -225,7 +224,7 @@ namespace ConcreteUI.Window
             }
             set
             {
-                if (_windowMaterial == WindowMaterial.Integrated)
+                if (_isIntegratedMaterial)
                 {
                     IntPtr handle = Handle;
                     if (handle == IntPtr.Zero)
@@ -261,7 +260,7 @@ namespace ConcreteUI.Window
             _recordedLastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.PublicationOnly);
             _lastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.None);
             _graphicsDeviceProvider = deviceProvider;
-            _windowMaterial = GetRealWindowMaterial(ConcreteSettings.WindowMaterial);
+            _windowMaterial = WindowMaterial.Default;
             UnwrappableList<GCHandle> windowList = _rootWindowList;
             lock (windowList)
                 windowList.Add(GCHandle.Alloc(this, GCHandleType.Weak));
@@ -279,7 +278,7 @@ namespace ConcreteUI.Window
             if (parent is null)
             {
                 _graphicsDeviceProvider = null;
-                _windowMaterial = GetRealWindowMaterial(ConcreteSettings.WindowMaterial);
+                _windowMaterial = WindowMaterial.Default;
                 windowList = _rootWindowList;
             }
             else
@@ -293,10 +292,21 @@ namespace ConcreteUI.Window
             InitUnmanagedPart();
         }
 
-        [Inline(InlineBehavior.Remove)]
-        private static WindowMaterial GetRealWindowMaterial(WindowMaterial material)
-            => material < WindowMaterial.None || material >= WindowMaterial._Last || !SequenceHelper.Contains(SystemHelper.GetAvailableMaterials(), material) ?
-            SystemHelper.GetDefaultMaterial() : material;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsIntegratedMaterial(WindowMaterial material)
+        {
+            switch (material)
+            {
+                case WindowMaterial.Integrated:
+                    return true;
+                case WindowMaterial.Default:
+                    return SystemHelper.GetDefaultMaterial() == WindowMaterial.Integrated;
+                default:
+                    if (SequenceHelper.Contains(SystemHelper.GetAvailableMaterials(), material))
+                        return false;
+                    goto case WindowMaterial.Default;
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static async void InvokeUpdateWindowFps(CoreWindow window)
