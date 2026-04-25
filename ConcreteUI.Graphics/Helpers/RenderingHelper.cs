@@ -3,233 +3,193 @@ using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
+using InlineMethod;
+
 using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Graphics.Helpers
 {
     public static class RenderingHelper
     {
+        private enum RoundingMethod
+        {
+            Floor,
+            Ceiling,
+            AwayFromZero
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float GetDefaultBorderWidth(float pixelsPerPoint)
             => MathF.Round(pixelsPerPoint, MidpointRounding.AwayFromZero) / pixelsPerPoint;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float FloorInPixel(float valueInPoints, float pixelsPerPoint)
-        {
-            if (pixelsPerPoint == 1.0f)
-                return valueInPoints;
-            return FloorInPixelCore(valueInPoints, pixelsPerPoint);
-        }
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Floor);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PointF FloorInPixel(Point valueInPoints, Vector2 pixelsPerPoint)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return valueInPoints;
-            float x = FloorInPixelCore(valueInPoints.X, pixelsPerPoint.X);
-            float y = FloorInPixelCore(valueInPoints.Y, pixelsPerPoint.Y);
-            return new PointF(x, y);
-        }
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Floor);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PointF FloorInPixel(PointF valueInPoints, Vector2 pixelsPerPoint)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return valueInPoints;
-            float x = FloorInPixelCore(valueInPoints.X, pixelsPerPoint.X);
-            float y = FloorInPixelCore(valueInPoints.Y, pixelsPerPoint.Y);
-            return new PointF(x, y);
-        }
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Floor);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF FloorInPixel(in Rect valueInPoints, Vector2 pixelsPerPoint)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return (RectF)valueInPoints;
-            float left = FloorInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
-            float top = FloorInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
-            float right = FloorInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pixelsPerPoint.X);
-            float bottom = FloorInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pixelsPerPoint.Y);
-            return new RectF(left, top, right, bottom);
-        }
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Floor);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF FloorInPixel(in Rectangle valueInPoints, Vector2 pixelsPerPoint)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return (RectF)valueInPoints;
-            float left = FloorInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
-            float top = FloorInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
-            float right = FloorInPixelCore(left + valueInPoints.Width, pixelsPerPoint.X);
-            float bottom = FloorInPixelCore(top + valueInPoints.Height, pixelsPerPoint.Y);
-            return new RectF(left, top, right, bottom);
-        }
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Floor);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF FloorInPixel(in RectF valueInPoints, Vector2 pixelsPerPoint)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return valueInPoints;
-            float left = FloorInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
-            float top = FloorInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
-            float right = FloorInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pixelsPerPoint.X);
-            float bottom = FloorInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pixelsPerPoint.Y);
-            return new RectF(left, top, right, bottom);
-        }
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Floor);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF FloorInPixel(in RectangleF valueInPoints, Vector2 pixelsPerPoint)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return valueInPoints;
-            float left = FloorInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
-            float top = FloorInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
-            float right = FloorInPixelCore(left + valueInPoints.Width, pixelsPerPoint.X);
-            float bottom = FloorInPixelCore(top + valueInPoints.Height, pixelsPerPoint.Y);
-            return new RectF(left, top, right, bottom);
-        }
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Floor);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float CeilingInPixel(float valueInPoints, float pixelsPerPoint)
-        {
-            if (pixelsPerPoint == 1.0f)
-                return valueInPoints;
-            return CeilingInPixelCore(valueInPoints, pixelsPerPoint);
-        }
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Ceiling);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PointF CeilingInPixel(Point valueInPoints, Vector2 pixelsPerPoint)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return valueInPoints;
-            float x = CeilingInPixelCore(valueInPoints.X, pixelsPerPoint.X);
-            float y = CeilingInPixelCore(valueInPoints.Y, pixelsPerPoint.Y);
-            return new PointF(x, y);
-        }
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Ceiling);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PointF CeilingInPixel(PointF valueInPoints, Vector2 pixelsPerPoint)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return valueInPoints;
-            float x = CeilingInPixelCore(valueInPoints.X, pixelsPerPoint.X);
-            float y = CeilingInPixelCore(valueInPoints.Y, pixelsPerPoint.Y);
-            return new PointF(x, y);
-        }
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Ceiling);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF CeilingInPixel(in Rect valueInPoints, Vector2 pixelsPerPoint)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return (RectF)valueInPoints;
-            float left = CeilingInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
-            float top = CeilingInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
-            float right = CeilingInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pixelsPerPoint.X);
-            float bottom = CeilingInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pixelsPerPoint.Y);
-            return new RectF(left, top, right, bottom);
-        }
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Ceiling);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF CeilingInPixel(in Rectangle valueInPoints, Vector2 pixelsPerPoint)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return (RectF)valueInPoints;
-            float left = CeilingInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
-            float top = CeilingInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
-            float right = CeilingInPixelCore(left + valueInPoints.Width, pixelsPerPoint.X);
-            float bottom = CeilingInPixelCore(top + valueInPoints.Height, pixelsPerPoint.Y);
-            return new RectF(left, top, right, bottom);
-        }
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Ceiling);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF CeilingInPixel(in RectF valueInPoints, Vector2 pixelsPerPoint)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return valueInPoints;
-            float left = CeilingInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
-            float top = CeilingInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
-            float right = CeilingInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pixelsPerPoint.X);
-            float bottom = CeilingInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pixelsPerPoint.Y);
-            return new RectF(left, top, right, bottom);
-        }
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Ceiling);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF CeilingInPixel(in RectangleF valueInPoints, Vector2 pixelsPerPoint)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return valueInPoints;
-            float left = CeilingInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
-            float top = CeilingInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
-            float right = CeilingInPixelCore(left + valueInPoints.Width, pixelsPerPoint.X);
-            float bottom = CeilingInPixelCore(top + valueInPoints.Height, pixelsPerPoint.Y);
-            return new RectF(left, top, right, bottom);
-        }
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Ceiling);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float RoundInPixel(float valueInPoints, float pixelsPerPoint)
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.AwayFromZero);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PointF RoundInPixel(Point valueInPoints, Vector2 pixelsPerPoint)
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.AwayFromZero);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PointF RoundInPixel(PointF valueInPoints, Vector2 pixelsPerPoint)
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.AwayFromZero);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RectF RoundInPixel(in Rect valueInPoints, Vector2 pixelsPerPoint)
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.AwayFromZero);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RectF RoundInPixel(in Rectangle valueInPoints, Vector2 pixelsPerPoint)
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.AwayFromZero);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RectF RoundInPixel(in RectF valueInPoints, Vector2 pixelsPerPoint)
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.AwayFromZero);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RectF RoundInPixel(in RectangleF valueInPoints, Vector2 pixelsPerPoint)
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.AwayFromZero);
+
+        [Inline(InlineBehavior.Remove)]
+        private static float RoundInPixelCore(float valueInPoints, float pixelsPerPoint, [InlineParameter] RoundingMethod method)
         {
             if (pixelsPerPoint == 1.0f)
                 return valueInPoints;
-            return RoundInPixelCore(valueInPoints, pixelsPerPoint);
+            return RoundInPixelCore_Dispatch(valueInPoints, pixelsPerPoint, method);
         }
 
-        public static PointF RoundInPixel(Point valueInPoints, Vector2 pixelsPerPoint)
+        [Inline(InlineBehavior.Remove)]
+        private static PointF RoundInPixelCore(Point valueInPoints, Vector2 pixelsPerPoint, [InlineParameter] RoundingMethod method)
         {
             if (pixelsPerPoint == Vector2.One)
                 return valueInPoints;
-            float x = RoundInPixelCore(valueInPoints.X, pixelsPerPoint.X);
-            float y = RoundInPixelCore(valueInPoints.Y, pixelsPerPoint.Y);
+            float x = RoundInPixelCore_Dispatch(valueInPoints.X, pixelsPerPoint.X, method);
+            float y = RoundInPixelCore_Dispatch(valueInPoints.Y, pixelsPerPoint.Y, method);
             return new PointF(x, y);
         }
 
-        public static PointF RoundInPixel(PointF valueInPoints, Vector2 pixelsPerPoint)
+        [Inline(InlineBehavior.Remove)]
+        private static PointF RoundInPixelCore(PointF valueInPoints, Vector2 pixelsPerPoint, [InlineParameter] RoundingMethod method)
         {
             if (pixelsPerPoint == Vector2.One)
                 return valueInPoints;
-            float x = RoundInPixelCore(valueInPoints.X, pixelsPerPoint.X);
-            float y = RoundInPixelCore(valueInPoints.Y, pixelsPerPoint.Y);
+            float x = RoundInPixelCore_Dispatch(valueInPoints.X, pixelsPerPoint.X, method);
+            float y = RoundInPixelCore_Dispatch(valueInPoints.Y, pixelsPerPoint.Y, method);
             return new PointF(x, y);
         }
 
-        public static RectF RoundInPixel(in Rect valueInPoints, Vector2 pixelsPerPoint)
+        [Inline(InlineBehavior.Remove)]
+        private static RectF RoundInPixelCore(in Rect valueInPoints, Vector2 pixelsPerPoint, [InlineParameter] RoundingMethod method)
         {
             if (pixelsPerPoint == Vector2.One)
                 return (RectF)valueInPoints;
-            float left = RoundInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
-            float top = RoundInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
-            float right = RoundInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pixelsPerPoint.X);
-            float bottom = RoundInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pixelsPerPoint.Y);
+            float left = RoundInPixelCore_Dispatch(valueInPoints.Left, pixelsPerPoint.X, method);
+            float top = RoundInPixelCore_Dispatch(valueInPoints.Top, pixelsPerPoint.Y, method);
+            float right = RoundInPixelCore_Dispatch(valueInPoints.Right, pixelsPerPoint.X, method);
+            float bottom = RoundInPixelCore_Dispatch(valueInPoints.Bottom, pixelsPerPoint.Y, method);
             return new RectF(left, top, right, bottom);
         }
 
-        public static RectF RoundInPixel(in Rectangle valueInPoints, Vector2 pixelsPerPoint)
+        [Inline(InlineBehavior.Remove)]
+        private static RectF RoundInPixelCore(in Rectangle valueInPoints, Vector2 pixelsPerPoint, [InlineParameter] RoundingMethod method)
         {
             if (pixelsPerPoint == Vector2.One)
                 return (RectF)valueInPoints;
-            float left = RoundInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
-            float top = RoundInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
-            float right = RoundInPixelCore(left + valueInPoints.Width, pixelsPerPoint.X);
-            float bottom = RoundInPixelCore(top + valueInPoints.Height, pixelsPerPoint.Y);
+            float left = RoundInPixelCore_Dispatch(valueInPoints.Left, pixelsPerPoint.X, method);
+            float top = RoundInPixelCore_Dispatch(valueInPoints.Top, pixelsPerPoint.Y, method);
+            float right = RoundInPixelCore_Dispatch(valueInPoints.Right, pixelsPerPoint.X, method);
+            float bottom = RoundInPixelCore_Dispatch(valueInPoints.Bottom, pixelsPerPoint.Y, method);
             return new RectF(left, top, right, bottom);
         }
 
-        public static RectF RoundInPixel(in RectF valueInPoints, Vector2 pixelsPerPoint)
+        [Inline(InlineBehavior.Remove)]
+        private static RectF RoundInPixelCore(in RectF valueInPoints, Vector2 pixelsPerPoint, [InlineParameter] RoundingMethod method)
         {
             if (pixelsPerPoint == Vector2.One)
                 return valueInPoints;
-            float left = RoundInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
-            float top = RoundInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
-            float right = RoundInPixelCore(valueInPoints.Right + (left - valueInPoints.Left), pixelsPerPoint.X);
-            float bottom = RoundInPixelCore(valueInPoints.Bottom + (top - valueInPoints.Top), pixelsPerPoint.Y);
+            float left = RoundInPixelCore_Dispatch(valueInPoints.Left, pixelsPerPoint.X, method);
+            float top = RoundInPixelCore_Dispatch(valueInPoints.Top, pixelsPerPoint.Y, method);
+            float right = RoundInPixelCore_Dispatch(valueInPoints.Right, pixelsPerPoint.X, method);
+            float bottom = RoundInPixelCore_Dispatch(valueInPoints.Bottom, pixelsPerPoint.Y, method);
             return new RectF(left, top, right, bottom);
         }
 
-        public static RectF RoundInPixel(in RectangleF valueInPoints, Vector2 pixelsPerPoint)
+        [Inline(InlineBehavior.Remove)]
+        private static RectF RoundInPixelCore(in RectangleF valueInPoints, Vector2 pixelsPerPoint, [InlineParameter] RoundingMethod method)
         {
             if (pixelsPerPoint == Vector2.One)
                 return valueInPoints;
-            float left = RoundInPixelCore(valueInPoints.Left, pixelsPerPoint.X);
-            float top = RoundInPixelCore(valueInPoints.Top, pixelsPerPoint.Y);
-            float right = RoundInPixelCore(left + valueInPoints.Width, pixelsPerPoint.X);
-            float bottom = RoundInPixelCore(top + valueInPoints.Height, pixelsPerPoint.Y);
+            float left = RoundInPixelCore_Dispatch(valueInPoints.Left, pixelsPerPoint.X, method);
+            float top = RoundInPixelCore_Dispatch(valueInPoints.Top, pixelsPerPoint.Y, method);
+            float right = RoundInPixelCore_Dispatch(valueInPoints.Right, pixelsPerPoint.X, method);
+            float bottom = RoundInPixelCore_Dispatch(valueInPoints.Bottom, pixelsPerPoint.Y, method);
             return new RectF(left, top, right, bottom);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float FloorInPixelCore(float valueInPoints, float pixelsPerPoint)
-            => MathF.Floor(valueInPoints * pixelsPerPoint) / pixelsPerPoint;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float CeilingInPixelCore(float valueInPoints, float pixelsPerPoint)
-            => MathF.Ceiling(valueInPoints * pixelsPerPoint) / pixelsPerPoint;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float RoundInPixelCore(float valueInPoints, float pixelsPerPoint)
-            => MathF.Round(valueInPoints * pixelsPerPoint, MidpointRounding.AwayFromZero) / pixelsPerPoint;
+        [Inline(InlineBehavior.Remove)]
+        private static float RoundInPixelCore_Dispatch(float valueInPoints, float pixelsPerPoint, [InlineParameter] RoundingMethod method)
+            => method switch
+            {
+                RoundingMethod.Floor => MathF.Floor(valueInPoints * pixelsPerPoint) / pixelsPerPoint,
+                RoundingMethod.Ceiling => MathF.Ceiling(valueInPoints * pixelsPerPoint) / pixelsPerPoint,
+                RoundingMethod.AwayFromZero => MathF.Round(valueInPoints * pixelsPerPoint, MidpointRounding.AwayFromZero) / pixelsPerPoint,
+                _ => throw new ArgumentOutOfRangeException(nameof(method))
+            };
     }
 }
