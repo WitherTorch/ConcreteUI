@@ -9,13 +9,13 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Graphics.Helpers
 {
-    public static class RenderingHelper
+    public static partial class RenderingHelper
     {
         private enum RoundingMethod
         {
             Floor,
             Ceiling,
-            AwayFromZero
+            Round
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -80,31 +80,31 @@ namespace ConcreteUI.Graphics.Helpers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float RoundInPixel(float valueInPoints, float pixelsPerPoint)
-            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.AwayFromZero);
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Round);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PointF RoundInPixel(Point valueInPoints, Vector2 pixelsPerPoint)
-            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.AwayFromZero);
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Round);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PointF RoundInPixel(PointF valueInPoints, Vector2 pixelsPerPoint)
-            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.AwayFromZero);
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Round);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF RoundInPixel(in Rect valueInPoints, Vector2 pixelsPerPoint)
-            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.AwayFromZero);
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Round);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF RoundInPixel(in Rectangle valueInPoints, Vector2 pixelsPerPoint)
-            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.AwayFromZero);
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Round);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF RoundInPixel(in RectF valueInPoints, Vector2 pixelsPerPoint)
-            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.AwayFromZero);
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Round);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RectF RoundInPixel(in RectangleF valueInPoints, Vector2 pixelsPerPoint)
-            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.AwayFromZero);
+            => RoundInPixelCore(valueInPoints, pixelsPerPoint, RoundingMethod.Round);
 
         [Inline(InlineBehavior.Remove)]
         private static float RoundInPixelCore(float valueInPoints, float pixelsPerPoint, [InlineParameter] RoundingMethod method)
@@ -135,52 +135,16 @@ namespace ConcreteUI.Graphics.Helpers
         }
 
         [Inline(InlineBehavior.Remove)]
-        private static RectF RoundInPixelCore(in Rect valueInPoints, Vector2 pixelsPerPoint, [InlineParameter] RoundingMethod method)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return (RectF)valueInPoints;
-            float left = RoundInPixelCore_Dispatch(valueInPoints.Left, pixelsPerPoint.X, method);
-            float top = RoundInPixelCore_Dispatch(valueInPoints.Top, pixelsPerPoint.Y, method);
-            float right = RoundInPixelCore_Dispatch(valueInPoints.Right, pixelsPerPoint.X, method);
-            float bottom = RoundInPixelCore_Dispatch(valueInPoints.Bottom, pixelsPerPoint.Y, method);
-            return new RectF(left, top, right, bottom);
-        }
+        private static partial RectF RoundInPixelCore(in Rect valueInPoints, Vector2 pixelsPerPoint, [InlineParameter] RoundingMethod method);
 
         [Inline(InlineBehavior.Remove)]
-        private static RectF RoundInPixelCore(in Rectangle valueInPoints, Vector2 pixelsPerPoint, [InlineParameter] RoundingMethod method)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return (RectF)valueInPoints;
-            float left = RoundInPixelCore_Dispatch(valueInPoints.Left, pixelsPerPoint.X, method);
-            float top = RoundInPixelCore_Dispatch(valueInPoints.Top, pixelsPerPoint.Y, method);
-            float right = RoundInPixelCore_Dispatch(valueInPoints.Right, pixelsPerPoint.X, method);
-            float bottom = RoundInPixelCore_Dispatch(valueInPoints.Bottom, pixelsPerPoint.Y, method);
-            return new RectF(left, top, right, bottom);
-        }
+        private static partial RectF RoundInPixelCore(in Rectangle valueInPoints, Vector2 pixelsPerPoint, [InlineParameter] RoundingMethod method);
 
         [Inline(InlineBehavior.Remove)]
-        private static RectF RoundInPixelCore(in RectF valueInPoints, Vector2 pixelsPerPoint, [InlineParameter] RoundingMethod method)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return valueInPoints;
-            float left = RoundInPixelCore_Dispatch(valueInPoints.Left, pixelsPerPoint.X, method);
-            float top = RoundInPixelCore_Dispatch(valueInPoints.Top, pixelsPerPoint.Y, method);
-            float right = RoundInPixelCore_Dispatch(valueInPoints.Right, pixelsPerPoint.X, method);
-            float bottom = RoundInPixelCore_Dispatch(valueInPoints.Bottom, pixelsPerPoint.Y, method);
-            return new RectF(left, top, right, bottom);
-        }
+        private static partial RectF RoundInPixelCore(in RectF valueInPoints, Vector2 pixelsPerPoint, [InlineParameter] RoundingMethod method);
 
         [Inline(InlineBehavior.Remove)]
-        private static RectF RoundInPixelCore(in RectangleF valueInPoints, Vector2 pixelsPerPoint, [InlineParameter] RoundingMethod method)
-        {
-            if (pixelsPerPoint == Vector2.One)
-                return valueInPoints;
-            float left = RoundInPixelCore_Dispatch(valueInPoints.Left, pixelsPerPoint.X, method);
-            float top = RoundInPixelCore_Dispatch(valueInPoints.Top, pixelsPerPoint.Y, method);
-            float right = RoundInPixelCore_Dispatch(valueInPoints.Right, pixelsPerPoint.X, method);
-            float bottom = RoundInPixelCore_Dispatch(valueInPoints.Bottom, pixelsPerPoint.Y, method);
-            return new RectF(left, top, right, bottom);
-        }
+        private static partial RectF RoundInPixelCore(in RectangleF valueInPoints, Vector2 pixelsPerPoint, [InlineParameter] RoundingMethod method);
 
         [Inline(InlineBehavior.Remove)]
         private static float RoundInPixelCore_Dispatch(float valueInPoints, float pixelsPerPoint, [InlineParameter] RoundingMethod method)
@@ -188,7 +152,7 @@ namespace ConcreteUI.Graphics.Helpers
             {
                 RoundingMethod.Floor => MathF.Floor(valueInPoints * pixelsPerPoint) / pixelsPerPoint,
                 RoundingMethod.Ceiling => MathF.Ceiling(valueInPoints * pixelsPerPoint) / pixelsPerPoint,
-                RoundingMethod.AwayFromZero => MathF.Round(valueInPoints * pixelsPerPoint, MidpointRounding.AwayFromZero) / pixelsPerPoint,
+                RoundingMethod.Round => MathF.Round(valueInPoints * pixelsPerPoint, MidpointRounding.AwayFromZero) / pixelsPerPoint,
                 _ => throw new ArgumentOutOfRangeException(nameof(method))
             };
     }
