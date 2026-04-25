@@ -251,7 +251,8 @@ namespace ConcreteUI.Controls
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private D2D1Brush GetButtonStateBrush(ButtonTriState state)
-            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), state > ButtonTriState.Pressed ? (nuint)ButtonTriState.None : (nuint)state);
+            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), 
+                (nuint)Brush.ScrollBarForeBrush + (state > ButtonTriState.Pressed ? (nuint)ButtonTriState.None : (nuint)state));
 
         public override void OnSizeChanged() => Update(ScrollableElementUpdateFlags.RecalcLayout);
 
