@@ -1,3 +1,6 @@
 [submodule "WitherTorch.Common"]
 	path = WitherTorch.Common
 	url = https://github.com/WitherTorch/WitherTorch.Common.git
+[submodule "RiceTea.Backport.System.Runtime.Intrinsics"]
+	path = RiceTea.Backport.System.Runtime.Intrinsics
+	url = https://github.com/new1271/RiceTea.Backport.System.Runtime.Intrinsics.git
