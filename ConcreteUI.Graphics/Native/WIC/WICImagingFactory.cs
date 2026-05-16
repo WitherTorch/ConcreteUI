@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 
@@ -77,7 +77,7 @@ namespace ConcreteUI.Graphics.Native.WIC
             int hr;
             fixed (char* ptr = filename)
             {
-                hr = ((delegate*<void*, char*, Guid*, uint, WICDecodeOptions, void**, int>)functionPointer)(nativePointer,
+                hr = ((delegate* unmanaged[Stdcall]<void*, char*, Guid*, uint, WICDecodeOptions, void**, int>)functionPointer)(nativePointer,
                     ptr, vendorGuid, ConvertFileAccessToWin32GenericAccess(access), metadataOptions, &nativePointer);
             }
             ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
@@ -105,7 +105,7 @@ namespace ConcreteUI.Graphics.Native.WIC
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateDecoderFromStream);
-            int hr = ((delegate*<void*, void*, Guid*, WICDecodeOptions, void**, int>)functionPointer)(nativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void*, Guid*, WICDecodeOptions, void**, int>)functionPointer)(nativePointer,
                     pStream, vendorGuid, metadataOptions, &nativePointer);
             ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
             return new WICBitmapDecoder(nativePointer, ReferenceType.Owned);
@@ -123,7 +123,7 @@ namespace ConcreteUI.Graphics.Native.WIC
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateDecoderFromFileHandle);
-            int hr = ((delegate*<void*, IntPtr, Guid*, WICDecodeOptions, void**, int>)functionPointer)(nativePointer,
+            int hr = ((delegate* unmanaged[Stdcall]<void*, IntPtr, Guid*, WICDecodeOptions, void**, int>)functionPointer)(nativePointer,
                     handle, vendorGuid, metadataOptions, &nativePointer);
             ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
             return new WICBitmapDecoder(nativePointer, ReferenceType.Owned);
@@ -133,7 +133,7 @@ namespace ConcreteUI.Graphics.Native.WIC
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateBitmapScaler);
-            int hr = ((delegate*<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
             ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
             return new WICBitmapScaler(nativePointer, ReferenceType.Owned);
         }
@@ -142,7 +142,7 @@ namespace ConcreteUI.Graphics.Native.WIC
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateBitmapClipper);
-            int hr = ((delegate*<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
             ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
             return new WICBitmapClipper(nativePointer, ReferenceType.Owned);
         }
@@ -151,7 +151,7 @@ namespace ConcreteUI.Graphics.Native.WIC
         {
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateBitmapFlipRotator);
-            int hr = ((delegate*<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
             ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
             return new WICBitmapFlipRotator(nativePointer, ReferenceType.Owned);
         }
