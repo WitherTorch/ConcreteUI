@@ -260,7 +260,7 @@ namespace ConcreteUI.Window
             _recordedLastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.PublicationOnly);
             _lastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.None);
             _graphicsDeviceProvider = deviceProvider;
-            _windowMaterial = WindowMaterial.Default;
+            _windowMaterial = ConcreteSettings.WindowMaterial;
             UnwrappableList<GCHandle> windowList = _rootWindowList;
             lock (windowList)
                 windowList.Add(GCHandle.Alloc(this, GCHandleType.Weak));
@@ -278,7 +278,7 @@ namespace ConcreteUI.Window
             if (parent is null)
             {
                 _graphicsDeviceProvider = null;
-                _windowMaterial = WindowMaterial.Default;
+                _windowMaterial = ConcreteSettings.WindowMaterial;
                 windowList = _rootWindowList;
             }
             else
