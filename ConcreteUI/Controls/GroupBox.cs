@@ -33,7 +33,7 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly LayoutNode?[] _contentLayoutReferences = new LayoutNode?[(int)LayoutProperty._Last];
+        private readonly LayoutNode?[] _contentLayoutDefinitions = new LayoutNode?[(int)LayoutProperty._Last];
         private readonly ObservableList<UIElement> _children;
 
         private WeakReference<GroupBox>? _reference;
@@ -55,7 +55,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LayoutNode GetContentLayoutReference(LayoutProperty property)
+        public LayoutNode GetContentLayoutDefinition(LayoutProperty property)
         {
             if (property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
@@ -65,7 +65,7 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private LayoutNode GetContentLayoutDefinitionCore(nuint property)
         {
-            ref LayoutNode? variable = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_contentLayoutReferences), property);
+            ref LayoutNode? variable = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_contentLayoutDefinitions), property);
             if (variable is null)
             {
                 WeakReference<GroupBox>? reference = InterlockedHelper.Read(ref _reference);

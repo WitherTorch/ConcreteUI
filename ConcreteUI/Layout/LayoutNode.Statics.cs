@@ -71,7 +71,7 @@ namespace ConcreteUI.Layout
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LayoutNode Element(UIElement element, LayoutProperty property)
-            => element.GetLayoutReference(property);
+            => element.GetLayoutDefinition(property);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LayoutNode Page(LayoutProperty property)

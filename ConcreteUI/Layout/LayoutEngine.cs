@@ -80,7 +80,7 @@ namespace ConcreteUI.Layout
             TreeDictionary<LayoutNode, StrongBox<int?>> computeDict = _computeDict;
             for (LayoutProperty prop = LayoutProperty.Left; prop < LayoutProperty._Last; prop++)
             {
-                LayoutNode? variable = element.GetLayoutVariable(prop);
+                LayoutNode? variable = element.GetLayoutExpression(prop);
                 if (variable is null)
                     continue;
                 contextsLazy.Value[(int)prop] = variable;

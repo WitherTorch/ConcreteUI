@@ -49,7 +49,7 @@ namespace ConcreteUI.Controls
         private WeakReference<UIElement> GetWeakReference() => _reference ??= new WeakReference<UIElement>(this);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LayoutNode GetLayoutReference(LayoutProperty property)
+        public LayoutNode GetLayoutDefinition(LayoutProperty property)
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
@@ -57,7 +57,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LayoutNode? GetLayoutVariable(LayoutProperty property)
+        public LayoutNode? GetLayoutExpression(LayoutProperty property)
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
@@ -65,7 +65,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SetLayoutVariable(LayoutProperty property, LayoutNode? variable)
+        public void SetLayoutExpression(LayoutProperty property, LayoutNode? variable)
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
