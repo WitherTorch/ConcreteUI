@@ -46,9 +46,9 @@ namespace ConcreteUI.Controls
             _owner = owner;
             _isFirstTimeClick = true;
             _selectedIndex = -1;
-            LeftVariable = owner.LeftReference;
-            RightVariable = owner.RightReference;
-            TopVariable = new DefaultTopVariable(this);
+            LeftExpression = owner.LeftDefinition;
+            RightExpression = owner.RightDefinition;
+            TopExpression = new DefaultTopNode(this);
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
@@ -98,7 +98,7 @@ namespace ConcreteUI.Controls
             _maxViewCount = maxViewCount;
             SurfaceSize = new Size(0, MathI.Ceiling(itemHeight * count));
             float elementHeight = maxViewCount * itemHeight;
-            HeightVariable = MathI.Ceiling(elementHeight);
+            HeightExpression = MathI.Ceiling(elementHeight);
             if (lastIndex > maxViewCount / 2)
                 ScrollingTo(MathI.Ceiling(lastIndex * itemHeight + itemHeight / 2 - elementHeight / 2));
         }

@@ -37,7 +37,7 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[1];
+        private readonly LayoutNode?[] _autoLayoutDefinitionCache = new LayoutNode?[1];
         private readonly ObservableList<string> _items;
 
         private DWriteTextLayout? _layout;
@@ -63,7 +63,7 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ComboBox WithAutoHeight()
         {
-            HeightVariable = AutoHeightReference;
+            HeightExpression = AutoHeightDefinition;
             return this;
         }
 

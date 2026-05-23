@@ -48,7 +48,7 @@ namespace ConcreteUI.Controls
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
         private readonly D2D1Brush?[] _checkBoxBrushes = new D2D1Brush[(int)CheckBoxBrush._Last];
-        private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[2];
+        private readonly LayoutNode?[] _autoLayoutDefinitionCache = new LayoutNode?[2];
         private readonly BitList _stateVectorList;
         private readonly ObservableList<string> _items;
 
@@ -77,14 +77,14 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ListBox WithAutoWidth()
         {
-            WidthVariable = AutoWidthReference;
+            WidthExpression = AutoWidthDefinition;
             return this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ListBox WithAutoHeight()
         {
-            HeightVariable = AutoHeightReference;
+            HeightExpression = AutoHeightDefinition;
             return this;
         }
 

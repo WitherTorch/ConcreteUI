@@ -105,40 +105,40 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Static Properties
-        public static LayoutVariable PageLeftReference
+        public static LayoutNode PageLeftDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => LayoutVariable.PageReference(LayoutProperty.Left);
+            get => LayoutNode.Page(LayoutProperty.Left);
         }
 
-        public static LayoutVariable PageTopReference
+        public static LayoutNode PageTopDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => LayoutVariable.PageReference(LayoutProperty.Top);
+            get => LayoutNode.Page(LayoutProperty.Top);
         }
 
-        public static LayoutVariable PageRightReference
+        public static LayoutNode PageRightDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => LayoutVariable.PageReference(LayoutProperty.Right);
+            get => LayoutNode.Page(LayoutProperty.Right);
         }
 
-        public static LayoutVariable PageBottomReference
+        public static LayoutNode PageBottomDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => LayoutVariable.PageReference(LayoutProperty.Bottom);
+            get => LayoutNode.Page(LayoutProperty.Bottom);
         }
 
-        public static LayoutVariable PageWidthReference
+        public static LayoutNode PageWidthDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => LayoutVariable.PageReference(LayoutProperty.Width);
+            get => LayoutNode.Page(LayoutProperty.Width);
         }
 
-        public static LayoutVariable PageHeightReference
+        public static LayoutNode PageHeightDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => LayoutVariable.PageReference(LayoutProperty.Height);
+            get => LayoutNode.Page(LayoutProperty.Height);
         }
         #endregion
 

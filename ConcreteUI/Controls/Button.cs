@@ -32,7 +32,7 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[2];
+        private readonly LayoutNode?[] _autoLayoutDefinitionCache = new LayoutNode?[2];
 
         private DWriteTextLayout? _layout;
         private string? _fontName;
@@ -51,14 +51,14 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Button WithAutoWidth()
         {
-            WidthVariable = AutoWidthReference;
+            WidthExpression = AutoWidthDefinition;
             return this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Button WithAutoHeight()
         {
-            HeightVariable = AutoHeightReference;
+            HeightExpression = AutoHeightDefinition;
             return this;
         }
 

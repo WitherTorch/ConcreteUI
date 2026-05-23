@@ -92,10 +92,10 @@ namespace ConcreteUI.Controls
             set => _dropDownListVisibleCount = value;
         }
 
-        public LayoutVariable AutoHeightReference
+        public LayoutNode AutoHeightDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _autoLayoutVariableCache[0] ??= new AutoHeightVariable(this);
+            get => _autoLayoutDefinitionCache[0] ??= new AutoHeightNode(this);
         }
     }
 }

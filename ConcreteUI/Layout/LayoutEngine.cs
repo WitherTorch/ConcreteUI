@@ -17,8 +17,8 @@ namespace ConcreteUI.Layout
 {
     public sealed class LayoutEngine
     {
-        private readonly TreeDictionary<UIElement, LayoutVariable?[]> _elementDict = new();
-        private readonly TreeDictionary<LayoutVariable, StrongBox<int?>> _computeDict = new();
+        private readonly TreeDictionary<UIElement, LayoutNode?[]> _elementDict = new();
+        private readonly TreeDictionary<LayoutNode, StrongBox<int?>> _computeDict = new();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void QueueElements(IEnumerable<UIElement?> elements)
@@ -74,13 +74,13 @@ namespace ConcreteUI.Layout
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void QueueElement(UIElement element)
         {
-            LazyTinyRef<LayoutVariable[]> contextsLazy = new LazyTinyRef<LayoutVariable[]>(static () => new LayoutVariable[(int)LayoutProperty._Last]);
+            LazyTinyRef<LayoutNode[]> contextsLazy = new LazyTinyRef<LayoutNode[]>(static () => new LayoutNode[(int)LayoutProperty._Last]);
 
-            TreeDictionary<UIElement, LayoutVariable?[]> elementDict = _elementDict;
-            TreeDictionary<LayoutVariable, StrongBox<int?>> computeDict = _computeDict;
+            TreeDictionary<UIElement, LayoutNode?[]> elementDict = _elementDict;
+            TreeDictionary<LayoutNode, StrongBox<int?>> computeDict = _computeDict;
             for (LayoutProperty prop = LayoutProperty.Left; prop < LayoutProperty._Last; prop++)
             {
-                LayoutVariable? variable = element.GetLayoutVariable(prop);
+                LayoutNode? variable = element.GetLayoutVariable(prop);
                 if (variable is null)
                     continue;
                 contextsLazy.Value[(int)prop] = variable;
@@ -156,23 +156,23 @@ namespace ConcreteUI.Layout
 
         private unsafe void RecalculateLayoutCore(in Rect pageRect)
         {
-            TreeDictionary<UIElement, LayoutVariable?[]> elementDict = _elementDict;
-            TreeDictionary<LayoutVariable, StrongBox<int?>> computeDict = _computeDict;
-            LayoutVariableManager variableManager = new LayoutVariableManager(pageRect, elementDict, computeDict);
+            TreeDictionary<UIElement, LayoutNode?[]> elementDict = _elementDict;
+            TreeDictionary<LayoutNode, StrongBox<int?>> computeDict = _computeDict;
+            LayoutNodeManager variableManager = new LayoutNodeManager(pageRect, elementDict, computeDict);
 
-            foreach ((UIElement element, LayoutVariable?[] variables) in elementDict)
+            foreach ((UIElement element, LayoutNode?[] variables) in elementDict)
             {
                 Exception innerException;
 
                 Rectangle bounds = default;
                 int* values = (int*)&bounds;
 
-                ref LayoutVariable? variableArrayRef = ref UnsafeHelper.GetArrayDataReference(variables);
+                ref LayoutNode? variableArrayRef = ref UnsafeHelper.GetArrayDataReference(variables);
 
                 bool hasNull = false;
                 for (nuint i = (nuint)LayoutProperty.Left; i <= (nuint)LayoutProperty.Top; i++)
                 {
-                    LayoutVariable? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
+                    LayoutNode? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
                     if (variable is null)
                     {
                         hasNull = true;
@@ -190,7 +190,7 @@ namespace ConcreteUI.Layout
                 }
                 for (nuint i = (nuint)LayoutProperty.Width; i <= (nuint)LayoutProperty.Height; i++)
                 {
-                    LayoutVariable? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
+                    LayoutNode? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
                     if (variable is null)
                     {
                         hasNull = true;
@@ -211,22 +211,22 @@ namespace ConcreteUI.Layout
                 {
                     for (nuint i = (nuint)LayoutProperty.Left; i <= (nuint)LayoutProperty.Top; i++)
                     {
-                        LayoutVariable? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
+                        LayoutNode? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
                         if (variable is not null)
                             continue;
-                        LayoutVariable? leftVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i + 2);
-                        LayoutVariable? rightVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i + 4);
+                        LayoutNode? leftVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i + 2);
+                        LayoutNode? rightVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i + 4);
                         if (leftVariable is null || rightVariable is null)
                             goto Failed;
                         values[i] = variableManager.GetComputedValue(leftVariable) - variableManager.GetComputedValue(rightVariable);
                     }
                     for (nuint i = (nuint)LayoutProperty.Width; i <= (nuint)LayoutProperty.Height; i++)
                     {
-                        LayoutVariable? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
+                        LayoutNode? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
                         if (variable is not null)
                             continue;
-                        LayoutVariable? leftVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i - 2);
-                        LayoutVariable? rightVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i - 4);
+                        LayoutNode? leftVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i - 2);
+                        LayoutNode? rightVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i - 4);
                         if (leftVariable is null || rightVariable is null)
                             goto Failed;
                         values[i - 2] = variableManager.GetComputedValue(leftVariable) - variableManager.GetComputedValue(rightVariable);

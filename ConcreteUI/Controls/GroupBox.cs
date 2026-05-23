@@ -33,11 +33,11 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly LayoutVariable?[] _contentLayoutReferences = new LayoutVariable?[(int)LayoutProperty._Last];
+        private readonly LayoutNode?[] _contentLayoutReferences = new LayoutNode?[(int)LayoutProperty._Last];
         private readonly ObservableList<UIElement> _children;
 
         private WeakReference<GroupBox>? _reference;
-        private TextTopVariable? _textTopReference;
+        private TextTopNode? _textTopReference;
         private DWriteTextLayout? _titleLayout, _textLayout;
         private string? _fontName;
         private string _title, _text;
@@ -55,17 +55,17 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LayoutVariable GetContentLayoutReference(LayoutProperty property)
+        public LayoutNode GetContentLayoutReference(LayoutProperty property)
         {
             if (property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
-            return GetContentLayoutReferenceCore((nuint)property);
+            return GetContentLayoutDefinitionCore((nuint)property);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private LayoutVariable GetContentLayoutReferenceCore(nuint property)
+        private LayoutNode GetContentLayoutDefinitionCore(nuint property)
         {
-            ref LayoutVariable? variable = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_contentLayoutReferences), property);
+            ref LayoutNode? variable = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_contentLayoutReferences), property);
             if (variable is null)
             {
                 WeakReference<GroupBox>? reference = InterlockedHelper.Read(ref _reference);
@@ -78,12 +78,12 @@ namespace ConcreteUI.Controls
                 }
                 variable = property switch
                 {
-                    (nuint)LayoutProperty.Left => new ContentLeftVariable(reference),
-                    (nuint)LayoutProperty.Top => new ContentTopVariable(reference),
-                    (nuint)LayoutProperty.Right => new ContentRightVariable(reference),
-                    (nuint)LayoutProperty.Bottom => new ContentBottomVariable(reference),
-                    (nuint)LayoutProperty.Width => new ContentWidthVariable(reference),
-                    (nuint)LayoutProperty.Height => new ContentHeightVariable(reference),
+                    (nuint)LayoutProperty.Left => new ContentLeftNode(reference),
+                    (nuint)LayoutProperty.Top => new ContentTopNode(reference),
+                    (nuint)LayoutProperty.Right => new ContentRightNode(reference),
+                    (nuint)LayoutProperty.Bottom => new ContentBottomNode(reference),
+                    (nuint)LayoutProperty.Width => new ContentWidthNode(reference),
+                    (nuint)LayoutProperty.Height => new ContentHeightNode(reference),
                     _ => throw new ArgumentOutOfRangeException(nameof(property))
                 };
             }

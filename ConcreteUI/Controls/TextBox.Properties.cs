@@ -162,10 +162,10 @@ namespace ConcreteUI.Controls
 
         public bool HasSelection => _selectionRange.Length > 0;
 
-        public LayoutVariable AutoHeightReference
+        public LayoutNode AutoHeightDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _autoLayoutVariableCache[0] ??= new AutoHeightVariable(this);
+            get => _autoLayoutDefinitionCache[0] ??= new AutoHeightNode(this);
         }
         #endregion
     }

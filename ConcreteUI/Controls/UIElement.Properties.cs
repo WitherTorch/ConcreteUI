@@ -110,18 +110,18 @@ namespace ConcreteUI.Controls
             set => SetLocationCore(GetLocationCore() with { X = value });
         }
 
-        public LayoutVariable LeftReference
+        public LayoutNode LeftDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutReferenceCore((nuint)LayoutProperty.Left);
+            get => GetLayoutDefinitionCore((nuint)LayoutProperty.Left);
         }
 
-        public LayoutVariable? LeftVariable
+        public LayoutNode? LeftExpression
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutVariableCore((nuint)LayoutProperty.Left);
+            get => GetLayoutExpressionCore((nuint)LayoutProperty.Left);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => SetLayoutVariableCore((nuint)LayoutProperty.Left, value);
+            set => SetLayoutExpressionCore((nuint)LayoutProperty.Left, value);
         }
 
         public int Y
@@ -140,18 +140,18 @@ namespace ConcreteUI.Controls
             set => SetLocationCore(GetLocationCore() with { Y = value });
         }
 
-        public LayoutVariable TopReference
+        public LayoutNode TopDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutReferenceCore((nuint)LayoutProperty.Top);
+            get => GetLayoutDefinitionCore((nuint)LayoutProperty.Top);
         }
 
-        public LayoutVariable? TopVariable
+        public LayoutNode? TopExpression
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutVariableCore((nuint)LayoutProperty.Top);
+            get => GetLayoutExpressionCore((nuint)LayoutProperty.Top);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => SetLayoutVariableCore((nuint)LayoutProperty.Top, value);
+            set => SetLayoutExpressionCore((nuint)LayoutProperty.Top, value);
         }
 
         public int Right
@@ -162,18 +162,18 @@ namespace ConcreteUI.Controls
             set => SetSizeCore(GetSizeCore() with { Width = value - GetLocationCore().X });
         }
 
-        public LayoutVariable RightReference
+        public LayoutNode RightDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutReferenceCore((nuint)LayoutProperty.Right);
+            get => GetLayoutDefinitionCore((nuint)LayoutProperty.Right);
         }
 
-        public LayoutVariable? RightVariable
+        public LayoutNode? RightExpression
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutVariableCore((nuint)LayoutProperty.Right);
+            get => GetLayoutExpressionCore((nuint)LayoutProperty.Right);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => SetLayoutVariableCore((nuint)LayoutProperty.Right, value);
+            set => SetLayoutExpressionCore((nuint)LayoutProperty.Right, value);
         }
 
         public int Bottom
@@ -184,18 +184,18 @@ namespace ConcreteUI.Controls
             set => SetSizeCore(GetSizeCore() with { Height = value - GetLocationCore().Y });
         }
 
-        public LayoutVariable BottomReference
+        public LayoutNode BottomDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutReferenceCore((nuint)LayoutProperty.Bottom);
+            get => GetLayoutDefinitionCore((nuint)LayoutProperty.Bottom);
         }
 
-        public LayoutVariable? BottomVariable
+        public LayoutNode? BottomExpression
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutVariableCore((nuint)LayoutProperty.Bottom);
+            get => GetLayoutExpressionCore((nuint)LayoutProperty.Bottom);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => SetLayoutVariableCore((nuint)LayoutProperty.Bottom, value);
+            set => SetLayoutExpressionCore((nuint)LayoutProperty.Bottom, value);
         }
 
         public int Height
@@ -206,18 +206,18 @@ namespace ConcreteUI.Controls
             set => SetSizeCore(GetSizeCore() with { Height = value });
         }
 
-        public LayoutVariable HeightReference
+        public LayoutNode HeightDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutReferenceCore((nuint)LayoutProperty.Height);
+            get => GetLayoutDefinitionCore((nuint)LayoutProperty.Height);
         }
 
-        public LayoutVariable? HeightVariable
+        public LayoutNode? HeightExpression
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutVariableCore((nuint)LayoutProperty.Height);
+            get => GetLayoutExpressionCore((nuint)LayoutProperty.Height);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => SetLayoutVariableCore((nuint)LayoutProperty.Height, value);
+            set => SetLayoutExpressionCore((nuint)LayoutProperty.Height, value);
         }
 
         public int Width
@@ -228,18 +228,18 @@ namespace ConcreteUI.Controls
             set => SetSizeCore(GetSizeCore() with { Width = value });
         }
 
-        public LayoutVariable WidthReference
+        public LayoutNode WidthDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutReferenceCore((nuint)LayoutProperty.Width);
+            get => GetLayoutDefinitionCore((nuint)LayoutProperty.Width);
         }
 
-        public LayoutVariable? WidthVariable
+        public LayoutNode? WidthExpression
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetLayoutVariableCore((nuint)LayoutProperty.Width);
+            get => GetLayoutExpressionCore((nuint)LayoutProperty.Width);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => SetLayoutVariableCore((nuint)LayoutProperty.Width, value);
+            set => SetLayoutExpressionCore((nuint)LayoutProperty.Width, value);
         }
 
         public IThemeContext? CurrentTheme

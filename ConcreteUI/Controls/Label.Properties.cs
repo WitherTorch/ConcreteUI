@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Layout;
@@ -97,16 +97,16 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public LayoutVariable AutoWidthReference
+        public LayoutNode AutoWidthDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _autoLayoutVariableCache[0] ??= new AutoWidthVariable(this);
+            get => _autoLayoutDefinitionCache[0] ??= new AutoWidthNode(this);
         }
 
-        public LayoutVariable AutoHeightReference
+        public LayoutNode AutoHeightDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _autoLayoutVariableCache[1] ??= new AutoHeightVariable(this);
+            get => _autoLayoutDefinitionCache[1] ??= new AutoHeightNode(this);
         }
     }
 }

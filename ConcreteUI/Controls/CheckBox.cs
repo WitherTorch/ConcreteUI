@@ -37,7 +37,7 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[2];
+        private readonly LayoutNode?[] _autoLayoutDefinitionCache = new LayoutNode?[2];
 
         private string? _fontName;
         private string _text;
@@ -60,14 +60,14 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CheckBox WithAutoWidth()
         {
-            WidthVariable = AutoWidthReference;
+            WidthExpression = AutoWidthDefinition;
             return this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CheckBox WithAutoHeight()
         {
-            HeightVariable = AutoHeightReference;
+            HeightExpression = AutoHeightDefinition;
             return this;
         }
 

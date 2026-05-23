@@ -49,7 +49,7 @@ namespace ConcreteUI.Controls
         };
 
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly LayoutVariable?[] _autoLayoutVariableCache = new LayoutVariable?[1];
+        private readonly LayoutNode?[] _autoLayoutDefinitionCache = new LayoutNode?[1];
         private readonly InputMethod? _ime;
         private readonly Timer _caretTimer;
 
@@ -98,7 +98,7 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TextBox WithAutoHeight()
         {
-            HeightVariable = AutoHeightReference;
+            HeightExpression = AutoHeightDefinition;
             return this;
         }
 

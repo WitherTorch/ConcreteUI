@@ -55,10 +55,10 @@ namespace ConcreteUI.Controls
             get => GetContentLeftCore(Location.X);
         }
 
-        public LayoutVariable ContentLeftReference
+        public LayoutNode ContentLeftDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetContentLayoutReferenceCore((nuint)LayoutProperty.Left);
+            get => GetContentLayoutDefinitionCore((nuint)LayoutProperty.Left);
         }
 
         public int ContentTop
@@ -67,10 +67,10 @@ namespace ConcreteUI.Controls
             get => GetContentTopCore(Location.Y);
         }
 
-        public LayoutVariable ContentTopReference
+        public LayoutNode ContentTopDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetContentLayoutReferenceCore((nuint)LayoutProperty.Top);
+            get => GetContentLayoutDefinitionCore((nuint)LayoutProperty.Top);
         }
 
         public int ContentRight
@@ -79,10 +79,10 @@ namespace ConcreteUI.Controls
             get => GetContentRightCore(Location.Y);
         }
 
-        public LayoutVariable ContentRightReference
+        public LayoutNode ContentRightDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetContentLayoutReferenceCore((nuint)LayoutProperty.Right);
+            get => GetContentLayoutDefinitionCore((nuint)LayoutProperty.Right);
         }
 
         public int ContentBottom
@@ -91,10 +91,10 @@ namespace ConcreteUI.Controls
             get => GetContentBottomCore(Location.Y);
         }
 
-        public LayoutVariable ContentBottomReference
+        public LayoutNode ContentBottomDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetContentLayoutReferenceCore((nuint)LayoutProperty.Bottom);
+            get => GetContentLayoutDefinitionCore((nuint)LayoutProperty.Bottom);
         }
 
         public int ContentWidth
@@ -109,10 +109,10 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public LayoutVariable ContentWidthReference
+        public LayoutNode ContentWidthDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetContentLayoutReferenceCore((nuint)LayoutProperty.Width);
+            get => GetContentLayoutDefinitionCore((nuint)LayoutProperty.Width);
         }
 
         public int ContentHeight
@@ -127,10 +127,10 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public LayoutVariable ContentHeightReference
+        public LayoutNode ContentHeightDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetContentLayoutReferenceCore((nuint)LayoutProperty.Height);
+            get => GetContentLayoutDefinitionCore((nuint)LayoutProperty.Height);
         }
 
         public int TextTop
@@ -139,12 +139,12 @@ namespace ConcreteUI.Controls
             get => GetTextTopCore(Location.Y);
         }
 
-        public LayoutVariable TextTopReference
+        public LayoutNode TextTopDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                TextTopVariable? result = _textTopReference;
+                TextTopNode? result = _textTopReference;
                 if (result is null)
                 {
                     WeakReference<GroupBox>? reference = InterlockedHelper.Read(ref _reference);
@@ -155,7 +155,7 @@ namespace ConcreteUI.Controls
                         if (oldReference is not null)
                             reference = oldReference;
                     }
-                    _textTopReference = result = new TextTopVariable(reference);
+                    _textTopReference = result = new TextTopNode(reference);
                 }
                 return result;
             }

@@ -23,8 +23,8 @@ namespace ConcreteUI.Controls
     {
         private static int _identifierGenerator = 0;
 
-        private readonly LayoutVariable?[] _layoutReferences = new LayoutVariable?[(int)LayoutProperty._Last];
-        private readonly LayoutVariable?[] _layoutVariables = new LayoutVariable?[(int)LayoutProperty._Last];
+        private readonly LayoutNode?[] _layoutDefinitions = new LayoutNode?[(int)LayoutProperty._Last];
+        private readonly LayoutNode?[] _layoutExpressions = new LayoutNode?[(int)LayoutProperty._Last];
         private readonly object _syncLock;
         private readonly int _identifier;
 
@@ -42,50 +42,50 @@ namespace ConcreteUI.Controls
             _identifier = InterlockedHelper.GetAndIncrement(ref _identifierGenerator);
             _themePrefix = themePrefix;
             _requestRedraw = UnsafeHelper.GetMaxValue<nuint>();
-            _syncLock = _layoutReferences; // 物件重用
+            _syncLock = _layoutDefinitions; // 物件重用
         }
 
         [Inline(InlineBehavior.Remove)]
         private WeakReference<UIElement> GetWeakReference() => _reference ??= new WeakReference<UIElement>(this);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LayoutVariable GetLayoutReference(LayoutProperty property)
+        public LayoutNode GetLayoutReference(LayoutProperty property)
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
-            return GetLayoutReferenceCore((nuint)property);
+            return GetLayoutDefinitionCore((nuint)property);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LayoutVariable? GetLayoutVariable(LayoutProperty property)
+        public LayoutNode? GetLayoutVariable(LayoutProperty property)
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
-            return GetLayoutVariableCore((nuint)property);
+            return GetLayoutExpressionCore((nuint)property);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SetLayoutVariable(LayoutProperty property, LayoutVariable? variable)
+        public void SetLayoutVariable(LayoutProperty property, LayoutNode? variable)
         {
             if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
                 throw new ArgumentOutOfRangeException(nameof(property));
-            SetLayoutVariableCore((nuint)property, variable);
+            SetLayoutExpressionCore((nuint)property, variable);
         }
 
         [Inline(InlineBehavior.Remove)]
-        private LayoutVariable GetLayoutReferenceCore(nuint property)
+        private LayoutNode GetLayoutDefinitionCore(nuint property)
         {
-            ref LayoutVariable? variable = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutReferences), property);
-            return variable ??= new UIElementLayoutVariable(GetWeakReference(), (LayoutProperty)property);
+            ref LayoutNode? variable = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutDefinitions), property);
+            return variable ??= new UIElementLayoutNode(GetWeakReference(), (LayoutProperty)property);
         }
 
         [Inline(InlineBehavior.Remove)]
-        private LayoutVariable? GetLayoutVariableCore(nuint property)
-            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutVariables), property);
+        private LayoutNode? GetLayoutExpressionCore(nuint property)
+            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutExpressions), property);
 
         [Inline(InlineBehavior.Remove)]
-        private void SetLayoutVariableCore(nuint property, LayoutVariable? variable)
-            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutVariables), property) = variable;
+        private void SetLayoutExpressionCore(nuint property, LayoutNode? variable)
+            => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutExpressions), property) = variable;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsBackgroundOpaque() => IsBackgroundOpaqueCore() || _parent.IsBackgroundOpaque(this);
