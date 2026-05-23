@@ -80,13 +80,13 @@ namespace ConcreteUI.Layout
             TreeDictionary<LayoutNode, StrongBox<int?>> computeDict = _computeDict;
             for (LayoutProperty prop = LayoutProperty.Left; prop < LayoutProperty._Last; prop++)
             {
-                LayoutNode? variable = element.GetLayoutExpression(prop);
-                if (variable is null)
+                LayoutNode? expression = element.GetLayoutExpression(prop);
+                if (expression is null)
                     continue;
-                contextsLazy.Value[(int)prop] = variable;
-                if (computeDict[variable] is not null)
+                contextsLazy.Value[(int)prop] = expression;
+                if (computeDict[expression] is not null)
                     continue;
-                computeDict[variable] = new StrongBox<int?>(null);
+                computeDict[expression] = new StrongBox<int?>(null);
             }
             _elementDict[element] = contextsLazy.GetValueDirectly();
             if (element is IElementContainer container)
@@ -158,29 +158,29 @@ namespace ConcreteUI.Layout
         {
             TreeDictionary<UIElement, LayoutNode?[]> elementDict = _elementDict;
             TreeDictionary<LayoutNode, StrongBox<int?>> computeDict = _computeDict;
-            LayoutNodeManager variableManager = new LayoutNodeManager(pageRect, elementDict, computeDict);
+            LayoutNodeManager nodeManager = new LayoutNodeManager(pageRect, elementDict, computeDict);
 
-            foreach ((UIElement element, LayoutNode?[] variables) in elementDict)
+            foreach ((UIElement element, LayoutNode?[] expressions) in elementDict)
             {
                 Exception innerException;
 
                 Rectangle bounds = default;
                 int* values = (int*)&bounds;
 
-                ref LayoutNode? variableArrayRef = ref UnsafeHelper.GetArrayDataReference(variables);
+                ref LayoutNode? expressionArrayRef = ref UnsafeHelper.GetArrayDataReference(expressions);
 
                 bool hasNull = false;
                 for (nuint i = (nuint)LayoutProperty.Left; i <= (nuint)LayoutProperty.Top; i++)
                 {
-                    LayoutNode? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
-                    if (variable is null)
+                    LayoutNode? expression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i);
+                    if (expression is null)
                     {
                         hasNull = true;
                         continue;
                     }
                     try
                     {
-                        values[i] = variableManager.GetComputedValue(variable);
+                        values[i] = nodeManager.GetComputedValue(expression);
                     }
                     catch (Exception ex)
                     {
@@ -190,15 +190,15 @@ namespace ConcreteUI.Layout
                 }
                 for (nuint i = (nuint)LayoutProperty.Width; i <= (nuint)LayoutProperty.Height; i++)
                 {
-                    LayoutNode? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
-                    if (variable is null)
+                    LayoutNode? expression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i);
+                    if (expression is null)
                     {
                         hasNull = true;
                         continue;
                     }
                     try
                     {
-                        values[i - 2] = variableManager.GetComputedValue(variable);
+                        values[i - 2] = nodeManager.GetComputedValue(expression);
                     }
                     catch (Exception ex)
                     {
@@ -211,25 +211,25 @@ namespace ConcreteUI.Layout
                 {
                     for (nuint i = (nuint)LayoutProperty.Left; i <= (nuint)LayoutProperty.Top; i++)
                     {
-                        LayoutNode? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
-                        if (variable is not null)
+                        LayoutNode? expression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i);
+                        if (expression is not null)
                             continue;
-                        LayoutNode? leftVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i + 2);
-                        LayoutNode? rightVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i + 4);
-                        if (leftVariable is null || rightVariable is null)
+                        LayoutNode? leftExpression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i + 2);
+                        LayoutNode? rightExpression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i + 4);
+                        if (leftExpression is null || rightExpression is null)
                             goto Failed;
-                        values[i] = variableManager.GetComputedValue(leftVariable) - variableManager.GetComputedValue(rightVariable);
+                        values[i] = nodeManager.GetComputedValue(leftExpression) - nodeManager.GetComputedValue(rightExpression);
                     }
                     for (nuint i = (nuint)LayoutProperty.Width; i <= (nuint)LayoutProperty.Height; i++)
                     {
-                        LayoutNode? variable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i);
-                        if (variable is not null)
+                        LayoutNode? expression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i);
+                        if (expression is not null)
                             continue;
-                        LayoutNode? leftVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i - 2);
-                        LayoutNode? rightVariable = UnsafeHelper.AddTypedOffset(ref variableArrayRef, i - 4);
-                        if (leftVariable is null || rightVariable is null)
+                        LayoutNode? leftExpression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i - 2);
+                        LayoutNode? rightExpression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i - 4);
+                        if (leftExpression is null || rightExpression is null)
                             goto Failed;
-                        values[i - 2] = variableManager.GetComputedValue(leftVariable) - variableManager.GetComputedValue(rightVariable);
+                        values[i - 2] = nodeManager.GetComputedValue(leftExpression) - nodeManager.GetComputedValue(rightExpression);
                     }
                 }
                 element.Bounds = bounds;

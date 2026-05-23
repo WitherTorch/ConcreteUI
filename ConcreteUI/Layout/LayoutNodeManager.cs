@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Controls;
@@ -9,10 +11,11 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Layout
 {
-    public readonly struct LayoutNodeManager
+    public readonly ref struct LayoutNodeManager
     {
         private readonly TreeDictionary<UIElement, LayoutNode?[]> _elementDict;
         private readonly TreeDictionary<LayoutNode, StrongBox<int?>> _computeDict;
+        private readonly Dictionary<LayoutNode, int>? _walkedNodes;
         private readonly Rect _pageRect;
 
         public LayoutNodeManager(in Rect pageRect, TreeDictionary<UIElement, LayoutNode?[]> elementDict, TreeDictionary<LayoutNode, StrongBox<int?>> computeDict)
@@ -20,6 +23,10 @@ namespace ConcreteUI.Layout
             _elementDict = elementDict;
             _computeDict = computeDict;
             _pageRect = pageRect;
+            if (ConcreteSettings.UseDebugMode)
+                _walkedNodes = new Dictionary<LayoutNode, int>();
+            else
+                _walkedNodes = null;
         }
 
         public readonly Rect GetPageRect() => _pageRect;
@@ -29,9 +36,9 @@ namespace ConcreteUI.Layout
 
         public readonly int?[] GetComputedValues(UIElement element)
         {
-            LayoutNode?[]? variables = _elementDict[element];
+            LayoutNode?[]? nodes = _elementDict[element];
             int?[] result = new int?[(int)LayoutProperty._Last];
-            if (variables is null)
+            if (nodes is null)
             {
                 Rect bounds = element.Bounds;
                 result[(int)LayoutProperty.Left] = bounds.Left;
@@ -42,7 +49,7 @@ namespace ConcreteUI.Layout
             }
             for (LayoutProperty property = LayoutProperty.Left; property < LayoutProperty._Last; property++)
             {
-                LayoutNode? variable = variables[(int)property];
+                LayoutNode? variable = nodes[(int)property];
                 if (variable is null)
                     continue;
                 result[(int)property] = GetComputedValue(variable);
@@ -52,8 +59,8 @@ namespace ConcreteUI.Layout
 
         public readonly int GetComputedValue(UIElement element, LayoutProperty property)
         {
-            LayoutNode?[]? variables = _elementDict[element];
-            if (variables is null)
+            LayoutNode?[]? nodes = _elementDict[element];
+            if (nodes is null)
             {
                 Rect bounds = element.Bounds;
                 return property switch
@@ -67,17 +74,17 @@ namespace ConcreteUI.Layout
                     _ => 0
                 };
             }
-            LayoutNode? variable = variables[(int)property];
-            if (variable is not null)
-                return GetComputedValue(variable);
+            LayoutNode? node = nodes[(int)property];
+            if (node is not null)
+                return GetComputedValue(node);
             return property switch
             {
-                LayoutProperty.Left => GetComputedValueOrZero(variables[(int)LayoutProperty.Right]) - GetComputedValueOrZero(variables[(int)LayoutProperty.Width]),
-                LayoutProperty.Top => GetComputedValueOrZero(variables[(int)LayoutProperty.Bottom]) - GetComputedValueOrZero(variables[(int)LayoutProperty.Height]),
-                LayoutProperty.Right => GetComputedValueOrZero(variables[(int)LayoutProperty.Left]) + GetComputedValueOrZero(variables[(int)LayoutProperty.Width]),
-                LayoutProperty.Bottom => GetComputedValueOrZero(variables[(int)LayoutProperty.Top]) + GetComputedValueOrZero(variables[(int)LayoutProperty.Height]),
-                LayoutProperty.Height => GetComputedValueOrZero(variables[(int)LayoutProperty.Bottom]) - GetComputedValueOrZero(variables[(int)LayoutProperty.Top]),
-                LayoutProperty.Width => GetComputedValueOrZero(variables[(int)LayoutProperty.Right]) - GetComputedValueOrZero(variables[(int)LayoutProperty.Left]),
+                LayoutProperty.Left => GetComputedValueOrZero(nodes[(int)LayoutProperty.Right]) - GetComputedValueOrZero(nodes[(int)LayoutProperty.Width]),
+                LayoutProperty.Top => GetComputedValueOrZero(nodes[(int)LayoutProperty.Bottom]) - GetComputedValueOrZero(nodes[(int)LayoutProperty.Height]),
+                LayoutProperty.Right => GetComputedValueOrZero(nodes[(int)LayoutProperty.Left]) + GetComputedValueOrZero(nodes[(int)LayoutProperty.Width]),
+                LayoutProperty.Bottom => GetComputedValueOrZero(nodes[(int)LayoutProperty.Top]) + GetComputedValueOrZero(nodes[(int)LayoutProperty.Height]),
+                LayoutProperty.Height => GetComputedValueOrZero(nodes[(int)LayoutProperty.Bottom]) - GetComputedValueOrZero(nodes[(int)LayoutProperty.Top]),
+                LayoutProperty.Width => GetComputedValueOrZero(nodes[(int)LayoutProperty.Right]) - GetComputedValueOrZero(nodes[(int)LayoutProperty.Left]),
                 _ => 0
             };
         }
@@ -86,26 +93,65 @@ namespace ConcreteUI.Layout
         private readonly int GetComputedValueOrZero(LayoutNode? variable)
             => variable is null ? 0 : GetComputedValue(variable);
 
-        public readonly int GetComputedValue(LayoutNode variable)
+        public readonly int GetComputedValue(LayoutNode node)
         {
-            if (variable is FixedValueLayoutNode fixedVariable)
-                return fixedVariable.Value;
+            if (node is FixedValueLayoutNode fixedValueNode)
+                return fixedValueNode.Value;
 
             TreeDictionary<LayoutNode, StrongBox<int?>> computeDict = _computeDict;
             int result;
-            StrongBox<int?>? value = computeDict[variable];
+            StrongBox<int?>? value = computeDict[node];
             if (value is null)
             {
-                result = variable.Compute(this);
-                computeDict[variable] = new StrongBox<int?>(result);
+                AddNodeOrThrow(node);
+                try
+                {
+                    result = node.Compute(this);
+                }
+                finally
+                {
+                    RemoveNode(node);
+                }
+                computeDict[node] = new StrongBox<int?>(result);
                 return result;
             }
             int? unboxedValue = value.Value;
             if (unboxedValue.HasValue)
                 return unboxedValue.Value;
-            result = variable.Compute(this);
+            AddNodeOrThrow(node);
+            try
+            {
+                result = node.Compute(this);
+            }
+            finally
+            {
+                RemoveNode(node);
+            }
             value.Value = result;
             return result;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void AddNodeOrThrow(LayoutNode node)
+        {
+            Dictionary<LayoutNode, int>? walkedNodes = _walkedNodes;
+            if (walkedNodes is null)
+                return;
+            if (walkedNodes.ContainsKey(node))
+                ThrowCyclicDependencyException(walkedNodes);
+            else
+                walkedNodes.Add(node, walkedNodes.Count);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void RemoveNode(LayoutNode node) => _walkedNodes?.Remove(node);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ThrowCyclicDependencyException(Dictionary<LayoutNode, int> nodes)
+            => throw new CyclicDependencyException(
+                nodes.OrderBy(static pair => pair.Value)
+                .Select(static pair => pair.Key)
+                .ToArray()
+                );
     }
 }

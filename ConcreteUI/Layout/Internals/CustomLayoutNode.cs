@@ -1,17 +1,15 @@
-using System;
-
 namespace ConcreteUI.Layout.Internals
 {
     internal sealed class CustomLayoutNode : LayoutNode
     {
-        private readonly Func<LayoutNodeManager, int> _func;
+        private readonly CustomComputeDelegate _func;
 
-        public CustomLayoutNode(Func<LayoutNodeManager, int> func)
+        public CustomLayoutNode(CustomComputeDelegate func)
         {
             _func = func;
         }
 
-        public override int Compute(in LayoutNodeManager manager) => _func(manager);
+        public override int Compute(in LayoutNodeManager manager) => _func.Invoke(in manager);
 
         public override bool Equals(object? obj) => obj is CustomLayoutNode another && _func == another._func;
 

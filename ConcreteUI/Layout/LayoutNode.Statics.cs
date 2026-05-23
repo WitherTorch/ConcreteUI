@@ -12,6 +12,8 @@ using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Layout
 {
+    public delegate int CustomComputeDelegate(in LayoutNodeManager manager);
+
     partial class LayoutNode
     {
         private const int FixedValueCacheLimit = 256;
@@ -82,7 +84,7 @@ namespace ConcreteUI.Layout
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static LayoutNode Custom(Func<LayoutNodeManager, int> computeFunc) => new CustomLayoutNode(computeFunc);
+        public static LayoutNode Custom(CustomComputeDelegate computeFunc) => new CustomLayoutNode(computeFunc);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LayoutNode Max(LayoutNode left, LayoutNode right)
