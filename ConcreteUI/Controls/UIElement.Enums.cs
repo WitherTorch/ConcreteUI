@@ -1,4 +1,4 @@
-﻿namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls
 {
     public enum TextAlignment
     {
@@ -7,9 +7,8 @@
         BottomLeft, BottomCenter, BottomRight
     }
 
-    public enum LayoutProperty
+    public enum LayoutProperty : uint
     {
-        None = -1,
         //Direct Properties
         Left,
         Top,

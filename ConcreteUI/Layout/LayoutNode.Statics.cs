@@ -78,9 +78,12 @@ namespace ConcreteUI.Layout
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LayoutNode Page(LayoutProperty property)
         {
-            if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
-                throw new ArgumentOutOfRangeException(nameof(property));
+            if (property >= LayoutProperty._Last)
+                return Throw();
             return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_pageRectNodes), (nuint)property);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static LayoutNode Throw() => throw new ArgumentOutOfRangeException(nameof(property));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
