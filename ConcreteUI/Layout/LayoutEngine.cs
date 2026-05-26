@@ -7,6 +7,7 @@ using ConcreteUI.Controls;
 
 using InlineMethod;
 
+using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
@@ -17,8 +18,15 @@ namespace ConcreteUI.Layout
 {
     public sealed class LayoutEngine
     {
-        private readonly TreeDictionary<UIElement, LayoutNode?[]> _elementDict = new();
-        private readonly TreeDictionary<LayoutNode, StrongBox<int?>> _computeDict = new();
+        private const int Capacity = 1 << 7; // 128
+        private const int SegmentLength = (int)LayoutProperty._Last;
+
+        private readonly Dictionary<UIElement, ArraySegment<LayoutNode?>> _elementDict = new();
+        private readonly Dictionary<LayoutNode, int> _computeDict = new();
+        private readonly ArrayPool<LayoutNode?> _nodeArrayPool = ArrayPool<LayoutNode?>.Shared;
+
+        private LayoutNode?[]? _currentNodeBuffer;
+        private int _currentAvailableIndex;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void QueueElements(IEnumerable<UIElement?> elements)
@@ -74,21 +82,25 @@ namespace ConcreteUI.Layout
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void QueueElement(UIElement element)
         {
-            LazyTinyRef<LayoutNode[]> contextsLazy = new LazyTinyRef<LayoutNode[]>(static () => new LayoutNode[(int)LayoutProperty._Last]);
+            Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict = _elementDict;
 
-            TreeDictionary<UIElement, LayoutNode?[]> elementDict = _elementDict;
-            TreeDictionary<LayoutNode, StrongBox<int?>> computeDict = _computeDict;
+            ArraySegment<LayoutNode?> segment = default;
+
             for (LayoutProperty prop = LayoutProperty.Left; prop < LayoutProperty._Last; prop++)
             {
                 LayoutNode? expression = element.GetLayoutExpression(prop);
                 if (expression is null)
                     continue;
-                contextsLazy.Value[(int)prop] = expression;
-                if (computeDict[expression] is not null)
-                    continue;
-                computeDict[expression] = new StrongBox<int?>(null);
+                LayoutNode?[]? array = segment.Array;
+                if (array is null)
+                {
+                    segment = AllocSegment();
+                    array = segment.Array;
+                }
+                UnsafeHelper.AddTypedOffset(in UnsafeHelper.GetArrayDataReference(array!), segment.Offset + (int)prop) = expression;
             }
-            _elementDict[element] = contextsLazy.GetValueDirectly();
+            if (segment.Array is not null)
+                _elementDict[element] = segment;
             if (element is IElementContainer container)
                 QueueElements(container.GetElements());
         }
@@ -156,103 +168,153 @@ namespace ConcreteUI.Layout
 
         private unsafe void RecalculateLayoutCore(in Rect pageRect)
         {
-            TreeDictionary<UIElement, LayoutNode?[]> elementDict = _elementDict;
-            TreeDictionary<LayoutNode, StrongBox<int?>> computeDict = _computeDict;
+            Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict = _elementDict;
+            Dictionary<LayoutNode, int> computeDict = _computeDict;
             LayoutNodeManager nodeManager = new LayoutNodeManager(pageRect, elementDict, computeDict);
 
-            foreach ((UIElement element, LayoutNode?[] expressions) in elementDict)
+            Dictionary<UIElement, ArraySegment<LayoutNode?>>.Enumerator enumerator = elementDict.GetEnumerator();
+            try
             {
-                Exception innerException;
-
-                Rectangle bounds = default;
-                int* values = (int*)&bounds;
-
-                ref LayoutNode? expressionArrayRef = ref UnsafeHelper.GetArrayDataReference(expressions);
-
-                bool hasNull = false;
-                for (nuint i = (nuint)LayoutProperty.Left; i <= (nuint)LayoutProperty.Top; i++)
+                while (enumerator.MoveNext())
                 {
-                    LayoutNode? expression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i);
-                    if (expression is null)
-                    {
-                        hasNull = true;
-                        continue;
-                    }
+                    (UIElement element, ArraySegment<LayoutNode?> expressions) = enumerator.Current;
                     try
                     {
-                        values[i] = nodeManager.GetComputedValue(expression);
-                    }
-                    catch (CyclicDependencyException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        innerException = ex;
-                        goto FailedWithException;
-                    }
-                }
-                for (nuint i = (nuint)LayoutProperty.Width; i <= (nuint)LayoutProperty.Height; i++)
-                {
-                    LayoutNode? expression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i);
-                    if (expression is null)
-                    {
-                        hasNull = true;
+                        Exception innerException;
+
+                        Rectangle bounds = default;
+                        int* values = (int*)&bounds;
+
+                        ref LayoutNode? expressionArrayRef = ref UnsafeHelper.AddTypedOffset(in UnsafeHelper.GetArrayDataReference(expressions.Array!), expressions.Offset);
+
+                        bool hasNull = false;
+                        for (nuint i = (nuint)LayoutProperty.Left; i <= (nuint)LayoutProperty.Top; i++)
+                        {
+                            LayoutNode? expression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i);
+                            if (expression is null)
+                            {
+                                hasNull = true;
+                                continue;
+                            }
+                            try
+                            {
+                                values[i] = nodeManager.GetComputedValue(expression);
+                            }
+                            catch (CyclicDependencyException)
+                            {
+                                throw;
+                            }
+                            catch (Exception ex)
+                            {
+                                innerException = ex;
+                                goto FailedWithException;
+                            }
+                        }
+                        for (nuint i = (nuint)LayoutProperty.Width; i <= (nuint)LayoutProperty.Height; i++)
+                        {
+                            LayoutNode? expression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i);
+                            if (expression is null)
+                            {
+                                hasNull = true;
+                                continue;
+                            }
+                            try
+                            {
+                                values[i - 2] = nodeManager.GetComputedValue(expression);
+                            }
+                            catch (CyclicDependencyException)
+                            {
+                                throw;
+                            }
+                            catch (Exception ex)
+                            {
+                                innerException = ex;
+                                goto FailedWithException;
+                            }
+                        }
+
+                        if (hasNull)
+                        {
+                            for (nuint i = (nuint)LayoutProperty.Left; i <= (nuint)LayoutProperty.Top; i++)
+                            {
+                                LayoutNode? expression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i);
+                                if (expression is not null)
+                                    continue;
+                                LayoutNode? leftExpression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i + 2);
+                                LayoutNode? rightExpression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i + 4);
+                                if (leftExpression is null || rightExpression is null)
+                                    goto Failed;
+                                values[i] = nodeManager.GetComputedValue(leftExpression) - nodeManager.GetComputedValue(rightExpression);
+                            }
+                            for (nuint i = (nuint)LayoutProperty.Width; i <= (nuint)LayoutProperty.Height; i++)
+                            {
+                                LayoutNode? expression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i);
+                                if (expression is not null)
+                                    continue;
+                                LayoutNode? leftExpression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i - 2);
+                                LayoutNode? rightExpression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i - 4);
+                                if (leftExpression is null || rightExpression is null)
+                                    goto Failed;
+                                values[i - 2] = nodeManager.GetComputedValue(leftExpression) - nodeManager.GetComputedValue(rightExpression);
+                            }
+                        }
+                        element.SetBoundsInternal(bounds);
                         continue;
+
+                    Failed:
+                        throw new InvalidOperationException($"Failed to calculate layout for {element}!");
+
+                    FailedWithException:
+                        throw new InvalidOperationException($"Failed to calculate layout for {element}!", innerException);
                     }
-                    try
+                    finally
                     {
-                        values[i - 2] = nodeManager.GetComputedValue(expression);
-                    }
-                    catch (CyclicDependencyException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        innerException = ex;
-                        goto FailedWithException;
+                        FreeSegment(expressions);
                     }
                 }
-
-                if (hasNull)
-                {
-                    for (nuint i = (nuint)LayoutProperty.Left; i <= (nuint)LayoutProperty.Top; i++)
-                    {
-                        LayoutNode? expression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i);
-                        if (expression is not null)
-                            continue;
-                        LayoutNode? leftExpression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i + 2);
-                        LayoutNode? rightExpression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i + 4);
-                        if (leftExpression is null || rightExpression is null)
-                            goto Failed;
-                        values[i] = nodeManager.GetComputedValue(leftExpression) - nodeManager.GetComputedValue(rightExpression);
-                    }
-                    for (nuint i = (nuint)LayoutProperty.Width; i <= (nuint)LayoutProperty.Height; i++)
-                    {
-                        LayoutNode? expression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i);
-                        if (expression is not null)
-                            continue;
-                        LayoutNode? leftExpression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i - 2);
-                        LayoutNode? rightExpression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i - 4);
-                        if (leftExpression is null || rightExpression is null)
-                            goto Failed;
-                        values[i - 2] = nodeManager.GetComputedValue(leftExpression) - nodeManager.GetComputedValue(rightExpression);
-                    }
-                }
-                element.SetBoundsInternal(bounds);
-                continue;
-
-            Failed:
-                throw new InvalidOperationException($"Failed to calculate layout for {element}!");
-
-            FailedWithException:
-                throw new InvalidOperationException($"Failed to calculate layout for {element}!", innerException);
             }
+            finally
+            {
+                enumerator.Dispose();
+                elementDict.Clear();
+                computeDict.Clear();
+                LayoutNode?[]? buffer = ReferenceHelper.Exchange(ref _currentNodeBuffer, null);
+                if (buffer is not null && _currentAvailableIndex < Capacity - SegmentLength)
+                    _nodeArrayPool.Return(buffer);
+                GC.Collect(0, GCCollectionMode.Optimized);
+            }
+        }
 
-            elementDict.Clear();
-            computeDict.Clear();
-            GC.Collect(0, GCCollectionMode.Optimized);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ArraySegment<LayoutNode?> AllocSegment()
+        {
+            LayoutNode?[]? buffer = _currentNodeBuffer;
+            if (buffer is null)
+                goto CreateNew;
+            else
+                goto UseExists;
+
+        CreateNew:
+            buffer = _nodeArrayPool.Rent(Capacity);
+            _currentNodeBuffer = buffer;
+            _currentAvailableIndex = SegmentLength;
+            return new ArraySegment<LayoutNode?>(buffer, 0, SegmentLength);
+
+        UseExists:
+            int index = _currentAvailableIndex;
+            if (index >= Capacity - SegmentLength)
+                goto CreateNew;
+            _currentAvailableIndex = index + SegmentLength;
+            return new ArraySegment<LayoutNode?>(buffer, index, SegmentLength);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void FreeSegment(in ArraySegment<LayoutNode?> segment)
+        {
+            //Check is last segment of buffer
+            if (segment.Offset < Capacity - SegmentLength * 2)
+                return;
+            _nodeArrayPool.Return(segment.Array!);
         }
     }
 }

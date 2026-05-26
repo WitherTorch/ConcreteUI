@@ -51,25 +51,37 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LayoutNode GetLayoutDefinition(LayoutProperty property)
         {
-            if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
-                throw new ArgumentOutOfRangeException(nameof(property));
+            if (property >= LayoutProperty._Last)
+                return Throw();
             return GetLayoutDefinitionCore((nuint)property);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static LayoutNode Throw() => throw new ArgumentOutOfRangeException(nameof(property));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LayoutNode? GetLayoutExpression(LayoutProperty property)
         {
-            if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
-                throw new ArgumentOutOfRangeException(nameof(property));
+            if (property >= LayoutProperty._Last)
+                return Throw();
             return GetLayoutExpressionCore((nuint)property);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static LayoutNode Throw() => throw new ArgumentOutOfRangeException(nameof(property));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetLayoutExpression(LayoutProperty property, LayoutNode? variable)
         {
-            if (property <= LayoutProperty.None || property >= LayoutProperty._Last)
-                throw new ArgumentOutOfRangeException(nameof(property));
+            if (property >= LayoutProperty._Last)
+            {
+                Throw();
+                return;
+            }
             SetLayoutExpressionCore((nuint)property, variable);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void Throw() => throw new ArgumentOutOfRangeException(nameof(property));
         }
 
         [Inline(InlineBehavior.Remove)]

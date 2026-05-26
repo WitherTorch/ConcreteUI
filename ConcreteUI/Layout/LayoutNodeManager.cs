@@ -6,19 +6,21 @@ using System.Runtime.CompilerServices;
 using ConcreteUI.Controls;
 using ConcreteUI.Layout.Internals;
 
-using WitherTorch.Common.Collections;
+using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Layout
 {
     public readonly ref struct LayoutNodeManager
     {
-        private readonly TreeDictionary<UIElement, LayoutNode?[]> _elementDict;
-        private readonly TreeDictionary<LayoutNode, StrongBox<int?>> _computeDict;
+        private readonly Dictionary<UIElement, ArraySegment<LayoutNode?>> _elementDict;
+        private readonly Dictionary<LayoutNode, int> _computeDict;
         private readonly Dictionary<LayoutNode, int>? _walkedNodes;
         private readonly Rect _pageRect;
 
-        public LayoutNodeManager(in Rect pageRect, TreeDictionary<UIElement, LayoutNode?[]> elementDict, TreeDictionary<LayoutNode, StrongBox<int?>> computeDict)
+        public LayoutNodeManager(in Rect pageRect,
+            Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict,
+            Dictionary<LayoutNode, int> computeDict)
         {
             _elementDict = elementDict;
             _computeDict = computeDict;
@@ -31,62 +33,95 @@ namespace ConcreteUI.Layout
 
         public readonly Rect GetPageRect() => _pageRect;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly LayoutNode? GetLayoutNodeOrNull(UIElement element, LayoutProperty property)
-            => _elementDict[element]?[(int)property];
+        {
+            if (property >= LayoutProperty._Last)
+                return Throw();
 
+            if (!_elementDict.TryGetValue(element, out ArraySegment<LayoutNode?> segment))
+                return null;
+
+            return UnsafeHelper.AddTypedOffset(in UnsafeHelper.GetArrayDataReference(segment.Array!), segment.Offset + (int)property);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static LayoutNode? Throw() => throw new ArgumentOutOfRangeException(nameof(property));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly int?[] GetComputedValues(UIElement element)
         {
-            LayoutNode?[]? nodes = _elementDict[element];
-            int?[] result = new int?[(int)LayoutProperty._Last];
-            if (nodes is null)
+            int?[] result = ArrayHelper.CreateUninitializedArray<int?>((int)LayoutProperty._Last);
+            ref int? resultRef = ref UnsafeHelper.GetArrayDataReference(result);
+
+            if (!_elementDict.TryGetValue(element, out ArraySegment<LayoutNode?> segment))
             {
                 Rect bounds = element.Bounds;
-                result[(int)LayoutProperty.Left] = bounds.Left;
-                result[(int)LayoutProperty.Top] = bounds.Top;
-                result[(int)LayoutProperty.Right] = bounds.Right;
-                result[(int)LayoutProperty.Bottom] = bounds.Bottom;
+                UnsafeHelper.AddTypedOffset(in resultRef, (nuint)LayoutProperty.Left) = bounds.Left;
+                UnsafeHelper.AddTypedOffset(in resultRef, (nuint)LayoutProperty.Top) = bounds.Top;
+                UnsafeHelper.AddTypedOffset(in resultRef, (nuint)LayoutProperty.Right) = bounds.Right;
+                UnsafeHelper.AddTypedOffset(in resultRef, (nuint)LayoutProperty.Bottom) = bounds.Bottom;
+                UnsafeHelper.AddTypedOffset(in resultRef, (nuint)LayoutProperty.Width) = bounds.Width;
+                UnsafeHelper.AddTypedOffset(in resultRef, (nuint)LayoutProperty.Height) = bounds.Height;
                 return result;
             }
-            for (LayoutProperty property = LayoutProperty.Left; property < LayoutProperty._Last; property++)
+
+            ref LayoutNode? nodeRef = ref UnsafeHelper.AddTypedOffset(in UnsafeHelper.GetArrayDataReference(segment.Array!), segment.Offset);
+
+            for (nuint property = (nuint)LayoutProperty.Left; property < (nuint)LayoutProperty._Last; property++)
             {
-                LayoutNode? variable = nodes[(int)property];
-                if (variable is null)
+                LayoutNode? node = UnsafeHelper.AddTypedOffset(in nodeRef, property);
+                if (node is null)
                     continue;
-                result[(int)property] = GetComputedValue(variable);
+                UnsafeHelper.AddTypedOffset(in resultRef, property) = GetComputedValue(node);
             }
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly int GetComputedValue(UIElement element, LayoutProperty property)
         {
-            LayoutNode?[]? nodes = _elementDict[element];
-            if (nodes is null)
+            if (property >= LayoutProperty._Last)
+                return Throw();
+
+            if (!_elementDict.TryGetValue(element, out ArraySegment<LayoutNode?> segment))
             {
-                Rect bounds = element.Bounds;
                 return property switch
                 {
-                    LayoutProperty.Left => bounds.Left,
-                    LayoutProperty.Top => bounds.Top,
-                    LayoutProperty.Right => bounds.Right,
-                    LayoutProperty.Bottom => bounds.Bottom,
-                    LayoutProperty.Height => bounds.Height,
-                    LayoutProperty.Width => bounds.Width,
-                    _ => 0
+                    LayoutProperty.Left => element.Left,
+                    LayoutProperty.Top => element.Top,
+                    LayoutProperty.Right => element.Right,
+                    LayoutProperty.Bottom => element.Bottom,
+                    LayoutProperty.Height => element.Height,
+                    LayoutProperty.Width => element.Width,
+                    _ => Throw()
                 };
             }
-            LayoutNode? node = nodes[(int)property];
+
+            ref LayoutNode? nodeRef = ref UnsafeHelper.AddTypedOffset(in UnsafeHelper.GetArrayDataReference(segment.Array!), segment.Offset);
+            LayoutNode? node = UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)property);
             if (node is not null)
                 return GetComputedValue(node);
+
             return property switch
             {
-                LayoutProperty.Left => GetComputedValueOrZero(nodes[(int)LayoutProperty.Right]) - GetComputedValueOrZero(nodes[(int)LayoutProperty.Width]),
-                LayoutProperty.Top => GetComputedValueOrZero(nodes[(int)LayoutProperty.Bottom]) - GetComputedValueOrZero(nodes[(int)LayoutProperty.Height]),
-                LayoutProperty.Right => GetComputedValueOrZero(nodes[(int)LayoutProperty.Left]) + GetComputedValueOrZero(nodes[(int)LayoutProperty.Width]),
-                LayoutProperty.Bottom => GetComputedValueOrZero(nodes[(int)LayoutProperty.Top]) + GetComputedValueOrZero(nodes[(int)LayoutProperty.Height]),
-                LayoutProperty.Height => GetComputedValueOrZero(nodes[(int)LayoutProperty.Bottom]) - GetComputedValueOrZero(nodes[(int)LayoutProperty.Top]),
-                LayoutProperty.Width => GetComputedValueOrZero(nodes[(int)LayoutProperty.Right]) - GetComputedValueOrZero(nodes[(int)LayoutProperty.Left]),
-                _ => 0
+                LayoutProperty.Left => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Right)) -
+                    GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Width)),
+                LayoutProperty.Top => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Bottom)) -
+                    GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Height)),
+                LayoutProperty.Right => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Left)) +
+                    GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Width)),
+                LayoutProperty.Bottom => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Top)) +
+                    GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Height)),
+                LayoutProperty.Height => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Right)) -
+                    GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Left)),
+                LayoutProperty.Width => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Bottom)) -
+                    GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Top)),
+                _ => Throw()
             };
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static int Throw() => throw new ArgumentOutOfRangeException(nameof(property));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -98,26 +133,9 @@ namespace ConcreteUI.Layout
             if (node is FixedValueLayoutNode fixedValueNode)
                 return fixedValueNode.Value;
 
-            TreeDictionary<LayoutNode, StrongBox<int?>> computeDict = _computeDict;
-            int result;
-            StrongBox<int?>? value = computeDict[node];
-            if (value is null)
-            {
-                AddNodeOrThrow(node);
-                try
-                {
-                    result = node.Compute(this);
-                }
-                finally
-                {
-                    RemoveNode(node);
-                }
-                computeDict[node] = new StrongBox<int?>(result);
+            Dictionary<LayoutNode, int> computeDict = _computeDict;
+            if (computeDict.TryGetValue(node, out int result))
                 return result;
-            }
-            int? unboxedValue = value.Value;
-            if (unboxedValue.HasValue)
-                return unboxedValue.Value;
             AddNodeOrThrow(node);
             try
             {
@@ -127,7 +145,7 @@ namespace ConcreteUI.Layout
             {
                 RemoveNode(node);
             }
-            value.Value = result;
+            computeDict.Add(node, result);
             return result;
         }
 
