@@ -79,18 +79,18 @@ namespace ConcreteUI.Test
             Button button = new Button(this)
             {
                 Text = "請點我!",
-                LeftVariable = LayoutVariable.PageReference(LayoutProperty.Left) + UIConstants.ElementMargin,
-                TopVariable = LayoutVariable.PageReference(LayoutProperty.Top) + UIConstants.ElementMargin,
+                LeftExpression = PageLeftDefinition + UIConstants.ElementMargin,
+                TopExpression = PageTopDefinition + UIConstants.ElementMargin,
             }.WithAutoWidth().WithAutoHeight();
             button.Click += Button_Click;
             elementList.Add(button);
 
             TextBox textBox = new TextBox(this, _ime)
             {
-                LeftVariable = button.RightReference + UIConstants.ElementMargin,
-                TopVariable = LayoutVariable.PageReference(LayoutProperty.Top) + UIConstants.ElementMargin,
-                RightVariable = LayoutVariable.PageReference(LayoutProperty.Right) - UIConstants.ElementMargin,
-                HeightVariable = button.HeightReference,
+                LeftExpression = button.RightDefinition + UIConstants.ElementMargin,
+                TopExpression = PageTopDefinition + UIConstants.ElementMargin,
+                RightExpression = PageRightDefinition - UIConstants.ElementMargin,
+                HeightExpression = button.HeightDefinition,
                 Watermark = "這裡可以輸入文字喔!"
             };
             elementList.Add(textBox);
@@ -98,10 +98,10 @@ namespace ConcreteUI.Test
             ListBox listBox = new ListBox(this)
             {
                 Mode = ListBoxMode.Some,
-                LeftVariable = LayoutVariable.PageReference(LayoutProperty.Left) + UIConstants.ElementMargin,
-                TopVariable = textBox.BottomReference + UIConstants.ElementMargin,
-                WidthVariable = 250,
-                BottomVariable = LayoutVariable.PageReference(LayoutProperty.Bottom) - UIConstants.ElementMargin,
+                LeftExpression = PageLeftDefinition + UIConstants.ElementMargin,
+                TopExpression = textBox.BottomDefinition + UIConstants.ElementMargin,
+                WidthExpression = 250,
+                BottomExpression = PageBottomDefinition - UIConstants.ElementMargin,
             };
             IList<string> items = listBox.Items;
             for (int i = 1; i <= 200; i++)
@@ -110,26 +110,26 @@ namespace ConcreteUI.Test
 
             GroupBox groupBox = new GroupBox(this)
             {
-                LeftVariable = listBox.RightReference + UIConstants.ElementMargin,
-                TopVariable = textBox.BottomReference + UIConstants.ElementMargin,
-                RightVariable = LayoutVariable.PageReference(LayoutProperty.Right) - UIConstants.ElementMargin,
-                BottomVariable = LayoutVariable.PageReference(LayoutProperty.Bottom) - UIConstants.ElementMargin,
+                LeftExpression = listBox.RightDefinition + UIConstants.ElementMargin,
+                TopExpression = textBox.BottomDefinition + UIConstants.ElementMargin,
+                RightExpression = PageRightDefinition - UIConstants.ElementMargin,
+                BottomExpression = PageBottomDefinition - UIConstants.ElementMargin,
                 Title = "群組容器",
             };
             elementList.Add(groupBox);
 
             groupBox.AddChild(new CheckBox(this)
             {
-                LeftVariable = groupBox.ContentLeftReference,
-                TopVariable = groupBox.ContentTopReference,
+                LeftExpression = groupBox.ContentLeftDefinition,
+                TopExpression = groupBox.ContentTopDefinition,
                 Text = "可以勾選的方塊"
             }.WithAutoWidth().WithAutoHeight());
 
             ComboBox comboBox = new ComboBox(this)
             {
-                LeftVariable = groupBox.ContentLeftReference,
-                TopVariable = groupBox.FirstChild!.BottomReference + UIConstants.ElementMargin,
-                WidthVariable = 200
+                LeftExpression = groupBox.ContentLeftDefinition,
+                TopExpression = groupBox.FirstChild!.BottomDefinition + UIConstants.ElementMargin,
+                WidthExpression = 200
             }.WithAutoHeight();
             comboBox.RequestDropdownListOpening += ComboBox_RequestDropdownListOpening;
             items = comboBox.Items;
@@ -138,30 +138,30 @@ namespace ConcreteUI.Test
             groupBox.AddChild(comboBox);
             Label label = new Label(this)
             {
-                LeftVariable = groupBox.ContentLeftReference,
-                TopVariable = comboBox.BottomReference + UIConstants.ElementMargin,
-                RightVariable = groupBox.ContentRightReference,
+                LeftExpression = groupBox.ContentLeftDefinition,
+                TopExpression = comboBox.BottomDefinition + UIConstants.ElementMargin,
+                RightExpression = groupBox.ContentRightDefinition,
                 Text = "底下是進度條測試",
                 Alignment = TextAlignment.MiddleCenter
             }.WithAutoHeight();
             Button leftButton = new Button(this)
             {
-                LeftVariable = label.LeftReference,
-                TopVariable = label.BottomReference + UIConstants.ElementMargin,
+                LeftExpression = label.LeftDefinition,
+                TopExpression = label.BottomDefinition + UIConstants.ElementMargin,
                 Text = "-"
             }.WithAutoWidth().WithAutoHeight();
             Button rightButton = new Button(this)
             {
-                TopVariable = label.BottomReference + UIConstants.ElementMargin,
-                RightVariable = label.RightReference,
+                TopExpression = label.BottomDefinition + UIConstants.ElementMargin,
+                RightExpression = label.RightDefinition,
                 Text = "+"
             }.WithAutoWidth().WithAutoHeight();
             ProgressBar progressBar = new ProgressBar(this)
             {
-                LeftVariable = leftButton.RightReference + UIConstants.ElementMargin,
-                TopVariable = label.BottomReference + UIConstants.ElementMargin,
-                RightVariable = rightButton.LeftReference - UIConstants.ElementMargin,
-                HeightVariable = leftButton.HeightReference,
+                LeftExpression = leftButton.RightDefinition + UIConstants.ElementMargin,
+                TopExpression = label.BottomDefinition + UIConstants.ElementMargin,
+                RightExpression = rightButton.LeftDefinition - UIConstants.ElementMargin,
+                HeightExpression = leftButton.HeightDefinition,
                 Maximium = 100.0f,
                 Value = 50.0f
             };
