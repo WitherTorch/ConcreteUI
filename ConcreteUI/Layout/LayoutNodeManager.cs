@@ -92,8 +92,8 @@ namespace ConcreteUI.Layout
                     LayoutProperty.Top => element.Top,
                     LayoutProperty.Right => element.Right,
                     LayoutProperty.Bottom => element.Bottom,
-                    LayoutProperty.Height => element.Height,
                     LayoutProperty.Width => element.Width,
+                    LayoutProperty.Height => element.Height,
                     _ => Throw()
                 };
             }
@@ -113,9 +113,9 @@ namespace ConcreteUI.Layout
                     GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Width)),
                 LayoutProperty.Bottom => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Top)) +
                     GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Height)),
-                LayoutProperty.Height => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Right)) -
+                LayoutProperty.Width => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Right)) -
                     GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Left)),
-                LayoutProperty.Width => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Bottom)) -
+                LayoutProperty.Height => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Bottom)) -
                     GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Top)),
                 _ => Throw()
             };
