@@ -246,6 +246,9 @@ namespace ConcreteUI.Controls
         protected abstract void ApplyThemeCore(IThemeResourceProvider provider);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void SetBoundsInternal(in Rectangle bounds) => SetBoundsCore_Pure(bounds);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Point PointToGlobal(Point point) => GraphicsUtils.PointToGlobal(GetLocationCore(), point);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -274,11 +277,11 @@ namespace ConcreteUI.Controls
         [Inline(InlineBehavior.Remove)]
         private void SetLocationCore(in Point value)
         {
-            if (SetLocationCore_Pure(in value))
-            {
-                OnLocationChanged();
-                OptimisticLock.Increase(ref _boundsVersion);
-            }
+            if (!SetLocationCore_Pure(in value))
+                return;
+            OnLocationChanged();
+            OptimisticLock.Increase(ref _boundsVersion);
+            Renderer.Update();
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -301,11 +304,11 @@ namespace ConcreteUI.Controls
         [Inline(InlineBehavior.Remove)]
         private void SetSizeCore(in Size value)
         {
-            if (SetSizeCore_Pure(in value))
-            {
-                OnSizeChanged();
-                OptimisticLock.Increase(ref _boundsVersion);
-            }
+            if (!SetSizeCore_Pure(in value))
+                return;
+            OnSizeChanged();
+            OptimisticLock.Increase(ref _boundsVersion);
+            Renderer.Update();
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -313,6 +316,36 @@ namespace ConcreteUI.Controls
         {
             ulong val = BoundsHelper.ConvertSizeToUInt64(value);
             return InterlockedHelper.Exchange(ref _size, val) != val;
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private void SetBoundsCore(in Rectangle value)
+        {
+            if (!SetBoundsCore_Pure(value))
+                return;
+            Renderer.Update();
+        }
+
+        [Inline(InlineBehavior.Remove)]
+        private bool SetBoundsCore_Pure(in Rectangle value)
+        {
+            bool locationChanged = SetLocationCore_Pure(value.Location);
+            bool sizeChanged = SetSizeCore_Pure(value.Size);
+            if (locationChanged)
+            {
+                OnLocationChanged();
+                if (sizeChanged)
+                    OnSizeChanged();
+                OptimisticLock.Increase(ref _boundsVersion);
+                return true;
+            }
+            if (sizeChanged)
+            {
+                OnSizeChanged();
+                OptimisticLock.Increase(ref _boundsVersion);
+                return true;
+            }
+            return false;
         }
     }
 }

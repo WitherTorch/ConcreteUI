@@ -296,15 +296,15 @@ namespace ConcreteUI.Graphics.Hosts
 #endif
         }
 
-        public virtual void ResizeTemporarily(Size size) => Resize(size);
+        public virtual bool ResizeTemporarily(Size size) => Resize(size);
 
-        public virtual void Resize(Size size)
+        public virtual bool Resize(Size size)
         {
             if (_size == size)
-                return;
+                return false;
             DXGISwapChain swapChain = _swapChain;
             if (swapChain.IsDisposed)
-                return;
+                return false;
             bool beginDrawCalled;
             D2D1DeviceContext? context = _activeContext;
             if (context is null)
@@ -318,13 +318,15 @@ namespace ConcreteUI.Graphics.Hosts
                 EndDrawCore(context);
             }
             if (context.IsDisposed)
-                return;
+                return false;
             ResizeSwapChain(swapChain, size);
             _size = size;
-            if (!beginDrawCalled)
-                return;
-            BeginDrawCore(context);
-            _activeContext = context;
+            if (beginDrawCalled)
+            {
+                BeginDrawCore(context);
+                _activeContext = context;
+            }
+            return true;
         }
 
         protected virtual void ResizeSwapChain(DXGISwapChain swapChain, Size size)

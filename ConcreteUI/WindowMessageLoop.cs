@@ -121,7 +121,6 @@ namespace ConcreteUI
                 {
                     User32.TranslateMessage(&msg);
                     User32.DispatchMessageW(&msg);
-                    WindowClassImpl.PumpExceptions();
                 }
             }
             return unchecked((int)msg.wParam);
@@ -191,7 +190,6 @@ namespace ConcreteUI
                                     {
                                         User32.TranslateMessage(&msg);
                                         User32.DispatchMessageW(&msg);
-                                        WindowClassImpl.PumpExceptions();
                                     }
                                 }
                             }

@@ -18,7 +18,6 @@ namespace ConcreteUI.Internals
     {
         private static readonly LazyTiny<WindowClassImpl> _instanceLazy =
             new LazyTiny<WindowClassImpl>(CreateInstance, LazyThreadSafetyMode.ExecutionAndPublication);
-        private static readonly List<Exception> _exceptionList = new List<Exception>();
         private static readonly delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint> _wndProcFunc;
 #if NET472_OR_GREATER
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
@@ -38,8 +37,10 @@ namespace ConcreteUI.Internals
             goto Direct;
 #else
 #if B64_ARCH
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Type.GetType("Mono.Runtime") is null)
                 goto Direct;
+            else
+                goto Indirect;
 #elif B32_ARCH
             goto Indirect;
 #elif ANYCPU
@@ -100,7 +101,7 @@ namespace ConcreteUI.Internals
 #if NET8_0_OR_GREATER
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
 #endif
-        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static nint ProcessWindowMessage(IntPtr hwnd, uint message, nint wParam, nint lParam)
         {
             try
@@ -111,43 +112,12 @@ namespace ConcreteUI.Internals
             }
             catch (Exception ex)
             {
-                List<Exception> exceptionList = _exceptionList;
-                lock (exceptionList)
-                    exceptionList.Add(ex);
-                return 0;
-            }
-            return User32.DefWindowProcW(hwnd, message, wParam, lParam);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void PumpExceptions()
-        {
-            List<Exception> exceptionList = _exceptionList;
-            PooledList<Exception> shadowList;
-            int count;
-            lock (exceptionList)
-            {
-                count = exceptionList.Count;
-                if (count <= 0)
-                    return;
-                shadowList = new PooledList<Exception>(count);
-                shadowList.AddRange(exceptionList);
-            }
-            try
-            {
                 MessageLoopExceptionEventHandler? eventHandler = WindowMessageLoop.GetExceptionEventHandler();
                 if (eventHandler is null)
-                    throw new AggregateException(shadowList);
-                else
-                {
-                    for (int i = 0; i < count; i++)
-                        eventHandler.Invoke(null, new MessageLoopExceptionEventArgs(shadowList[i]));
-                }
+                    throw;
+                eventHandler.Invoke(null, new MessageLoopExceptionEventArgs(ex));
             }
-            finally
-            {
-                shadowList.Dispose();
-            }
+            return User32.DefWindowProcW(hwnd, message, wParam, lParam);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

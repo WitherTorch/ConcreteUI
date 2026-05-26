@@ -352,7 +352,7 @@ namespace ConcreteUI.Window
                     pool.Return(handles);
                 }
             }
-            TriggerResizeCore(controller, _sizeModeState);
+            controller.RequestResize(Volatile.Read(ref _sizeModeState));
             controller.Unlock();
         }
         #endregion
@@ -432,14 +432,11 @@ namespace ConcreteUI.Window
         public virtual void RenderBackground(UIElement element, in RegionalRenderingContext context)
             => context.Clear(_windowBaseColor);
 
-        void IRenderingControl.Render(RenderingFlags flags)
+        void IRenderingControl.Render(RenderingController controller)
         {
-            bool resized = (flags & RenderingFlags.Resize) == RenderingFlags.Resize,
-                resizedTemporarily = (flags & RenderingFlags.ResizeTemporarily) == RenderingFlags.ResizeTemporarily,
-                redrawAll = (flags & RenderingFlags.RedrawAll) == RenderingFlags.RedrawAll;
-            redrawAll = !RenderCore(redrawAll, resized, resizedTemporarily);
-            if (redrawAll)
-                _controller?.RequestUpdate(true);
+            RenderingFlags flags = controller.GetAndResetRenderingFlags();
+            if (!RenderCore(controller, flags))
+                InterlockedHelper.Read(ref _controller)?.RequestUpdate(true);
         }
 
         ToolTip? IRenderer.GetToolTip() => GetBackgroundElement<ToolTip>();
@@ -459,6 +456,8 @@ namespace ConcreteUI.Window
         Vector2 IRenderer.GetPointsPerPixel() => _pointsPerPixel;
 
         void IRenderer.Refresh() => Refresh();
+
+        void IRenderer.Update() => Update();
 
         private bool IsBackgroundOpaque() => _actualWindowMaterial == WindowMaterial.None;
         #endregion
@@ -661,7 +660,7 @@ namespace ConcreteUI.Window
         }
 
         [Inline]
-        private bool RenderCore(bool force, bool resized, bool resizedTemporarily)
+        private bool RenderCore(RenderingController controller, RenderingFlags flags)
         {
             SimpleGraphicsHost? host = _host;
             if (host is null || host.IsDisposed)
@@ -669,29 +668,37 @@ namespace ConcreteUI.Window
             DirtyAreaCollector? collector = _collector;
             if (collector is null)
                 return false;
-            if (resized)
+            bool redrawAll = flags.HasFlagFast(RenderingFlags.RedrawAll);
+            if (flags.HasFlagFast(RenderingFlags.Resize))
             {
-                force = true;
+                bool resizeTemporarily = flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag);
                 Size size = RawClientSize;
-                if (resizedTemporarily)
-                    host.ResizeTemporarily(size);
+                if (resizeTemporarily)
+                    redrawAll |= host.ResizeTemporarily(size);
                 else
-                    host.Resize(size);
+                    redrawAll |= host.Resize(size);
                 Thread.MemoryBarrier();
-                RecalculateLayout(GraphicsUtils.ScalingSizeAndConvert(size, _pointsPerPixel), true);
+                if (redrawAll)
+                {
+                    RecalculateLayout(windowSize: GraphicsUtils.ScalingSizeAndConvert(size, _pointsPerPixel), callRecalculatePageLayout: true);
+                    Thread.MemoryBarrier();
+                }
+                flags = controller.GetAndResetRenderingFlags();
+                if (resizeTemporarily || flags.HasFlagFast(RenderingFlags.Resize))
+                    controller.RequestResize(flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag), redrawAll: false);
             }
             D2D1DeviceContext? deviceContext = host.BeginDraw();
             if (deviceContext is null || deviceContext.IsDisposed)
                 return true;
 
             ClearTypeSwitcher.SetClearType(deviceContext, false);
-            if (force)
-                return RenderCore_Force(host, deviceContext);
+            if (redrawAll)
+                return RenderCore_RedrawAll(host, deviceContext);
             else
                 return RenderCore_Normal(host, deviceContext, collector);
         }
 
-        private bool RenderCore_Force(SimpleGraphicsHost host, D2D1DeviceContext deviceContext)
+        private bool RenderCore_RedrawAll(SimpleGraphicsHost host, D2D1DeviceContext deviceContext)
         {
             DirtyAreaCollector collector = DirtyAreaCollector.Empty;
             RenderTitle(deviceContext, collector, force: true);
@@ -726,7 +733,7 @@ namespace ConcreteUI.Window
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual void RenderPage(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect, bool force)
         {
-            using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.RoundInPixel((RectF)pageRect, _pixelsPerPoint), D2D1AntialiasMode.Aliased);
+            using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.RoundInPixel(pageRect, _pixelsPerPoint), D2D1AntialiasMode.Aliased);
             if (force)
             {
                 collector.UsePresentAllModeOnce();
@@ -879,10 +886,7 @@ namespace ConcreteUI.Window
         protected override void OnResized(EventArgs args)
         {
             base.OnResized(args);
-            RenderingController? controller = _controller;
-            if (controller is null)
-                return;
-            TriggerResizeCore(controller, _sizeModeState);
+            TriggerResize();
         }
 
         private void UpdateFirstTime()
@@ -956,15 +960,7 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Normal Methods
-        protected void TriggerResize()
-        {
-            RenderingController? controller = _controller;
-            if (controller is null)
-                return;
-            TriggerResizeCore(controller, _sizeModeState);
-        }
-
-        private static void TriggerResizeCore(RenderingController controller, uint sizeModeState) => controller.RequestResize(sizeModeState == 2u);
+        protected void TriggerResize() => _controller?.RequestResize(Volatile.Read(ref _sizeModeState));
 
         protected void Update()
         {
@@ -1224,7 +1220,7 @@ namespace ConcreteUI.Window
             }
             if (controller is not null)
             {
-                TriggerResizeCore(controller, _sizeModeState);
+                controller.RequestResize(Volatile.Read(ref _sizeModeState));
                 controller.Unlock();
             }
         }

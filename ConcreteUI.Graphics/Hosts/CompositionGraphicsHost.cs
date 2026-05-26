@@ -16,6 +16,8 @@ namespace ConcreteUI.Graphics.Hosts
         private readonly DCompositionTarget _target;
         private readonly DCompositionVisual _visual;
 
+        private Size _temporarySize;
+
         public CompositionGraphicsHost(GraphicsDeviceProvider deviceProvider, IntPtr handle,
             D2D1TextAntialiasMode textAntialiasMode, bool isOpaque) : base(deviceProvider, handle, textAntialiasMode, true, isOpaque)
         {
@@ -94,18 +96,24 @@ namespace ConcreteUI.Graphics.Hosts
             return result;
         }
 
-        public override void ResizeTemporarily(Size size)
+        public override bool ResizeTemporarily(Size size)
         {
             Size oldSize = _size;
             if (size.Width > oldSize.Width || size.Height > oldSize.Height)
                 goto Fallback;
 
             //swapChain.SourceSize = new SizeU(width, height);
-            return;
+            return ReferenceHelper.Exchange(ref _temporarySize, size) != size;
 
         Fallback:
             base.ResizeTemporarily(size);
-            return;
+            return false;
+        }
+
+        public override bool Resize(Size size)
+        {
+            _temporarySize = size;
+            return base.Resize(size);
         }
 
         protected override void DisposeCore(bool disposing)

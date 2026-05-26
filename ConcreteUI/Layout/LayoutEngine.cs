@@ -94,7 +94,7 @@ namespace ConcreteUI.Layout
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void RecalculateLayout(in Rect pageRect, UIElement element)
+        public void RecalculateLayout(in Rect pageRect, UIElement element)
         {
             if (!pageRect.IsValid)
                 return;
@@ -103,7 +103,7 @@ namespace ConcreteUI.Layout
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void RecalculateLayout(in Rect pageRect, UIElement?[] elements)
+        public void RecalculateLayout(in Rect pageRect, UIElement?[] elements)
         {
             if (elements is null || !pageRect.IsValid)
                 return;
@@ -111,7 +111,7 @@ namespace ConcreteUI.Layout
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void RecalculateLayout(in Rect pageRect, IEnumerable<UIElement?> elements)
+        public void RecalculateLayout(in Rect pageRect, IEnumerable<UIElement?> elements)
         {
             if (elements is null || !pageRect.IsValid)
                 return;
@@ -130,7 +130,7 @@ namespace ConcreteUI.Layout
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void RecalculateLayoutCore(in Rect pageRect, UIElement?[] elements, int length)
+        private void RecalculateLayoutCore(in Rect pageRect, UIElement?[] elements, int length)
         {
             if (length <= 0 || !ArrayHelper.HasNonNullItem(elements))
                 return;
@@ -139,7 +139,7 @@ namespace ConcreteUI.Layout
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void RecalculateLayoutCore(in Rect pageRect, IEnumerable<UIElement?> elements)
+        private void RecalculateLayoutCore(in Rect pageRect, IEnumerable<UIElement?> elements)
         {
             bool hasAnyItems = false;
             foreach (UIElement? element in elements)
@@ -182,6 +182,10 @@ namespace ConcreteUI.Layout
                     {
                         values[i] = nodeManager.GetComputedValue(expression);
                     }
+                    catch (CyclicDependencyException)
+                    {
+                        throw;
+                    }
                     catch (Exception ex)
                     {
                         innerException = ex;
@@ -199,6 +203,10 @@ namespace ConcreteUI.Layout
                     try
                     {
                         values[i - 2] = nodeManager.GetComputedValue(expression);
+                    }
+                    catch (CyclicDependencyException)
+                    {
+                        throw;
                     }
                     catch (Exception ex)
                     {
@@ -232,7 +240,7 @@ namespace ConcreteUI.Layout
                         values[i - 2] = nodeManager.GetComputedValue(leftExpression) - nodeManager.GetComputedValue(rightExpression);
                     }
                 }
-                element.Bounds = bounds;
+                element.SetBoundsInternal(bounds);
                 continue;
 
             Failed:

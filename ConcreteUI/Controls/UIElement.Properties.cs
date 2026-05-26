@@ -75,23 +75,7 @@ namespace ConcreteUI.Controls
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => new Rectangle(GetLocationCore(), GetSizeCore());
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                bool locationChanged = SetLocationCore_Pure(value.Location);
-                bool sizeChanged = SetSizeCore_Pure(value.Size);
-                if (locationChanged)
-                {
-                    OptimisticLock.Increase(ref _boundsVersion);
-                    OnLocationChanged();
-                    if (sizeChanged)
-                        OnSizeChanged();
-                }
-                else if (sizeChanged)
-                {
-                    OptimisticLock.Increase(ref _boundsVersion);
-                    OnSizeChanged();
-                }
-            }
+            set => SetBoundsCore(value);
         }
 
         public int X

@@ -71,7 +71,29 @@ namespace ConcreteUI.Graphics
         {
             if (InterlockedHelper.Read(ref _locked) != 0UL)
                 return;
-            InterlockedHelper.Or(ref _state, temporarily ? (ulong)RenderingFlags.ResizeTemporarilyAndRedrawAll : (ulong)RenderingFlags.ResizeAndRedrawAll);
+            ulong state;
+#if NET8_0_OR_GREATER
+            state = temporarily ? (ulong)RenderingFlags.ResizeTemporarilyAndRedrawAll : (ulong)RenderingFlags.ResizeAndRedrawAll;
+#else
+            state = (ulong)RenderingFlags.ResizeAndRedrawAll | ((ulong)RenderingFlags._ResizeTemporarilyFlag & UnsafeHelper.Negate(MathHelper.BooleanToUInt64(temporarily)));
+#endif
+            InterlockedHelper.Or(ref _state, state);
+            _thread.DoRender();
+        }
+
+        public void RequestResize(bool temporarily, bool redrawAll)
+        {
+            if (InterlockedHelper.Read(ref _locked) != 0UL)
+                return;
+            ulong state;
+#if NET8_0_OR_GREATER
+            state = (temporarily ? (ulong)RenderingFlags.ResizeTemporarily : (ulong)RenderingFlags.Resize) | (redrawAll ? (ulong)RenderingFlags.RedrawAll : default);
+#else
+            state = (ulong)RenderingFlags.Resize | 
+                ((ulong)RenderingFlags._ResizeTemporarilyFlag & UnsafeHelper.Negate(MathHelper.BooleanToUInt64(temporarily))) |
+                ((ulong)RenderingFlags.RedrawAll & UnsafeHelper.Negate(MathHelper.BooleanToUInt64(redrawAll)));
+#endif
+            InterlockedHelper.Or(ref _state, state);
             _thread.DoRender();
         }
 
@@ -84,7 +106,7 @@ namespace ConcreteUI.Graphics
             NativeMethods.ResetWaitingHandle(trigger);
             try
             {
-                _control.Render((RenderingFlags)InterlockedHelper.Exchange(ref _state, 0UL));
+                _control.Render(this);
             }
             finally
             {
@@ -102,6 +124,13 @@ namespace ConcreteUI.Graphics
                 return;
             InterlockedHelper.Or(ref _state, (long)RenderingFlags.ResizeAndRedrawAll);
             _thread.DoRender();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RenderingFlags GetAndResetRenderingFlags()
+        {
+            _thread.StartNextWaiting();
+            return (RenderingFlags)InterlockedHelper.Exchange(ref _state, default);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

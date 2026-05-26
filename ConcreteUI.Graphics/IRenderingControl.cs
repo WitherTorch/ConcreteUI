@@ -11,6 +11,6 @@ namespace ConcreteUI.Graphics
 
         RenderingController? GetRenderingController();
 
-        void Render(RenderingFlags flags);
+        void Render(RenderingController controller);
     }
 }

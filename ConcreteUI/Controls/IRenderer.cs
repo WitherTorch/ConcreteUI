@@ -19,5 +19,7 @@ namespace ConcreteUI.Controls
         IThemeResourceProvider? GetThemeResourceProvider();
 
         void Refresh();
+
+        void Update();
     }
 }

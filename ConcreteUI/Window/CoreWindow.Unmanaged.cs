@@ -31,9 +31,8 @@ namespace ConcreteUI.Window
         private MouseButtons _lastMouseDownButtons;
         private IntPtr _associatedMonitor;
         private nint _beforeHitTest;
-        private uint _sizeModeState;
         private int _borderWidth;
-        private bool _isMaximized, _isCreateByDefaultX, _isCreateByDefaultY, _hasMouseCapture, _isSystemPrepareBoosting;
+        private bool _isMaximized, _isCreateByDefaultX, _isCreateByDefaultY, _hasMouseCapture, _isSystemPrepareBoosting, _sizeModeState;
         #endregion
 
         #region Special Fields
@@ -198,7 +197,7 @@ namespace ConcreteUI.Window
                     goto default;
                 case WindowMessage.Size:
                     {
-                        ReferenceHelper.CompareExchange(ref _sizeModeState, 2u, 1u);
+                        Volatile.Write(ref _sizeModeState, true);
                         switch (wParam)
                         {
                             case 2: // SIZE_MAXIMIZED
@@ -231,12 +230,8 @@ namespace ConcreteUI.Window
                             WindowPositionFlags.SwapWithNoMove | WindowPositionFlags.SwapWithNoZOrder | WindowPositionFlags.SwapWithNoActivate);
                         break;
                     }
-                case WindowMessage.EnterSizeMove:
-                    _sizeModeState = 1u;
-                    goto default;
                 case WindowMessage.ExitSizeMove:
-                    if (ReferenceHelper.Exchange(ref _sizeModeState, 0u) > 1u)
-                        _controller?.RequestResize(temporarily: false);
+                    Volatile.Write(ref _sizeModeState, false);
                     goto default;
                 #region Normal input events
                 case WindowMessage.Char:

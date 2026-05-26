@@ -46,6 +46,14 @@ namespace ConcreteUI.Graphics
                 NativeMethods.SetWaitingHandle(handle);
             }
 
+            public void StartNextWaiting()
+            {
+                IntPtr handle = InterlockedHelper.Read(ref _renderingWaitingHandle);
+                if (handle == IntPtr.Zero)
+                    return;
+                NativeMethods.ResetWaitingHandle(handle);
+            }
+
             private void ThreadLoop()
             {
                 const uint Infinite = unchecked((uint)Timeout.Infinite);
@@ -59,7 +67,7 @@ namespace ConcreteUI.Graphics
                 {
                     if (InterlockedHelper.CompareExchange(ref _exitTriggerHandle, exitTriggerHandle, IntPtr.Zero) != IntPtr.Zero)
                         return;
-                    IntPtr renderingWaitingHandle = NativeMethods.CreateWaitingHandle(autoReset: true);
+                    IntPtr renderingWaitingHandle = NativeMethods.CreateWaitingHandle(autoReset: false);
                     try
                     {
                         if (InterlockedHelper.CompareExchange(ref _renderingWaitingHandle, renderingWaitingHandle, IntPtr.Zero) != IntPtr.Zero)
