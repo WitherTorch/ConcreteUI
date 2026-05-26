@@ -20,7 +20,7 @@ namespace ConcreteUI.Layout
 {
     public sealed class LayoutEngine
     {
-        private const int Capacity = 1 << 7; // 128
+        private const int Capacity = 1 << 9; // 512
         private const int SegmentLength = (int)LayoutProperty._Last;
 
         private readonly Dictionary<UIElement, ArraySegment<LayoutNode?>> _elementDict = new();
