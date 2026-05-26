@@ -18,6 +18,10 @@ namespace ConcreteUI.Internals.Native
     [SuppressUnmanagedCodeSecurity]
     internal static unsafe class User32
     {
+#if ANYCPU
+        private static readonly bool _is64Bit = sizeof(void*) == sizeof(ulong);
+#endif
+
         private const string LibraryName = "user32.dll";
         private static readonly void*[] _pointers =
             NativeMethods.GetImportedMethodPointers(LibraryName, "GetDpiForWindow");
@@ -233,12 +237,6 @@ namespace ConcreteUI.Internals.Native
         public static extern int GetWindowTextW(IntPtr hWnd, char* lpString, int maxCount);
 
         [DllImport(LibraryName)]
-        public static extern nint GetWindowLongPtrW(IntPtr hWnd, int nIndex);
-
-        [DllImport(LibraryName)]
-        public static extern nint SetWindowLongPtrW(IntPtr hWnd, int nIndex, nint dwNewLong);
-
-        [DllImport(LibraryName)]
         public static extern IntPtr GetSystemMenu(IntPtr hWnd, SysBool32 bRevert);
 
         [DllImport(LibraryName)]
@@ -344,5 +342,55 @@ namespace ConcreteUI.Internals.Native
         [Inline(InlineBehavior.Remove)]
         public static int SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, in Rectangle bounds, WindowPositionFlags flags)
             => SetWindowPos(hWnd, hWndInsertAfter, bounds.X, bounds.Y, bounds.Width, bounds.Height, flags);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint GetWindowLongPtrW(IntPtr hWnd, int nIndex)
+        {
+#if B64_ARCH
+            return _64.GetWindowLongPtrW(hWnd, nIndex);
+#elif B32_ARCH
+            return _32.GetWindowLongW(hWnd, nIndex);
+#elif ANYCPU
+            return _is64Bit ? _64.GetWindowLongPtrW(hWnd, nIndex) : _32.GetWindowLongW(hWnd, nIndex);
+#else
+            throw new PlatformNotSupportedException();
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint SetWindowLongPtrW(IntPtr hWnd, int nIndex, nint dwNewLong)
+        {
+#if B64_ARCH
+            return _64.SetWindowLongPtrW(hWnd, nIndex, dwNewLong);
+#elif B32_ARCH
+            return _32.SetWindowLongW(hWnd, nIndex, (int)dwNewLong);
+#elif ANYCPU
+            return _is64Bit ? _64.GetWindowLongPtrW(hWnd, nIndex, dwNewLong) : _32.SetWindowLongW(hWnd, nIndex, (int)dwNewLong);
+#else
+            throw new PlatformNotSupportedException();
+#endif
+        }
+
+#if B32_ARCH || ANYCPU
+        private static class _32
+        {
+            [DllImport(LibraryName)]
+            public static extern int GetWindowLongW(IntPtr hWnd, int nIndex);
+
+            [DllImport(LibraryName)]
+            public static extern int SetWindowLongW(IntPtr hWnd, int nIndex, int dwNewLong);
+        }
+#endif
+
+#if B64_ARCH || ANYCPU
+        private static class _64
+        {
+            [DllImport(LibraryName)]
+            public static extern nint GetWindowLongPtrW(IntPtr hWnd, int nIndex);
+
+            [DllImport(LibraryName)]
+            public static extern nint SetWindowLongPtrW(IntPtr hWnd, int nIndex, nint dwNewLong);
+        }
+#endif
     }
 }

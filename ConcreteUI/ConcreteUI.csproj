@@ -92,23 +92,19 @@
 	</ItemGroup>
 
 	<PropertyGroup Condition="'$(Platform)'=='AnyCPU'">
-		<DefineConstants>$(DefineConstants);B32_ARCH;B64_ARCH;ANYCPU</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Platform)'=='x86'">
-		<DefineConstants>$(DefineConstants);B32_ARCH;B64_ARCH;ANYCPU</DefineConstants>
+		<DefineConstants>$(DefineConstants);ANYCPU</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Platform)'=='x64'">
-		<DefineConstants>$(DefineConstants);B64_ARCH</DefineConstants>
+		<DefineConstants>$(DefineConstants);B64_ARCH;X86_ARCH</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Platform)'=='x86'">
-		<DefineConstants>$(DefineConstants);B32_ARCH</DefineConstants>
+		<DefineConstants>$(DefineConstants);B32_ARCH;X86_ARCH</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Platform)'=='ARM64'">
-		<DefineConstants>$(DefineConstants);B64_ARCH</DefineConstants>
+		<DefineConstants>$(DefineConstants);B64_ARCH;ARM_ARCH</DefineConstants>
 	</PropertyGroup>
 
 </Project>

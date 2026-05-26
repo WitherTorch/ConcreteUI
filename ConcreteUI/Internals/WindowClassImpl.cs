@@ -8,26 +8,62 @@ using System.Threading;
 using ConcreteUI.Internals.Native;
 using ConcreteUI.Window;
 
-using InlineMethod;
-
 using WitherTorch.Common.Buffers;
-using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Internals
 {
-    internal sealed partial class WindowClassImpl
+    internal sealed unsafe class WindowClassImpl
     {
         private static readonly LazyTiny<WindowClassImpl> _instanceLazy =
             new LazyTiny<WindowClassImpl>(CreateInstance, LazyThreadSafetyMode.ExecutionAndPublication);
         private static readonly List<Exception> _exceptionList = new List<Exception>();
+        private static readonly delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint> _wndProcFunc;
+#if NET472_OR_GREATER
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate nint WndProcDelegate(IntPtr hwnd, uint message, nint lParam, nint wParam);
+        private static readonly WndProcDelegate _wndProcDelegate;
+#endif
 
         public static WindowClassImpl Instance => _instanceLazy.Value;
 
         private readonly OptimisticLock<Dictionary<IntPtr, WeakReference<IHwndOwner>>> _hwndOwnerDictWithLock;
         private readonly IntPtr _hInstance;
         private readonly ushort _atom;
+
+        static WindowClassImpl()
+        {
+#if NET8_0_OR_GREATER
+            goto Direct;
+#else
+#if B64_ARCH
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                goto Direct;
+#elif B32_ARCH
+            goto Indirect;
+#elif ANYCPU
+            if (PlatformHelper.IsX64 && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                goto Direct;
+            goto Indirect;
+#endif
+#endif
+
+        Direct:
+#if NET8_0_OR_GREATER
+            _wndProcFunc = &ProcessWindowMessage;
+#else
+            delegate* managed<IntPtr, uint, nint, nint, nint> wndProcFunc = &ProcessWindowMessage;
+            _wndProcFunc = (delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint>)wndProcFunc;
+#endif
+
+#if !NET8_0_OR_GREATER
+        Indirect:
+            WndProcDelegate wndProcDelegate = ProcessWindowMessage;
+            _wndProcDelegate = wndProcDelegate;
+            _wndProcFunc = (delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint>)Marshal.GetFunctionPointerForDelegate(wndProcDelegate);
+#endif
+        }
 
         private WindowClassImpl(ushort atom, IntPtr hInstance)
         {
@@ -39,7 +75,7 @@ namespace ConcreteUI.Internals
         public ushort Atom => _atom;
         public IntPtr HInstance => _hInstance;
 
-        private static unsafe WindowClassImpl CreateInstance()
+        private static WindowClassImpl CreateInstance()
         {
             IntPtr hInstance = Kernel32.GetModuleHandleW(null);
             fixed (char* className = "ConcreteWindow")
@@ -49,7 +85,7 @@ namespace ConcreteUI.Internals
                     cbSize = UnsafeHelper.SizeOf<WindowClassEx>(),
                     style = ClassStyles.OwnDC,
                     hInstance = hInstance,
-                    lpfnWndProc = (delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint>)&ProcessWindowMessage,
+                    lpfnWndProc = _wndProcFunc,
                     lpszClassName = className,
                     hbrBackground = Gdi32.CreateSolidBrush(0x00000000)
                 };
@@ -61,9 +97,11 @@ namespace ConcreteUI.Internals
             }
         }
 
+#if NET8_0_OR_GREATER
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+#endif
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
-        private static unsafe nint ProcessWindowMessage(IntPtr hwnd, uint message, nint wParam, nint lParam)
+        private static nint ProcessWindowMessage(IntPtr hwnd, uint message, nint wParam, nint lParam)
         {
             try
             {
@@ -145,7 +183,7 @@ namespace ConcreteUI.Internals
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
+        public bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
             WeakReference<IHwndOwner>? ownerRef = _hwndOwnerDictWithLock.Read(
                 dict => dict.TryGetValue(hwnd, out WeakReference<IHwndOwner>? result) ? result : null);
