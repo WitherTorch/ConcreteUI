@@ -640,9 +640,15 @@ namespace ConcreteUI.Window
         protected virtual void RecalculatePageLayout(in Rect pageRect)
         {
             LayoutEngine layoutEngine = RentLayoutEngine();
-            layoutEngine.RecalculateLayout(pageRect, GetActiveElements());
-            layoutEngine.RecalculateLayout(pageRect, GetOverlayElements());
-            ReturnLayoutEngine(layoutEngine);
+            try
+            {
+                layoutEngine.RecalculateLayout(pageRect, GetActiveElements());
+                layoutEngine.RecalculateLayout(pageRect, GetOverlayElements());
+            }
+            finally
+            {
+                ReturnLayoutEngine(layoutEngine);
+            }
         }
         #endregion
 
