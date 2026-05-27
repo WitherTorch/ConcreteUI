@@ -174,6 +174,29 @@ namespace ConcreteUI.Controls
             return false;
         }
 
+        public int EnumerateItemsToList(IList<TItem> list)
+        {
+            if (IsDisposed)
+                goto Failed;
+            lock (_syncLock)
+                return EnumerateItemsCore(list);
+        Failed:
+            return 0;
+        }
+
+        public int EnumerateItemsToList(int baseY, int height, IList<TItem> list)
+        {
+            if (baseY < 0 || height < 0 || IsDisposed)
+                goto Failed;
+            int endY = baseY + height;
+            if (endY < 0)
+                goto Failed;
+            lock (_syncLock)
+                return EnumerateItemsCore(baseY, endY, list);
+        Failed:
+            return 0;
+        }
+
         public int EnumerateItemsToList(int baseY, int height, IList<(TItem item, int itemTop, int itemHeight)> list)
         {
             if (baseY < 0 || height < 0 || IsDisposed)
@@ -517,6 +540,72 @@ namespace ConcreteUI.Controls
             return false;
         }
 
+        private int EnumerateItemsCore(IList<TItem> list)
+        {
+            IAppendOnlyCollection<TItem>? values = _values;
+            int result = values.Count;
+            if (list is CustomListBase<TItem> customList)
+                customList.EnsureCapacity(customList.Count + result);
+#if NET8_0_OR_GREATER
+            else if (list is List<TItem> normalList)
+                normalList.EnsureCapacity(normalList.Count + result);
+#endif
+            foreach (TItem item in values)
+                list.Add(item);
+
+            return result;
+        }
+
+        private int EnumerateItemsCore(int startY, int endY, IList<TItem> list)
+        {
+            IAppendOnlyCollection<int>? keys = _keys;
+            IAppendOnlyCollection<TItem>? values = _values;
+
+            int count = keys.Count;
+            if (count != values.Count)
+                count = AdjustAllAndCheck(triggerEvent: true);
+
+            int startIndex = keys.BinarySearch(startY);
+            if (startIndex < 0)
+            {
+                startIndex = ~startIndex;
+                if (startIndex >= count)
+                    goto Failed;
+                if (startIndex > 0)
+                    startIndex--;
+            }
+            else
+            {
+                if (startIndex >= count)
+                    goto Failed;
+            }
+
+            int endIndex = keys.BinarySearch(endY);
+            if (endIndex < 0)
+                endIndex = ~endIndex;
+            if (endIndex >= count)
+                endIndex = count - 1;
+
+            int result = endIndex - startIndex + 1;
+            if (list is CustomListBase<TItem> customList)
+                customList.EnsureCapacity(customList.Count + result);
+#if NET8_0_OR_GREATER
+            else if (list is List<TItem> normalList)
+                normalList.EnsureCapacity(normalList.Count + result);
+#endif
+            int key = 0;
+            for (int i = startIndex, j = 0; i <= endIndex; i++, j++)
+            {
+                int newKey = keys[i];
+                list.Add(values[i]);
+                key = newKey;
+            }
+
+            return result;
+        Failed:
+            return 0;
+        }
+
         private int EnumerateItemsCore(int startY, int endY, IList<(TItem item, int itemTop, int itemHeight)> list)
         {
             IAppendOnlyCollection<int>? keys = _keys;
@@ -551,8 +640,8 @@ namespace ConcreteUI.Controls
             if (list is CustomListBase<(TItem item, int itemTop, int itemHeight)> customList)
                 customList.EnsureCapacity(customList.Count + result);
 #if NET8_0_OR_GREATER
-                else if (list is List<(TItem item, int itemTop, int itemHeight)> normalList)
-                    normalList.EnsureCapacity(normalList.Count + result);
+            else if (list is List<(TItem item, int itemTop, int itemHeight)> normalList)
+                normalList.EnsureCapacity(normalList.Count + result);
 #endif
             int key = 0;
             for (int i = startIndex, j = 0; i <= endIndex; i++, j++)

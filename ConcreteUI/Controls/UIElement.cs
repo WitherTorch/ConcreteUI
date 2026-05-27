@@ -102,6 +102,9 @@ namespace ConcreteUI.Controls
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsBackgroundOpaque() => IsBackgroundOpaqueCore() || _parent.IsBackgroundOpaque(this);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected MonitorLockScope EnterSyncScope() => MonitorLockScope.Enter(_syncLock);
+
         protected virtual bool IsBackgroundOpaqueCore() => false;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
