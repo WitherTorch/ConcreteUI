@@ -41,9 +41,12 @@ namespace ConcreteUI.Window
             _parentReference = parent is null ? default : GCHandle.Alloc(parent, GCHandleType.Weak);
             _handleLazy = new Lazy<IntPtr>(() =>
             {
-                IntPtr parentHandle = IntPtr.Zero;
-                if (_parentReference.Target is IHwndOwner parent)
+                GCHandle reference = _parentReference;
+                IntPtr parentHandle;
+                if (reference != default && reference.Target is IHwndOwner parent)
                     parentHandle = parent.Handle;
+                else
+                    parentHandle = IntPtr.Zero;
                 return CreateWindowHandle(parentHandle);
             }, LazyThreadSafetyMode.None);
             _cursor = SystemCursors.Default;
