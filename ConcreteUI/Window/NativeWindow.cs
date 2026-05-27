@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Runtime.ConstrainedExecution;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,7 +17,7 @@ namespace ConcreteUI.Window
 {
     public abstract partial class NativeWindow : CriticalFinalizerObject, IHwndOwner
     {
-        private readonly WeakReference<IHwndOwner>? _parentReference;
+        private readonly GCHandle _parentReference;
         private readonly Lazy<IntPtr> _handleLazy;
 
         private CancellationTokenSource? _dialogTokenSource;
@@ -37,11 +38,11 @@ namespace ConcreteUI.Window
 
         public NativeWindow(IHwndOwner? parent = null)
         {
-            _parentReference = parent is null ? null : new WeakReference<IHwndOwner>(parent);
+            _parentReference = parent is null ? default : GCHandle.Alloc(parent, GCHandleType.Weak);
             _handleLazy = new Lazy<IntPtr>(() =>
             {
                 IntPtr parentHandle = IntPtr.Zero;
-                if (_parentReference?.TryGetTarget(out IHwndOwner? parent) == true)
+                if (_parentReference.Target is IHwndOwner parent)
                     parentHandle = parent.Handle;
                 return CreateWindowHandle(parentHandle);
             }, LazyThreadSafetyMode.None);
