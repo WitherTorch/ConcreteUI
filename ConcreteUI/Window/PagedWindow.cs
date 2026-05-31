@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
-using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 
@@ -19,7 +20,7 @@ namespace ConcreteUI.Window
         #region Fields
         private int _pageIndex;
         private BitVector64 _recalcState;
-        protected bool isPageChanged;
+        protected bool _isPageChanged;
         #endregion
 
         #region Properties
@@ -38,7 +39,7 @@ namespace ConcreteUI.Window
                 OnCurrentPageChanging();
                 ClearFocusElement();
                 _pageIndex = value;
-                isPageChanged = true;
+                _isPageChanged = true;
                 OnCurrentPageChanged();
                 controller?.Unlock();
             }
@@ -81,24 +82,24 @@ namespace ConcreteUI.Window
             .ConcatOptimized(GetOverlayElements())
             .ConcatOptimized(GetBackgroundElements());
 
-        protected override void RecalculatePageLayout(in Rect pageRect)
+        protected override void RecalculatePageLayout(Size pageSize)
         {
             int pageIndex = _pageIndex;
             if (pageIndex < 0)
                 return;
-            RecalculatePageLayout(pageRect, pageIndex);
+            RecalculatePageLayout(pageSize, pageIndex);
             _recalcState.InterlockedExchange(1UL << pageIndex);
         }
 
-        protected override void RenderPage(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect, bool force)
+        protected override void RenderPage(in RegionalRenderingContext context)
         {
-            if (RecalculateLayoutIfPageChanged(pageRect))
-                force = true;
-            RenderPageCore(deviceContext, collector, pageRect, force);
+            if (RecalculatePageLayoutIfPageChanged(_pageRect.Size))
+                context.UsePresentAllModeOnce();
+            RenderPageCore(context);
         }
 
-        protected virtual void RenderPageCore(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect, bool force)
-            => base.RenderPage(deviceContext, collector, pageRect, force);
+        protected virtual void RenderPageCore(in RegionalRenderingContext context)
+            => base.RenderPage(context);
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {
@@ -109,12 +110,18 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Virtual Methods
-        protected virtual void RecalculatePageLayout(in Rect pageRect, int pageIndex)
+        protected virtual void RecalculatePageLayout(Size pageSize, int pageIndex)
         {
             LayoutEngine layoutEngine = RentLayoutEngine();
-            layoutEngine.RecalculateLayout(pageRect, GetActiveElements(pageIndex));
-            layoutEngine.RecalculateLayout(pageRect, GetOverlayElements());
-            ReturnLayoutEngine(layoutEngine);
+            try
+            {
+                layoutEngine.RecalculateLayout(pageSize, GetActiveElements(pageIndex));
+                layoutEngine.RecalculateLayout(pageSize, GetOverlayElements());
+            }
+            finally
+            {
+                ReturnLayoutEngine(layoutEngine);
+            }
         }
 
         protected virtual IEnumerable<UIElement?> EnumerateActiveElementsInAllPages()
@@ -133,16 +140,19 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Normal Methods
-        protected bool RecalculateLayoutIfPageChanged(in Rect pageRect)
+        protected bool RecalculatePageLayoutIfPageChanged(Size pageSize)
         {
-            if (isPageChanged)
+            if (_isPageChanged)
             {
-                isPageChanged = false;
+                _isPageChanged = false;
                 int pageIndex = _pageIndex;
                 if (pageIndex < 0)
                     return true;
                 if (!_recalcState.InterlockedSet(pageIndex, true))
-                    RecalculatePageLayout(pageRect, pageIndex);
+                {
+                    RecalculatePageLayout(pageSize, pageIndex);
+                    Thread.MemoryBarrier();
+                }
                 return true;
             }
             return false;
@@ -156,7 +166,7 @@ namespace ConcreteUI.Window
                 return;
             }
             _recalcState.InterlockedSet(pageIndex, false);
-            isPageChanged = true;
+            _isPageChanged = true;
             Update();
         }
         #endregion

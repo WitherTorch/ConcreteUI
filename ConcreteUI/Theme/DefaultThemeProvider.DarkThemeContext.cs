@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 
@@ -54,6 +54,7 @@ namespace ConcreteUI.Theme
                         .WithVariant(WindowMaterial.Mica, Color.Transparent)
                         .WithVariant(WindowMaterial.Acrylic, new D2D1ColorF(20, 20, 20, 32))
                         .WithVariant(WindowMaterial.Gaussian, new D2D1ColorF(20, 20, 20, 64))
+                        .WithVariant(WindowMaterial.Integrated, new D2D1ColorF(0, 0, 0, 0))
                         .Build());
                 yield return new KeyValuePair<string, IThemedBrushFactory>(
                     key: "app.menu.back",

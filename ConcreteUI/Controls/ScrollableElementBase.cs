@@ -580,7 +580,7 @@ namespace ConcreteUI.Controls
 
         protected virtual void CallMouseMove(in MouseEventArgs args)
         {
-            OnMouseMoveGlobally(new MouseEventArgs(PointToGlobal(args.Location), args.Buttons, args.Delta));
+            OnMouseMoveGlobally(new MouseEventArgs(LocalToPage(args.Location), args.Buttons, args.Delta));
             OnMouseMove(in args);
         }
 

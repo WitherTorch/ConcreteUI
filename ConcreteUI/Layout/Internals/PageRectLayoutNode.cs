@@ -1,35 +1,28 @@
-using ConcreteUI.Controls;
-
-using WitherTorch.Common.Structures;
-
 namespace ConcreteUI.Layout.Internals
 {
-    internal sealed class PageRectLayoutNode : LayoutNode
+    internal sealed class PageWidthNode : LayoutNode
     {
-        private readonly LayoutProperty _property;
+        public static readonly PageWidthNode Instance = new PageWidthNode();
 
-        public PageRectLayoutNode(LayoutProperty property)
-        {
-            _property = property;
-        }
+        private PageWidthNode() { }
 
-        public override int Compute(in LayoutNodeManager manager)
-        {
-            Rect rect = manager.GetPageRect();
-            return _property switch
-            {
-                LayoutProperty.Left => rect.Left,
-                LayoutProperty.Top => rect.Top,
-                LayoutProperty.Right => rect.Right,
-                LayoutProperty.Bottom => rect.Bottom,
-                LayoutProperty.Width => rect.Width,
-                LayoutProperty.Height => rect.Height,
-                _ => 0
-            };
-        }
+        public override int Compute(in LayoutNodeManager manager) => manager.GetPageSize().Width;
 
-        public override bool Equals(object? obj) => obj is PageRectLayoutNode another && _property == another._property;
+        public override bool Equals(object? obj) => obj is PageWidthNode;
 
-        public override int GetHashCode() => _property.GetHashCode();
+        public override int GetHashCode() => base.GetHashCode();
+    }
+
+    internal sealed class PageHeightNode : LayoutNode
+    {
+        public static readonly PageHeightNode Instance = new PageHeightNode();
+
+        private PageHeightNode() { }
+
+        public override int Compute(in LayoutNodeManager manager) => manager.GetPageSize().Height;
+
+        public override bool Equals(object? obj) => obj is PageHeightNode;
+
+        public override int GetHashCode() => base.GetHashCode();
     }
 }

@@ -1,8 +1,10 @@
-﻿namespace ConcreteUI
+using ConcreteUI.Layout;
+
+namespace ConcreteUI
 {
     public static class UIConstants
     {
-        //Layout Constants
+        // Layout Constants
         public const int ElementMargin = 6;
 
         public const float TitleFontSize = 12f;
@@ -15,5 +17,10 @@
 
         public const int ElementMarginDouble = ElementMargin * 2;
         public const int ElementMarginHalf = ElementMargin / 2;
+
+        // Layout Nodes
+        public static readonly LayoutNode ElementMarginDefinition = LayoutNode.Fixed(ElementMargin);
+        public static readonly LayoutNode ElementMarginDoubleDefinition = LayoutNode.Fixed(ElementMarginDouble);
+        public static readonly LayoutNode ElementMarginHalfDefinition = LayoutNode.Fixed(ElementMarginHalf);
     }
 }

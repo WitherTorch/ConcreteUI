@@ -70,10 +70,6 @@ namespace ConcreteUI.Controls
             _handled = false;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator HandleableMouseEventArgs(in MouseEventArgs args)
-            => new HandleableMouseEventArgs(UnsafeHelper.As<MouseEventArgs, MouseEventData>(ref UnsafeHelper.AsRefIn(in args)));
-
         public void Handle() => _handled = true;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -95,5 +91,9 @@ namespace ConcreteUI.Controls
             PointF location = Location;
             return location.X >= 0 && location.Y >= 0 && location.X < width && location.Y < height;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator HandleableMouseEventArgs(in MouseEventArgs args)
+            => new HandleableMouseEventArgs(UnsafeHelper.As<MouseEventArgs, MouseEventData>(ref UnsafeHelper.AsRefIn(in args)));
     }
 }

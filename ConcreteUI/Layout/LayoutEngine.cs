@@ -10,7 +10,6 @@ using InlineMethod;
 using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
-using WitherTorch.Common.Structures;
 
 #if !NET8_0_OR_GREATER
 using WitherTorch.Common.Extensions;
@@ -108,52 +107,52 @@ namespace ConcreteUI.Layout
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RecalculateLayout(in Rect pageRect, UIElement element)
+        public void RecalculateLayout(Size pageSize, UIElement element)
         {
-            if (!pageRect.IsValid)
+            if (pageSize.Width < 0 || pageSize.Height < 0)
                 return;
             QueueElement(element);
-            RecalculateLayoutCore(in pageRect);
+            RecalculateLayoutCore(pageSize);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RecalculateLayout(in Rect pageRect, UIElement?[] elements)
+        public void RecalculateLayout(Size pageSize, UIElement?[] elements)
         {
-            if (elements is null || !pageRect.IsValid)
+            if (elements is null || pageSize.Width < 0 || pageSize.Height < 0)
                 return;
-            RecalculateLayoutCore(pageRect, elements, elements.Length);
+            RecalculateLayoutCore(pageSize, elements, elements.Length);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RecalculateLayout(in Rect pageRect, IEnumerable<UIElement?> elements)
+        public void RecalculateLayout(Size pageSize, IEnumerable<UIElement?> elements)
         {
-            if (elements is null || !pageRect.IsValid)
+            if (elements is null || pageSize.Width < 0 || pageSize.Height < 0)
                 return;
             switch (elements)
             {
                 case UIElement?[] array:
-                    RecalculateLayoutCore(pageRect, array, array.Length);
+                    RecalculateLayoutCore(pageSize, array, array.Length);
                     break;
                 case UnwrappableList<UIElement?> list:
-                    RecalculateLayoutCore(pageRect, list.Unwrap(), list.Count);
+                    RecalculateLayoutCore(pageSize, list.Unwrap(), list.Count);
                     break;
                 default:
-                    RecalculateLayoutCore(pageRect, elements);
+                    RecalculateLayoutCore(pageSize, elements);
                     break;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void RecalculateLayoutCore(in Rect pageRect, UIElement?[] elements, int length)
+        private void RecalculateLayoutCore(Size pageSize, UIElement?[] elements, int length)
         {
             if (length <= 0 || !ArrayHelper.HasNonNullItem(elements))
                 return;
             QueueElements(elements, length);
-            RecalculateLayoutCore(in pageRect);
+            RecalculateLayoutCore(pageSize);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void RecalculateLayoutCore(in Rect pageRect, IEnumerable<UIElement?> elements)
+        private void RecalculateLayoutCore(Size pageSize, IEnumerable<UIElement?> elements)
         {
             bool hasAnyItems = false;
             foreach (UIElement? element in elements)
@@ -165,15 +164,15 @@ namespace ConcreteUI.Layout
             }
             if (!hasAnyItems)
                 return;
-            RecalculateLayoutCore(in pageRect);
+            RecalculateLayoutCore(pageSize);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private unsafe void RecalculateLayoutCore(in Rect pageRect)
+        private unsafe void RecalculateLayoutCore(Size pageSize)
         {
             Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict = _elementDict;
             Dictionary<LayoutNode, int> computeDict = _computeDict;
-            LayoutNodeManager nodeManager = new LayoutNodeManager(pageRect, elementDict, computeDict);
+            LayoutNodeManager nodeManager = new LayoutNodeManager(elementDict, computeDict, pageSize);
 
             Dictionary<UIElement, ArraySegment<LayoutNode?>>.Enumerator enumerator = elementDict.GetEnumerator();
             try

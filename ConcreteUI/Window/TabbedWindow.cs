@@ -132,7 +132,7 @@ namespace ConcreteUI.Window
             _pageRect = pageRect;
             if (callRecalculatePageLayout && pageRect.IsValid)
             {
-                RecalculatePageLayout(pageRect);
+                RecalculatePageLayout(pageRect.Size);
             }
         }
 
@@ -195,7 +195,7 @@ namespace ConcreteUI.Window
                 }
                 deviceContext.PopAxisAlignedClip();
             }
-            bool menuRedraw = isPageChanged || force;
+            bool menuRedraw = _isPageChanged || force;
             for (int i = 0, currentPageIndex = CurrentPage; i < pageCount; i++)
             {
                 RectF rect = RenderingHelper.RoundInPixel(

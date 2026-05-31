@@ -43,6 +43,7 @@ namespace ConcreteUI.Graphics
                 IntPtr handle = InterlockedHelper.Read(ref _renderingWaitingHandle);
                 if (handle == IntPtr.Zero)
                     return;
+                Thread.MemoryBarrier();
                 NativeMethods.SetWaitingHandle(handle);
             }
 
@@ -52,6 +53,7 @@ namespace ConcreteUI.Graphics
                 if (handle == IntPtr.Zero)
                     return;
                 NativeMethods.ResetWaitingHandle(handle);
+                Thread.MemoryBarrier();
             }
 
             private void ThreadLoop()
@@ -77,7 +79,6 @@ namespace ConcreteUI.Graphics
                         {
                             if (!frameWaiter.TryEnterFrame())
                                 break;
-                            Thread.MemoryBarrier();
                             controller.RenderCore();
                             frameWaiter.LeaveFrameAndWait();
                             NativeMethods.WaitForWaitingHandle(renderingWaitingHandle, timeout: Infinite);

@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
+using System.Threading;
 
 using ConcreteUI.Graphics.Internals;
 using ConcreteUI.Graphics.Native.DXGI;
@@ -63,7 +64,15 @@ namespace ConcreteUI.Graphics
             if (InterlockedHelper.Read(ref _locked) != 0UL)
                 return;
             if (force)
-                InterlockedHelper.Or(ref _state, (long)RenderingFlags.RedrawAll);
+                InterlockedHelper.Or(ref _state, (ulong)RenderingFlags.RedrawAll);
+            _thread.DoRender();
+        }
+
+        public void RequestUpdateUnsafe(RenderingFlags flags)
+        {
+            if (InterlockedHelper.Read(ref _locked) != 0UL)
+                return;
+            InterlockedHelper.Or(ref _state, (ulong)flags);
             _thread.DoRender();
         }
 
@@ -89,7 +98,7 @@ namespace ConcreteUI.Graphics
 #if NET8_0_OR_GREATER
             state = (temporarily ? (ulong)RenderingFlags.ResizeTemporarily : (ulong)RenderingFlags.Resize) | (redrawAll ? (ulong)RenderingFlags.RedrawAll : default);
 #else
-            state = (ulong)RenderingFlags.Resize | 
+            state = (ulong)RenderingFlags.Resize |
                 ((ulong)RenderingFlags._ResizeTemporarilyFlag & UnsafeHelper.Negate(MathHelper.BooleanToUInt64(temporarily))) |
                 ((ulong)RenderingFlags.RedrawAll & UnsafeHelper.Negate(MathHelper.BooleanToUInt64(redrawAll)));
 #endif
@@ -160,6 +169,7 @@ namespace ConcreteUI.Graphics
         {
             if (ReferenceHelper.Exchange(ref _disposed, true))
                 return;
+            InterlockedHelper.Write(ref _locked, ulong.MaxValue);
             NativeMethods.DestroyWaitingHandle(_waitForRenderingTrigger);
             if (disposing)
             {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -16,22 +17,23 @@ namespace ConcreteUI.Layout
         private readonly Dictionary<UIElement, ArraySegment<LayoutNode?>> _elementDict;
         private readonly Dictionary<LayoutNode, int> _computeDict;
         private readonly Dictionary<LayoutNode, int>? _walkedNodes;
-        private readonly Rect _pageRect;
+        private readonly Size _pageSize;
 
-        public LayoutNodeManager(in Rect pageRect,
+        public LayoutNodeManager(
             Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict,
-            Dictionary<LayoutNode, int> computeDict)
+            Dictionary<LayoutNode, int> computeDict,
+            Size pageSize)
         {
             _elementDict = elementDict;
             _computeDict = computeDict;
-            _pageRect = pageRect;
+            _pageSize = pageSize;
             if (ConcreteSettings.UseDebugMode)
                 _walkedNodes = new Dictionary<LayoutNode, int>();
             else
                 _walkedNodes = null;
         }
 
-        public readonly Rect GetPageRect() => _pageRect;
+        public readonly Size GetPageSize() => _pageSize;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly LayoutNode? GetLayoutNodeOrNull(UIElement element, LayoutProperty property)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Linq;
@@ -21,6 +22,7 @@ using ConcreteUI.Internals;
 using ConcreteUI.Internals.Native;
 using ConcreteUI.Internals.NativeHelpers;
 using ConcreteUI.Layout;
+using ConcreteUI.Layout.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
@@ -42,7 +44,7 @@ using ToolTip = ConcreteUI.Controls.ToolTip;
 
 namespace ConcreteUI.Window
 {
-    public abstract partial class CoreWindow : IRenderer, IElementContainer
+    public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordinateTranslator
     {
         #region Enums
         [Flags]
@@ -105,40 +107,16 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Static Properties
-        public static LayoutNode PageLeftDefinition
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => LayoutNode.Page(LayoutProperty.Left);
-        }
-
-        public static LayoutNode PageTopDefinition
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => LayoutNode.Page(LayoutProperty.Top);
-        }
-
-        public static LayoutNode PageRightDefinition
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => LayoutNode.Page(LayoutProperty.Right);
-        }
-
-        public static LayoutNode PageBottomDefinition
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => LayoutNode.Page(LayoutProperty.Bottom);
-        }
-
         public static LayoutNode PageWidthDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => LayoutNode.Page(LayoutProperty.Width);
+            get => PageWidthNode.Instance;
         }
 
         public static LayoutNode PageHeightDefinition
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => LayoutNode.Page(LayoutProperty.Height);
+            get => PageHeightNode.Instance;
         }
         #endregion
 
@@ -436,7 +414,7 @@ namespace ConcreteUI.Window
         {
             RenderingFlags flags = controller.GetAndResetRenderingFlags();
             if (!RenderCore(controller, flags))
-                InterlockedHelper.Read(ref _controller)?.RequestUpdate(true);
+                controller.RequestUpdateUnsafe(flags);
         }
 
         ToolTip? IRenderer.GetToolTip() => GetBackgroundElement<ToolTip>();
@@ -450,6 +428,14 @@ namespace ConcreteUI.Window
         IRenderer IElementContainer.GetRenderer() => this;
 
         CoreWindow IElementContainer.GetWindow() => this;
+
+        Point ICoordinateTranslator.PageToWindow(UIElement element, Point point) => PageToWindow(element, point);
+
+        PointF ICoordinateTranslator.PageToWindow(UIElement element, PointF point) => PageToWindow(element, point);
+
+        Point ICoordinateTranslator.WindowToPage(UIElement element, Point point) => WindowToPage(element, point);
+
+        PointF ICoordinateTranslator.WindowToPage(UIElement element, PointF point) => WindowToPage(element, point);
 
         Vector2 IRenderer.GetPixelsPerPoint() => _pixelsPerPoint;
 
@@ -469,6 +455,10 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Virtual Methods
+        public virtual Rect GetActivePageRect() => _pageRect;
+
+        public virtual Size GetActivePageSize() => _pageRect.Size;
+
         public virtual IEnumerable<UIElement?> GetElements() => GetActiveElements()
             .ConcatOptimized(GetOverlayElements())
             .ConcatOptimized(GetBackgroundElements());
@@ -480,14 +470,75 @@ namespace ConcreteUI.Window
             UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
             UIElementHelper.ApplyTheme(provider, _overlayElementList);
             UIElementHelper.ApplyTheme(provider, _backgroundElementList);
-            if (UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.TitleBackBrush) is D2D1SolidColorBrush backBrush &&
-                _isIntegratedMaterial && SystemConstants.VersionLevel >= SystemVersionLevel.Windows_11_21H2)
-                FluentHandler.SetTitleBarColor(Handle, (Color)backBrush.Color);
             ConcreteUtils.ResetBlur(this);
         }
 
+        protected virtual Point PageToWindow(UIElement element, Point point) => PageToWindow(point);
+
+        protected virtual PointF PageToWindow(UIElement element, PointF point) => PageToWindow(point);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected Point PageToWindow(Point point)
+            => GraphicsUtils.ScalingPoint(PageToWindow_NoScaled(point), _pixelsPerPoint);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected PointF PageToWindow(PointF point)
+            => GraphicsUtils.ScalingPoint(PageToWindow_NoScaled(point), _pixelsPerPoint);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected Point PageToWindow_NoScaled(Point point)
+        {
+            Point baseLoc = _pageRect.Location;
+            return new Point(baseLoc.X + point.X, baseLoc.Y + point.Y);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected PointF PageToWindow_NoScaled(PointF point)
+        {
+            Point baseLoc = _pageRect.Location;
+            return new PointF(baseLoc.X + point.X, baseLoc.Y + point.Y);
+        }
+
+        protected virtual Point WindowToPage(UIElement element, Point point) => WindowToPage(point);
+
+        protected virtual PointF WindowToPage(UIElement element, PointF point) => WindowToPage(point);
+
+        protected Point WindowToPage(Point point)
+            => WindowToPage_NoScaled(GraphicsUtils.ScalingPoint(point, _pointsPerPixel));
+
+        protected PointF WindowToPage(PointF point)
+            => WindowToPage_NoScaled(GraphicsUtils.ScalingPoint(point, _pointsPerPixel));
+
+        protected Point WindowToPage_NoScaled(Point point)
+        {
+            Point baseLoc = _pageRect.Location;
+            return new Point(
+                x: point.X - baseLoc.X,
+                y: point.Y - baseLoc.Y
+                );
+        }
+
+        protected PointF WindowToPage_NoScaled(PointF point)
+        {
+            PointF baseLoc = _pageRect.Location;
+            return new PointF(
+                x: point.X - baseLoc.X,
+                y: point.Y - baseLoc.Y
+                );
+        }
+
+        protected virtual Point PointToPixel(Point point) => GraphicsUtils.ScalingPoint(point, _pixelsPerPoint);
+
+        protected virtual PointF PointToPixel(PointF point) => GraphicsUtils.ScalingPoint(point, _pixelsPerPoint);
+
+        protected virtual Point PixelToPoint(Point point) => GraphicsUtils.ScalingPoint(point, _pointsPerPixel);
+
+        protected virtual PointF PixelToPoint(PointF point) => GraphicsUtils.ScalingPoint(point, _pointsPerPixel);
+
         protected virtual void OnMouseDownForElements(ref HandleableMouseEventArgs args)
         {
+            if (args.Handled)
+                return;
             IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetActiveElements();
@@ -512,7 +563,7 @@ namespace ConcreteUI.Window
                 {
                     object? target = lastHitElementRef.Target;
                     if (target is UIElement lastHitElement && target is IMouseMoveHandler handler)
-                        handler.OnMouseMove(new MouseEventArgs(lastHitElement.PointToLocal(args.Location), args.Buttons, args.Delta));
+                        handler.OnMouseMove(new MouseEventArgs(lastHitElement.PageToLocal(args.Location), args.Buttons, args.Delta));
                     lastHitElementRef.Target = null;
                 }
             }
@@ -521,7 +572,7 @@ namespace ConcreteUI.Window
                 WeakReference lastHitElementRef = lastHitElementRefLazy.Value;
                 object? target = lastHitElementRef.Target;
                 if (!ReferenceEquals(hitElement, target) && target is UIElement lastHitElement && target is IMouseMoveHandler handler)
-                    handler.OnMouseMove(new MouseEventArgs(lastHitElement.PointToLocal(args.Location), args.Buttons, args.Delta));
+                    handler.OnMouseMove(new MouseEventArgs(lastHitElement.PageToLocal(args.Location), args.Buttons, args.Delta));
                 lastHitElementRef.Target = hitElement;
             }
 
@@ -539,6 +590,8 @@ namespace ConcreteUI.Window
 
         protected virtual void OnMouseScrollForElements(ref HandleableMouseEventArgs args)
         {
+            if (args.Handled)
+                return;
             IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetActiveElements();
@@ -550,6 +603,8 @@ namespace ConcreteUI.Window
 
         protected virtual void OnKeyDownForElements(ref KeyEventArgs args)
         {
+            if (args.Handled)
+                return;
             IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetActiveElements();
@@ -561,6 +616,8 @@ namespace ConcreteUI.Window
 
         protected virtual void OnKeyUpForElements(ref KeyEventArgs args)
         {
+            if (args.Handled)
+                return;
             IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetActiveElements();
@@ -572,6 +629,8 @@ namespace ConcreteUI.Window
 
         protected virtual void OnCharacterInputForElements(ref CharacterEventArgs args)
         {
+            if (args.Handled)
+                return;
             IEnumerable<UIElement?> elements = GetOverlayElements();
             if (!elements.HasNonNullItem())
                 elements = GetActiveElements();
@@ -590,8 +649,13 @@ namespace ConcreteUI.Window
 
         protected virtual unsafe void RecalculateLayout(Size windowSize, bool callRecalculatePageLayout)
         {
+            Rect pageRect;
+            Size pageSize;
             if (_isIntegratedMaterial)
-                _pageRect = Rect.FromXYWH(Point.Empty, ClientSize);
+            {
+                pageSize = ClientSize;
+                pageRect = Rect.FromXYWH(Point.Empty, pageSize);
+            }
             else
             {
                 IntPtr handle = Handle;
@@ -627,23 +691,26 @@ namespace ConcreteUI.Window
                 _maxRect = new Rectangle(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
                 _minRect = new Rectangle(x - UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
                 Rect titleBarRect = _titleBarRect = Rect.FromXYWH(drawingOffsetX + 1, drawingOffsetY + 1, Size.Width - 2, 26);
-                _pageRect = new Rect(
+                pageRect = new Rect(
                     left: drawingOffsetX + activeBorderWidth,
                     top: titleBarRect.Bottom + 1,
                     right: windowSize.Width - drawingOffsetX - activeBorderWidth,
                     bottom: windowSize.Height - activeBorderWidth);
+                pageSize = pageRect.Size;
             }
-            if (callRecalculatePageLayout && _pageRect.IsValid)
-                RecalculatePageLayout(_pageRect);
+
+            _pageRect = pageRect;
+            if (callRecalculatePageLayout && pageRect.IsValid)
+                RecalculatePageLayout(pageSize);
         }
 
-        protected virtual void RecalculatePageLayout(in Rect pageRect)
+        protected virtual void RecalculatePageLayout(Size pageSize)
         {
             LayoutEngine layoutEngine = RentLayoutEngine();
             try
             {
-                layoutEngine.RecalculateLayout(pageRect, GetActiveElements());
-                layoutEngine.RecalculateLayout(pageRect, GetOverlayElements());
+                layoutEngine.RecalculateLayout(pageSize, GetActiveElements());
+                layoutEngine.RecalculateLayout(pageSize, GetOverlayElements());
             }
             finally
             {
@@ -679,6 +746,8 @@ namespace ConcreteUI.Window
             {
                 bool resizeTemporarily = flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag);
                 Size size = RawClientSize;
+                if (size.Width <= 0 || size.Height <= 0)
+                    return false;
                 if (resizeTemporarily)
                     redrawAll |= host.ResizeTemporarily(size);
                 else
@@ -698,6 +767,7 @@ namespace ConcreteUI.Window
                 return true;
 
             ClearTypeSwitcher.SetClearType(deviceContext, false);
+
             if (redrawAll)
                 return RenderCore_RedrawAll(host, deviceContext);
             else
@@ -710,7 +780,11 @@ namespace ConcreteUI.Window
             RenderTitle(deviceContext, collector, force: true);
             Rect pageRect = _pageRect;
             if (pageRect.IsValid)
-                RenderPage(deviceContext, collector, pageRect, force: true);
+            {
+                using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, _pixelsPerPoint,
+                    (RectF)pageRect, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
+                RenderPage(context);
+            }
             host.EndDraw();
 
             return host.TryPresent();
@@ -718,37 +792,39 @@ namespace ConcreteUI.Window
 
         private bool RenderCore_Normal(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector)
         {
-            Vector2 pointsPerPixel = _pixelsPerPoint;
+            Vector2 pixelsPerPoint = _pixelsPerPoint;
 
             RenderTitle(deviceContext, collector, force: false);
             Rect pageRect = _pageRect;
             if (pageRect.IsValid)
-                RenderPage(deviceContext, collector, pageRect, force: false);
+            {
+                using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, pixelsPerPoint,
+                    (RectF)pageRect, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
+                RenderPage(context);
+            }
             host.EndDraw();
 
-            return collector.TryPresent(pointsPerPixel);
+            return collector.TryPresent(pixelsPerPoint);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void RenderPageBackground(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect)
-            => deviceContext.Clear(_windowBaseColor);
+        protected virtual void RenderPageBackground(in RegionalRenderingContext context)
+            => context.Clear(_windowBaseColor);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void RenderOnceContent(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect) { }
+        protected virtual void RenderOnceContent(in RegionalRenderingContext context) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void RenderPage(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect, bool force)
+        protected virtual void RenderPage(in RegionalRenderingContext context)
         {
-            using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.RoundInPixel(pageRect, _pixelsPerPoint), D2D1AntialiasMode.Aliased);
+            bool force = context.IsForceRendering;
             if (force)
             {
-                collector.UsePresentAllModeOnce();
-                RenderPageBackground(deviceContext, collector, pageRect);
-                RenderOnceContent(deviceContext, collector, pageRect);
+                RenderPageBackground(context);
+                RenderOnceContent(context);
             }
-            Vector2 pointPerPixel = _pixelsPerPoint;
-            UIElementHelper.RenderElements(deviceContext, collector, pointPerPixel, GetActiveElements(), ignoreNeedRefresh: force);
-            UIElementHelper.RenderElements(deviceContext, collector, pointPerPixel, GetOverlayElements(), ignoreNeedRefresh: force || collector.HasAnyDirtyArea());
+            UIElementHelper.RenderElements(context, GetActiveElements(), ignoreNeedRefresh: force);
+            UIElementHelper.RenderElements(context, GetOverlayElements(), ignoreNeedRefresh: force || context.HasAnyDirtyArea());
         }
 
         protected virtual void ClearDCForTitle(D2D1DeviceContext deviceContext)
@@ -1046,7 +1122,7 @@ namespace ConcreteUI.Window
                             {
                                 (object? recordedTarget, recordedRef.Target) = (recordedRef.Target, null);
                                 if (recordedTarget is UIElement recordedElement && recordedTarget is IMouseMoveHandler handler)
-                                    handler.OnMouseMove(new MouseEventArgs(recordedElement.PointToLocal(PointToClient(MouseHelper.GetMousePosition()))));
+                                    handler.OnMouseMove(new MouseEventArgs(recordedElement.PageToLocal(PointToClient(MouseHelper.GetMousePosition()))));
                             }
                         }
                     }
@@ -1068,8 +1144,14 @@ namespace ConcreteUI.Window
                             element.ApplyTheme(resourceProvider);
 
                         LayoutEngine layoutEngine = RentLayoutEngine();
-                        layoutEngine.RecalculateLayout(_pageRect, element);
-                        ReturnLayoutEngine(layoutEngine);
+                        try
+                        {
+                            layoutEngine.RecalculateLayout(GetActivePageSize(), element);
+                        }
+                        finally
+                        {
+                            ReturnLayoutEngine(layoutEngine);
+                        }
 
                         overlayElementDict.TryAdd(type, element);
                         overlayElementList.Add(element);
@@ -1085,8 +1167,14 @@ namespace ConcreteUI.Window
                             element.ApplyTheme(resourceProvider);
 
                         LayoutEngine layoutEngine = RentLayoutEngine();
-                        layoutEngine.RecalculateLayout(_pageRect, element);
-                        ReturnLayoutEngine(layoutEngine);
+                        try
+                        {
+                            layoutEngine.RecalculateLayout(GetActivePageSize(), element);
+                        }
+                        finally
+                        {
+                            ReturnLayoutEngine(layoutEngine);
+                        }
 
                         int index = result is null ? -1 : overlayElementList.IndexOf(result);
                         overlayElementDict[type] = element;
@@ -1159,7 +1247,7 @@ namespace ConcreteUI.Window
             if (!items.HasAnyItem())
                 return;
 
-            OpenContextMenuCore(items, elementRelativeTo.PointToGlobal(location));
+            OpenContextMenuCore(items, elementRelativeTo.LocalToPage(location));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

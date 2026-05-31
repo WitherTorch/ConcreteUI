@@ -39,7 +39,7 @@ namespace ConcreteUI.Layout
         public static LayoutNode operator -(LayoutNode left, LayoutNode right)
         {
             if (ReferenceEquals(left, right))
-                return _empty;
+                return Empty;
             if (left.IsEmpty)
                 return -right;
             if (right.IsEmpty)

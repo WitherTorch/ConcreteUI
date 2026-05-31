@@ -52,7 +52,7 @@ namespace ConcreteUI.Controls
         public int ContentLeft
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetContentLeftCore(Location.X);
+            get => GetContentLeftCore(Left);
         }
 
         public LayoutNode ContentLeftDefinition
@@ -64,7 +64,7 @@ namespace ConcreteUI.Controls
         public int ContentTop
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetContentTopCore(Location.Y);
+            get => GetContentTopCore(Top);
         }
 
         public LayoutNode ContentTopDefinition
@@ -76,7 +76,7 @@ namespace ConcreteUI.Controls
         public int ContentRight
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetContentRightCore(Location.Y);
+            get => GetContentRightCore(Right);
         }
 
         public LayoutNode ContentRightDefinition
@@ -88,7 +88,7 @@ namespace ConcreteUI.Controls
         public int ContentBottom
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetContentBottomCore(Location.Y);
+            get => GetContentBottomCore(Bottom);
         }
 
         public LayoutNode ContentBottomDefinition

@@ -81,48 +81,33 @@ namespace ConcreteUI.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Point ScalingPoint(Point original, Vector2 scaleFactor)
-        {
-            (float factorX, float factorY) = scaleFactor;
-            return new Point(
-                MathI.Round(original.X * factorX, MidpointRounding.AwayFromZero),
-                MathI.Round(original.Y * factorY, MidpointRounding.AwayFromZero)
+        public static Point ScalingPoint(Point original, Vector2 scaleFactor) 
+            => new Point(
+                MathI.Round(original.X * scaleFactor.X, MidpointRounding.AwayFromZero),
+                MathI.Round(original.Y * scaleFactor.Y, MidpointRounding.AwayFromZero)
                 );
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PointF ScalingPoint(PointF original, Vector2 scaleFactor)
-        {
-            (float factorX, float factorY) = scaleFactor;
-            return new PointF(original.X * factorX, original.Y * factorY);
-        }
+        public static PointF ScalingPoint(PointF original, Vector2 scaleFactor) 
+            => new PointF(original.X * scaleFactor.X, original.Y * scaleFactor.Y);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Point ScalingPointAndConvert(PointF original, Vector2 scaleFactor)
-        {
-            (float factorX, float factorY) = scaleFactor;
-            return new Point(
-                MathI.Round(original.X * factorX, MidpointRounding.AwayFromZero),
-                MathI.Round(original.Y * factorY, MidpointRounding.AwayFromZero)
+        public static Point ScalingPointAndConvert(PointF original, Vector2 scaleFactor) 
+            => new Point(
+                MathI.Round(original.X * scaleFactor.X, MidpointRounding.AwayFromZero),
+                MathI.Round(original.Y * scaleFactor.Y, MidpointRounding.AwayFromZero)
                 );
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Size ScalingSizeAndConvert(SizeF original, Vector2 scaleFactor)
-        {
-            (float factorX, float factorY) = scaleFactor;
-            return new Size(
-                MathI.Round(original.Width * factorX, MidpointRounding.AwayFromZero),
-                MathI.Round(original.Height * factorY, MidpointRounding.AwayFromZero)
+        public static Size ScalingSizeAndConvert(SizeF original, Vector2 scaleFactor) 
+            => new Size(
+                MathI.Round(original.Width * scaleFactor.X, MidpointRounding.AwayFromZero),
+                MathI.Round(original.Height * scaleFactor.Y, MidpointRounding.AwayFromZero)
                 );
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PointF ScalingPointAndConvert(Point original, Vector2 scaleFactor)
-        {
-            (float factorX, float factorY) = scaleFactor;
-            return new PointF(original.X * factorX, original.Y * factorY);
-        }
+        public static PointF ScalingPointAndConvert(Point original, Vector2 scaleFactor) 
+            => new PointF(original.X * scaleFactor.X, original.Y * scaleFactor.Y);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Rect ScalingRect(Rect original, Vector2 scaleFactor)
@@ -201,10 +186,10 @@ namespace ConcreteUI.Utils
                 height: MathHelper.Clamp(original.Height, min.Height, max.Height));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Point PointToGlobal(Point location, Point point) => new Point(location.X + point.X, location.Y + point.Y);
+        public static Point PointToPage(Point location, Point point) => new Point(location.X + point.X, location.Y + point.Y);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PointF PointToGlobal(PointF location, PointF point) => new PointF(location.X + point.X, location.Y + point.Y);
+        public static PointF PointToPage(PointF location, PointF point) => new PointF(location.X + point.X, location.Y + point.Y);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Point PointToLocal(Point location, Point point) => new Point(point.X - location.X, point.Y - location.Y);

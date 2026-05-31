@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 using System.Drawing;
-using System.Runtime.CompilerServices;
+using System.Numerics;
 
 using ConcreteUI.Graphics;
-using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
 using InlineMethod;
@@ -28,6 +27,17 @@ namespace ConcreteUI.Controls
 #endif
 
         void RenderBackground(UIElement element, in RegionalRenderingContext context);
+    }
+
+    public interface ICoordinateTranslator
+    {
+        Point PageToWindow(UIElement element, Point point);
+
+        PointF PageToWindow(UIElement element, PointF point);
+
+        Point WindowToPage(UIElement element, Point point);
+
+        PointF WindowToPage(UIElement element, PointF point);
     }
 
     public static class ElementContainerDefaults

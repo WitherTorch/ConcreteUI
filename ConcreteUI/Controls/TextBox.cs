@@ -735,11 +735,21 @@ namespace ConcreteUI.Controls
             Vector2 pixelsPerPoint = Renderer.GetPixelsPerPoint();
 
             PointF caretPoint = GetPointFromCaretIndex(caretIndex - 1, isTrailingHit: false, out DWriteHitTestMetrics metrics);
+            PointF bottomRightPoint = new PointF(caretPoint.X + metrics.Width, caretPoint.Y + metrics.Height);
+
+            caretPoint = PageToWindow(caretPoint);
+            bottomRightPoint = PageToWindow(bottomRightPoint);
+
             context.SetCandidateWindow(new IMECandidateForm()
             {
                 dwIndex = 0,
                 dwStyle = IMECandicateStyle.ExcludeRect,
-                rcArea = GraphicsUtils.ScalingRectAndConvert(RectF.FromXYWH(caretPoint, new SizeF(metrics.Width, metrics.Height)), pixelsPerPoint)
+                rcArea = new Rect(
+                    left: MathI.Floor(caretPoint.X),
+                    top: MathI.Floor(caretPoint.Y),
+                    right: MathI.Ceiling(bottomRightPoint.X),
+                    bottom: MathI.Ceiling(bottomRightPoint.Y)
+                    )
             });
 
             return (caretPoint, pixelsPerPoint);
@@ -1233,7 +1243,7 @@ namespace ConcreteUI.Controls
                 return;
             }
             Window.ChangeFocusElement(this);
-            PointF location = PointToGlobal(args.Location);
+            PointF location = LocalToPage(args.Location);
             if (!ContentBounds.Contains(location))
             {
                 _drag = false;

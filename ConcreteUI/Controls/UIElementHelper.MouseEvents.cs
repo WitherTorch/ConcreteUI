@@ -46,7 +46,7 @@ namespace ConcreteUI.Controls
                 globalHandler.OnMouseDownGlobally(in UnsafeHelper.As<HandleableMouseEventArgs, MouseEventArgs>(ref args));
             if (isContains && !args.Handled && element is IMouseInteractHandler handler)
             {
-                HandleableMouseEventArgs relativeArgs = new HandleableMouseEventArgs(element.PointToLocal(args.Location), args.Buttons, args.Delta);
+                HandleableMouseEventArgs relativeArgs = new HandleableMouseEventArgs(element.PageToLocal(args.Location), args.Buttons, args.Delta);
                 handler.OnMouseDown(ref relativeArgs);
                 if (relativeArgs.Handled)
                     args.Handle();
@@ -65,7 +65,7 @@ namespace ConcreteUI.Controls
             if (element is IGlobalMouseInteractHandler globalHandler)
                 globalHandler.OnMouseUpGlobally(in args);
             if (element is IMouseInteractHandler handler)
-                handler.OnMouseUp(new MouseEventArgs(element.PointToLocal(args.Location), args.Buttons, args.Delta));
+                handler.OnMouseUp(new MouseEventArgs(element.PageToLocal(args.Location), args.Buttons, args.Delta));
         }
 
         public static unsafe void OnMouseMoveForElements<TEnumerable>(TEnumerable elements, in MouseEventArgs args, ref MouseMoveData data)
@@ -89,7 +89,7 @@ namespace ConcreteUI.Controls
                 if (element is IGlobalMouseMoveHandler globalHandler)
                     globalHandler.OnMouseMoveGlobally(in args);
                 if (element is IMouseMoveHandler handler)
-                    handler.OnMouseMove(new MouseEventArgs(element.PointToLocal(args.Location), args.Buttons, args.Delta));
+                    handler.OnMouseMove(new MouseEventArgs(element.PageToLocal(args.Location), args.Buttons, args.Delta));
                 if (isContains && element is ICursorPredicator predicator)
                     data.CursorType = predicator.PredicatedCursor;
             }
@@ -125,7 +125,7 @@ namespace ConcreteUI.Controls
                 globalHandler.OnMouseScrollGlobally(in UnsafeHelper.As<HandleableMouseEventArgs, MouseEventArgs>(ref args));
             if (isContains && !args.Handled && element is IMouseScrollHandler handler)
             {
-                HandleableMouseEventArgs relativeArgs = new HandleableMouseEventArgs(element.PointToLocal(args.Location), args.Buttons, args.Delta);
+                HandleableMouseEventArgs relativeArgs = new HandleableMouseEventArgs(element.PageToLocal(args.Location), args.Buttons, args.Delta);
                 handler.OnMouseScroll(ref relativeArgs);
                 if (relativeArgs.Handled)
                     args.Handle();

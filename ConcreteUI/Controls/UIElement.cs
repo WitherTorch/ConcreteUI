@@ -145,7 +145,7 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void UpdateCore() => Parent.GetRenderer().Refresh();
+        protected void UpdateCore() => Renderer.Refresh();
 
         public virtual void Render(in RegionalRenderingContext context) => Render(in context, markDirty: true);
 
@@ -264,16 +264,80 @@ namespace ConcreteUI.Controls
         internal void SetBoundsInternal(in Rectangle bounds) => SetBoundsCore_Pure(bounds);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point PointToGlobal(Point point) => GraphicsUtils.PointToGlobal(GetLocationCore(), point);
+        public Point LocalToPage(Point point) => GraphicsUtils.PointToPage(GetLocationCore(), point);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PointF PointToGlobal(PointF point) => GraphicsUtils.PointToGlobal(GetLocationCore(), point);
+        public PointF LocalToPage(PointF point) => GraphicsUtils.PointToPage(GetLocationCore(), point);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point PointToLocal(Point point) => GraphicsUtils.PointToLocal(GetLocationCore(), point);
+        public Point PageToLocal(Point point) => GraphicsUtils.PointToLocal(GetLocationCore(), point);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PointF PointToLocal(PointF point) => GraphicsUtils.PointToLocal(GetLocationCore(), point);
+        public PointF PageToLocal(PointF point) => GraphicsUtils.PointToLocal(GetLocationCore(), point);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Point PageToWindow(Point point)
+        {
+            UIElement element = this;
+            IElementContainer container = Parent;
+            while (container is UIElement containerElement)
+            {
+                element = containerElement;
+                container = containerElement.Parent;
+            }
+            if (container is ICoordinateTranslator translator)
+                return translator.PageToWindow(element, point);
+            else
+                return point;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public PointF PageToWindow(PointF point)
+        {
+            UIElement element = this;
+            IElementContainer container = Parent;
+            while (container is UIElement containerElement)
+            {
+                element = containerElement;
+                container = containerElement.Parent;
+            }
+            if (container is ICoordinateTranslator translator)
+                return translator.PageToWindow(element, point);
+            else
+                return point;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Point WindowToPage(Point point)
+        {
+            UIElement element = this;
+            IElementContainer container = Parent;
+            while (container is UIElement containerElement)
+            {
+                element = containerElement;
+                container = containerElement.Parent;
+            }
+            if (container is ICoordinateTranslator translator)
+                return translator.WindowToPage(element, point);
+            else
+                return point;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public PointF WindowToPage(PointF point)
+        {
+            UIElement element = this;
+            IElementContainer container = Parent;
+            while (container is UIElement containerElement)
+            {
+                element = containerElement;
+                container = containerElement.Parent;
+            }
+            if (container is ICoordinateTranslator translator)
+                return translator.WindowToPage(element, point);
+            else
+                return point;
+        }
 
         public override int GetHashCode() => _identifier;
 

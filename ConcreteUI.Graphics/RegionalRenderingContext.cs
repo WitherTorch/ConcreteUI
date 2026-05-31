@@ -48,6 +48,8 @@ namespace ConcreteUI.Graphics
 
         public readonly bool HasDirtyCollector => !_collector.IsEmptyInstance;
 
+        public readonly bool IsForceRendering => _collector.IsPresentAllMode || _collector.IsEmptyInstance;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private RegionalRenderingContext(scoped in RegionalRenderingContext original) : this(in original, original._collector) { }
 
@@ -326,17 +328,29 @@ namespace ConcreteUI.Graphics
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly RegionalRenderingContext WithAxisAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode)
-            => new RegionalRenderingContext(_context, _collector, _pixelsPerPoint, in clipRect, antialiasMode, isPixelAligned: false, _isOpaque);
+            => WithAxisAlignedClip(in clipRect, antialiasMode, _isOpaque);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly RegionalRenderingContext WithAxisAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode, bool isOpaque)
+            => new RegionalRenderingContext(_context, _collector, _pixelsPerPoint, in clipRect, antialiasMode, isPixelAligned: false, isOpaque);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly RegionalRenderingContext WithPixelAlignedClip(ref RectF clipRect, D2D1AntialiasMode antialiasMode)
             => WithPixelAlignedClip(in clipRect, antialiasMode, out clipRect);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly RegionalRenderingContext WithPixelAlignedClip(ref RectF clipRect, D2D1AntialiasMode antialiasMode, bool isOpaque)
+            => WithPixelAlignedClip(in clipRect, antialiasMode, isOpaque, out clipRect);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly RegionalRenderingContext WithPixelAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode, out RectF actualClipRect)
+            => WithPixelAlignedClip(in clipRect, antialiasMode, _isOpaque, out actualClipRect);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly RegionalRenderingContext WithPixelAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode, bool isOpaque, out RectF actualClipRect)
         {
             actualClipRect = GetPixelAlignedRect(clipRect);
-            return new RegionalRenderingContext(_context, _collector, _pixelsPerPoint, in actualClipRect, antialiasMode, isPixelAligned: true, _isOpaque);
+            return new RegionalRenderingContext(_context, _collector, _pixelsPerPoint, in actualClipRect, antialiasMode, isPixelAligned: true, isOpaque);
         }
 
         public readonly RectF GetPixelAlignedRect(in RectF rect)
@@ -414,7 +428,7 @@ namespace ConcreteUI.Graphics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private readonly RectF TranslateAreaToGlobal(in RectF rect)
+        public readonly RectF TranslateAreaToGlobal(in RectF rect)
         {
             PointF offsetPoint = _offsetPoint;
             float offsetX = offsetPoint.X;
@@ -424,7 +438,7 @@ namespace ConcreteUI.Graphics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private readonly RectF TranslateAreaToLocal(in RectF rect)
+        public readonly RectF TranslateAreaToLocal(in RectF rect)
         {
             PointF offsetPoint = _offsetPoint;
             float offsetX = offsetPoint.X;

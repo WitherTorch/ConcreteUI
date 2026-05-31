@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -115,25 +116,9 @@ namespace ConcreteUI.Window
             Interlocked.Exchange(ref _updateFlags, -1L);
         }
 
-        protected override void RenderPageCore(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect, bool force)
-        {
-            if (force)
-            {
-                using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.CeilingInPixel((RectF)_widePageRect, PixelsPerPoint), D2D1AntialiasMode.Aliased);
-                ClearDC(deviceContext);
-            }
-            base.RenderPageCore(deviceContext, collector, pageRect, force);
-        }
+        public override void RenderBackground(UIElement element, in RegionalRenderingContext context) => ClearDC(context);
 
-        public override void RenderBackground(UIElement element, in RegionalRenderingContext context)
-        {
-            ClearDC(context.DeviceContext);
-        }
-
-        protected override void RenderPageBackground(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect)
-        {
-            ClearDC(deviceContext);
-        }
+        protected override void RenderPageBackground(in RegionalRenderingContext context) => ClearDC(context);
 
         private void GetLayouts(UpdateFlags flags, out DWriteTextLayout? titleLayout, out DWriteTextLayout? titleDescriptionLayout)
         {
@@ -180,21 +165,30 @@ namespace ConcreteUI.Window
                 rect = new Rect(0, 0, ClientSize.Width, rect.Top);
             else
                 rect = new Rect(rect.Left, _titleBarRect.Bottom, rect.Right, rect.Top);
-            using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.RoundInPixel(rect, PixelsPerPoint));
-            ClearDC(deviceContext);
-            if (titleLayout is not null)
+            Vector2 pixelsPerPoint = PixelsPerPoint;
+            using (RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.RoundInPixel(rect, pixelsPerPoint)))
             {
-                deviceContext.DrawTextLayout(_titleLocation, titleLayout, 
-                    UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.WizardTitleBrush), D2D1DrawTextOptions.None);
-                DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
+                ClearDC(deviceContext);
+                if (titleLayout is not null)
+                {
+                    deviceContext.DrawTextLayout(_titleLocation, titleLayout,
+                        UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.WizardTitleBrush), D2D1DrawTextOptions.None);
+                    DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
+                }
+                if (titleDescriptionLayout is not null)
+                {
+                    deviceContext.DrawTextLayout(_titleDescriptionLocation, titleDescriptionLayout,
+                        UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.WizardTitleDescriptionBrush), D2D1DrawTextOptions.None);
+                    DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
+                }
+                collector.MarkAsDirty(scope.ClipRect);
             }
-            if (titleDescriptionLayout is not null)
+
+            if (force)
             {
-                deviceContext.DrawTextLayout(_titleDescriptionLocation, titleDescriptionLayout, 
-                    UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.WizardTitleDescriptionBrush), D2D1DrawTextOptions.None);
-                DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
+                using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.RoundInPixel((RectF)_widePageRect, pixelsPerPoint), D2D1AntialiasMode.Aliased);
+                ClearDC(deviceContext);
             }
-            collector.MarkAsDirty(scope.ClipRect);
         }
 
         protected override void RecalculateLayout(Size windowSize, bool callRecalculatePageLayout)
@@ -230,7 +224,7 @@ namespace ConcreteUI.Window
             _pageRect = pageRect;
             if (callRecalculatePageLayout && pageRect.IsValid)
             {
-                RecalculatePageLayout(pageRect);
+                RecalculatePageLayout(pageRect.Size);
             }
         }
 
@@ -245,10 +239,10 @@ namespace ConcreteUI.Window
 
         #region Inline Methods
         [Inline(InlineBehavior.Keep, export: true)]
-        public void ClearDC(D2D1DeviceContext deviceContext)
-        {
-            deviceContext.Clear(_wizardBaseColor);
-        }
+        public void ClearDC(D2D1DeviceContext context) => context.Clear(_wizardBaseColor);
+
+        [Inline(InlineBehavior.Keep, export: true)]
+        public void ClearDC(in RegionalRenderingContext context) => context.Clear(_wizardBaseColor);
 
         protected override void ClearDCForTitle(D2D1DeviceContext deviceContext)
         {

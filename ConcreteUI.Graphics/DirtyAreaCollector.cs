@@ -36,6 +36,8 @@ namespace ConcreteUI.Graphics
 
         public bool IsEmptyInstance => _host is null && _list is null;
 
+        public bool IsPresentAllMode => _presentAllMode;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool HasAnyDirtyArea()
         {

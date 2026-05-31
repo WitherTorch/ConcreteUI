@@ -196,8 +196,10 @@ namespace ConcreteUI.Controls
             }
         }
 
-        public static void RenderElements<TEnumerable>(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pointPerPixel,
-            TEnumerable elements, bool ignoreNeedRefresh) where TEnumerable : IEnumerable<UIElement?>
+        public static void RenderElements<TEnumerable>(in RegionalRenderingContext context, TEnumerable elements) where TEnumerable : IEnumerable<UIElement?>
+            => RenderElements(context, elements, context.IsForceRendering);
+
+        public static void RenderElements<TEnumerable>(in RegionalRenderingContext context, TEnumerable elements, bool ignoreNeedRefresh) where TEnumerable : IEnumerable<UIElement?>
         {
             UIElement?[] array;
             int length;
@@ -259,7 +261,7 @@ namespace ConcreteUI.Controls
                 try
                 {
                     Array.Copy(array, buffer, length);
-                    RenderElementsCore(context, collector, pointPerPixel, in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ignoreNeedRefresh);
+                    RenderElementsCore(context, in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ignoreNeedRefresh);
                 }
                 finally
                 {
@@ -278,7 +280,7 @@ namespace ConcreteUI.Controls
                 try
                 {
                     list.CopyTo(buffer, 0);
-                    RenderElementsCore(context, collector, pointPerPixel, in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ignoreNeedRefresh);
+                    RenderElementsCore(context, in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ignoreNeedRefresh);
                 }
                 finally
                 {
@@ -299,7 +301,7 @@ namespace ConcreteUI.Controls
                 {
                     for (int i = 0; i < length; i++)
                         UnsafeHelper.AddTypedOffset(ref bufferRef, i) = readOnlyList[i];
-                    RenderElementsCore(context, collector, pointPerPixel, ref bufferRef, (nuint)length, ignoreNeedRefresh);
+                    RenderElementsCore(context, ref bufferRef, (nuint)length, ignoreNeedRefresh);
                 }
                 finally
                 {
@@ -321,7 +323,7 @@ namespace ConcreteUI.Controls
                 (UIElement?[] buffer, length) = bufferList;
                 try
                 {
-                    RenderElementsCore(context, collector, pointPerPixel, in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ignoreNeedRefresh);
+                    RenderElementsCore(context, in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ignoreNeedRefresh);
                 }
                 finally
                 {
@@ -356,49 +358,47 @@ namespace ConcreteUI.Controls
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void RenderElementsCore(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pointPerPixel,
-            ref readonly UIElement? elementArrayRef, nuint length, bool ignoreNeedRefresh)
+        private static void RenderElementsCore(in RegionalRenderingContext context, ref readonly UIElement? elementArrayRef, nuint length, bool ignoreNeedRefresh)
         {
             int i;
             for (i = 0; length >= 4; length -= 4, i += 4)
             {
-                RenderElement(context, collector, pointPerPixel, UnsafeHelper.AddTypedOffset(in elementArrayRef, i), ignoreNeedRefresh);
-                RenderElement(context, collector, pointPerPixel, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 1), ignoreNeedRefresh);
-                RenderElement(context, collector, pointPerPixel, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 2), ignoreNeedRefresh);
-                RenderElement(context, collector, pointPerPixel, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 3), ignoreNeedRefresh);
+                RenderElement(context, UnsafeHelper.AddTypedOffset(in elementArrayRef, i), ignoreNeedRefresh);
+                RenderElement(context, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 1), ignoreNeedRefresh);
+                RenderElement(context, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 2), ignoreNeedRefresh);
+                RenderElement(context, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 3), ignoreNeedRefresh);
             }
             switch (length)
             {
                 case 3:
-                    RenderElement(context, collector, pointPerPixel, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 2), ignoreNeedRefresh);
+                    RenderElement(context, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 2), ignoreNeedRefresh);
                     goto case 2;
                 case 2:
-                    RenderElement(context, collector, pointPerPixel, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 1), ignoreNeedRefresh);
+                    RenderElement(context, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 1), ignoreNeedRefresh);
                     goto case 1;
                 case 1:
-                    RenderElement(context, collector, pointPerPixel, UnsafeHelper.AddTypedOffset(in elementArrayRef, i), ignoreNeedRefresh);
+                    RenderElement(context, UnsafeHelper.AddTypedOffset(in elementArrayRef, i), ignoreNeedRefresh);
                     break;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void RenderElement(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pointPerPixel,
-            UIElement? element, bool ignoreNeedRefresh)
+        public static void RenderElement(in RegionalRenderingContext context, UIElement? element, bool ignoreNeedRefresh)
         {
             if (element is null)
                 return;
-            if (ignoreNeedRefresh || element.NeedRefresh() || collector.IsEmptyInstance)
+            if (ignoreNeedRefresh || context.IsForceRendering || element.NeedRefresh())
             {
                 bool isOpaque = element.IsBackgroundOpaque();
-                ClearTypeSwitcher.SetClearType(context, isOpaque);
-                using (RegionalRenderingContext renderingContext =
-                    RegionalRenderingContext.Create(context, collector, pointPerPixel, (RectF)element.Bounds, D2D1AntialiasMode.Aliased, isOpaque, out _))
-                    element.Render(renderingContext);
-                collector = DirtyAreaCollector.Empty;
+                ClearTypeSwitcher.SetClearType(context.DeviceContext, isOpaque);
+                using (RegionalRenderingContext elementContext = context.WithPixelAlignedClip(
+                    (RectF)element.Bounds, D2D1AntialiasMode.Aliased, isOpaque, out _))
+                    element.Render(elementContext);
+                if (element is IElementContainer container)
+                    RenderElements(context.WithEmptyDirtyCollector(), container.GetActiveElements(), ignoreNeedRefresh: true);
             }
-            if (element is not IElementContainer container)
-                return;
-            RenderElements(context, collector, pointPerPixel, container.GetActiveElements(), ignoreNeedRefresh);
+            else if (element is IElementContainer container)
+                RenderElements(context, container.GetActiveElements(), ignoreNeedRefresh);
         }
     }
 }
