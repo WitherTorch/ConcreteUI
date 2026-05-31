@@ -124,5 +124,19 @@ namespace ConcreteUI.Internals
 
         [Inline(InlineBehavior.Remove)]
         public static ref readonly Size ConvertUInt64ToSize(in ulong value) => ref UnsafeHelper.As<ulong, Size>(ref UnsafeHelper.AsRefIn(in value));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Rectangle ConvertUInt64SlotsToBounds(in ulong location, in ulong size)
+            => new Rectangle(
+                location: ConvertUInt64ToPoint(in location),
+                size: ConvertUInt64ToSize(in size)
+                );
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ConvertBoundsToUInt64Slots(in Rectangle bounds, ref ulong locationSlot, ref ulong sizeSlot)
+        {
+            locationSlot = ConvertPointToUInt64(bounds.Location);
+            sizeSlot = ConvertSizeToUInt64(bounds.Size);
+        }
     }
 }

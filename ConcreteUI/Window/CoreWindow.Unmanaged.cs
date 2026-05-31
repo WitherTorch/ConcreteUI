@@ -712,28 +712,28 @@ namespace ConcreteUI.Window
             int clientY = MathI.Truncate(clientPoint.Y);
             int activeBorderWidth = _activeBorderWidth;
             int titleRightLoc;
-            Rectangle minRect = _minRect;
-            Rectangle maxRect = _maxRect;
-            Rectangle closeRect = _closeRect;
+            Rectangle minimizeButtonBounds = MinimizeButtonBounds;
+            Rectangle maximizeButtonBounds = MaximizeButtonBounds;
+            Rectangle closeButtonBounds = CloseButtonBounds;
             if (hasMinimum)
-                titleRightLoc = minRect.X;
+                titleRightLoc = minimizeButtonBounds.X;
             else if (hasMaximum)
-                titleRightLoc = maxRect.X;
+                titleRightLoc = maximizeButtonBounds.X;
             else
-                titleRightLoc = closeRect.X;
+                titleRightLoc = closeButtonBounds.X;
             if (clientX < titleRightLoc && clientY <= TitleBarBounds.Bottom && clientX >= activeBorderWidth && clientY >= activeBorderWidth)
             {
                 return HitTestValue.Caption;
             }
-            else if (hasMinimum && minRect.Contains(clientX, clientY))
+            else if (hasMinimum && minimizeButtonBounds.Contains(clientX, clientY))
             {
                 return HitTestValue.MinimizeButton;
             }
-            else if (hasMaximum && maxRect.Contains(clientX, clientY))
+            else if (hasMaximum && maximizeButtonBounds.Contains(clientX, clientY))
             {
                 return HitTestValue.MaximizeButton;
             }
-            else if (closeRect.Contains(clientX, clientY))
+            else if (closeButtonBounds.Contains(clientX, clientY))
             {
                 return HitTestValue.CloseButton;
             }

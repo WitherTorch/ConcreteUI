@@ -45,7 +45,7 @@ namespace ConcreteUI.Window
     public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordinateTranslator
     {
         [StructLayout(LayoutKind.Auto)]
-        protected struct RecalculateLayoutData
+        protected ref struct WindowRenderingData
         {
             public Rectangle MinimizeButtonBounds, MaximizeButtonBounds, CloseButtonBounds, PageBounds, TitleBarBounds;
             public Point DrawingOffset;
@@ -103,10 +103,14 @@ namespace ConcreteUI.Window
         private GraphicsDeviceProvider? _graphicsDeviceProvider;
         private D2D1DeviceContext? _deviceContext;
         private DWriteTextLayout? _titleLayout;
-        private Rectangle _minRect, _maxRect, _closeRect;
         private D2D1ColorF _clearDCColor, _windowBaseColor;
         private Point _drawingOffset;
-        private ulong _pageLocation, _pageSize, _titleBarLocation, _titleBarSize;
+        private ulong
+            _minimizeButtonLocation, _minimizeButtonSize,
+            _maximizeButtonLocation, _maximizeButtonSize,
+            _closeButtonLocation, _closeButtonSize,
+            _pageLocation, _pageSize,
+            _titleBarLocation, _titleBarSize;
         private nuint _ownedGDP, _recreateGraphicsDeviceProviderBarrier, _recalculateLayoutVersion;
         private int _activeBorderWidth;
 
@@ -145,6 +149,138 @@ namespace ConcreteUI.Window
         public D2D1ColorF ClearDCColor => _clearDCColor;
 
         public D2D1ColorF WindowBaseColor => _windowBaseColor;
+
+        public Rectangle MinimizeButtonBounds
+        {
+            get
+            {
+                ulong location, size;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                nuint version = OptimisticLock.Enter(in versionRef);
+                do
+                {
+                    location = Volatile.Read(ref _minimizeButtonLocation);
+                    size = Volatile.Read(ref _minimizeButtonSize);
+                }
+                while (!OptimisticLock.TryLeave(in versionRef, ref version));
+                return new Rectangle(
+                    BoundsHelper.ConvertUInt64ToPoint(location),
+                    BoundsHelper.ConvertUInt64ToSize(size)
+                    );
+            }
+        }
+
+        public Point MinimizeButtonLocation
+        {
+            get
+            {
+                ref readonly ulong resultRef = ref _minimizeButtonLocation;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+                return BoundsHelper.ConvertUInt64ToPoint(result);
+            }
+        }
+
+        public Size MinimizeButtonSize
+        {
+            get
+            {
+                ref readonly ulong resultRef = ref _minimizeButtonSize;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+                return BoundsHelper.ConvertUInt64ToSize(result);
+            }
+        }
+
+        public Rectangle MaximizeButtonBounds
+        {
+            get
+            {
+                ulong location, size;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                nuint version = OptimisticLock.Enter(in versionRef);
+                do
+                {
+                    location = Volatile.Read(ref _maximizeButtonLocation);
+                    size = Volatile.Read(ref _maximizeButtonSize);
+                }
+                while (!OptimisticLock.TryLeave(in versionRef, ref version));
+                return new Rectangle(
+                    BoundsHelper.ConvertUInt64ToPoint(location),
+                    BoundsHelper.ConvertUInt64ToSize(size)
+                    );
+            }
+        }
+
+        public Point MaximizeButtonLocation
+        {
+            get
+            {
+                ref readonly ulong resultRef = ref _maximizeButtonLocation;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+                return BoundsHelper.ConvertUInt64ToPoint(result);
+            }
+        }
+
+        public Size MaximizeButtonSize
+        {
+            get
+            {
+                ref readonly ulong resultRef = ref _maximizeButtonSize;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+                return BoundsHelper.ConvertUInt64ToSize(result);
+            }
+        }
+
+        public Rectangle CloseButtonBounds
+        {
+            get
+            {
+                ulong location, size;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                nuint version = OptimisticLock.Enter(in versionRef);
+                do
+                {
+                    location = Volatile.Read(ref _closeButtonLocation);
+                    size = Volatile.Read(ref _closeButtonSize);
+                }
+                while (!OptimisticLock.TryLeave(in versionRef, ref version));
+                return new Rectangle(
+                    BoundsHelper.ConvertUInt64ToPoint(location),
+                    BoundsHelper.ConvertUInt64ToSize(size)
+                    );
+            }
+        }
+
+        public Point CloseButtonLocation
+        {
+            get
+            {
+                ref readonly ulong resultRef = ref _closeButtonLocation;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+                return BoundsHelper.ConvertUInt64ToPoint(result);
+            }
+        }
+
+        public Size CloseButtonSize
+        {
+            get
+            {
+                ref readonly ulong resultRef = ref _closeButtonSize;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+                return BoundsHelper.ConvertUInt64ToSize(result);
+            }
+        }
 
         public Rectangle TitleBarBounds
         {
@@ -741,7 +877,7 @@ namespace ConcreteUI.Window
             UIElementHelper.OnDpiChangedForElements(GetBackgroundElements(), in args);
         }
 
-        protected unsafe virtual void RecalculateLayout(ref RecalculateLayoutData data, Size windowSize, bool callRecalculatePageLayout)
+        protected unsafe virtual void RecalculateLayout(ref WindowRenderingData data, Size windowSize, bool callRecalculatePageLayout)
         {
             Rectangle pageBounds;
             Size pageSize;
@@ -836,7 +972,16 @@ namespace ConcreteUI.Window
             if (collector is null)
                 return false;
 
-            Rect pageRect;
+            WindowRenderingData data = new WindowRenderingData()
+            {
+                MinimizeButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_minimizeButtonLocation, _minimizeButtonSize),
+                MaximizeButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_maximizeButtonLocation, _maximizeButtonSize),
+                CloseButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_closeButtonLocation, _closeButtonSize),
+                PageBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_pageLocation, _pageSize),
+                TitleBarBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_titleBarLocation, _titleBarSize),
+                DrawingOffset = _drawingOffset,
+                ActiveBorderWidth = _activeBorderWidth
+            };
             bool redrawAll = flags.HasFlagFast(RenderingFlags.RedrawAll);
             if (flags.HasFlagFast(RenderingFlags.Resize))
             {
@@ -851,50 +996,23 @@ namespace ConcreteUI.Window
                 Thread.MemoryBarrier();
                 if (redrawAll)
                 {
-                    RecalculateLayoutData data = new RecalculateLayoutData()
-                    {
-                        MinimizeButtonBounds = _minRect,
-                        MaximizeButtonBounds = _maxRect,
-                        CloseButtonBounds = _closeRect,
-                        PageBounds = PageBounds,
-                        TitleBarBounds = TitleBarBounds,
-                        DrawingOffset = _drawingOffset,
-                        ActiveBorderWidth = _activeBorderWidth
-                    };
                     RecalculateLayout(
                         data: ref data,
                         windowSize: GraphicsUtils.ScalingSizeAndConvert(size, _pointsPerPixel),
                         callRecalculatePageLayout: true);
-                    _minRect = data.MinimizeButtonBounds;
-                    _maxRect = data.MaximizeButtonBounds;
-                    _closeRect = data.CloseButtonBounds;
-                    {
-                        Rectangle bounds = data.PageBounds;
-                        _pageLocation = BoundsHelper.ConvertPointToUInt64(bounds.Location);
-                        _pageSize = BoundsHelper.ConvertSizeToUInt64(bounds.Size);
-                        pageRect = bounds;
-                    }
-                    {
-                        Rectangle bounds = data.TitleBarBounds;
-                        _titleBarLocation = BoundsHelper.ConvertPointToUInt64(bounds.Location);
-                        _titleBarSize = BoundsHelper.ConvertSizeToUInt64(bounds.Size);
-                    }
+                    BoundsHelper.ConvertBoundsToUInt64Slots(data.MinimizeButtonBounds, ref _minimizeButtonLocation, ref _minimizeButtonSize);
+                    BoundsHelper.ConvertBoundsToUInt64Slots(data.MaximizeButtonBounds, ref _maximizeButtonLocation, ref _maximizeButtonSize);
+                    BoundsHelper.ConvertBoundsToUInt64Slots(data.CloseButtonBounds, ref _closeButtonLocation, ref _closeButtonSize);
+                    BoundsHelper.ConvertBoundsToUInt64Slots(data.PageBounds, ref _pageLocation, ref _pageSize);
+                    BoundsHelper.ConvertBoundsToUInt64Slots(data.TitleBarBounds, ref _titleBarLocation, ref _titleBarSize);
                     _drawingOffset = data.DrawingOffset;
                     _activeBorderWidth = data.ActiveBorderWidth;
                     InterlockedHelper.Increment(ref _recalculateLayoutVersion);
-                }
-                else
-                {
-                    pageRect = PageBounds;
                 }
                 flags = controller.GetAndResetRenderingFlags();
                 redrawAll |= flags.HasFlagFast(RenderingFlags.RedrawAll);
                 if (resizeTemporarily || flags.HasFlagFast(RenderingFlags.Resize))
                     controller.RequestResize(flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag), redrawAll: false);
-            }
-            else
-            {
-                pageRect = PageBounds;
             }
             D2D1DeviceContext? deviceContext = host.BeginDraw();
             if (deviceContext is null || deviceContext.IsDisposed)
@@ -903,36 +1021,38 @@ namespace ConcreteUI.Window
             ClearTypeSwitcher.SetClearType(deviceContext, false);
 
             if (redrawAll)
-                return RenderCore_RedrawAll(host, deviceContext, in pageRect);
+                return RenderCore_RedrawAll(host, deviceContext, in data);
             else
-                return RenderCore_Normal(host, deviceContext, collector, in pageRect);
+                return RenderCore_Normal(host, deviceContext, collector, in data);
         }
 
-        private bool RenderCore_RedrawAll(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, in Rect pageRect)
+        private bool RenderCore_RedrawAll(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, in WindowRenderingData data)
         {
             DirtyAreaCollector collector = DirtyAreaCollector.Empty;
-            RenderTitle(deviceContext, collector, force: true);
-            if (pageRect.IsValid)
+            RenderTitle(deviceContext, collector, force: true, in data);
+            Rectangle pageBounds = data.PageBounds;
+            if (pageBounds.IsValid())
             {
                 using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, _pixelsPerPoint,
-                    (RectF)pageRect, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
-                RenderPage(context);
+                    pageBounds, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
+                RenderPage(context, in data);
             }
             host.EndDraw();
 
             return host.TryPresent();
         }
 
-        private bool RenderCore_Normal(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect)
+        private bool RenderCore_Normal(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in WindowRenderingData data)
         {
             Vector2 pixelsPerPoint = _pixelsPerPoint;
 
-            RenderTitle(deviceContext, collector, force: false);
-            if (pageRect.IsValid)
+            RenderTitle(deviceContext, collector, force: false, in data);
+            Rectangle pageBounds = data.PageBounds;
+            if (pageBounds.IsValid())
             {
                 using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, pixelsPerPoint,
-                    (RectF)pageRect, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
-                RenderPage(context);
+                    pageBounds, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
+                RenderPage(context, in data);
             }
             host.EndDraw();
 
@@ -940,20 +1060,20 @@ namespace ConcreteUI.Window
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void RenderPageBackground(in RegionalRenderingContext context)
+        protected virtual void RenderPageBackground(in RegionalRenderingContext context, in WindowRenderingData data)
             => context.Clear(_windowBaseColor);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void RenderOnceContent(in RegionalRenderingContext context) { }
+        protected virtual void RenderOnceContent(in RegionalRenderingContext context, in WindowRenderingData data) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void RenderPage(in RegionalRenderingContext context)
+        protected virtual void RenderPage(in RegionalRenderingContext context, in WindowRenderingData data)
         {
             bool force = context.IsForceRendering;
             if (force)
             {
-                RenderPageBackground(context);
-                RenderOnceContent(context);
+                RenderPageBackground(context, in data);
+                RenderOnceContent(context, in data);
             }
             UIElementHelper.RenderElements(context, GetActiveElements(), ignoreNeedRefresh: force);
             UIElementHelper.RenderElements(context, GetOverlayElements(), ignoreNeedRefresh: force || context.HasAnyDirtyArea());
@@ -969,7 +1089,7 @@ namespace ConcreteUI.Window
             GraphicsUtils.ClearAndFill(deviceContext, UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.TitleBackBrush), _clearDCColor);
         }
 
-        protected virtual void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force)
+        protected virtual void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force, in WindowRenderingData data)
         {
             if (_isIntegratedMaterial)
                 return;
@@ -999,7 +1119,7 @@ namespace ConcreteUI.Window
                 if (titleBarStates[0])
                 {
                     Point drawingOffset = _drawingOffset;
-                    RectF titleBarRect = RenderingHelper.RoundInPixel(TitleBarBounds, pixelsPerPoint);
+                    RectF titleBarRect = RenderingHelper.RoundInPixel(data.TitleBarBounds, pixelsPerPoint);
                     deviceContext.PushAxisAlignedClip(titleBarRect, D2D1AntialiasMode.Aliased);
                     deviceContext.DrawTextLayout(new PointF(drawingOffset.X + 7.5f, drawingOffset.Y + 1.5f),
                         titleLayout, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeBrush));
@@ -1013,7 +1133,7 @@ namespace ConcreteUI.Window
             {
                 if (titleBarStates[1] && (TitleBarButtonChangedStatus[0] || force))
                 {
-                    RectF minRect = RenderingHelper.RoundInPixel(_minRect, pixelsPerPoint);
+                    RectF minRect = RenderingHelper.RoundInPixel(data.MinimizeButtonBounds, pixelsPerPoint);
                     deviceContext.PushAxisAlignedClip(minRect, D2D1AntialiasMode.Aliased);
                     if (!force)
                         ClearDCForTitle(deviceContext);
@@ -1025,7 +1145,7 @@ namespace ConcreteUI.Window
                 }
                 if (titleBarStates[2] && (TitleBarButtonChangedStatus[1] || force))
                 {
-                    RectF maxRect = RenderingHelper.RoundInPixel(_maxRect, pixelsPerPoint);
+                    RectF maxRect = RenderingHelper.RoundInPixel(data.MaximizeButtonBounds, pixelsPerPoint);
                     deviceContext.PushAxisAlignedClip(maxRect, D2D1AntialiasMode.Aliased);
                     if (!force)
                     {
@@ -1043,7 +1163,7 @@ namespace ConcreteUI.Window
             }
             if (TitleBarButtonChangedStatus[2] || force)
             {
-                RectF closeRect = RenderingHelper.RoundInPixel(_closeRect, pixelsPerPoint);
+                RectF closeRect = RenderingHelper.RoundInPixel(data.CloseButtonBounds, pixelsPerPoint);
                 deviceContext.PushAxisAlignedClip(closeRect, D2D1AntialiasMode.Aliased);
                 if (!force)
                 {

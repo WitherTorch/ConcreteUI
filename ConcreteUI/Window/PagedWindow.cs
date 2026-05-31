@@ -91,15 +91,15 @@ namespace ConcreteUI.Window
             _recalcState.InterlockedExchange(1UL << pageIndex);
         }
 
-        protected override void RenderPage(in RegionalRenderingContext context)
+        protected override void RenderPage(in RegionalRenderingContext context, in WindowRenderingData data)
         {
             if (RecalculatePageLayoutIfPageChanged(PageSize))
                 context.UsePresentAllModeOnce();
-            RenderPageCore(context);
+            RenderPageCore(context, in data);
         }
 
-        protected virtual void RenderPageCore(in RegionalRenderingContext context)
-            => base.RenderPage(context);
+        protected virtual void RenderPageCore(in RegionalRenderingContext context, in WindowRenderingData data)
+            => base.RenderPage(context, in data);
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)
         {

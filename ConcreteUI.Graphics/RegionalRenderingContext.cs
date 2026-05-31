@@ -89,6 +89,27 @@ namespace ConcreteUI.Graphics
         }
 
         public static RegionalRenderingContext Create(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pixelsPerPoint,
+            in Rectangle clipRect, D2D1AntialiasMode antialiasMode, bool isOpaque, out RectF actualClipRect)
+        {
+            actualClipRect = RenderingHelper.RoundInPixel(in clipRect, pixelsPerPoint);
+            return new RegionalRenderingContext(context, collector, pixelsPerPoint, in actualClipRect, antialiasMode, isPixelAligned: true, isOpaque);
+        }
+
+        public static RegionalRenderingContext Create(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pixelsPerPoint,
+            in Rect clipRect, D2D1AntialiasMode antialiasMode, bool isOpaque, out RectF actualClipRect)
+        {
+            actualClipRect = RenderingHelper.RoundInPixel(in clipRect, pixelsPerPoint);
+            return new RegionalRenderingContext(context, collector, pixelsPerPoint, in actualClipRect, antialiasMode, isPixelAligned: true, isOpaque);
+        }
+
+        public static RegionalRenderingContext Create(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pixelsPerPoint,
+            in RectangleF clipRect, D2D1AntialiasMode antialiasMode, bool isOpaque, out RectF actualClipRect)
+        {
+            actualClipRect = RenderingHelper.RoundInPixel(in clipRect, pixelsPerPoint);
+            return new RegionalRenderingContext(context, collector, pixelsPerPoint, in actualClipRect, antialiasMode, isPixelAligned: true, isOpaque);
+        }
+
+        public static RegionalRenderingContext Create(D2D1DeviceContext context, DirtyAreaCollector collector, Vector2 pixelsPerPoint,
             in RectF clipRect, D2D1AntialiasMode antialiasMode, bool isOpaque, out RectF actualClipRect)
         {
             actualClipRect = RenderingHelper.RoundInPixel(in clipRect, pixelsPerPoint);

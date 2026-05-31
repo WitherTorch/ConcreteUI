@@ -99,7 +99,7 @@ namespace ConcreteUI.Window
             return HitTestValue.NoWhere;
         }
 
-        protected override void RecalculateLayout(ref RecalculateLayoutData data, Size windowSize, bool callRecalculatePageLayout)
+        protected override void RecalculateLayout(ref WindowRenderingData data, Size windowSize, bool callRecalculatePageLayout)
         {
             base.RecalculateLayout(ref data, windowSize, callRecalculatePageLayout: false);
             int pageCount = PageCount;
@@ -128,7 +128,7 @@ namespace ConcreteUI.Window
                 x = rectRef.Right;
             }
             _menuBarButtonLastRight = x;
-            pageBounds.Y = y + menuBarButtonRectRef.Height;
+            pageBounds = Rectangle.FromLTRB(pageBounds.X, y + menuBarButtonRectRef.Height, pageBounds.Right, pageBounds.Bottom);
             data.PageBounds = pageBounds;
             if (callRecalculatePageLayout && pageBounds.IsValid())
                 RecalculatePageLayout(pageBounds.Size);
@@ -144,11 +144,11 @@ namespace ConcreteUI.Window
             DisposeHelper.SwapDispose(ref _menuBarButtonLayouts, menuBarButtonLayouts);
         }
 
-        protected override void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force)
+        protected override void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force, in WindowRenderingData data)
         {
             BitVector64 MenuBarButtonStatus = this.MenuBarButtonStatus;
             BitVector64 MenuBarButtonChangedStatus = this.MenuBarButtonChangedStatus;
-            base.RenderTitle(deviceContext, collector, force);
+            base.RenderTitle(deviceContext, collector, force, in data);
             #region 繪製主選單
             int pageCount = PageCount;
             if (pageCount <= 0)

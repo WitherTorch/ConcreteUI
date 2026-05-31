@@ -118,7 +118,7 @@ namespace ConcreteUI.Window
 
         public override void RenderBackground(UIElement element, in RegionalRenderingContext context) => ClearDC(context);
 
-        protected override void RenderPageBackground(in RegionalRenderingContext context) => ClearDC(context);
+        protected override void RenderPageBackground(in RegionalRenderingContext context, in WindowRenderingData data) => ClearDC(context);
 
         private void GetLayouts(UpdateFlags flags, out DWriteTextLayout? titleLayout, out DWriteTextLayout? titleDescriptionLayout)
         {
@@ -152,9 +152,9 @@ namespace ConcreteUI.Window
             }
         }
 
-        protected override void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force)
+        protected override void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force, in WindowRenderingData data)
         {
-            base.RenderTitle(deviceContext, collector, force);
+            base.RenderTitle(deviceContext, collector, force, in data);
             UpdateFlags flags = (UpdateFlags)Interlocked.Exchange(ref _updateFlags, 0L);
             if (flags == 0L && !force)
                 return;
@@ -164,7 +164,7 @@ namespace ConcreteUI.Window
             if (ActualWindowMaterial == WindowMaterial.Integrated)
                 rect = new Rect(0, 0, ClientSize.Width, rect.Top);
             else
-                rect = new Rect(rect.Left, TitleBarBounds.Bottom, rect.Right, rect.Top);
+                rect = new Rect(rect.Left, data.TitleBarBounds.Bottom, rect.Right, rect.Top);
             Vector2 pixelsPerPoint = PixelsPerPoint;
             using (RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.RoundInPixel(rect, pixelsPerPoint)))
             {
@@ -191,33 +191,34 @@ namespace ConcreteUI.Window
             }
         }
 
-        protected override void RecalculateLayout(ref RecalculateLayoutData data, Size windowSize, bool callRecalculatePageLayout)
+        protected override void RecalculateLayout(ref WindowRenderingData data, Size windowSize, bool callRecalculatePageLayout)
         {
             base.RecalculateLayout(ref data, windowSize, callRecalculatePageLayout: false);
             Rectangle pageBounds = data.PageBounds;
             Rectangle widePageBounds = pageBounds;
-            pageBounds = new Rectangle(
+            Rect pageRect = new Rect(
                 pageBounds.X + UIConstantsPrivate.WizardLeftPadding,
                 pageBounds.Y + UIConstantsPrivate.WizardPadding,
-                pageBounds.Width - (UIConstantsPrivate.WizardPadding + UIConstantsPrivate.WizardLeftPadding),
-                pageBounds.Height - UIConstantsPrivate.WizardPadding*2);
-            _titleLocation = pageBounds.Location;
+                pageBounds.Right - UIConstantsPrivate.WizardPadding,
+                pageBounds.Bottom - UIConstantsPrivate.WizardPadding);
+            _titleLocation = pageRect.Location;
             GetLayouts((UpdateFlags)Interlocked.Exchange(ref _updateFlags, 0L), out DWriteTextLayout? titleLayout, out DWriteTextLayout? titleDescriptionLayout);
             if (titleLayout is not null)
             {
-                titleLayout.MaxWidth = pageBounds.Width;
-                int descriptionLocY = MathI.Ceiling(pageBounds.Y + titleLayout.GetMetrics().Height + UIConstantsPrivate.WizardSubtitleMargin);
+                titleLayout.MaxWidth = pageRect.Width;
+                int descriptionLocY = MathI.Ceiling(pageRect.Y + titleLayout.GetMetrics().Height + UIConstantsPrivate.WizardSubtitleMargin);
                 if (titleDescriptionLayout is null)
-                    pageBounds.Y = descriptionLocY;
+                    pageRect.Y = descriptionLocY;
                 else
                 {
-                    _titleDescriptionLocation = new Point(pageBounds.X + UIConstantsPrivate.WizardSubtitleLeftMargin, descriptionLocY);
-                    titleDescriptionLayout.MaxWidth = pageBounds.Width - UIConstantsPrivate.WizardSubtitleLeftMargin;
-                    pageBounds.Y = descriptionLocY + MathI.Ceiling(titleDescriptionLayout.GetMetrics().Height);
+                    _titleDescriptionLocation = new Point(pageRect.X + UIConstantsPrivate.WizardSubtitleLeftMargin, descriptionLocY);
+                    titleDescriptionLayout.MaxWidth = pageRect.Width - UIConstantsPrivate.WizardSubtitleLeftMargin;
+                    pageRect.Y = descriptionLocY + MathI.Ceiling(titleDescriptionLayout.GetMetrics().Height);
                     DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
                 }
                 DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
             }
+            pageBounds = (Rectangle)pageRect;
 
             widePageBounds.Y = pageBounds.Y;
             widePageBounds.Height = pageBounds.Height;
