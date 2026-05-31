@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Linq;
@@ -20,7 +19,6 @@ using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Graphics.Native.DXGI;
 using ConcreteUI.Internals;
 using ConcreteUI.Internals.Native;
-using ConcreteUI.Internals.NativeHelpers;
 using ConcreteUI.Layout;
 using ConcreteUI.Layout.Internals;
 using ConcreteUI.Theme;
@@ -46,6 +44,14 @@ namespace ConcreteUI.Window
 {
     public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordinateTranslator
     {
+        [StructLayout(LayoutKind.Auto)]
+        protected struct RecalculateLayoutData
+        {
+            public Rectangle MinimizeButtonBounds, MaximizeButtonBounds, CloseButtonBounds, PageBounds, TitleBarBounds;
+            public Point DrawingOffset;
+            public int ActiveBorderWidth;
+        }
+
         #region Enums
         [Flags]
         private enum UpdateFlags : long
@@ -97,13 +103,14 @@ namespace ConcreteUI.Window
         private GraphicsDeviceProvider? _graphicsDeviceProvider;
         private D2D1DeviceContext? _deviceContext;
         private DWriteTextLayout? _titleLayout;
-        private nuint _ownedGDP, _recreateGraphicsDeviceProviderBarrier;
+        private Rectangle _minRect, _maxRect, _closeRect;
+        private D2D1ColorF _clearDCColor, _windowBaseColor;
+        private Point _drawingOffset;
+        private ulong _pageLocation, _pageSize, _titleBarLocation, _titleBarSize;
+        private nuint _ownedGDP, _recreateGraphicsDeviceProviderBarrier, _recalculateLayoutVersion;
+        private int _activeBorderWidth;
 
-        protected D2D1ColorF _clearDCColor, _windowBaseColor;
-        protected Rectangle _minRect, _maxRect, _closeRect;
-        protected Rect _pageRect, _titleBarRect;
         protected BitVector64 _titleBarButtonStatus, _titleBarButtonChangedStatus;
-        protected int _drawingOffsetX, _drawingOffsetY, _activeBorderWidth;
         #endregion
 
         #region Static Properties
@@ -134,6 +141,98 @@ namespace ConcreteUI.Window
         public WindowMaterial WindowMaterial => _windowMaterial;
 
         public WindowMaterial ActualWindowMaterial => _actualWindowMaterial;
+
+        public D2D1ColorF ClearDCColor => _clearDCColor;
+
+        public D2D1ColorF WindowBaseColor => _windowBaseColor;
+
+        public Rectangle TitleBarBounds
+        {
+            get
+            {
+                ulong location, size;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                nuint version = OptimisticLock.Enter(in versionRef);
+                do
+                {
+                    location = Volatile.Read(ref _titleBarLocation);
+                    size = Volatile.Read(ref _titleBarSize);
+                }
+                while (!OptimisticLock.TryLeave(in versionRef, ref version));
+                return new Rectangle(
+                    BoundsHelper.ConvertUInt64ToPoint(location),
+                    BoundsHelper.ConvertUInt64ToSize(size)
+                    );
+            }
+        }
+
+        public Point TitleBarLocation
+        {
+            get
+            {
+                ref readonly ulong resultRef = ref _titleBarLocation;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+                return BoundsHelper.ConvertUInt64ToPoint(result);
+            }
+        }
+
+        public Size TitleBarSize
+        {
+            get
+            {
+                ref readonly ulong resultRef = ref _titleBarSize;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+                return BoundsHelper.ConvertUInt64ToSize(result);
+            }
+        }
+
+        public Rectangle PageBounds
+        {
+            get
+            {
+                ulong location, size;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                nuint version = OptimisticLock.Enter(in versionRef);
+                do
+                {
+                    location = Volatile.Read(ref _pageLocation);
+                    size = Volatile.Read(ref _pageSize);
+                }
+                while (!OptimisticLock.TryLeave(in versionRef, ref version));
+                return new Rectangle(
+                    BoundsHelper.ConvertUInt64ToPoint(location),
+                    BoundsHelper.ConvertUInt64ToSize(size)
+                    );
+            }
+        }
+
+        public Point PageLocation
+        {
+            get
+            {
+                ref readonly ulong resultRef = ref _pageLocation;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+                return BoundsHelper.ConvertUInt64ToPoint(result);
+            }
+        }
+
+        public Size PageSize
+        {
+            get
+            {
+                ref readonly ulong resultRef = ref _pageSize;
+                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+                return BoundsHelper.ConvertUInt64ToSize(result);
+            }
+        }
         #endregion
 
         #region Events
@@ -455,9 +554,18 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Virtual Methods
-        public virtual Rect GetActivePageRect() => _pageRect;
-
-        public virtual Size GetActivePageSize() => _pageRect.Size;
+        protected virtual void RecalculateOverlayLayout(UIElement element)
+        {
+            LayoutEngine engine = RentLayoutEngine();
+            try
+            {
+                engine.RecalculateLayout(PageSize, element);
+            }
+            finally
+            {
+                ReturnLayoutEngine(engine);
+            }
+        }
 
         public virtual IEnumerable<UIElement?> GetElements() => GetActiveElements()
             .ConcatOptimized(GetOverlayElements())
@@ -479,23 +587,15 @@ namespace ConcreteUI.Window
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected Point PageToWindow(Point point)
-            => GraphicsUtils.ScalingPoint(PageToWindow_NoScaled(point), _pixelsPerPoint);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected PointF PageToWindow(PointF point)
-            => GraphicsUtils.ScalingPoint(PageToWindow_NoScaled(point), _pixelsPerPoint);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected Point PageToWindow_NoScaled(Point point)
         {
-            Point baseLoc = _pageRect.Location;
+            Point baseLoc = PageLocation;
             return new Point(baseLoc.X + point.X, baseLoc.Y + point.Y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected PointF PageToWindow_NoScaled(PointF point)
+        protected PointF PageToWindow(PointF point)
         {
-            Point baseLoc = _pageRect.Location;
+            Point baseLoc = PageLocation;
             return new PointF(baseLoc.X + point.X, baseLoc.Y + point.Y);
         }
 
@@ -504,23 +604,17 @@ namespace ConcreteUI.Window
         protected virtual PointF WindowToPage(UIElement element, PointF point) => WindowToPage(point);
 
         protected Point WindowToPage(Point point)
-            => WindowToPage_NoScaled(GraphicsUtils.ScalingPoint(point, _pointsPerPixel));
-
-        protected PointF WindowToPage(PointF point)
-            => WindowToPage_NoScaled(GraphicsUtils.ScalingPoint(point, _pointsPerPixel));
-
-        protected Point WindowToPage_NoScaled(Point point)
         {
-            Point baseLoc = _pageRect.Location;
+            Point baseLoc = PageLocation;
             return new Point(
                 x: point.X - baseLoc.X,
                 y: point.Y - baseLoc.Y
                 );
         }
 
-        protected PointF WindowToPage_NoScaled(PointF point)
+        protected PointF WindowToPage(PointF point)
         {
-            PointF baseLoc = _pageRect.Location;
+            PointF baseLoc = PageLocation;
             return new PointF(
                 x: point.X - baseLoc.X,
                 y: point.Y - baseLoc.Y
@@ -647,14 +741,14 @@ namespace ConcreteUI.Window
             UIElementHelper.OnDpiChangedForElements(GetBackgroundElements(), in args);
         }
 
-        protected virtual unsafe void RecalculateLayout(Size windowSize, bool callRecalculatePageLayout)
+        protected unsafe virtual void RecalculateLayout(ref RecalculateLayoutData data, Size windowSize, bool callRecalculatePageLayout)
         {
-            Rect pageRect;
+            Rectangle pageBounds;
             Size pageSize;
             if (_isIntegratedMaterial)
             {
                 pageSize = ClientSize;
-                pageRect = Rect.FromXYWH(Point.Empty, pageSize);
+                pageBounds = new Rectangle(Point.Empty, pageSize);
             }
             else
             {
@@ -662,7 +756,7 @@ namespace ConcreteUI.Window
                 if (handle == IntPtr.Zero)
                     return;
 
-                Vector2 pixelsPerPoint = _pointsPerPixel;
+                Vector2 pointsPerPixel = _pointsPerPixel;
                 int activeBorderWidth, drawingOffsetX, drawingOffsetY;
                 if (User32.IsZoomed(handle))
                 {
@@ -672,35 +766,34 @@ namespace ConcreteUI.Window
                     if (!Screen.TryGetScreenInfoFromHwnd(handle, out ScreenInfo screenInfo))
                         screenInfo = default;
                     Rect workingArea = screenInfo.WorkingArea;
-                    drawingOffsetX = MathI.Round((workingArea.Left - windowRect.Left) * pixelsPerPoint.X, MidpointRounding.AwayFromZero);
-                    drawingOffsetY = MathI.Round((workingArea.Top - windowRect.Top) * pixelsPerPoint.Y, MidpointRounding.AwayFromZero);
+                    drawingOffsetX = MathI.Round((workingArea.Left - windowRect.Left) * pointsPerPixel.X, MidpointRounding.AwayFromZero);
+                    drawingOffsetY = MathI.Round((workingArea.Top - windowRect.Top) * pointsPerPixel.Y, MidpointRounding.AwayFromZero);
                     activeBorderWidth = 0;
                 }
                 else
                 {
-                    Vector2 pointsPerPixel = _pixelsPerPoint;
                     activeBorderWidth = _borderWidth;
                     drawingOffsetX = 0;
                     drawingOffsetY = 0;
                 }
-                _activeBorderWidth = activeBorderWidth;
-                _drawingOffsetX = drawingOffsetX;
-                _drawingOffsetY = drawingOffsetY;
+                data.ActiveBorderWidth = activeBorderWidth;
+                data.DrawingOffset = new Point(drawingOffsetX, drawingOffsetY);
                 int x = windowSize.Width - 1 - drawingOffsetX, y = drawingOffsetY;
-                _closeRect = new Rectangle(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
-                _maxRect = new Rectangle(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
-                _minRect = new Rectangle(x - UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
-                Rect titleBarRect = _titleBarRect = Rect.FromXYWH(drawingOffsetX + 1, drawingOffsetY + 1, Size.Width - 2, 26);
-                pageRect = new Rect(
+                data.CloseButtonBounds = new Rectangle(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
+                data.MaximizeButtonBounds = new Rectangle(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
+                data.MinimizeButtonBounds = new Rectangle(x - UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
+                Rectangle titleBarBounds = new Rectangle(drawingOffsetX + 1, drawingOffsetY + 1, Size.Width - 2, 26);
+                pageBounds = Rectangle.FromLTRB(
                     left: drawingOffsetX + activeBorderWidth,
-                    top: titleBarRect.Bottom + 1,
+                    top: titleBarBounds.Bottom + 1,
                     right: windowSize.Width - drawingOffsetX - activeBorderWidth,
                     bottom: windowSize.Height - activeBorderWidth);
-                pageSize = pageRect.Size;
+                pageSize = pageBounds.Size;
+                data.TitleBarBounds = titleBarBounds;
             }
 
-            _pageRect = pageRect;
-            if (callRecalculatePageLayout && pageRect.IsValid)
+            data.PageBounds = pageBounds;
+            if (callRecalculatePageLayout && pageBounds.IsValid())
                 RecalculatePageLayout(pageSize);
         }
 
@@ -715,6 +808,7 @@ namespace ConcreteUI.Window
             finally
             {
                 ReturnLayoutEngine(layoutEngine);
+                Thread.MemoryBarrier();
             }
         }
         #endregion
@@ -741,6 +835,8 @@ namespace ConcreteUI.Window
             DirtyAreaCollector? collector = _collector;
             if (collector is null)
                 return false;
+
+            Rect pageRect;
             bool redrawAll = flags.HasFlagFast(RenderingFlags.RedrawAll);
             if (flags.HasFlagFast(RenderingFlags.Resize))
             {
@@ -755,12 +851,50 @@ namespace ConcreteUI.Window
                 Thread.MemoryBarrier();
                 if (redrawAll)
                 {
-                    RecalculateLayout(windowSize: GraphicsUtils.ScalingSizeAndConvert(size, _pointsPerPixel), callRecalculatePageLayout: true);
-                    Thread.MemoryBarrier();
+                    RecalculateLayoutData data = new RecalculateLayoutData()
+                    {
+                        MinimizeButtonBounds = _minRect,
+                        MaximizeButtonBounds = _maxRect,
+                        CloseButtonBounds = _closeRect,
+                        PageBounds = PageBounds,
+                        TitleBarBounds = TitleBarBounds,
+                        DrawingOffset = _drawingOffset,
+                        ActiveBorderWidth = _activeBorderWidth
+                    };
+                    RecalculateLayout(
+                        data: ref data,
+                        windowSize: GraphicsUtils.ScalingSizeAndConvert(size, _pointsPerPixel),
+                        callRecalculatePageLayout: true);
+                    _minRect = data.MinimizeButtonBounds;
+                    _maxRect = data.MaximizeButtonBounds;
+                    _closeRect = data.CloseButtonBounds;
+                    {
+                        Rectangle bounds = data.PageBounds;
+                        _pageLocation = BoundsHelper.ConvertPointToUInt64(bounds.Location);
+                        _pageSize = BoundsHelper.ConvertSizeToUInt64(bounds.Size);
+                        pageRect = bounds;
+                    }
+                    {
+                        Rectangle bounds = data.TitleBarBounds;
+                        _titleBarLocation = BoundsHelper.ConvertPointToUInt64(bounds.Location);
+                        _titleBarSize = BoundsHelper.ConvertSizeToUInt64(bounds.Size);
+                    }
+                    _drawingOffset = data.DrawingOffset;
+                    _activeBorderWidth = data.ActiveBorderWidth;
+                    InterlockedHelper.Increment(ref _recalculateLayoutVersion);
+                }
+                else
+                {
+                    pageRect = PageBounds;
                 }
                 flags = controller.GetAndResetRenderingFlags();
+                redrawAll |= flags.HasFlagFast(RenderingFlags.RedrawAll);
                 if (resizeTemporarily || flags.HasFlagFast(RenderingFlags.Resize))
                     controller.RequestResize(flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag), redrawAll: false);
+            }
+            else
+            {
+                pageRect = PageBounds;
             }
             D2D1DeviceContext? deviceContext = host.BeginDraw();
             if (deviceContext is null || deviceContext.IsDisposed)
@@ -769,16 +903,15 @@ namespace ConcreteUI.Window
             ClearTypeSwitcher.SetClearType(deviceContext, false);
 
             if (redrawAll)
-                return RenderCore_RedrawAll(host, deviceContext);
+                return RenderCore_RedrawAll(host, deviceContext, in pageRect);
             else
-                return RenderCore_Normal(host, deviceContext, collector);
+                return RenderCore_Normal(host, deviceContext, collector, in pageRect);
         }
 
-        private bool RenderCore_RedrawAll(SimpleGraphicsHost host, D2D1DeviceContext deviceContext)
+        private bool RenderCore_RedrawAll(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, in Rect pageRect)
         {
             DirtyAreaCollector collector = DirtyAreaCollector.Empty;
             RenderTitle(deviceContext, collector, force: true);
-            Rect pageRect = _pageRect;
             if (pageRect.IsValid)
             {
                 using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, _pixelsPerPoint,
@@ -790,12 +923,11 @@ namespace ConcreteUI.Window
             return host.TryPresent();
         }
 
-        private bool RenderCore_Normal(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector)
+        private bool RenderCore_Normal(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in Rect pageRect)
         {
             Vector2 pixelsPerPoint = _pixelsPerPoint;
 
             RenderTitle(deviceContext, collector, force: false);
-            Rect pageRect = _pageRect;
             if (pageRect.IsValid)
             {
                 using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, pixelsPerPoint,
@@ -866,9 +998,10 @@ namespace ConcreteUI.Window
                 ClearDCForTitle(deviceContext);
                 if (titleBarStates[0])
                 {
-                    RectF titleBarRect = RenderingHelper.RoundInPixel(_titleBarRect, pixelsPerPoint);
+                    Point drawingOffset = _drawingOffset;
+                    RectF titleBarRect = RenderingHelper.RoundInPixel(TitleBarBounds, pixelsPerPoint);
                     deviceContext.PushAxisAlignedClip(titleBarRect, D2D1AntialiasMode.Aliased);
-                    deviceContext.DrawTextLayout(new PointF(_drawingOffsetX + 7.5f, _drawingOffsetY + 1.5f),
+                    deviceContext.DrawTextLayout(new PointF(drawingOffset.X + 7.5f, drawingOffset.Y + 1.5f),
                         titleLayout, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeBrush));
                     deviceContext.PopAxisAlignedClip();
                 }
@@ -1143,15 +1276,8 @@ namespace ConcreteUI.Window
                         if (resourceProvider is not null)
                             element.ApplyTheme(resourceProvider);
 
-                        LayoutEngine layoutEngine = RentLayoutEngine();
-                        try
-                        {
-                            layoutEngine.RecalculateLayout(GetActivePageSize(), element);
-                        }
-                        finally
-                        {
-                            ReturnLayoutEngine(layoutEngine);
-                        }
+                        RecalculateOverlayLayout(element);
+                        Thread.MemoryBarrier();
 
                         overlayElementDict.TryAdd(type, element);
                         overlayElementList.Add(element);
@@ -1166,15 +1292,8 @@ namespace ConcreteUI.Window
                         if (resourceProvider is not null)
                             element.ApplyTheme(resourceProvider);
 
-                        LayoutEngine layoutEngine = RentLayoutEngine();
-                        try
-                        {
-                            layoutEngine.RecalculateLayout(GetActivePageSize(), element);
-                        }
-                        finally
-                        {
-                            ReturnLayoutEngine(layoutEngine);
-                        }
+                        RecalculateOverlayLayout(element);
+                        Thread.MemoryBarrier();
 
                         int index = result is null ? -1 : overlayElementList.IndexOf(result);
                         overlayElementDict[type] = element;
@@ -1263,10 +1382,10 @@ namespace ConcreteUI.Window
         {
             ContextMenu contextMenu = new ContextMenu(this, items);
             ChangeOverlayElement(contextMenu)?.Dispose();
-            Rect pageRect = _pageRect;
-            if (location.X + contextMenu.Width >= pageRect.Right)
+            Rectangle pageBounds = PageBounds;
+            if (location.X + contextMenu.Width >= pageBounds.Right)
                 location.X = location.X - contextMenu.Width + 1;
-            if (location.Y + contextMenu.Height >= pageRect.Bottom)
+            if (location.Y + contextMenu.Height >= pageBounds.Bottom)
                 location.Y = location.Y - contextMenu.Height + 1;
             contextMenu.Location = location;
         }

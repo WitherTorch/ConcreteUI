@@ -54,23 +54,23 @@ namespace ConcreteUI.Window
         {
             if (args.Handled)
                 return;
-            HandleableMouseEventArgs relativeArgs = new HandleableMouseEventArgs(WindowToPage_NoScaled(args.Location), args.Buttons, args.Delta);
+            HandleableMouseEventArgs relativeArgs = new HandleableMouseEventArgs(WindowToPage(args.Location), args.Buttons, args.Delta);
             OnMouseDownForElements(ref relativeArgs);
             if (relativeArgs.Handled)
                 args.Handle();
         }
 
         protected virtual void OnMouseUp(in MouseEventArgs args)
-            => OnMouseUpForElements(new MouseEventArgs(WindowToPage_NoScaled(args.Location), args.Buttons, args.Delta));
+            => OnMouseUpForElements(new MouseEventArgs(WindowToPage(args.Location), args.Buttons, args.Delta));
 
         protected virtual void OnMouseMove(in MouseEventArgs args)
-            => OnMouseMoveForElements(new MouseEventArgs(WindowToPage_NoScaled(args.Location), args.Buttons, args.Delta));
+            => OnMouseMoveForElements(new MouseEventArgs(WindowToPage(args.Location), args.Buttons, args.Delta));
 
         protected virtual void OnMouseScroll(ref HandleableMouseEventArgs args)
         {
             if (args.Handled)
                 return;
-            HandleableMouseEventArgs relativeArgs = new HandleableMouseEventArgs(WindowToPage_NoScaled(args.Location), args.Buttons, args.Delta);
+            HandleableMouseEventArgs relativeArgs = new HandleableMouseEventArgs(WindowToPage(args.Location), args.Buttons, args.Delta);
             OnMouseScrollForElements(ref relativeArgs);
             if (relativeArgs.Handled)
                 args.Handle();

@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Runtime.CompilerServices;
 
 using InlineMethod;
 
@@ -41,5 +42,17 @@ namespace ConcreteUI.Utils
                 return ((uint)color.B << 16) + ((uint)color.G << 8) + color.R;
             }
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsValid(this Rectangle _this) 
+            => _this.Location.IsValid() && _this.Size.IsValid();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsValid(this Point _this)
+            => _this.X >= 0 && _this.Y >= 0;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsValid(this Size _this) 
+            => _this.Width >= 0 && _this.Height >= 0;
     }
 }

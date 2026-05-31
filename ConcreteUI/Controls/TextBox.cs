@@ -737,8 +737,8 @@ namespace ConcreteUI.Controls
             PointF caretPoint = GetPointFromCaretIndex(caretIndex - 1, isTrailingHit: false, out DWriteHitTestMetrics metrics);
             PointF bottomRightPoint = new PointF(caretPoint.X + metrics.Width, caretPoint.Y + metrics.Height);
 
-            caretPoint = PageToWindow(caretPoint);
-            bottomRightPoint = PageToWindow(bottomRightPoint);
+            caretPoint = GraphicsUtils.ScalingPoint(PageToWindow(caretPoint), pixelsPerPoint);
+            bottomRightPoint = GraphicsUtils.ScalingPoint(PageToWindow(bottomRightPoint), pixelsPerPoint);
 
             context.SetCandidateWindow(new IMECandidateForm()
             {

@@ -93,7 +93,7 @@ namespace ConcreteUI.Window
 
         protected override void RenderPage(in RegionalRenderingContext context)
         {
-            if (RecalculatePageLayoutIfPageChanged(_pageRect.Size))
+            if (RecalculatePageLayoutIfPageChanged(PageSize))
                 context.UsePresentAllModeOnce();
             RenderPageCore(context);
         }

@@ -58,7 +58,7 @@ namespace ConcreteUI.Window
         private long _updateFlags = -1L;
         private D2D1ColorF _wizardBaseColor;
         private Point _titleLocation, _titleDescriptionLocation;
-        private Rect _widePageRect;
+        private Rectangle _widePageBounds;
         #endregion
 
         #region Constructor
@@ -160,11 +160,11 @@ namespace ConcreteUI.Window
                 return;
             GetLayouts(flags, out DWriteTextLayout? titleLayout, out DWriteTextLayout? titleDescriptionLayout);
             ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
-            Rect rect = _widePageRect;
+            Rect rect = _widePageBounds;
             if (ActualWindowMaterial == WindowMaterial.Integrated)
                 rect = new Rect(0, 0, ClientSize.Width, rect.Top);
             else
-                rect = new Rect(rect.Left, _titleBarRect.Bottom, rect.Right, rect.Top);
+                rect = new Rect(rect.Left, TitleBarBounds.Bottom, rect.Right, rect.Top);
             Vector2 pixelsPerPoint = PixelsPerPoint;
             using (RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.RoundInPixel(rect, pixelsPerPoint)))
             {
@@ -186,53 +186,52 @@ namespace ConcreteUI.Window
 
             if (force)
             {
-                using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.RoundInPixel((RectF)_widePageRect, pixelsPerPoint), D2D1AntialiasMode.Aliased);
+                using RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.RoundInPixel(_widePageBounds, pixelsPerPoint), D2D1AntialiasMode.Aliased);
                 ClearDC(deviceContext);
             }
         }
 
-        protected override void RecalculateLayout(Size windowSize, bool callRecalculatePageLayout)
+        protected override void RecalculateLayout(ref RecalculateLayoutData data, Size windowSize, bool callRecalculatePageLayout)
         {
-            base.RecalculateLayout(windowSize, false);
-            Rect pageRect = _pageRect;
-            Rect widePageRect = pageRect;
-            pageRect.Left += UIConstantsPrivate.WizardLeftPadding;
-            pageRect.Top += UIConstantsPrivate.WizardPadding;
-            pageRect.Right -= UIConstantsPrivate.WizardPadding;
-            pageRect.Bottom -= UIConstantsPrivate.WizardPadding;
-            _titleLocation = pageRect.Location;
+            base.RecalculateLayout(ref data, windowSize, callRecalculatePageLayout: false);
+            Rectangle pageBounds = data.PageBounds;
+            Rectangle widePageBounds = pageBounds;
+            pageBounds = new Rectangle(
+                pageBounds.X + UIConstantsPrivate.WizardLeftPadding,
+                pageBounds.Y + UIConstantsPrivate.WizardPadding,
+                pageBounds.Width - (UIConstantsPrivate.WizardPadding + UIConstantsPrivate.WizardLeftPadding),
+                pageBounds.Height - UIConstantsPrivate.WizardPadding*2);
+            _titleLocation = pageBounds.Location;
             GetLayouts((UpdateFlags)Interlocked.Exchange(ref _updateFlags, 0L), out DWriteTextLayout? titleLayout, out DWriteTextLayout? titleDescriptionLayout);
             if (titleLayout is not null)
             {
-                titleLayout.MaxWidth = pageRect.Width;
-                int descriptionLocY = MathI.Ceiling(pageRect.Y + titleLayout.GetMetrics().Height + UIConstantsPrivate.WizardSubtitleMargin);
+                titleLayout.MaxWidth = pageBounds.Width;
+                int descriptionLocY = MathI.Ceiling(pageBounds.Y + titleLayout.GetMetrics().Height + UIConstantsPrivate.WizardSubtitleMargin);
                 if (titleDescriptionLayout is null)
-                    pageRect.Top = descriptionLocY;
+                    pageBounds.Y = descriptionLocY;
                 else
                 {
-                    _titleDescriptionLocation = new Point(pageRect.X + UIConstantsPrivate.WizardSubtitleLeftMargin, descriptionLocY);
-                    titleDescriptionLayout.MaxWidth = pageRect.Width - UIConstantsPrivate.WizardSubtitleLeftMargin;
-                    pageRect.Top = descriptionLocY + MathI.Ceiling(titleDescriptionLayout.GetMetrics().Height);
+                    _titleDescriptionLocation = new Point(pageBounds.X + UIConstantsPrivate.WizardSubtitleLeftMargin, descriptionLocY);
+                    titleDescriptionLayout.MaxWidth = pageBounds.Width - UIConstantsPrivate.WizardSubtitleLeftMargin;
+                    pageBounds.Y = descriptionLocY + MathI.Ceiling(titleDescriptionLayout.GetMetrics().Height);
                     DisposeHelper.NullSwapOrDispose(ref _titleDescriptionLayout, titleDescriptionLayout);
                 }
                 DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
             }
 
-            widePageRect.Top = pageRect.Top;
-            widePageRect.Bottom = pageRect.Bottom;
-            _widePageRect = widePageRect;
-            _pageRect = pageRect;
-            if (callRecalculatePageLayout && pageRect.IsValid)
-            {
-                RecalculatePageLayout(pageRect.Size);
-            }
+            widePageBounds.Y = pageBounds.Y;
+            widePageBounds.Height = pageBounds.Height;
+            _widePageBounds = widePageBounds;
+            data.PageBounds = pageBounds;
+            if (callRecalculatePageLayout && pageBounds.IsValid())
+                RecalculatePageLayout(pageBounds.Size);
         }
 
         protected override HitTestValue CustomHitTest(PointF clientPoint)
         {
             HitTestValue result = base.CustomHitTest(clientPoint);
             if (result == HitTestValue.NoWhere)
-                return _pageRect.Contains(clientPoint) ? HitTestValue.Client : HitTestValue.Caption;
+                return PageBounds.Contains(clientPoint) ? HitTestValue.Client : HitTestValue.Caption;
             return result;
         }
         #endregion
@@ -249,7 +248,7 @@ namespace ConcreteUI.Window
             if (ActualWindowMaterial == WindowMaterial.Integrated)
                 ClearDC(deviceContext);
             else
-                deviceContext.Clear(_clearDCColor);
+                deviceContext.Clear(ClearDCColor);
         }
         #endregion
 

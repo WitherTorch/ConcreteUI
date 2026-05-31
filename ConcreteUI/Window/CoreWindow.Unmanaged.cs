@@ -721,7 +721,7 @@ namespace ConcreteUI.Window
                 titleRightLoc = maxRect.X;
             else
                 titleRightLoc = closeRect.X;
-            if (clientX < titleRightLoc && clientY <= _titleBarRect.Bottom && clientX >= activeBorderWidth && clientY >= activeBorderWidth)
+            if (clientX < titleRightLoc && clientY <= TitleBarBounds.Bottom && clientX >= activeBorderWidth && clientY >= activeBorderWidth)
             {
                 return HitTestValue.Caption;
             }
