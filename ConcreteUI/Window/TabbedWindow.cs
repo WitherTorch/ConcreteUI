@@ -46,6 +46,8 @@ namespace ConcreteUI.Window
         #region Fields
         private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
         private readonly string[] _menuTitles;
+        private readonly uint _pageCount;
+
         private DWriteTextLayout[]? _menuBarButtonLayouts;
         private Rectangle[]? _menuBarButtonRects;
         private int _menuBarButtonLastRight;
@@ -56,17 +58,44 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Properties
-        public override int PageCount => _menuTitles.Length;
+        public override uint PageCount => _pageCount;
 
         public Rectangle[] MenuBarButtonBounds => NullSafetyHelper.ThrowIfNull(InterlockedHelper.Read(ref _menuBarButtonRects));
         #endregion
 
         #region Constructor
-        protected TabbedWindow(string[] menuTitles) : base() => _menuTitles = menuTitles;
+        protected TabbedWindow(string[] menuTitles) : base()
+        {
+            int pageCount = menuTitles.Length;
+            if (pageCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be negative.");
+            if (pageCount > 64)
+                throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
+            _pageCount = (uint)pageCount;
+            _menuTitles = menuTitles;
+        }
 
-        protected TabbedWindow(GraphicsDeviceProvider? deviceProvider, string[] menuTitles) : base(deviceProvider) => _menuTitles = menuTitles;
+        protected TabbedWindow(GraphicsDeviceProvider? deviceProvider, string[] menuTitles) : base(deviceProvider)
+        {
+            int pageCount = menuTitles.Length;
+            if (pageCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be negative.");
+            if (pageCount > 64)
+                throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
+            _pageCount = (uint)pageCount;
+            _menuTitles = menuTitles;
+        }
 
-        protected TabbedWindow(CoreWindow? parent, string[] menuTitles, bool passParentToUnderlyingWindow = false) : base(parent, passParentToUnderlyingWindow) => _menuTitles = menuTitles;
+        protected TabbedWindow(CoreWindow? parent, string[] menuTitles, bool passParentToUnderlyingWindow = false) : base(parent, passParentToUnderlyingWindow)
+        {
+            int pageCount = menuTitles.Length;
+            if (pageCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be negative.");
+            if (pageCount > 64)
+                throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
+            _pageCount = (uint)pageCount;
+            _menuTitles = menuTitles;
+        }
         #endregion
 
         #region Override Methods
@@ -85,7 +114,7 @@ namespace ConcreteUI.Window
             }
             if (MousePositionChangedForMenuBar(clientPoint, false))
                 return HitTestValue.Client;
-            int pageCount = PageCount;
+            uint pageCount = PageCount;
             if (pageCount > 0)
             {
                 float clientY = clientPoint.Y;
@@ -102,7 +131,7 @@ namespace ConcreteUI.Window
         protected override void RecalculateLayout(ref WindowRenderingData data, Size windowSize, bool callRecalculatePageLayout)
         {
             base.RecalculateLayout(ref data, windowSize, callRecalculatePageLayout: false);
-            int pageCount = PageCount;
+            uint pageCount = PageCount;
             if (pageCount <= 0)
                 return;
             Rectangle[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
@@ -150,7 +179,7 @@ namespace ConcreteUI.Window
             BitVector64 MenuBarButtonChangedStatus = this.MenuBarButtonChangedStatus;
             base.RenderTitle(deviceContext, collector, force, in data);
             #region 繪製主選單
-            int pageCount = PageCount;
+            uint pageCount = PageCount;
             if (pageCount <= 0)
                 return;
             Rectangle[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
@@ -193,8 +222,8 @@ namespace ConcreteUI.Window
                 }
                 deviceContext.PopAxisAlignedClip();
             }
-            bool menuRedraw = _isPageChanged || force;
-            for (int i = 0, currentPageIndex = CurrentPage; i < pageCount; i++)
+            bool menuRedraw = IsPageChanged || force;
+            for (uint i = 0, currentPageIndex = CurrentPage; i < pageCount; i++)
             {
                 RectF rect = RenderingHelper.RoundInPixel(
                     UnsafeHelper.AddTypedOffset(ref menuBarButtonRectRef, i),
@@ -241,7 +270,7 @@ namespace ConcreteUI.Window
             MouseButtons buttons = args.Buttons;
             if (buttons.HasFlagFast(MouseButtons.LeftButton))
             {
-                int pageCount = PageCount;
+                uint pageCount = PageCount;
                 if (pageCount > 0)
                 {
                     Rectangle[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
@@ -249,7 +278,7 @@ namespace ConcreteUI.Window
                     {
                         PointF location = args.Location;
                         ref Rectangle menuBarButtonRectRef = ref UnsafeHelper.GetArrayDataReference(menuBarButtonRects);
-                        for (int i = 0; i < pageCount; i++)
+                        for (uint i = 0; i < pageCount; i++)
                         {
                             if (UnsafeHelper.AddTypedOffset(ref menuBarButtonRectRef, i).Contains(location))
                             {
@@ -283,22 +312,25 @@ namespace ConcreteUI.Window
 
         protected virtual void NavigateBackPage(PointF location)
         {
-            int page = CurrentPage - 1;
-            CurrentPage = (page < 0) ? _menuTitles.Length - 1 : page;
-            return;
+            uint pageCount = _pageCount;
+            if (pageCount <= 0)
+                return;
+            uint page = CurrentPage;
+            CurrentPage = ((page <= 0) ? pageCount : page) - 1;
         }
 
         protected virtual void NavigateForwardPage(PointF location)
         {
-            int page = CurrentPage + 1;
-            int length = _menuTitles.Length;
-            CurrentPage = (page >= length) ? 0 : page;
-            return;
+            uint pageCount = _pageCount;
+            if (pageCount <= 0)
+                return;
+            uint page = CurrentPage + 1;
+            CurrentPage = (page >= pageCount) ? 0 : page;
         }
 
         protected virtual bool MousePositionChangedForMenuBar(PointF point, bool requireUpdate)
         {
-            int pageCount = PageCount;
+            uint pageCount = PageCount;
             Rectangle[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
             if (menuBarButtonRects is null || menuBarButtonRects.Length != pageCount)
                 return false;
@@ -306,7 +338,7 @@ namespace ConcreteUI.Window
             ref Rectangle menuBarButtonRectRef = ref UnsafeHelper.GetArrayDataReference(menuBarButtonRects);
             Rect firstRect = menuBarButtonRectRef;
             Rect menuBarRect = new Rect(firstRect.X, firstRect.Y, _menuBarButtonLastRight, PageLocation.Y);
-            BitVector64 templateVector = MenuBarButtonStatus, operateVector = templateVector & ~((1UL << pageCount) - 1);
+            BitVector64 templateVector = MenuBarButtonStatus, operateVector = templateVector & ~((1UL << (int)pageCount) - 1);
             BitVector64 changeVector = ReferenceHelper.Exchange(ref MenuBarButtonChangedStatus, default);
             if (changeVector > 0)
                 requireUpdate = true;

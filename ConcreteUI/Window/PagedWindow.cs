@@ -18,15 +18,17 @@ namespace ConcreteUI.Window
     public abstract class PagedWindow : CoreWindow
     {
         #region Fields
-        private int _pageIndex;
         private BitVector64 _recalcState;
-        protected bool _isPageChanged;
+        private uint _pageIndex;
+        private bool _isPageChanged;
         #endregion
 
         #region Properties
-        public abstract int PageCount { get; }
+        protected bool IsPageChanged => _isPageChanged;
 
-        public int CurrentPage
+        public abstract uint PageCount { get; }
+
+        public uint CurrentPage
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _pageIndex;
@@ -74,8 +76,8 @@ namespace ConcreteUI.Window
         #region Override Methods
         protected override IEnumerable<UIElement?> GetActiveElements()
         {
-            int pageIndex = _pageIndex;
-            return pageIndex < 0 ? Enumerable.Empty<UIElement>() : GetActiveElements(pageIndex);
+            uint pageIndex = _pageIndex;
+            return GetActiveElements(pageIndex);
         }
 
         public override IEnumerable<UIElement?> GetElements() => EnumerateActiveElementsInAllPages()
@@ -84,11 +86,9 @@ namespace ConcreteUI.Window
 
         protected override void RecalculatePageLayout(Size pageSize)
         {
-            int pageIndex = _pageIndex;
-            if (pageIndex < 0)
-                return;
+            uint pageIndex = _pageIndex;
             RecalculatePageLayout(pageSize, pageIndex);
-            _recalcState.InterlockedExchange(1UL << pageIndex);
+            _recalcState.InterlockedExchange(1UL << (int)pageIndex);
         }
 
         protected override void RenderPage(in RegionalRenderingContext context, in WindowRenderingData data)
@@ -110,7 +110,7 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Virtual Methods
-        protected virtual void RecalculatePageLayout(Size pageSize, int pageIndex)
+        protected virtual void RecalculatePageLayout(Size pageSize, uint pageIndex)
         {
             LayoutEngine layoutEngine = RentLayoutEngine();
             try
@@ -126,8 +126,8 @@ namespace ConcreteUI.Window
 
         protected virtual IEnumerable<UIElement?> EnumerateActiveElementsInAllPages()
         {
-            int pageCount = PageCount;
-            for (int i = 0; i < pageCount; i++)
+            uint pageCount = PageCount;
+            for (uint i = 0; i < pageCount; i++)
             {
                 foreach (UIElement? element in GetActiveElements(i))
                     yield return element;
@@ -136,7 +136,7 @@ namespace ConcreteUI.Window
         #endregion
 
         #region Abstract Methods
-        protected abstract IEnumerable<UIElement?> GetActiveElements(int pageIndex);
+        protected abstract IEnumerable<UIElement?> GetActiveElements(uint pageIndex);
         #endregion
 
         #region Normal Methods
@@ -145,9 +145,7 @@ namespace ConcreteUI.Window
             if (_isPageChanged)
             {
                 _isPageChanged = false;
-                int pageIndex = _pageIndex;
-                if (pageIndex < 0)
-                    return true;
+                uint pageIndex = _pageIndex;
                 if (!_recalcState.InterlockedSet(pageIndex, true))
                 {
                     RecalculatePageLayout(pageSize, pageIndex);
