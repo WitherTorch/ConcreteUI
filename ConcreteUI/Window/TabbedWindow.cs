@@ -361,7 +361,7 @@ namespace ConcreteUI.Window
                 requireUpdate = true;
             }
             if (requireUpdate)
-                Update();
+                Refresh();
             return result;
         }
         #endregion

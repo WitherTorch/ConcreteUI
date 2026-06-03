@@ -82,7 +82,7 @@ namespace ConcreteUI.Graphics
             transformMatrix.Translation = translation;
             _offsetPoint = new PointF(translation.X, translation.Y);
             context.Transform = transformMatrix;
-            _clipScope = RenderingClipScope.Enter(context, RectF.FromXYWH(PointF.Empty, clipRect.Size), antialiasMode);
+            _clipScope = RenderingClipScope.Enter(context, new RectF(0, 0, clipRect.Width, clipRect.Height), antialiasMode);
             _isPixelAligned = isPixelAligned;
             _isOpaque = isOpaque;
             _disposed = false;
@@ -371,6 +371,25 @@ namespace ConcreteUI.Graphics
         public readonly RegionalRenderingContext WithPixelAlignedClip(in RectF clipRect, D2D1AntialiasMode antialiasMode, bool isOpaque, out RectF actualClipRect)
         {
             actualClipRect = GetPixelAlignedRect(clipRect);
+            return new RegionalRenderingContext(_context, _collector, _pixelsPerPoint, in actualClipRect, antialiasMode, isPixelAligned: true, isOpaque);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly RegionalRenderingContext WithAxisAlignedClip(in Rect clipRect, D2D1AntialiasMode antialiasMode)
+            => WithAxisAlignedClip(in clipRect, antialiasMode, _isOpaque);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly RegionalRenderingContext WithAxisAlignedClip(in Rect clipRect, D2D1AntialiasMode antialiasMode, bool isOpaque)
+            => new RegionalRenderingContext(_context, _collector, _pixelsPerPoint, (RectF)clipRect, antialiasMode, isPixelAligned: false, isOpaque);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly RegionalRenderingContext WithPixelAlignedClip(in Rect clipRect, D2D1AntialiasMode antialiasMode, out RectF actualClipRect)
+            => WithPixelAlignedClip(in clipRect, antialiasMode, _isOpaque, out actualClipRect);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly RegionalRenderingContext WithPixelAlignedClip(in Rect clipRect, D2D1AntialiasMode antialiasMode, bool isOpaque, out RectF actualClipRect)
+        {
+            actualClipRect = GetPixelAlignedRect((RectF)clipRect);
             return new RegionalRenderingContext(_context, _collector, _pixelsPerPoint, in actualClipRect, antialiasMode, isPixelAligned: true, isOpaque);
         }
 
