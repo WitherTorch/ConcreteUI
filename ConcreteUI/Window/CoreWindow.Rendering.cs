@@ -1064,17 +1064,11 @@ namespace ConcreteUI.Window
             => context.Clear(_windowBaseColor);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void RenderOnceContent(in RegionalRenderingContext context, in WindowRenderingData data) { }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual void RenderPage(in RegionalRenderingContext context, in WindowRenderingData data)
         {
             bool force = context.IsForceRendering;
             if (force)
-            {
                 RenderPageBackground(context, in data);
-                RenderOnceContent(context, in data);
-            }
             UIElementHelper.RenderElements(context, GetActiveElements(), ignoreNeedRefresh: force);
             UIElementHelper.RenderElements(context, GetOverlayElements(), ignoreNeedRefresh: force || context.HasAnyDirtyArea());
         }
