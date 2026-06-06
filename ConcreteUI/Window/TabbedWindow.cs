@@ -107,8 +107,8 @@ namespace ConcreteUI.Window
                 ulong val = MenuBarButtonStatus.Exchange(0UL);
                 if (val > 0UL)
                 {
-                    MenuBarButtonChangedStatus |= val;
-                    Update();
+                    InterlockedHelper.Or(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus), val);
+                    Refresh();
                 }
                 return result;
             }
@@ -173,9 +173,15 @@ namespace ConcreteUI.Window
 
         protected override void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force, in WindowRenderingData data)
         {
-            BitVector64 MenuBarButtonStatus = this.MenuBarButtonStatus;
-            BitVector64 MenuBarButtonChangedStatus = this.MenuBarButtonChangedStatus;
+            BitVector64 buttonStatus = InterlockedHelper.Read(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonStatus));
+            BitVector64 changedStatus = InterlockedHelper.Exchange(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus), default);
             base.RenderTitle(deviceContext, collector, force, in data);
+            RenderTitle(deviceContext, collector, force, in data, buttonStatus, changedStatus);
+        }
+
+        protected virtual void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force, in WindowRenderingData data,
+            BitVector64 buttonStatus, BitVector64 changedStatus)
+        {
             #region 繪製主選單
             uint pageCount = PageCount;
             if (pageCount <= 0)
@@ -239,14 +245,14 @@ namespace ConcreteUI.Window
                     deviceContext.PopAxisAlignedClip();
                     collector.MarkAsDirty(rect);
                 }
-                else if (MenuBarButtonChangedStatus[i] || menuRedraw)
+                else if (changedStatus[i] || menuRedraw)
                 {
                     deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
                     if (!force)
                     {
                         GraphicsUtils.ClearAndFill(deviceContext, menuBackBrush, clearDCColor);
                     }
-                    if (MenuBarButtonStatus[i])
+                    if (buttonStatus[i])
                     {
                         deviceContext.FillRectangle(rect, menuHoverBrush);
                         deviceContext.DrawTextLayout(rect.Location, layout, menuHoverForeBrush, D2D1DrawTextOptions.None);
@@ -336,10 +342,8 @@ namespace ConcreteUI.Window
             ref Rectangle menuBarButtonRectRef = ref UnsafeHelper.GetArrayDataReference(menuBarButtonRects);
             Rect firstRect = menuBarButtonRectRef;
             Rect menuBarRect = new Rect(firstRect.X, firstRect.Y, _menuBarButtonLastRight, PageLocation.Y);
-            BitVector64 templateVector = MenuBarButtonStatus, operateVector = templateVector & ~((1UL << (int)pageCount) - 1);
-            BitVector64 changeVector = ReferenceHelper.Exchange(ref MenuBarButtonChangedStatus, default);
-            if (changeVector > 0)
-                requireUpdate = true;
+            BitVector64 templateVector = InterlockedHelper.Read(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonStatus)),
+                operateVector = templateVector & ~((1UL << (int)pageCount) - 1);
             if (menuBarRect.Contains(point))
             {
                 result = true;
@@ -354,10 +358,13 @@ namespace ConcreteUI.Window
             templateVector ^= operateVector;
             if (templateVector > 0UL)
             {
-                MenuBarButtonStatus = operateVector;
-                MenuBarButtonChangedStatus = changeVector | templateVector;
+                InterlockedHelper.Write(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonStatus), operateVector);
+                InterlockedHelper.Or(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus), templateVector);
                 requireUpdate = true;
             }
+            else if (!requireUpdate)
+                requireUpdate = InterlockedHelper.Read(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus)) > 0;
+
             if (requireUpdate)
                 Refresh();
             return result;
@@ -419,7 +426,7 @@ namespace ConcreteUI.Window
                     ulong val = MenuBarButtonStatus.Exchange(0UL);
                     if (val > 0UL)
                     {
-                        MenuBarButtonChangedStatus |= val;
+                        InterlockedHelper.Or(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus), val);
                         Update();
                     }
                     goto default;
