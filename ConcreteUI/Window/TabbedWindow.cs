@@ -50,7 +50,6 @@ namespace ConcreteUI.Window
 
         private DWriteTextLayout[]? _menuBarButtonLayouts;
         private Rectangle[]? _menuBarButtonRects;
-        private int _menuBarButtonLastRight;
         #endregion
 
         #region Rendering Fields
@@ -112,20 +111,7 @@ namespace ConcreteUI.Window
                 }
                 return result;
             }
-            if (MousePositionChangedForMenuBar(clientPoint, false))
-                return HitTestValue.Client;
-            uint pageCount = PageCount;
-            if (pageCount > 0)
-            {
-                float clientY = clientPoint.Y;
-                Rectangle[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
-                if (menuBarButtonRects is null || menuBarButtonRects.Length != pageCount)
-                    return HitTestValue.NoWhere;
-                Rect templateMenuBarButtonRect = UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(menuBarButtonRects), pageCount - 1);
-                if (clientY <= templateMenuBarButtonRect.Bottom && clientY > TitleBarBounds.Bottom)
-                    return HitTestValue.Caption;
-            }
-            return HitTestValue.NoWhere;
+            return HitTestForMenuBar(clientPoint, false);
         }
 
         protected override void RecalculateLayout(ref WindowRenderingData data, Size windowSize)
@@ -156,7 +142,6 @@ namespace ConcreteUI.Window
                 rectRef = new Rectangle(x, y, rectRef.Width, rectRef.Height);
                 x = rectRef.Right;
             }
-            _menuBarButtonLastRight = x;
             pageBounds = Rectangle.FromLTRB(pageBounds.X, y + menuBarButtonRectRef.Height, pageBounds.Right, pageBounds.Bottom);
             data.PageBounds = pageBounds;
         }
@@ -213,7 +198,7 @@ namespace ConcreteUI.Window
             {
                 Rect firstRect = menuBarButtonRectRef;
                 RectF menuBarRect = RenderingHelper.RoundInPixel(
-                    new RectF(firstRect.X, firstRect.Top, _menuBarButtonLastRight, firstRect.Bottom),
+                    new RectF(firstRect.X, firstRect.Top, UnsafeHelper.AddTypedOffset(ref menuBarButtonRectRef, pageCount - 1).Right, firstRect.Bottom),
                     pixelsPerPoint);
                 menuBarRect.Bottom = actualBottom;
                 deviceContext.PushAxisAlignedClip(menuBarRect, D2D1AntialiasMode.Aliased);
@@ -332,26 +317,27 @@ namespace ConcreteUI.Window
             CurrentPage = (page >= pageCount) ? 0 : page;
         }
 
-        protected virtual bool MousePositionChangedForMenuBar(PointF point, bool requireUpdate)
+        protected virtual HitTestValue HitTestForMenuBar(PointF point, bool requireUpdate)
         {
             uint pageCount = PageCount;
-            Rectangle[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
-            if (menuBarButtonRects is null || menuBarButtonRects.Length != pageCount)
-                return false;
-            bool result = false;
-            ref Rectangle menuBarButtonRectRef = ref UnsafeHelper.GetArrayDataReference(menuBarButtonRects);
-            Rect firstRect = menuBarButtonRectRef;
-            Rect menuBarRect = new Rect(firstRect.X, firstRect.Y, _menuBarButtonLastRight, PageLocation.Y);
+            if (pageCount == 0)
+                return HitTestValue.NoWhere;
+            Rectangle[]? buttonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
+            if (buttonRects is null || buttonRects.Length != pageCount)
+                return HitTestValue.NoWhere;
+            HitTestValue result = HitTestValue.NoWhere;
+            ref Rectangle buttonRectRef = ref UnsafeHelper.GetArrayDataReference(buttonRects);
             BitVector64 templateVector = InterlockedHelper.Read(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonStatus)),
                 operateVector = templateVector & ~((1UL << (int)pageCount) - 1);
-            if (menuBarRect.Contains(point))
+            if (point.Y >= buttonRectRef.Y && point.Y < PageLocation.Y)
             {
-                result = true;
+                result = HitTestValue.Caption;
                 for (int i = 0; i < pageCount; i++)
                 {
-                    if (!UnsafeHelper.AddTypedOffset(ref menuBarButtonRectRef, i).Contains(point))
+                    if (!UnsafeHelper.AddTypedOffset(ref buttonRectRef, i).Contains(point))
                         continue;
                     operateVector[i] = true;
+                    result = HitTestValue.Client;
                     break;
                 }
             }
@@ -360,13 +346,18 @@ namespace ConcreteUI.Window
             {
                 InterlockedHelper.Write(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonStatus), operateVector);
                 InterlockedHelper.Or(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus), templateVector);
-                requireUpdate = true;
+                goto RequireUpdate;
             }
-            else if (!requireUpdate)
-                requireUpdate = InterlockedHelper.Read(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus)) > 0;
 
-            if (requireUpdate)
-                Refresh();
+            if (requireUpdate || InterlockedHelper.Read(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus)) > 0)
+                goto RequireUpdate;
+
+            goto Tail;
+
+        RequireUpdate:
+            Refresh();
+
+        Tail:
             return result;
         }
         #endregion

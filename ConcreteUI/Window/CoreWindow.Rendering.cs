@@ -163,10 +163,7 @@ namespace ConcreteUI.Window
                     size = Volatile.Read(ref _minimizeButtonSize);
                 }
                 while (!OptimisticLock.TryLeave(in versionRef, ref version));
-                return new Rectangle(
-                    BoundsHelper.ConvertUInt64ToPoint(location),
-                    BoundsHelper.ConvertUInt64ToSize(size)
-                    );
+                return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
             }
         }
 
@@ -207,10 +204,7 @@ namespace ConcreteUI.Window
                     size = Volatile.Read(ref _maximizeButtonSize);
                 }
                 while (!OptimisticLock.TryLeave(in versionRef, ref version));
-                return new Rectangle(
-                    BoundsHelper.ConvertUInt64ToPoint(location),
-                    BoundsHelper.ConvertUInt64ToSize(size)
-                    );
+                return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
             }
         }
 
@@ -251,10 +245,7 @@ namespace ConcreteUI.Window
                     size = Volatile.Read(ref _closeButtonSize);
                 }
                 while (!OptimisticLock.TryLeave(in versionRef, ref version));
-                return new Rectangle(
-                    BoundsHelper.ConvertUInt64ToPoint(location),
-                    BoundsHelper.ConvertUInt64ToSize(size)
-                    );
+                return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
             }
         }
 
@@ -295,10 +286,7 @@ namespace ConcreteUI.Window
                     size = Volatile.Read(ref _titleBarSize);
                 }
                 while (!OptimisticLock.TryLeave(in versionRef, ref version));
-                return new Rectangle(
-                    BoundsHelper.ConvertUInt64ToPoint(location),
-                    BoundsHelper.ConvertUInt64ToSize(size)
-                    );
+                return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
             }
         }
 
@@ -339,10 +327,7 @@ namespace ConcreteUI.Window
                     size = Volatile.Read(ref _pageSize);
                 }
                 while (!OptimisticLock.TryLeave(in versionRef, ref version));
-                return new Rectangle(
-                    BoundsHelper.ConvertUInt64ToPoint(location),
-                    BoundsHelper.ConvertUInt64ToSize(size)
-                    );
+                return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
             }
         }
 
@@ -997,11 +982,11 @@ namespace ConcreteUI.Window
                     RecalculateLayout(
                         data: ref data,
                         windowSize: GraphicsUtils.ScalingSizeAndConvert(size, _pointsPerPixel));
-                    BoundsHelper.ConvertBoundsToUInt64Slots(data.MinimizeButtonBounds, ref _minimizeButtonLocation, ref _minimizeButtonSize);
-                    BoundsHelper.ConvertBoundsToUInt64Slots(data.MaximizeButtonBounds, ref _maximizeButtonLocation, ref _maximizeButtonSize);
-                    BoundsHelper.ConvertBoundsToUInt64Slots(data.CloseButtonBounds, ref _closeButtonLocation, ref _closeButtonSize);
-                    BoundsHelper.ConvertBoundsToUInt64Slots(data.PageBounds, ref _pageLocation, ref _pageSize);
-                    BoundsHelper.ConvertBoundsToUInt64Slots(data.TitleBarBounds, ref _titleBarLocation, ref _titleBarSize);
+                    BoundsHelper.SaveBoundsToUInt64Fields(data.MinimizeButtonBounds, ref _minimizeButtonLocation, ref _minimizeButtonSize);
+                    BoundsHelper.SaveBoundsToUInt64Fields(data.MaximizeButtonBounds, ref _maximizeButtonLocation, ref _maximizeButtonSize);
+                    BoundsHelper.SaveBoundsToUInt64Fields(data.CloseButtonBounds, ref _closeButtonLocation, ref _closeButtonSize);
+                    BoundsHelper.SaveBoundsToUInt64Fields(data.PageBounds, ref _pageLocation, ref _pageSize);
+                    BoundsHelper.SaveBoundsToUInt64Fields(data.TitleBarBounds, ref _titleBarLocation, ref _titleBarSize);
                     _drawingOffset = data.DrawingOffset;
                     _activeBorderWidth = data.ActiveBorderWidth;
                     InterlockedHelper.Increment(ref _recalculateLayoutVersion);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using ConcreteUI.Controls;
 
@@ -137,6 +138,19 @@ namespace ConcreteUI.Internals
         {
             locationSlot = ConvertPointToUInt64(bounds.Location);
             sizeSlot = ConvertSizeToUInt64(bounds.Size);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Rectangle LoadBoundsFromUInt64Fields(ref readonly ulong locationSlot, ref readonly ulong sizeSlot) => new Rectangle(
+                location: ConvertUInt64ToPoint(Volatile.Read(ref UnsafeHelper.AsRefIn(in locationSlot))),
+                size: ConvertUInt64ToSize(Volatile.Read(ref UnsafeHelper.AsRefIn(in sizeSlot)))
+                );
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SaveBoundsToUInt64Fields(in Rectangle bounds, ref ulong locationSlot, ref ulong sizeSlot)
+        {
+            Volatile.Write(ref locationSlot, ConvertPointToUInt64(bounds.Location));
+            Volatile.Write(ref sizeSlot, ConvertSizeToUInt64(bounds.Size));
         }
     }
 }
