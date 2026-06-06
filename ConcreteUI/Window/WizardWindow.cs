@@ -239,9 +239,11 @@ namespace ConcreteUI.Window
 
         #region Inline Methods
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ClearDC(D2D1DeviceContext context) => context.Clear(_wizardBaseColor);
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ClearDC(in RegionalRenderingContext context) => context.Clear(_wizardBaseColor);
 
         protected override void ClearDCForTitle(D2D1DeviceContext deviceContext)

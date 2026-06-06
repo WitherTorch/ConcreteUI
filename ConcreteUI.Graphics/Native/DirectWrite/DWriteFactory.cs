@@ -132,16 +132,19 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="CreateTextLayout(char*, uint, DWriteTextFormat, float, float)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DWriteTextLayout CreateTextLayout(char text, DWriteTextFormat textFormat)
             => CreateTextLayout(&text, 1u, textFormat, float.PositiveInfinity, float.PositiveInfinity);
 
         /// <inheritdoc cref="CreateTextLayout(char*, uint, DWriteTextFormat, float, float)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DWriteTextLayout CreateTextLayout(char text, DWriteTextFormat textFormat, float maxWidth, float maxHeight)
             => CreateTextLayout(&text, 1u, textFormat, maxWidth, maxHeight);
 
         /// <inheritdoc cref="CreateTextLayout(char*, uint, DWriteTextFormat, float, float)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DWriteTextLayout CreateTextLayout(string text, DWriteTextFormat textFormat)
             => CreateTextLayout(text, textFormat, float.PositiveInfinity, float.PositiveInfinity);
 
@@ -155,6 +158,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="CreateTextLayout(char*, uint, DWriteTextFormat, float, float)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DWriteTextLayout CreateTextLayout(char* text, uint textLength, DWriteTextFormat textFormat)
             => CreateTextLayout(text, textLength, textFormat, float.PositiveInfinity, float.PositiveInfinity);
 

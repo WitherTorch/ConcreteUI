@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -90,6 +91,7 @@ namespace ConcreteUI.Graphics.Extensions
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static D2D1Bitmap TakeScreenShot(this D2D1DeviceContext deviceContext, in Rect clipRect) => TakeScreenShot(deviceContext, (RectU)clipRect);
 
         public static D2D1Bitmap TakeScreenShot(this D2D1DeviceContext deviceContext, in RectU clipRect)

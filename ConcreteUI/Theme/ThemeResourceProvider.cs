@@ -13,6 +13,7 @@ namespace ConcreteUI.Theme
         public static readonly IThemeResourceProvider Empty = new EmptyImpl();
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IThemeResourceProvider CreateResourceProvider(CoreWindow window, IThemeContext themeContext)
             => CreateResourceProviderUnsafe(window.GetDeviceContext(), themeContext, window.ActualWindowMaterial);
 

@@ -81,6 +81,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
 
         /// <inheritdoc cref="CreateStrokeStyle(D2D1StrokeStyleProperties*, float*, uint)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public D2D1StrokeStyle CreateStrokeStyle(in D2D1StrokeStyleProperties strokeStyleProperties)
             => CreateStrokeStyle(UnsafeHelper.AsPointerIn(in strokeStyleProperties), null, 0u);
 

@@ -12,10 +12,12 @@ namespace ConcreteUI.Utils
     public static class MessageBox
     {
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static DialogResult Show(string text, string caption)
             => Show(IntPtr.Zero, text, caption, MessageBoxFlags.Ok);
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static DialogResult Show(string text, string caption, MessageBoxFlags flags)
             => Show(IntPtr.Zero, text, caption, flags);
 
@@ -24,10 +26,12 @@ namespace ConcreteUI.Utils
             => (DialogResult)WindowMessageLoop.Invoke(() => ShowDirectly(hWnd, text, caption, flags))!;
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Task<DialogResult> ShowAsync(string text, string caption)
             => ShowAsync(IntPtr.Zero, text, caption, MessageBoxFlags.Ok);
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Task<DialogResult> ShowAsync(string text, string caption, MessageBoxFlags flags)
             => ShowAsync(IntPtr.Zero, text, caption, flags);
 
@@ -36,10 +40,12 @@ namespace ConcreteUI.Utils
             => (DialogResult)(await WindowMessageLoop.InvokeTaskAsync(() => ShowDirectly(hWnd, text, caption, flags)))!;
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static DialogResult ShowDirectly(string text, string caption)
             => ShowDirectly(IntPtr.Zero, text, caption, MessageBoxFlags.Ok);
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static DialogResult ShowDirectly(string text, string caption, MessageBoxFlags flags)
             => ShowDirectly(IntPtr.Zero, text, caption, flags);
 

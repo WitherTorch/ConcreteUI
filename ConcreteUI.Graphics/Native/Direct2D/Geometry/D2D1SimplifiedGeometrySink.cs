@@ -1,4 +1,4 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 
 using InlineMethod;
@@ -54,6 +54,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddLines(PointF point)
             => AddLines(&point, 1u);
 

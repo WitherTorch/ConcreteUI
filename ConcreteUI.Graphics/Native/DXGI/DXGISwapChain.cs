@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using System.Security;
 
@@ -42,6 +42,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Present(uint syncInterval, DXGIPresentFlags flags) => ThrowHelper.ThrowExceptionForHR(TryPresent(syncInterval, flags));
 
         public int TryPresent(uint syncInterval, DXGIPresentFlags flags)
@@ -90,10 +91,12 @@ namespace ConcreteUI.Graphics.Native.DXGI
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ResizeBuffers()
             => ResizeBuffers(0, 0, 0, DXGIFormat.Unknown, DXGISwapChainFlags.None);
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ResizeBuffers(uint bufferCount, uint width, uint height)
             => ResizeBuffers(bufferCount, width, height, DXGIFormat.Unknown, DXGISwapChainFlags.None);
 

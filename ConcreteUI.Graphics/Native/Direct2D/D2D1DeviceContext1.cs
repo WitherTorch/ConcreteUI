@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Security;
 
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
@@ -42,6 +43,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public D2D1GeometryRealization CreateStrokedGeometryRealization(D2D1Geometry geometry, float flatteningTolerance, float strokeWidth)
             => CreateStrokedGeometryRealization(geometry, flatteningTolerance, strokeWidth, null);
 

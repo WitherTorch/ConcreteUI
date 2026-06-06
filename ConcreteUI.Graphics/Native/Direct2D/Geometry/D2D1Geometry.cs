@@ -41,6 +41,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         /// Retrieve the bounds of the geometry.
         /// </summary>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RectF GetBounds() => GetBounds(null);
 
         /// <inheritdoc cref="GetBounds(Matrix3x2*)"/>
@@ -64,6 +65,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
 
         /// <inheritdoc cref="GetWidenedBounds(float, D2D1StrokeStyle, Matrix3x2*, float)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RectF GetWidenedBounds(float strokeWidth, D2D1StrokeStyle strokeStyle, float flatteningTolerance)
             => GetWidenedBounds(strokeWidth, strokeStyle, null, flatteningTolerance);
 
@@ -90,6 +92,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
 
         /// <inheritdoc cref="StrokeContainsPoint(PointF, float, D2D1StrokeStyle, Matrix3x2*, float)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool StrokeContainsPoint(PointF point, float strokeWidth, D2D1StrokeStyle strokeStyle, float flatteningTolerance)
             => StrokeContainsPoint(point, strokeWidth, strokeStyle, null, flatteningTolerance);
 
@@ -116,6 +119,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
 
         /// <inheritdoc cref="FillContainsPoint(PointF, Matrix3x2*, float)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool FillContainsPoint(PointF point, float flatteningTolerance)
             => FillContainsPoint(point, null, flatteningTolerance);
 
@@ -140,6 +144,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
 
         /// <inheritdoc cref="CompareWithGeometry(D2D1Geometry, Matrix3x2*, float)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public D2D1GeometryRelation CompareWithGeometry(D2D1Geometry geometry, float flatteningTolerance)
             => CompareWithGeometry(geometry, null, flatteningTolerance);
 
@@ -165,6 +170,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
 
         /// <inheritdoc cref="Simplify(D2D1GeometrySimplificationOption, Matrix3x2*, float, D2D1SimplifiedGeometrySink)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Simplify(D2D1GeometrySimplificationOption simplificationOption, float flatteningTolerance, D2D1SimplifiedGeometrySink geometrySink)
             => Simplify(simplificationOption, null, flatteningTolerance, geometrySink);
 
@@ -190,6 +196,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
 
         /// <inheritdoc cref="Tessellate(Matrix3x2*, float, D2D1TessellationSink)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Tessellate(float flatteningTolerance, D2D1TessellationSink tessellationSink)
             => Tessellate(null, flatteningTolerance, tessellationSink);
 
@@ -212,6 +219,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
 
         /// <inheritdoc cref="CombineWithGeometry(D2D1Geometry, D2D1CombineMode, Matrix3x2*, float, D2D1SimplifiedGeometrySink)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CombineWithGeometry(D2D1Geometry inputGeometry, D2D1CombineMode combineMode, float flatteningTolerance,
             D2D1SimplifiedGeometrySink geometrySink)
             => CombineWithGeometry(inputGeometry, combineMode, null, flatteningTolerance, geometrySink);
@@ -239,6 +247,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
 
         /// <inheritdoc cref="Outline(Matrix3x2*, float, D2D1SimplifiedGeometrySink)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Outline(float flatteningTolerance, D2D1SimplifiedGeometrySink geometrySink)
             => Outline(null, flatteningTolerance, geometrySink);
 
@@ -262,6 +271,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
 
         /// <inheritdoc cref="ComputeArea(Matrix3x2*, float)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float ComputeArea(float flatteningTolerance)
             => ComputeArea(null, flatteningTolerance);
 
@@ -287,6 +297,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
 
         /// <inheritdoc cref="ComputeLength(Matrix3x2*, float)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float ComputeLength(float flatteningTolerance)
             => ComputeLength(null, flatteningTolerance);
 
@@ -325,19 +336,20 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Geometry
         /// Computes the point and tangent a given distance along the path.
         /// </summary>
         [LocalsInit(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ComputePointAtLength(float length, Matrix3x2* worldTransform, float flatteningTolerance, PointF* point, PointF* unitTangentVector)
         {
-            float result;
             void* nativePointer = NativePointer;
             void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.ComputePointAtLength);
-            int hr = ((delegate* unmanaged[Stdcall]<void*, Matrix3x2*, float, float*, int>)functionPointer)(nativePointer, worldTransform,
-                flatteningTolerance, &result);
+            int hr = ((delegate* unmanaged[Stdcall]<void*, float, Matrix3x2*, float, PointF*, PointF*, int>)functionPointer)(nativePointer, length, worldTransform,
+                flatteningTolerance, point, unitTangentVector);
             ThrowHelper.ThrowExceptionForHR(hr);
             return;
         }
 
         /// <inheritdoc cref="Widen(float, D2D1StrokeStyle, Matrix3x2*, float, D2D1GeometrySink)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Widen(float strokeWidth, D2D1StrokeStyle strokeStyle, float flatteningTolerance, D2D1GeometrySink geometrySink)
             => Widen(strokeWidth, strokeStyle, null, flatteningTolerance, geometrySink);
 

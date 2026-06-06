@@ -3,13 +3,17 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Layout.Internals;
 
+using InlineMethod;
+
 namespace ConcreteUI.Layout
 {
     partial class LayoutNode
     {
+        [Inline(InlineBehavior.Keep, export: true)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator LayoutNode(int value) => Fixed(value);
 
+        [Inline(InlineBehavior.Keep, export: true)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LayoutNode operator +(LayoutNode variable) => variable;
 

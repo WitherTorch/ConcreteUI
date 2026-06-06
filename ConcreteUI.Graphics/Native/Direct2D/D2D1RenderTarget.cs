@@ -174,6 +174,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
 
         /// <inheritdoc cref="CreateBitmapFromWicBitmap(WICBitmapSource, D2D1BitmapProperties*)" />
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public D2D1Bitmap CreateBitmapFromWicBitmap(WICBitmapSource wicBitmapSource) => CreateBitmapFromWicBitmap(wicBitmapSource, null);
 
         /// <inheritdoc cref="CreateBitmapFromWicBitmap(WICBitmapSource, D2D1BitmapProperties*)" />
@@ -244,6 +245,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public D2D1GradientStopCollection CreateGradientStopCollection(params D2D1GradientStop[] gradientStops)
             => CreateGradientStopCollection(gradientStops, D2D1Gamma.Gamma_2_2, D2D1ExtendMode.Clamp);
 
@@ -320,6 +322,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
 
         /// <inheritdoc cref="CreateLayer(SizeF*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public D2D1Layer CreateLayer() => CreateLayer(null);
 
         /// <inheritdoc cref="CreateLayer(SizeF*)"/>
@@ -538,6 +541,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
 
         ///<inheritdoc cref="DrawText(char*, uint, DWriteTextFormat, RectF*, D2D1Brush, D2D1DrawTextOptions, DWriteMeasuringMode)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void DrawText(char character, DWriteTextFormat textFormat, RectF* layoutRect, D2D1Brush defaultFillBrush,
             D2D1DrawTextOptions options = D2D1DrawTextOptions.None, DWriteMeasuringMode measuringMode = DWriteMeasuringMode.Natural)
         {
@@ -743,12 +747,15 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Flush() => Flush(null, null);
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Flush(ulong* tag1, ulong* tag2) => ThrowHelper.ThrowExceptionForHR(TryFlush(tag1, tag2));
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int TryFlush() => TryFlush(null, null);
 
         public int TryFlush(ulong* tag1, ulong* tag2)
@@ -798,6 +805,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear() => Clear(null);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -836,14 +844,17 @@ namespace ConcreteUI.Graphics.Native.Direct2D
 
         /// <inheritdoc cref="TryEndDraw(ulong*, ulong*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void EndDraw() => EndDraw(null, null);
 
         /// <inheritdoc cref="TryEndDraw(ulong*, ulong*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void EndDraw(ulong* tag1, ulong* tag2) => ThrowHelper.ThrowExceptionForHR(TryEndDraw(tag1, tag2));
 
         /// <inheritdoc cref="TryEndDraw(ulong*, ulong*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int TryEndDraw() => TryEndDraw(null, null);
 
         /// <summary>

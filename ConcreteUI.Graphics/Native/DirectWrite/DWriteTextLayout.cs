@@ -286,6 +286,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetFontCollection(uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DWriteFontCollection? GetFontCollection(uint currentPosition)
             => GetFontCollection(currentPosition, null);
 
@@ -314,6 +315,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetFontFamilyNameLength(uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint GetFontFamilyNameLength(uint currentPosition)
             => GetFontFamilyNameLength(currentPosition, null);
 
@@ -344,6 +346,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetFontFamilyName(uint, char*, uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string GetFontFamilyName(uint currentPosition)
             => GetFontFamilyName(currentPosition, null);
 
@@ -368,6 +371,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetFontFamilyName(uint, char*, uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void GetFontFamilyName(uint currentPosition, char* fontFamilyName, uint nameSize)
             => GetFontFamilyName(currentPosition, fontFamilyName, nameSize, null);
 
@@ -394,6 +398,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetFontWeight(uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DWriteFontWeight GetFontWeight(uint currentPosition)
             => GetFontWeight(currentPosition, null);
 
@@ -424,6 +429,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetFontStyle(uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DWriteFontStyle GetFontStyle(uint currentPosition)
             => GetFontStyle(currentPosition, null);
 
@@ -454,6 +460,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetFontStretch(uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DWriteFontStretch GetFontStretch(uint currentPosition)
             => GetFontStretch(currentPosition, null);
 
@@ -484,6 +491,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetFontSize(uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float GetFontSize(uint currentPosition)
             => GetFontSize(currentPosition, null);
 
@@ -514,6 +522,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetUnderline(uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool GetUnderline(uint currentPosition)
             => GetUnderline(currentPosition, null);
 
@@ -544,6 +553,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetStrikethrough(uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool GetStrikethrough(uint currentPosition)
             => GetStrikethrough(currentPosition, null);
 
@@ -574,6 +584,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetDrawingEffect(uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ComObject? GetDrawingEffect(uint currentPosition)
             => GetDrawingEffect(currentPosition, null);
 
@@ -602,6 +613,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetLocaleNameLength(uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint GetLocaleNameLength(uint currentPosition)
             => GetLocaleNameLength(currentPosition, null);
 
@@ -632,6 +644,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetLocaleName(uint, char*, uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string GetLocaleName(uint currentPosition)
             => GetLocaleName(currentPosition, null);
 
@@ -656,6 +669,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
 
         /// <inheritdoc cref="GetLocaleName(uint, char*, uint, DWriteTextRange*)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void GetLocaleName(uint currentPosition, char* localeName, uint nameSize)
             => GetLocaleName(currentPosition, localeName, nameSize, null);
 
@@ -814,6 +828,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// <param name="point">The point to hit-test, relative to the top-left location of the layout box.</param>
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DWriteHitTestMetrics HitTestPoint(PointF point, out bool isTrailingHit, out bool isInside)
             => HitTestPoint(point.X, point.Y, out isTrailingHit, out isInside);
 
@@ -821,6 +836,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// <param name="point">The point to hit-test, relative to the top-left location of the layout box.</param>
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DWriteHitTestMetrics HitTestPoint(PointF point, bool* isTrailingHit, bool* isInside)
             => HitTestPoint(point.X, point.Y, isTrailingHit, isInside);
 
@@ -919,6 +935,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// <inheritdoc cref="HitTestTextRange(uint, uint, float, float)" />
         /// <param name="textRange">The specified range</param>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DWriteHitTestMetrics[] HitTestTextRange(DWriteTextRange textRange, float originX, float originY)
             => HitTestTextRange(textRange.StartPosition, textRange.Length, originX, originY);
 

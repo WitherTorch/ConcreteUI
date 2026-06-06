@@ -42,6 +42,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
             => Create(DXGICreateFactoryFlags.None, riid, throwException);
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static new DXGIFactory2? Create(Guid* riid, bool throwException = true)
             => Create(DXGICreateFactoryFlags.None, riid, throwException);
 

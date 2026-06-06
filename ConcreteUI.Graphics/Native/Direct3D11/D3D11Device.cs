@@ -25,6 +25,7 @@ namespace ConcreteUI.Graphics.Native.Direct3D11
         public D3D11Device(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static D3D11Device? Create(DXGIAdapter? adapter, D3DDriverType driverType, IntPtr software, D3D11CreateDeviceFlags createDeviceFlags)
             => Create(adapter, driverType, software, createDeviceFlags, null, 0u);
 

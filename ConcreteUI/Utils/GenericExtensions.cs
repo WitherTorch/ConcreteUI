@@ -10,12 +10,15 @@ namespace ConcreteUI.Utils
     internal static class GenericExtensions
     {
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsTrue(this long value) => value != Booleans.FalseLong;
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Contains(this Rectangle rectangle, in PointF point) => rectangle.Contains(point.X, point.Y);
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Contains(this Rectangle rectangle, float x, float y)
         {
             if (rectangle.X <= x && x < rectangle.Right && rectangle.Y <= y)
@@ -26,6 +29,7 @@ namespace ConcreteUI.Utils
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint ToBgra(this Color color)
         {
             unchecked
@@ -35,6 +39,7 @@ namespace ConcreteUI.Utils
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint ToBgr(this Color color)
         {
             unchecked

@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Runtime.CompilerServices;
 
 using InlineMethod;
 
@@ -33,12 +34,14 @@ namespace ConcreteUI.Graphics.Native.Direct2D.Effects
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T GetValue<T>(D2D1GaussianBlurProperty property) where T : unmanaged
         {
             return GetValue<T>((uint)property);
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetValue<T>(D2D1GaussianBlurProperty property, T value) where T : unmanaged
         {
             SetValue((uint)property, value);

@@ -249,6 +249,7 @@ namespace ConcreteUI.Controls
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetProperty([InlineParameter] LayoutProperty property)
             => property switch
             {
@@ -262,6 +263,7 @@ namespace ConcreteUI.Controls
             };
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty([InlineParameter] LayoutProperty property, int value)
         {
             switch (property)

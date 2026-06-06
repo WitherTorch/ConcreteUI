@@ -1,4 +1,4 @@
-﻿using InlineMethod;
+using InlineMethod;
 
 using LocalsInit;
 
@@ -74,7 +74,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             return new DWriteFontCollection(nativePointer, ReferenceType.Owned);
         }
 
-        [Inline(InlineBehavior.Keep)]
+        [Inline(InlineBehavior.Remove)]
         private uint GetFontCount()
         {
             void* nativePointer = NativePointer;
@@ -82,7 +82,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
             return ((delegate* unmanaged[Stdcall]<void*, uint>)functionPointer)(nativePointer);
         }
 
-        [Inline(InlineBehavior.Keep)]
+        [Inline(InlineBehavior.Remove)]
         private DWriteFont GetFont(uint index)
         {
             void* font;

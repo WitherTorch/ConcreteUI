@@ -290,9 +290,11 @@ namespace ConcreteUI.Utils
         };
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CheckBrushIsSolid(D2D1SolidColorBrush brush) => brush.Color.A >= 1.0f;
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CheckBrushIsSolid(D2D1LinearGradientBrush brush)
         {
             D2D1GradientStopCollection? collection = brush.GradientStopCollection;
@@ -307,6 +309,7 @@ namespace ConcreteUI.Utils
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CheckBrushIsSolid(D2D1RadialGradientBrush brush)
         {
             D2D1GradientStopCollection? collection = brush.GradientStopCollection;

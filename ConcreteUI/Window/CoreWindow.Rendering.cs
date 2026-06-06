@@ -1505,6 +1505,7 @@ namespace ConcreteUI.Window
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CloseOverlayElement(UIElement elementForValidate)
             => CloseOverlayElement(elementForValidate.GetType(), elementForValidate);
 

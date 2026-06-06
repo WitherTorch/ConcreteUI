@@ -32,6 +32,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         public D2D1Device(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static D2D1Device Create(DXGIDevice device) => Create(device, null);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Window;
@@ -43,6 +44,7 @@ namespace ConcreteUI.Controls
     public static class ElementContainerDefaults
     {
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IEnumerable<UIElement?> GetActiveElements<T>(T container) where T : IElementContainer
             => container.GetElements();
     }

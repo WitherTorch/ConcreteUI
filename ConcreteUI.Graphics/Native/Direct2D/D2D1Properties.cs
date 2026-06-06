@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System.Security;
 
 using InlineMethod;
@@ -182,6 +182,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         /// <inheritdoc cref="GetValueByName(char*, D2D1PropertyType, byte*, uint)"/>
         [LocalsInit(false)]
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T GetValueByName<T>(char* name) where T : unmanaged
         {
             T result;

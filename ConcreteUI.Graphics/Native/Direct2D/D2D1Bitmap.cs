@@ -119,6 +119,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyFromBitmap(D2D1Bitmap bitmap)
             => CopyFromBitmap(null, bitmap, null);
 
@@ -135,6 +136,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyFromRenderTarget(D2D1RenderTarget renderTarget)
             => CopyFromRenderTarget(null, renderTarget, null);
 
@@ -151,6 +153,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyFromMemory(void* srcData, uint pitch)
             => CopyFromMemory(null, srcData, pitch);
 

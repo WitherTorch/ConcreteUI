@@ -437,6 +437,7 @@ namespace ConcreteUI
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InvokeAsync<TDelegate>(TDelegate @delegate, params object?[]? args) where TDelegate : Delegate
             => InvokeAsync(@delegate, args, CancellationToken.None);
 
@@ -512,6 +513,7 @@ namespace ConcreteUI
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Task<object?> InvokeTaskAsync<TDelegate>(TDelegate @delegate, params object?[]? args) where TDelegate : Delegate
             => InvokeTaskAsync(@delegate, args, CancellationToken.None);
 

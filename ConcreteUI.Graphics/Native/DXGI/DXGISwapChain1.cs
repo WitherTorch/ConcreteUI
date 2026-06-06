@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using System.Security;
 
@@ -96,6 +96,7 @@ namespace ConcreteUI.Graphics.Native.DXGI
         }
 
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int TryPresent1(uint syncInterval, in DXGIPresentParameters presentParameters)
             => TryPresent1(syncInterval, DXGIPresentFlags.None, presentParameters);
 

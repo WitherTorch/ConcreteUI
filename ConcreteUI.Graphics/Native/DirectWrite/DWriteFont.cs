@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System.Security;
 
 using InlineMethod;
@@ -159,6 +159,7 @@ namespace ConcreteUI.Graphics.Native.DirectWrite
         /// <inheritdoc cref="HasCharacter(uint)"/>
         /// <param name="charactor">Unicode (UCS-2) character value.</param>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool HasCharacter(char charactor) => HasCharacter(unchecked((uint)charactor));
 
         /// <summary>

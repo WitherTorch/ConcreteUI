@@ -85,6 +85,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         /// Creates a bitmap with extended bitmap properties.
         /// </summary>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public D2D1Bitmap1 CreateBitmap1(SizeU size, in D2D1BitmapProperties1 bitmapProperties)
             => CreateBitmap1(size, null, 0u, bitmapProperties);
 
@@ -108,6 +109,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
 
         /// <inheritdoc cref="CreateBitmapFromWicBitmap1(WICBitmapSource, D2D1BitmapProperties1*)" />
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public D2D1Bitmap1 CreateBitmapFromWicBitmap1(WICBitmapSource wicBitmapSource) => CreateBitmapFromWicBitmap1(wicBitmapSource, null);
 
         /// <inheritdoc cref="CreateBitmapFromWicBitmap1(WICBitmapSource, D2D1BitmapProperties1*)" />
@@ -132,6 +134,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
         /// Creates a bitmap from a DXGI surface.
         /// </summary>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public D2D1Bitmap1 CreateBitmapFromDxgiSurface(DXGISurface surface) => CreateBitmapFromDxgiSurface(surface, null);
 
         /// <inheritdoc cref="CreateBitmapFromDxgiSurface(DXGISurface, D2D1BitmapProperties1*)" />
@@ -235,6 +238,7 @@ namespace ConcreteUI.Graphics.Native.Direct2D
 
         /// <inheritdoc cref="DrawImage(D2D1Image, PointF*, RectF*, D2D1InterpolationMode, D2D1CompositeMode)"/>
         [Inline(InlineBehavior.Keep, export: true)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void DrawImage(D2D1Image image,
             D2D1InterpolationMode interpolationMode = D2D1InterpolationMode.Linear, D2D1CompositeMode compositeMode = D2D1CompositeMode.SourceOver)
             => DrawImage(image, null, null, interpolationMode, compositeMode);
