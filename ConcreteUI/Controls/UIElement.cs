@@ -350,7 +350,7 @@ namespace ConcreteUI.Controls
             ref readonly nuint versionRef = ref _boundsVersion;
             ulong val = OptimisticLock.EnterWithPrimitive(in valRef, in versionRef, out nuint version);
             while (!OptimisticLock.TryLeaveWithPrimitive(in valRef, in versionRef, ref val, ref version)) ;
-            return BoundsHelper.ConvertUInt64ToPoint(in val);
+            return BoundsHelper.ConvertUInt64ToPoint(val);
         }
 
         [Inline(InlineBehavior.Remove)]
@@ -377,7 +377,7 @@ namespace ConcreteUI.Controls
             ref readonly nuint versionRef = ref _boundsVersion;
             ulong val = OptimisticLock.EnterWithPrimitive(in valRef, in versionRef, out nuint version);
             while (!OptimisticLock.TryLeaveWithPrimitive(in valRef, in versionRef, ref val, ref version)) ;
-            return BoundsHelper.ConvertUInt64ToSize(in val);
+            return BoundsHelper.ConvertUInt64ToSize(val);
         }
 
         [Inline(InlineBehavior.Remove)]

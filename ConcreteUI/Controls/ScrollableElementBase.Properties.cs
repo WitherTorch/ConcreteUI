@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using ConcreteUI.Internals;
 
@@ -64,7 +65,7 @@ namespace ConcreteUI.Controls
                 nuint version = OptimisticLock.Enter(in versionRef);
                 do
                 {
-                    result = BoundsHelper.ConvertUInt64ToSize(in _surfaceSizeRaw);
+                    result = BoundsHelper.ConvertUInt64ToSize(_surfaceSizeRaw);
                 } while (!OptimisticLock.TryLeave(in versionRef, ref version));
                 return result;
             }
@@ -84,14 +85,11 @@ namespace ConcreteUI.Controls
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                Point result;
+                ref readonly ulong resultRef = ref _viewportPointRaw;
                 ref readonly nuint versionRef = ref _viewportPointVersion;
-                nuint version = OptimisticLock.Enter(in versionRef);
-                do
-                {
-                    result = BoundsHelper.ConvertUInt64ToPoint(in _viewportPointRaw);
-                } while (!OptimisticLock.TryLeave(in versionRef, ref version));
-                return result;
+                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+                return BoundsHelper.ConvertUInt64ToPoint(result);
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             protected set
@@ -109,16 +107,15 @@ namespace ConcreteUI.Controls
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                Point contentLocation;
-                Size contentSize;
+                ulong contentLocation, contentSize;
                 ref readonly nuint versionRef = ref _contentBoundsVersion;
                 nuint version = OptimisticLock.Enter(in versionRef);
                 do
                 {
-                    contentLocation = BoundsHelper.ConvertUInt64ToPoint(in _contentLocationRaw);
-                    contentSize = BoundsHelper.ConvertUInt64ToSize(in _contentSizeRaw);
+                    contentLocation = Volatile.Read(ref _contentLocationRaw);
+                    contentSize = Volatile.Read(ref _contentSizeRaw);
                 } while (!OptimisticLock.TryLeave(in versionRef, ref version));
-                return new Rectangle(contentLocation, contentSize);
+                return BoundsHelper.ConvertUInt64SlotsToBounds(contentLocation, contentSize);
             }
         }
 
@@ -127,14 +124,11 @@ namespace ConcreteUI.Controls
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                Point contentLocation;
+                ref readonly ulong resultRef = ref _contentLocationRaw;
                 ref readonly nuint versionRef = ref _contentBoundsVersion;
-                nuint version = OptimisticLock.Enter(in versionRef);
-                do
-                {
-                    contentLocation = BoundsHelper.ConvertUInt64ToPoint(in _contentLocationRaw);
-                } while (!OptimisticLock.TryLeave(in versionRef, ref version));
-                return contentLocation;
+                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+                return BoundsHelper.ConvertUInt64ToPoint(result);
             }
         }
 
@@ -143,14 +137,11 @@ namespace ConcreteUI.Controls
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                Size contentSize;
+                ref readonly ulong resultRef = ref _contentSizeRaw;
                 ref readonly nuint versionRef = ref _contentBoundsVersion;
-                nuint version = OptimisticLock.Enter(in versionRef);
-                do
-                {
-                    contentSize = BoundsHelper.ConvertUInt64ToSize(in _contentSizeRaw);
-                } while (!OptimisticLock.TryLeave(in versionRef, ref version));
-                return contentSize;
+                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+                return BoundsHelper.ConvertUInt64ToSize(result);
             }
         }
 

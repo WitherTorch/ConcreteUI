@@ -128,9 +128,9 @@ namespace ConcreteUI.Window
             return HitTestValue.NoWhere;
         }
 
-        protected override void RecalculateLayout(ref WindowRenderingData data, Size windowSize, bool callRecalculatePageLayout)
+        protected override void RecalculateLayout(ref WindowRenderingData data, Size windowSize)
         {
-            base.RecalculateLayout(ref data, windowSize, callRecalculatePageLayout: false);
+            base.RecalculateLayout(ref data, windowSize);
             uint pageCount = PageCount;
             if (pageCount <= 0)
                 return;
@@ -159,8 +159,6 @@ namespace ConcreteUI.Window
             _menuBarButtonLastRight = x;
             pageBounds = Rectangle.FromLTRB(pageBounds.X, y + menuBarButtonRectRef.Height, pageBounds.Right, pageBounds.Bottom);
             data.PageBounds = pageBounds;
-            if (callRecalculatePageLayout && pageBounds.IsValid())
-                RecalculatePageLayout(pageBounds.Size);
         }
 
         protected override void ApplyThemeCore(IThemeResourceProvider provider)

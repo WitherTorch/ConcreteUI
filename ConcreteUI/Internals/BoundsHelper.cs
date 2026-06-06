@@ -114,22 +114,22 @@ namespace ConcreteUI.Internals
         }
 
         [Inline(InlineBehavior.Remove)]
-        public static ref readonly ulong ConvertPointToUInt64(in Point value) => ref UnsafeHelper.As<Point, ulong>(ref UnsafeHelper.AsRefIn(in value));
+        public static ulong ConvertPointToUInt64(Point value) => (ulong)(uint)value.X << 32 | (uint)value.Y;
 
         [Inline(InlineBehavior.Remove)]
-        public static ref readonly ulong ConvertSizeToUInt64(in Size value) => ref UnsafeHelper.As<Size, ulong>(ref UnsafeHelper.AsRefIn(in value));
+        public static ulong ConvertSizeToUInt64(Size value) => (ulong)(uint)value.Width << 32 | (uint)value.Height;
 
         [Inline(InlineBehavior.Remove)]
-        public static ref readonly Point ConvertUInt64ToPoint(in ulong value) => ref UnsafeHelper.As<ulong, Point>(ref UnsafeHelper.AsRefIn(in value));
+        public static Point ConvertUInt64ToPoint(ulong value) => new Point((int)(uint)(value >>> 32), (int)(uint)value);
 
         [Inline(InlineBehavior.Remove)]
-        public static ref readonly Size ConvertUInt64ToSize(in ulong value) => ref UnsafeHelper.As<ulong, Size>(ref UnsafeHelper.AsRefIn(in value));
+        public static Size ConvertUInt64ToSize(ulong value) => new Size((int)(uint)(value >>> 32), (int)(uint)value);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Rectangle ConvertUInt64SlotsToBounds(in ulong location, in ulong size)
+        public static Rectangle ConvertUInt64SlotsToBounds(ulong location, ulong size)
             => new Rectangle(
-                location: ConvertUInt64ToPoint(in location),
-                size: ConvertUInt64ToSize(in size)
+                location: ConvertUInt64ToPoint(location),
+                size: ConvertUInt64ToSize(size)
                 );
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

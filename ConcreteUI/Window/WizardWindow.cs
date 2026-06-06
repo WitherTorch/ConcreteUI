@@ -191,9 +191,9 @@ namespace ConcreteUI.Window
             }
         }
 
-        protected override void RecalculateLayout(ref WindowRenderingData data, Size windowSize, bool callRecalculatePageLayout)
+        protected override void RecalculateLayout(ref WindowRenderingData data, Size windowSize)
         {
-            base.RecalculateLayout(ref data, windowSize, callRecalculatePageLayout: false);
+            base.RecalculateLayout(ref data, windowSize);
             Rectangle pageBounds = data.PageBounds;
             Rectangle widePageBounds = pageBounds;
             Rect pageRect = new Rect(
@@ -224,8 +224,6 @@ namespace ConcreteUI.Window
             widePageBounds.Height = pageBounds.Height;
             _widePageBounds = widePageBounds;
             data.PageBounds = pageBounds;
-            if (callRecalculatePageLayout && pageBounds.IsValid())
-                RecalculatePageLayout(pageBounds.Size);
         }
 
         protected override HitTestValue CustomHitTest(PointF clientPoint)

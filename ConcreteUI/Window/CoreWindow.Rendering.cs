@@ -877,7 +877,7 @@ namespace ConcreteUI.Window
             UIElementHelper.OnDpiChangedForElements(GetBackgroundElements(), in args);
         }
 
-        protected unsafe virtual void RecalculateLayout(ref WindowRenderingData data, Size windowSize, bool callRecalculatePageLayout)
+        protected unsafe virtual void RecalculateLayout(ref WindowRenderingData data, Size windowSize)
         {
             Rectangle pageBounds;
             Size pageSize;
@@ -929,8 +929,6 @@ namespace ConcreteUI.Window
             }
 
             data.PageBounds = pageBounds;
-            if (callRecalculatePageLayout && pageBounds.IsValid())
-                RecalculatePageLayout(pageSize);
         }
 
         protected virtual void RecalculatePageLayout(Size pageSize)
@@ -998,8 +996,7 @@ namespace ConcreteUI.Window
                 {
                     RecalculateLayout(
                         data: ref data,
-                        windowSize: GraphicsUtils.ScalingSizeAndConvert(size, _pointsPerPixel),
-                        callRecalculatePageLayout: true);
+                        windowSize: GraphicsUtils.ScalingSizeAndConvert(size, _pointsPerPixel));
                     BoundsHelper.ConvertBoundsToUInt64Slots(data.MinimizeButtonBounds, ref _minimizeButtonLocation, ref _minimizeButtonSize);
                     BoundsHelper.ConvertBoundsToUInt64Slots(data.MaximizeButtonBounds, ref _maximizeButtonLocation, ref _maximizeButtonSize);
                     BoundsHelper.ConvertBoundsToUInt64Slots(data.CloseButtonBounds, ref _closeButtonLocation, ref _closeButtonSize);
@@ -1008,6 +1005,10 @@ namespace ConcreteUI.Window
                     _drawingOffset = data.DrawingOffset;
                     _activeBorderWidth = data.ActiveBorderWidth;
                     InterlockedHelper.Increment(ref _recalculateLayoutVersion);
+
+                    Size pageSize = data.PageBounds.Size;
+                    if (pageSize.IsValid())
+                        RecalculatePageLayout(pageSize);
                 }
                 flags = controller.GetAndResetRenderingFlags();
                 redrawAll |= flags.HasFlagFast(RenderingFlags.RedrawAll);
