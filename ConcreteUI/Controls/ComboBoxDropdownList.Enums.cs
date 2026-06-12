@@ -1,6 +1,6 @@
 namespace ConcreteUI.Controls;
 
-public sealed partial class ComboBoxDropdownList
+partial class ComboBoxDropdownList
 {
     private enum Brush
     {

@@ -185,15 +185,16 @@ public sealed partial class ComboBox : UIElement, IMouseInteractHandler, IMouseM
 
         if (_items.Count <= 0)
             return;
-        WindowMessageLoop.InvokeAsync(() =>
+
+        WindowMessageLoop.InvokeAsync<Action<ComboBox>>(static (_this) =>
         {
-            EventHandler<DropdownListEventArgs>? eventHandler = RequestDropdownListOpening;
+            EventHandler<DropdownListEventArgs>? eventHandler = _this.RequestDropdownListOpening;
             if (eventHandler is null)
                 return;
-            ComboBoxDropdownList dropdownList = new ComboBoxDropdownList(Parent, this);
-            dropdownList.ItemClicked += ListControl_ItemClicked;
-            eventHandler.Invoke(this, new DropdownListEventArgs(dropdownList));
-        });
+            ComboBoxDropdownList dropdownList = new ComboBoxDropdownList(_this.Parent, _this);
+            dropdownList.ItemClicked += _this.ListControl_ItemClicked;
+            eventHandler.Invoke(_this, new DropdownListEventArgs(dropdownList));
+        }, this);
     }
 
     void IMouseInteractHandler.OnMouseUp(in MouseEventArgs args)

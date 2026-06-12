@@ -23,5 +23,5 @@ partial class UIElementHelper
         => DispatchReadOnlyEvent(elements, &DisposeForElement);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void DisposeForElement(UIElement? element) => element?.Dispose();
+    public static void DisposeForElement(UIElement? element) => element?.Dispose(); // 無需替 IElementContainer 清理其子項，因為元件自己有自己的清理規則
 }

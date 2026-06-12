@@ -8,6 +8,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Xml.Linq;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
@@ -1336,6 +1337,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         }
         try
         {
+            UIElement? oldElement;
             lock (_syncLock)
             {
                 if (element is not null)
@@ -1344,8 +1346,11 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
                     if (provider is not null)
                         element.ApplyTheme(provider);
                 }
-                return ReferenceHelper.Exchange(ref _overlayElement, element);
+                oldElement = ReferenceHelper.Exchange(ref _overlayElement, element);
             }
+
+            OnOverlayLayerChanged(element, oldElement);
+            return oldElement;
         }
         finally
         {
@@ -1369,7 +1374,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         {
             lock (_syncLock)
             {
-                if (!ReferenceEquals(element, _overlayElement))
+                if (!ReferenceEquals(_overlayElement, oldElement))
                     return;
                 if (element is not null)
                 {
@@ -1379,6 +1384,8 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
                 }
                 _overlayElement = element;
             }
+
+            OnOverlayLayerChanged(element, oldElement);
         }
         finally
         {
@@ -1388,6 +1395,30 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
                 controller.Unlock();
             }
         }
+    }
+
+    private void OnOverlayLayerChanged(UIElement? element, UIElement? oldElement)
+    {
+        if (element is null)
+        {
+            WeakReference? recordedLastHitElementRef = _recordedLastHitElementRefLazy.GetValueDirectly();
+            if (recordedLastHitElementRef is not null)
+            {
+                _lastHitElementRefLazy.Value.Target = recordedLastHitElementRef.Target;
+                recordedLastHitElementRef.Target = null;
+            }
+        }
+        else if (oldElement is null)
+        {
+            WeakReference? lastHitElementRef = _lastHitElementRefLazy.GetValueDirectly();
+            if (lastHitElementRef is not null)
+            {
+                object? target = lastHitElementRef.Target;
+                if (target is not null)
+                    _recordedLastHitElementRefLazy.Value.Target = target;
+            }
+        }
+        OnMouseMoveForElements(new MouseEventArgs(WindowToPage(PointToClient(MouseHelper.GetMousePosition()))));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1573,6 +1604,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
             DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
             UIElementHelper.DisposeForElements(GetElements());
+            UIElementHelper.DisposeForElement(_overlayElement);
 
             if (InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0)
                 SpinWait.SpinUntil(() => InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0);
