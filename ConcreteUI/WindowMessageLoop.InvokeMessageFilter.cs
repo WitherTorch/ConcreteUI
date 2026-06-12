@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -15,76 +15,75 @@ using WitherTorch.Common.Threading;
 using WitherTorch.Common.Extensions;
 #endif
 
-namespace ConcreteUI
+namespace ConcreteUI;
+
+partial class WindowMessageLoop
 {
-    partial class WindowMessageLoop
+    private class InvokeMessageFilter : IWindowMessageFilter
     {
-        private class InvokeMessageFilter : IWindowMessageFilter
+        private readonly Swapable<Queue<IInvokeClosure>> _invokeClosureQueue = Swapable.CreateQueue<IInvokeClosure>(optimistic: true);
+
+        private int _readBarrier;
+
+        public InvokeMessageFilter() => _readBarrier = 0;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AddInvoke(IInvokeClosure closure)
         {
-            private readonly Swapable<Queue<IInvokeClosure>> _invokeClosureQueue = Swapable.CreateQueue<IInvokeClosure>(optimistic: true);
-
-            private int _readBarrier;
-
-            public InvokeMessageFilter() => _readBarrier = 0;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void AddInvoke(IInvokeClosure closure)
-            {
-                Queue<IInvokeClosure> queue = _invokeClosureQueue.Value;
-                lock (queue)
-                    queue.Enqueue(closure);
-            }
-
-            public bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
-            {
-                result = 0;
-                if (hwnd != IntPtr.Zero || (uint)message != CustomWindowMessages.ConcreteWindowInvoke)
-                    return false;
-
-                ProcessAllInvoke();
-                return true;
-            }
-
-            public void ProcessAllInvoke()
-            {
-                if (InterlockedHelper.CompareExchange(ref _readBarrier, Booleans.TrueInt, Booleans.FalseInt) != Booleans.FalseInt)
-                    return;
-
-                Queue<IInvokeClosure> queue = _invokeClosureQueue.Swap();
-                try
-                {
-                    lock (queue)
-                    {
-                        while (queue.TryDequeue(out IInvokeClosure? closure))
-                        {
-                            if (closure is not null)
-                                DoInvoke(closure);
-                        }
-                    }
-                }
-                finally
-                {
-                    Interlocked.Exchange(ref _readBarrier, Booleans.FalseInt);
-                }
-            }
-
-            protected virtual void DoInvoke(IInvokeClosure closure) => closure.Invoke();
+            Queue<IInvokeClosure> queue = _invokeClosureQueue.Value;
+            lock (queue)
+                queue.Enqueue(closure);
         }
 
-        private sealed class InvokeMessageFilterSafe : InvokeMessageFilter
+        public bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
         {
-            public InvokeMessageFilterSafe() { }
+            result = 0;
+            if (hwnd != IntPtr.Zero || (uint)message != CustomWindowMessages.ConcreteWindowInvoke)
+                return false;
 
-            protected override void DoInvoke(IInvokeClosure closure)
+            ProcessAllInvoke();
+            return true;
+        }
+
+        public void ProcessAllInvoke()
+        {
+            if (InterlockedHelper.CompareExchange(ref _readBarrier, Booleans.TrueInt, Booleans.FalseInt) != Booleans.FalseInt)
+                return;
+
+            Queue<IInvokeClosure> queue = _invokeClosureQueue.Swap();
+            try
             {
-                try
+                lock (queue)
                 {
-                    base.DoInvoke(closure);
+                    while (queue.TryDequeue(out IInvokeClosure? closure))
+                    {
+                        if (closure is not null)
+                            DoInvoke(closure);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    ExceptionCaught?.Invoke(this, new MessageLoopExceptionEventArgs(ex));
-                }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _readBarrier, Booleans.FalseInt);
+            }
+        }
+
+        protected virtual void DoInvoke(IInvokeClosure closure) => closure.Invoke();
+    }
+
+    private sealed class InvokeMessageFilterSafe : InvokeMessageFilter
+    {
+        public InvokeMessageFilterSafe() { }
+
+        protected override void DoInvoke(IInvokeClosure closure)
+        {
+            try
+            {
+                base.DoInvoke(closure);
+            }
+            catch (Exception ex)
+            {
+                ExceptionCaught?.Invoke(this, new MessageLoopExceptionEventArgs(ex));
             }
         }
     }

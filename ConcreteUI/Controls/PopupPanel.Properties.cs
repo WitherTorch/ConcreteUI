@@ -1,32 +1,31 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class PopupPanel
 {
-    partial class PopupPanel
+    public bool IsDisposed
     {
-        public bool IsDisposed
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _collection.IsDisposed;
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _collection.IsDisposed;
+    }
 
-        public IReadOnlyCollection<UIElement> Children
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _collection;
-        }
+    public IReadOnlyCollection<UIElement> Children
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _collection;
+    }
 
-        public UIElement? FirstChild
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _collection.Value;
-        }
+    public UIElement? FirstChild
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _collection.Value;
+    }
 
-        public UIElement? LastChild
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _collection.Value;
-        }
+    public UIElement? LastChild
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _collection.Value;
     }
 }

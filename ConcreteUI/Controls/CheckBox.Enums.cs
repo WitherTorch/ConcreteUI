@@ -1,37 +1,36 @@
 using System;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class CheckBox
 {
-    partial class CheckBox
+    private enum RedrawType : long
     {
-        private enum RedrawType : long
-        {
-            NoRedraw,
-            RedrawCheckBox,
-            RedrawAllContent
-        }
+        NoRedraw,
+        RedrawCheckBox,
+        RedrawAllContent
+    }
 
-        [Flags]
-        private enum RenderObjectUpdateFlags : long
-        {
-            None = 0,
-            Layout = 0b01,
-            Format = 0b11,
-            FlagsAllTrue = -1L
-        }
+    [Flags]
+    private enum RenderObjectUpdateFlags : long
+    {
+        None = 0,
+        Layout = 0b01,
+        Format = 0b11,
+        FlagsAllTrue = -1L
+    }
 
-        private enum Brush
-        {
-            BorderBrush,
-            BorderHoveredBrush,
-            BorderPressedBrush,
-            BorderCheckedBrush,
-            BorderHoveredCheckedBrush,
-            BorderPressedCheckedBrush,
-            MarkBrush,
-            _CheckBoxRenderingLast,
-            TextBrush = _CheckBoxRenderingLast,
-            _Last,
-        }
+    private enum Brush
+    {
+        BorderBrush,
+        BorderHoveredBrush,
+        BorderPressedBrush,
+        BorderCheckedBrush,
+        BorderHoveredCheckedBrush,
+        BorderPressedCheckedBrush,
+        MarkBrush,
+        _CheckBoxRenderingLast,
+        TextBrush = _CheckBoxRenderingLast,
+        _Last,
     }
 }

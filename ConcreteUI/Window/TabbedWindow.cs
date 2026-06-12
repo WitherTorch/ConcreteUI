@@ -16,426 +16,425 @@ using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
-namespace ConcreteUI.Window
+namespace ConcreteUI.Window;
+
+public abstract class TabbedWindow : PagedWindow
 {
-    public abstract class TabbedWindow : PagedWindow
+    #region Enums
+    protected new enum Brush : uint
     {
-        #region Enums
-        protected new enum Brush : uint
+        MenuBackBrush,
+        MenuForeBrush,
+        MenuSelectBrush,
+        MenuHoverBrush,
+        MenuHoverForeBrush,
+        _Last
+    }
+    #endregion
+
+    #region Static Fields
+    private static readonly string[] _brushNames = new string[(int)Brush._Last]
+    {
+        "app.menu.back",
+        "app.menu.fore",
+        "app.menu.itemSelected.back",
+        "app.menu.itemHovered.back",
+        "app.menu.fore.active",
+    }.ToLowerAscii();
+    #endregion
+
+    #region Fields
+    private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+    private readonly string[] _menuTitles;
+    private readonly uint _pageCount;
+
+    private DWriteTextLayout[]? _menuBarButtonLayouts;
+    private Rectangle[]? _menuBarButtonRects;
+    #endregion
+
+    #region Rendering Fields
+    protected BitVector64 MenuBarButtonStatus, MenuBarButtonChangedStatus;
+    #endregion
+
+    #region Properties
+    public override uint PageCount => _pageCount;
+
+    public Rectangle[] MenuBarButtonBounds => NullSafetyHelper.ThrowIfNull(InterlockedHelper.Read(ref _menuBarButtonRects));
+    #endregion
+
+    #region Constructor
+    protected TabbedWindow(string[] menuTitles) : base()
+    {
+        int pageCount = menuTitles.Length;
+        if (pageCount < 0)
+            throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be negative.");
+        if (pageCount > 64)
+            throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
+        _pageCount = (uint)pageCount;
+        _menuTitles = menuTitles;
+    }
+
+    protected TabbedWindow(GraphicsDeviceProvider? deviceProvider, string[] menuTitles) : base(deviceProvider)
+    {
+        int pageCount = menuTitles.Length;
+        if (pageCount < 0)
+            throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be negative.");
+        if (pageCount > 64)
+            throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
+        _pageCount = (uint)pageCount;
+        _menuTitles = menuTitles;
+    }
+
+    protected TabbedWindow(CoreWindow? parent, string[] menuTitles, bool passParentToUnderlyingWindow = false) : base(parent, passParentToUnderlyingWindow)
+    {
+        int pageCount = menuTitles.Length;
+        if (pageCount < 0)
+            throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be negative.");
+        if (pageCount > 64)
+            throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
+        _pageCount = (uint)pageCount;
+        _menuTitles = menuTitles;
+    }
+    #endregion
+
+    #region Override Methods
+    protected override HitTestValue CustomHitTest(PointF clientPoint)
+    {
+        HitTestValue result = base.CustomHitTest(clientPoint);
+        if (result != HitTestValue.NoWhere && result != HitTestValue.Client)
         {
-            MenuBackBrush,
-            MenuForeBrush,
-            MenuSelectBrush,
-            MenuHoverBrush,
-            MenuHoverForeBrush,
-            _Last
-        }
-        #endregion
-
-        #region Static Fields
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
-        {
-            "app.menu.back",
-            "app.menu.fore",
-            "app.menu.itemSelected.back",
-            "app.menu.itemHovered.back",
-            "app.menu.fore.active",
-        }.ToLowerAscii();
-        #endregion
-
-        #region Fields
-        private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly string[] _menuTitles;
-        private readonly uint _pageCount;
-
-        private DWriteTextLayout[]? _menuBarButtonLayouts;
-        private Rectangle[]? _menuBarButtonRects;
-        #endregion
-
-        #region Rendering Fields
-        protected BitVector64 MenuBarButtonStatus, MenuBarButtonChangedStatus;
-        #endregion
-
-        #region Properties
-        public override uint PageCount => _pageCount;
-
-        public Rectangle[] MenuBarButtonBounds => NullSafetyHelper.ThrowIfNull(InterlockedHelper.Read(ref _menuBarButtonRects));
-        #endregion
-
-        #region Constructor
-        protected TabbedWindow(string[] menuTitles) : base()
-        {
-            int pageCount = menuTitles.Length;
-            if (pageCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be negative.");
-            if (pageCount > 64)
-                throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
-            _pageCount = (uint)pageCount;
-            _menuTitles = menuTitles;
-        }
-
-        protected TabbedWindow(GraphicsDeviceProvider? deviceProvider, string[] menuTitles) : base(deviceProvider)
-        {
-            int pageCount = menuTitles.Length;
-            if (pageCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be negative.");
-            if (pageCount > 64)
-                throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
-            _pageCount = (uint)pageCount;
-            _menuTitles = menuTitles;
-        }
-
-        protected TabbedWindow(CoreWindow? parent, string[] menuTitles, bool passParentToUnderlyingWindow = false) : base(parent, passParentToUnderlyingWindow)
-        {
-            int pageCount = menuTitles.Length;
-            if (pageCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be negative.");
-            if (pageCount > 64)
-                throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
-            _pageCount = (uint)pageCount;
-            _menuTitles = menuTitles;
-        }
-        #endregion
-
-        #region Override Methods
-        protected override HitTestValue CustomHitTest(PointF clientPoint)
-        {
-            HitTestValue result = base.CustomHitTest(clientPoint);
-            if (result != HitTestValue.NoWhere && result != HitTestValue.Client)
+            ulong val = MenuBarButtonStatus.Exchange(0UL);
+            if (val > 0UL)
             {
-                ulong val = MenuBarButtonStatus.Exchange(0UL);
-                if (val > 0UL)
-                {
-                    InterlockedHelper.Or(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus), val);
-                    Refresh();
-                }
-                return result;
+                InterlockedHelper.Or(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus), val);
+                Refresh();
             }
-            return HitTestForMenuBar(clientPoint, false);
+            return result;
         }
+        return HitTestForMenuBar(clientPoint, false);
+    }
 
-        protected override void RecalculateLayout(ref WindowRenderingData data, Size windowSize)
+    protected override void RecalculateLayout(ref WindowRenderingData data, Size windowSize)
+    {
+        base.RecalculateLayout(ref data, windowSize);
+        uint pageCount = PageCount;
+        if (pageCount <= 0)
+            return;
+        Rectangle[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
+        if (menuBarButtonRects is null || menuBarButtonRects.Length != pageCount)
+            return;
+        ref Rectangle menuBarButtonRectRef = ref UnsafeHelper.GetArrayDataReference(menuBarButtonRects);
+        Rectangle pageBounds = data.PageBounds;
+        int x, y;
+        if (ActualWindowMaterial == WindowMaterial.Integrated)
         {
-            base.RecalculateLayout(ref data, windowSize);
-            uint pageCount = PageCount;
-            if (pageCount <= 0)
-                return;
-            Rectangle[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
-            if (menuBarButtonRects is null || menuBarButtonRects.Length != pageCount)
-                return;
-            ref Rectangle menuBarButtonRectRef = ref UnsafeHelper.GetArrayDataReference(menuBarButtonRects);
-            Rectangle pageBounds = data.PageBounds;
-            int x, y;
-            if (ActualWindowMaterial == WindowMaterial.Integrated)
-            {
-                x = 0;
-                y = 0;
-            }
+            x = 0;
+            y = 0;
+        }
+        else
+        {
+            x = pageBounds.X;
+            y = data.TitleBarBounds.Height + data.DrawingOffset.Y;
+        }
+        for (int i = 0; i < pageCount; i++)
+        {
+            ref Rectangle rectRef = ref UnsafeHelper.AddTypedOffset(ref menuBarButtonRectRef, i);
+            rectRef = new Rectangle(x, y, rectRef.Width, rectRef.Height);
+            x = rectRef.Right;
+        }
+        pageBounds = Rectangle.FromLTRB(pageBounds.X, y + menuBarButtonRectRef.Height, pageBounds.Right, pageBounds.Bottom);
+        data.PageBounds = pageBounds;
+    }
+
+    protected override void ApplyThemeCore(IThemeResourceProvider provider)
+    {
+        base.ApplyThemeCore(provider);
+        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
+        GenerateMenu(_menuTitles, provider.FontName, baseX: 0, baseY: 27, menuExtraWidth: UIConstants.ElementMarginDouble,
+            out Rectangle[] menuBarButtonRects, out DWriteTextLayout[] menuBarButtonLayouts);
+        InterlockedHelper.Write(ref _menuBarButtonRects, menuBarButtonRects);
+        DisposeHelper.SwapDispose(ref _menuBarButtonLayouts, menuBarButtonLayouts);
+    }
+
+    protected override void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force, in WindowRenderingData data)
+    {
+        BitVector64 buttonStatus = InterlockedHelper.Read(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonStatus));
+        BitVector64 changedStatus = InterlockedHelper.Exchange(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus), default);
+        base.RenderTitle(deviceContext, collector, force, in data);
+        RenderTitle(deviceContext, collector, force, in data, buttonStatus, changedStatus);
+    }
+
+    protected virtual void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force, in WindowRenderingData data,
+        BitVector64 buttonStatus, BitVector64 changedStatus)
+    {
+        #region 繪製主選單
+        uint pageCount = PageCount;
+        if (pageCount <= 0)
+            return;
+        Rectangle[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
+        if (menuBarButtonRects is null || menuBarButtonRects.Length != pageCount)
+            return;
+        DWriteTextLayout[]? menuBarButtonLayouts = Interlocked.Exchange(ref _menuBarButtonLayouts, null);
+        if (menuBarButtonLayouts is null)
+            return;
+        if (menuBarButtonLayouts.Length != pageCount)
+        {
+            DisposeHelper.DisposeAll(menuBarButtonLayouts);
+            return;
+        }
+        D2D1ColorF clearDCColor = ClearDCColor;
+        ref Rectangle menuBarButtonRectRef = ref UnsafeHelper.GetArrayDataReference(menuBarButtonRects);
+        ref DWriteTextLayout menuBarButtonLayoutRef = ref UnsafeHelper.GetArrayDataReference(menuBarButtonLayouts);
+        ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
+        D2D1Brush titleBackBrush = GetBrush(CoreWindow.Brush.TitleBackBrush);
+        D2D1Brush menuBackBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuBackBrush);
+        D2D1Brush menuForeBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuForeBrush);
+        D2D1Brush menuSelectBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuSelectBrush);
+        D2D1Brush menuHoverBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuHoverBrush);
+        D2D1Brush menuHoverForeBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuHoverForeBrush);
+        Vector2 pixelsPerPoint = PixelsPerPoint;
+        float actualBottom = RenderingHelper.RoundInPixel(PageLocation.Y, pixelsPerPoint.Y);
+        if (force)
+        {
+            Rect firstRect = menuBarButtonRectRef;
+            RectF menuBarRect = RenderingHelper.RoundInPixel(
+                new RectF(firstRect.X, firstRect.Top, UnsafeHelper.AddTypedOffset(ref menuBarButtonRectRef, pageCount - 1).Right, firstRect.Bottom),
+                pixelsPerPoint);
+            menuBarRect.Bottom = actualBottom;
+            deviceContext.PushAxisAlignedClip(menuBarRect, D2D1AntialiasMode.Aliased);
+            if (ActualWindowMaterial != WindowMaterial.Integrated)
+                GraphicsUtils.ClearAndFill(deviceContext, menuBackBrush, clearDCColor);
             else
             {
-                x = pageBounds.X;
-                y = data.TitleBarBounds.Height + data.DrawingOffset.Y;
+                GraphicsUtils.ClearAndFill(deviceContext, titleBackBrush, clearDCColor);
+                deviceContext.FillRectangle(menuBarRect, menuBackBrush);
             }
-            for (int i = 0; i < pageCount; i++)
-            {
-                ref Rectangle rectRef = ref UnsafeHelper.AddTypedOffset(ref menuBarButtonRectRef, i);
-                rectRef = new Rectangle(x, y, rectRef.Width, rectRef.Height);
-                x = rectRef.Right;
-            }
-            pageBounds = Rectangle.FromLTRB(pageBounds.X, y + menuBarButtonRectRef.Height, pageBounds.Right, pageBounds.Bottom);
-            data.PageBounds = pageBounds;
+            deviceContext.PopAxisAlignedClip();
         }
-
-        protected override void ApplyThemeCore(IThemeResourceProvider provider)
+        bool menuRedraw = IsPageChanged || force;
+        for (uint i = 0, currentPageIndex = CurrentPage; i < pageCount; i++)
         {
-            base.ApplyThemeCore(provider);
-            UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
-            GenerateMenu(_menuTitles, provider.FontName, baseX: 0, baseY: 27, menuExtraWidth: UIConstants.ElementMarginDouble,
-                out Rectangle[] menuBarButtonRects, out DWriteTextLayout[] menuBarButtonLayouts);
-            InterlockedHelper.Write(ref _menuBarButtonRects, menuBarButtonRects);
-            DisposeHelper.SwapDispose(ref _menuBarButtonLayouts, menuBarButtonLayouts);
-        }
-
-        protected override void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force, in WindowRenderingData data)
-        {
-            BitVector64 buttonStatus = InterlockedHelper.Read(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonStatus));
-            BitVector64 changedStatus = InterlockedHelper.Exchange(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus), default);
-            base.RenderTitle(deviceContext, collector, force, in data);
-            RenderTitle(deviceContext, collector, force, in data, buttonStatus, changedStatus);
-        }
-
-        protected virtual void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force, in WindowRenderingData data,
-            BitVector64 buttonStatus, BitVector64 changedStatus)
-        {
-            #region 繪製主選單
-            uint pageCount = PageCount;
-            if (pageCount <= 0)
-                return;
-            Rectangle[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
-            if (menuBarButtonRects is null || menuBarButtonRects.Length != pageCount)
-                return;
-            DWriteTextLayout[]? menuBarButtonLayouts = Interlocked.Exchange(ref _menuBarButtonLayouts, null);
-            if (menuBarButtonLayouts is null)
-                return;
-            if (menuBarButtonLayouts.Length != pageCount)
+            RectF rect = RenderingHelper.RoundInPixel(
+                UnsafeHelper.AddTypedOffset(ref menuBarButtonRectRef, i),
+                pixelsPerPoint);
+            rect.Bottom = actualBottom;
+            DWriteTextLayout layout = UnsafeHelper.AddTypedOffset(ref menuBarButtonLayoutRef, i);
+            bool isSelected = currentPageIndex == i;
+            if (isSelected)
             {
-                DisposeHelper.DisposeAll(menuBarButtonLayouts);
-                return;
-            }
-            D2D1ColorF clearDCColor = ClearDCColor;
-            ref Rectangle menuBarButtonRectRef = ref UnsafeHelper.GetArrayDataReference(menuBarButtonRects);
-            ref DWriteTextLayout menuBarButtonLayoutRef = ref UnsafeHelper.GetArrayDataReference(menuBarButtonLayouts);
-            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
-            D2D1Brush titleBackBrush = GetBrush(CoreWindow.Brush.TitleBackBrush);
-            D2D1Brush menuBackBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuBackBrush);
-            D2D1Brush menuForeBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuForeBrush);
-            D2D1Brush menuSelectBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuSelectBrush);
-            D2D1Brush menuHoverBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuHoverBrush);
-            D2D1Brush menuHoverForeBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.MenuHoverForeBrush);
-            Vector2 pixelsPerPoint = PixelsPerPoint;
-            float actualBottom = RenderingHelper.RoundInPixel(PageLocation.Y, pixelsPerPoint.Y);
-            if (force)
-            {
-                Rect firstRect = menuBarButtonRectRef;
-                RectF menuBarRect = RenderingHelper.RoundInPixel(
-                    new RectF(firstRect.X, firstRect.Top, UnsafeHelper.AddTypedOffset(ref menuBarButtonRectRef, pageCount - 1).Right, firstRect.Bottom),
-                    pixelsPerPoint);
-                menuBarRect.Bottom = actualBottom;
-                deviceContext.PushAxisAlignedClip(menuBarRect, D2D1AntialiasMode.Aliased);
-                if (ActualWindowMaterial != WindowMaterial.Integrated)
+                deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
+                if (!force)
                     GraphicsUtils.ClearAndFill(deviceContext, menuBackBrush, clearDCColor);
+                deviceContext.FillRectangle(rect, menuSelectBrush);
+                deviceContext.DrawTextLayout(rect.Location, layout, menuHoverForeBrush, D2D1DrawTextOptions.None);
+                deviceContext.PopAxisAlignedClip();
+                collector.MarkAsDirty(rect);
+            }
+            else if (changedStatus[i] || menuRedraw)
+            {
+                deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
+                if (!force)
+                {
+                    GraphicsUtils.ClearAndFill(deviceContext, menuBackBrush, clearDCColor);
+                }
+                if (buttonStatus[i])
+                {
+                    deviceContext.FillRectangle(rect, menuHoverBrush);
+                    deviceContext.DrawTextLayout(rect.Location, layout, menuHoverForeBrush, D2D1DrawTextOptions.None);
+                }
                 else
                 {
-                    GraphicsUtils.ClearAndFill(deviceContext, titleBackBrush, clearDCColor);
-                    deviceContext.FillRectangle(menuBarRect, menuBackBrush);
+                    deviceContext.DrawTextLayout(rect.Location, layout, menuForeBrush, D2D1DrawTextOptions.None);
                 }
                 deviceContext.PopAxisAlignedClip();
+                collector.MarkAsDirty(rect);
             }
-            bool menuRedraw = IsPageChanged || force;
-            for (uint i = 0, currentPageIndex = CurrentPage; i < pageCount; i++)
-            {
-                RectF rect = RenderingHelper.RoundInPixel(
-                    UnsafeHelper.AddTypedOffset(ref menuBarButtonRectRef, i),
-                    pixelsPerPoint);
-                rect.Bottom = actualBottom;
-                DWriteTextLayout layout = UnsafeHelper.AddTypedOffset(ref menuBarButtonLayoutRef, i);
-                bool isSelected = currentPageIndex == i;
-                if (isSelected)
-                {
-                    deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
-                    if (!force)
-                        GraphicsUtils.ClearAndFill(deviceContext, menuBackBrush, clearDCColor);
-                    deviceContext.FillRectangle(rect, menuSelectBrush);
-                    deviceContext.DrawTextLayout(rect.Location, layout, menuHoverForeBrush, D2D1DrawTextOptions.None);
-                    deviceContext.PopAxisAlignedClip();
-                    collector.MarkAsDirty(rect);
-                }
-                else if (changedStatus[i] || menuRedraw)
-                {
-                    deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
-                    if (!force)
-                    {
-                        GraphicsUtils.ClearAndFill(deviceContext, menuBackBrush, clearDCColor);
-                    }
-                    if (buttonStatus[i])
-                    {
-                        deviceContext.FillRectangle(rect, menuHoverBrush);
-                        deviceContext.DrawTextLayout(rect.Location, layout, menuHoverForeBrush, D2D1DrawTextOptions.None);
-                    }
-                    else
-                    {
-                        deviceContext.DrawTextLayout(rect.Location, layout, menuForeBrush, D2D1DrawTextOptions.None);
-                    }
-                    deviceContext.PopAxisAlignedClip();
-                    collector.MarkAsDirty(rect);
-                }
-            }
-            DisposeHelper.NullSwapOrDispose(ref _menuBarButtonLayouts, menuBarButtonLayouts);
-            #endregion
         }
+        DisposeHelper.NullSwapOrDispose(ref _menuBarButtonLayouts, menuBarButtonLayouts);
+        #endregion
+    }
 
-        protected override void OnMouseDown(ref HandleableMouseEventArgs args)
+    protected override void OnMouseDown(ref HandleableMouseEventArgs args)
+    {
+        MouseButtons buttons = args.Buttons;
+        if (buttons.HasFlagFast(MouseButtons.LeftButton))
         {
-            MouseButtons buttons = args.Buttons;
-            if (buttons.HasFlagFast(MouseButtons.LeftButton))
+            uint pageCount = PageCount;
+            if (pageCount > 0)
             {
-                uint pageCount = PageCount;
-                if (pageCount > 0)
+                Rectangle[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
+                if (menuBarButtonRects is not null && menuBarButtonRects.Length == pageCount)
                 {
-                    Rectangle[]? menuBarButtonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
-                    if (menuBarButtonRects is not null && menuBarButtonRects.Length == pageCount)
+                    PointF location = args.Location;
+                    ref Rectangle menuBarButtonRectRef = ref UnsafeHelper.GetArrayDataReference(menuBarButtonRects);
+                    for (uint i = 0; i < pageCount; i++)
                     {
-                        PointF location = args.Location;
-                        ref Rectangle menuBarButtonRectRef = ref UnsafeHelper.GetArrayDataReference(menuBarButtonRects);
-                        for (uint i = 0; i < pageCount; i++)
+                        if (UnsafeHelper.AddTypedOffset(ref menuBarButtonRectRef, i).Contains(location))
                         {
-                            if (UnsafeHelper.AddTypedOffset(ref menuBarButtonRectRef, i).Contains(location))
-                            {
-                                CurrentPage = i;
-                                return;
-                            }
+                            CurrentPage = i;
+                            return;
                         }
                     }
                 }
             }
-            base.OnMouseDown(ref args);
-            if (args.Handled)
-                return;
-            if (buttons.HasFlagFast(MouseButtons.XButton2))
+        }
+        base.OnMouseDown(ref args);
+        if (args.Handled)
+            return;
+        if (buttons.HasFlagFast(MouseButtons.XButton2))
+        {
+            if (!buttons.HasFlagFast(MouseButtons.XButton1))
             {
-                if (!buttons.HasFlagFast(MouseButtons.XButton1))
+                args.Handle();
+                NavigateBackPage(args.Location);
+            }
+        }
+        if (buttons.HasFlagFast(MouseButtons.XButton1))
+        {
+            if (!buttons.HasFlagFast(MouseButtons.XButton2))
+            {
+                args.Handle();
+                NavigateForwardPage(args.Location);
+            }
+        }
+    }
+
+    protected virtual void NavigateBackPage(PointF location)
+    {
+        uint pageCount = _pageCount;
+        if (pageCount <= 0)
+            return;
+        uint page = CurrentPage;
+        CurrentPage = ((page <= 0) ? pageCount : page) - 1;
+    }
+
+    protected virtual void NavigateForwardPage(PointF location)
+    {
+        uint pageCount = _pageCount;
+        if (pageCount <= 0)
+            return;
+        uint page = CurrentPage + 1;
+        CurrentPage = (page >= pageCount) ? 0 : page;
+    }
+
+    protected virtual HitTestValue HitTestForMenuBar(PointF point, bool requireUpdate)
+    {
+        uint pageCount = PageCount;
+        if (pageCount == 0)
+            return HitTestValue.NoWhere;
+        Rectangle[]? buttonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
+        if (buttonRects is null || buttonRects.Length != pageCount)
+            return HitTestValue.NoWhere;
+        HitTestValue result = HitTestValue.NoWhere;
+        ref Rectangle buttonRectRef = ref UnsafeHelper.GetArrayDataReference(buttonRects);
+        BitVector64 templateVector = InterlockedHelper.Read(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonStatus)),
+            operateVector = templateVector & ~((1UL << (int)pageCount) - 1);
+        if (point.Y >= buttonRectRef.Y && point.Y < PageLocation.Y)
+        {
+            result = HitTestValue.Caption;
+            for (int i = 0; i < pageCount; i++)
+            {
+                if (!UnsafeHelper.AddTypedOffset(ref buttonRectRef, i).Contains(point))
+                    continue;
+                operateVector[i] = true;
+                result = HitTestValue.Client;
+                break;
+            }
+        }
+        templateVector ^= operateVector;
+        if (templateVector > 0UL)
+        {
+            InterlockedHelper.Write(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonStatus), operateVector);
+            InterlockedHelper.Or(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus), templateVector);
+            goto RequireUpdate;
+        }
+
+        if (requireUpdate || InterlockedHelper.Read(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus)) > 0)
+            goto RequireUpdate;
+
+        goto Tail;
+
+    RequireUpdate:
+        Refresh();
+
+    Tail:
+        return result;
+    }
+    #endregion
+
+    #region Utility Methods
+    protected D2D1Brush GetBrush(Brush brush)
+    {
+        if (brush >= Brush._Last)
+            throw new ArgumentOutOfRangeException(nameof(brush));
+        return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)brush);
+    }
+
+    protected void GenerateMenu(string[] menuButtonTexts, string fontName, int baseX, int baseY, int menuExtraWidth,
+        out Rectangle[] menuButtonRects, out DWriteTextLayout[] menuButtonLayouts)
+    {
+        int count = menuButtonTexts.Length;
+        using DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(fontName, UIConstants.MenuFontSize);
+        format.ParagraphAlignment = DWriteParagraphAlignment.Center;
+        format.TextAlignment = DWriteTextAlignment.Center;
+        menuButtonLayouts = new DWriteTextLayout[count];
+        menuButtonRects = new Rectangle[count];
+
+        ref string menuButtonTextRef = ref UnsafeHelper.GetArrayDataReference(menuButtonTexts);
+        ref DWriteTextLayout menuButtonLayoutRef = ref UnsafeHelper.GetArrayDataReference(menuButtonLayouts);
+        ref Rectangle menuButtonRectRef = ref UnsafeHelper.GetArrayDataReference(menuButtonRects);
+        int menuHeight = 0;
+        for (int i = 0; i < count; i++)
+        {
+            DWriteTextLayout layout = GraphicsUtils.CreateCustomTextLayout(
+                UnsafeHelper.AddTypedOffset(ref menuButtonTextRef, i),
+                format, menuExtraWidth, float.PositiveInfinity);
+            menuHeight = MathHelper.Max(menuHeight, MathI.Ceiling(layout.MaxHeight));
+            UnsafeHelper.AddTypedOffset(ref menuButtonLayoutRef, i) = layout;
+        }
+        menuHeight += UIConstants.ElementMargin;
+        for (int i = 0, menuX = baseX; i < count; i++)
+        {
+            DWriteTextLayout layout = UnsafeHelper.AddTypedOffset(ref menuButtonLayoutRef, i);
+            layout.MaxHeight = menuHeight;
+
+            int width = MathI.Ceiling(layout.MaxWidth);
+            layout.MaxWidth = width;
+            UnsafeHelper.AddTypedOffset(ref menuButtonRectRef, i) = new Rectangle(menuX, baseY, width, menuHeight);
+            menuX += width;
+        }
+    }
+    #endregion
+
+    #region WndProc
+    protected override bool TryProcessSystemWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
+    {
+        switch (message)
+        {
+            case WindowMessage.NCMouseMove:
+            case WindowMessage.NCMouseLeave:
+            case WindowMessage.MouseLeave:
+                ulong val = MenuBarButtonStatus.Exchange(0UL);
+                if (val > 0UL)
                 {
-                    args.Handle();
-                    NavigateBackPage(args.Location);
+                    InterlockedHelper.Or(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus), val);
+                    Update();
                 }
-            }
-            if (buttons.HasFlagFast(MouseButtons.XButton1))
-            {
-                if (!buttons.HasFlagFast(MouseButtons.XButton2))
-                {
-                    args.Handle();
-                    NavigateForwardPage(args.Location);
-                }
-            }
+                goto default;
+            default:
+                return base.TryProcessSystemWindowMessage(hwnd, message, wParam, lParam, out result);
         }
+    }
+    #endregion
 
-        protected virtual void NavigateBackPage(PointF location)
+    protected override void DisposeCore(bool disposing)
+    {
+        base.DisposeCore(disposing);
+        if (disposing)
         {
-            uint pageCount = _pageCount;
-            if (pageCount <= 0)
-                return;
-            uint page = CurrentPage;
-            CurrentPage = ((page <= 0) ? pageCount : page) - 1;
+            DisposeHelper.SwapDisposeInterlocked(ref _menuBarButtonLayouts);
+            DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
         }
-
-        protected virtual void NavigateForwardPage(PointF location)
-        {
-            uint pageCount = _pageCount;
-            if (pageCount <= 0)
-                return;
-            uint page = CurrentPage + 1;
-            CurrentPage = (page >= pageCount) ? 0 : page;
-        }
-
-        protected virtual HitTestValue HitTestForMenuBar(PointF point, bool requireUpdate)
-        {
-            uint pageCount = PageCount;
-            if (pageCount == 0)
-                return HitTestValue.NoWhere;
-            Rectangle[]? buttonRects = InterlockedHelper.Read(ref _menuBarButtonRects);
-            if (buttonRects is null || buttonRects.Length != pageCount)
-                return HitTestValue.NoWhere;
-            HitTestValue result = HitTestValue.NoWhere;
-            ref Rectangle buttonRectRef = ref UnsafeHelper.GetArrayDataReference(buttonRects);
-            BitVector64 templateVector = InterlockedHelper.Read(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonStatus)),
-                operateVector = templateVector & ~((1UL << (int)pageCount) - 1);
-            if (point.Y >= buttonRectRef.Y && point.Y < PageLocation.Y)
-            {
-                result = HitTestValue.Caption;
-                for (int i = 0; i < pageCount; i++)
-                {
-                    if (!UnsafeHelper.AddTypedOffset(ref buttonRectRef, i).Contains(point))
-                        continue;
-                    operateVector[i] = true;
-                    result = HitTestValue.Client;
-                    break;
-                }
-            }
-            templateVector ^= operateVector;
-            if (templateVector > 0UL)
-            {
-                InterlockedHelper.Write(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonStatus), operateVector);
-                InterlockedHelper.Or(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus), templateVector);
-                goto RequireUpdate;
-            }
-
-            if (requireUpdate || InterlockedHelper.Read(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus)) > 0)
-                goto RequireUpdate;
-
-            goto Tail;
-
-        RequireUpdate:
-            Refresh();
-
-        Tail:
-            return result;
-        }
-        #endregion
-
-        #region Utility Methods
-        protected D2D1Brush GetBrush(Brush brush)
-        {
-            if (brush >= Brush._Last)
-                throw new ArgumentOutOfRangeException(nameof(brush));
-            return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)brush);
-        }
-
-        protected void GenerateMenu(string[] menuButtonTexts, string fontName, int baseX, int baseY, int menuExtraWidth,
-            out Rectangle[] menuButtonRects, out DWriteTextLayout[] menuButtonLayouts)
-        {
-            int count = menuButtonTexts.Length;
-            using DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(fontName, UIConstants.MenuFontSize);
-            format.ParagraphAlignment = DWriteParagraphAlignment.Center;
-            format.TextAlignment = DWriteTextAlignment.Center;
-            menuButtonLayouts = new DWriteTextLayout[count];
-            menuButtonRects = new Rectangle[count];
-
-            ref string menuButtonTextRef = ref UnsafeHelper.GetArrayDataReference(menuButtonTexts);
-            ref DWriteTextLayout menuButtonLayoutRef = ref UnsafeHelper.GetArrayDataReference(menuButtonLayouts);
-            ref Rectangle menuButtonRectRef = ref UnsafeHelper.GetArrayDataReference(menuButtonRects);
-            int menuHeight = 0;
-            for (int i = 0; i < count; i++)
-            {
-                DWriteTextLayout layout = GraphicsUtils.CreateCustomTextLayout(
-                    UnsafeHelper.AddTypedOffset(ref menuButtonTextRef, i),
-                    format, menuExtraWidth, float.PositiveInfinity);
-                menuHeight = MathHelper.Max(menuHeight, MathI.Ceiling(layout.MaxHeight));
-                UnsafeHelper.AddTypedOffset(ref menuButtonLayoutRef, i) = layout;
-            }
-            menuHeight += UIConstants.ElementMargin;
-            for (int i = 0, menuX = baseX; i < count; i++)
-            {
-                DWriteTextLayout layout = UnsafeHelper.AddTypedOffset(ref menuButtonLayoutRef, i);
-                layout.MaxHeight = menuHeight;
-
-                int width = MathI.Ceiling(layout.MaxWidth);
-                layout.MaxWidth = width;
-                UnsafeHelper.AddTypedOffset(ref menuButtonRectRef, i) = new Rectangle(menuX, baseY, width, menuHeight);
-                menuX += width;
-            }
-        }
-        #endregion
-
-        #region WndProc
-        protected override bool TryProcessSystemWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result)
-        {
-            switch (message)
-            {
-                case WindowMessage.NCMouseMove:
-                case WindowMessage.NCMouseLeave:
-                case WindowMessage.MouseLeave:
-                    ulong val = MenuBarButtonStatus.Exchange(0UL);
-                    if (val > 0UL)
-                    {
-                        InterlockedHelper.Or(ref UnsafeHelper.As<BitVector64, ulong>(ref MenuBarButtonChangedStatus), val);
-                        Update();
-                    }
-                    goto default;
-                default:
-                    return base.TryProcessSystemWindowMessage(hwnd, message, wParam, lParam, out result);
-            }
-        }
-        #endregion
-
-        protected override void DisposeCore(bool disposing)
-        {
-            base.DisposeCore(disposing);
-            if (disposing)
-            {
-                DisposeHelper.SwapDisposeInterlocked(ref _menuBarButtonLayouts);
-                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
-            }
-            SequenceHelper.Clear(_brushes);
-        }
+        SequenceHelper.Clear(_brushes);
     }
 }

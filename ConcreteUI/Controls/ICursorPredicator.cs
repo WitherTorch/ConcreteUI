@@ -1,9 +1,8 @@
-﻿using ConcreteUI.Utils;
+using ConcreteUI.Utils;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public interface ICursorPredicator
 {
-    public interface ICursorPredicator
-    {
-        SystemCursorType? PredicatedCursor { get; }
-    }
+    SystemCursorType? PredicatedCursor { get; }
 }

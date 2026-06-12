@@ -1,7 +1,6 @@
-﻿namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public interface ICharacterInputHandler
 {
-    public interface ICharacterInputHandler
-    {
-        void OnCharacterInput(ref CharacterEventArgs args);
-    }
+    void OnCharacterInput(ref CharacterEventArgs args);
 }

@@ -1,22 +1,21 @@
 using System;
 using System.Runtime.CompilerServices;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class ComboBoxDropdownList
 {
-    partial class ComboBoxDropdownList
+    public event EventHandler<int>? ItemClicked;
+
+    public new ComboBox Parent
     {
-        public event EventHandler<int>? ItemClicked;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _owner;
+    }
 
-        public new ComboBox Parent
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _owner;
-        }
-
-        public int SelectedIndex
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _selectedIndex;
-        }
+    public int SelectedIndex
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _selectedIndex;
     }
 }

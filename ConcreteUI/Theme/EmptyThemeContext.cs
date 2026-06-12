@@ -1,45 +1,44 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace ConcreteUI.Theme
+namespace ConcreteUI.Theme;
+
+public sealed class EmptyThemeContext : IThemeContext
 {
-    public sealed class EmptyThemeContext : IThemeContext
+    public static readonly EmptyThemeContext Instance = new EmptyThemeContext();
+
+    private EmptyThemeContext() { }
+
+    public string FontName
     {
-        public static readonly EmptyThemeContext Instance = new EmptyThemeContext();
+        get => string.Empty;
+        set { }
+    }
 
-        private EmptyThemeContext() { }
+    public bool IsDarkTheme => false;
 
-        public string FontName
-        {
-            get => string.Empty;
-            set { }
-        }
+    public void BuildContextForAnother(IThemeContext other, bool overrides) { }
 
-        public bool IsDarkTheme => false;
+    public IThemeContext Clone() => this;
 
-        public void BuildContextForAnother(IThemeContext other, bool overrides) { }
+    public bool TryGetBrushFactory(string node, [NotNullWhen(true)] out IThemedBrushFactory? brushFactory)
+    {
+        brushFactory = null;
+        return false;
+    }
 
-        public IThemeContext Clone() => this;
+    public bool TryGetColorFactory(string node, [NotNullWhen(true)] out IThemedColorFactory? colorFactory)
+    {
+        colorFactory = null;
+        return false;
+    }
 
-        public bool TryGetBrushFactory(string node, [NotNullWhen(true)] out IThemedBrushFactory? brushFactory)
-        {
-            brushFactory = null;
-            return false;
-        }
+    public bool TrySetBrushFactory(string node, IThemedBrushFactory brushFactory, bool overrides)
+    {
+        return false;
+    }
 
-        public bool TryGetColorFactory(string node, [NotNullWhen(true)] out IThemedColorFactory? colorFactory)
-        {
-            colorFactory = null;
-            return false;
-        }
-
-        public bool TrySetBrushFactory(string node, IThemedBrushFactory brushFactory, bool overrides)
-        {
-            return false;
-        }
-
-        public bool TrySetColorFactory(string node, IThemedColorFactory colorFactory, bool overrides)
-        {
-            return false;
-        }
+    public bool TrySetColorFactory(string node, IThemedColorFactory colorFactory, bool overrides)
+    {
+        return false;
     }
 }

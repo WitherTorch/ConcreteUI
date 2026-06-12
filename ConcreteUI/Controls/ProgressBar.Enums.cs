@@ -1,13 +1,12 @@
-﻿namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class ProgressBar
 {
-    partial class ProgressBar
+    private enum Brush
     {
-        private enum Brush
-        {
-            BackBrush,
-            BorderBrush,
-            ForeBrush,
-            _Last
-        }
+        BackBrush,
+        BorderBrush,
+        ForeBrush,
+        _Last
     }
 }

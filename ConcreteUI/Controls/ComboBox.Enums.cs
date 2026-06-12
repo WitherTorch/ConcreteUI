@@ -1,28 +1,27 @@
-﻿using System;
+using System;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class ComboBox
 {
-    partial class ComboBox
+    [Flags]
+    private enum RenderObjectUpdateFlags
     {
-        [Flags]
-        private enum RenderObjectUpdateFlags
-        {
-            None = 0,
-            Layout = 0b01,
-            Format = 0b11
-        }
+        None = 0,
+        Layout = 0b01,
+        Format = 0b11
+    }
 
-        private enum Brush
-        {
-            BackBrush,
-            BackDisabledBrush,
-            BackHoveredBrush,
-            BorderBrush,
-            TextBrush,
-            DropdownButtonBrush,
-            DropdownButtonHoveredBrush,
-            DropdownButtonPressedBrush,
-            _Last
-        }
+    private enum Brush
+    {
+        BackBrush,
+        BackDisabledBrush,
+        BackHoveredBrush,
+        BorderBrush,
+        TextBrush,
+        DropdownButtonBrush,
+        DropdownButtonHoveredBrush,
+        DropdownButtonPressedBrush,
+        _Last
     }
 }

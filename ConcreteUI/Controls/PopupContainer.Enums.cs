@@ -1,12 +1,11 @@
-﻿namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class PopupContainer
 {
-    partial class PopupContainer
+    private enum Brush
     {
-        private enum Brush
-        {
-            BackBrush,
-            BorderBrush,
-            _Last
-        }
+        BackBrush,
+        BorderBrush,
+        _Last
     }
 }

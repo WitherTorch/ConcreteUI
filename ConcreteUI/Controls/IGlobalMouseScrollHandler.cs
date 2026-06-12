@@ -1,7 +1,6 @@
-﻿namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public interface IGlobalMouseScrollHandler
 {
-    public interface IGlobalMouseScrollHandler
-    {
-        void OnMouseScrollGlobally(in MouseEventArgs args);
-    }
+    void OnMouseScrollGlobally(in MouseEventArgs args);
 }

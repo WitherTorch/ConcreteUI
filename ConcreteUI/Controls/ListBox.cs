@@ -24,420 +24,419 @@ using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public sealed partial class ListBox : ScrollableElementBase
 {
-    public sealed partial class ListBox : ScrollableElementBase
+    private static readonly string[] _brushNames = new string[(int)Brush._Last]
     {
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
-        {
-            "back",
-            "back.disabled",
-            "border",
-            "fore"
-        };
-        private static readonly string[] _checkBoxBrushNames = new string[(int)CheckBoxBrush._Last]
-        {
-            "border",
-            "border.hovered" ,
-            "border.pressed",
-            "border.checked" ,
-            "border.hovered.checked" ,
-            "border.pressed.checked",
-            "mark"
-        };
+        "back",
+        "back.disabled",
+        "border",
+        "fore"
+    };
+    private static readonly string[] _checkBoxBrushNames = new string[(int)CheckBoxBrush._Last]
+    {
+        "border",
+        "border.hovered" ,
+        "border.pressed",
+        "border.checked" ,
+        "border.hovered.checked" ,
+        "border.pressed.checked",
+        "mark"
+    };
 
-        private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly D2D1Brush?[] _checkBoxBrushes = new D2D1Brush[(int)CheckBoxBrush._Last];
-        private readonly LayoutNode?[] _autoLayoutDefinitionCache = new LayoutNode?[2];
-        private readonly BitList _stateVectorList;
-        private readonly ObservableList<string> _items;
+    private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+    private readonly D2D1Brush?[] _checkBoxBrushes = new D2D1Brush[(int)CheckBoxBrush._Last];
+    private readonly LayoutNode?[] _autoLayoutDefinitionCache = new LayoutNode?[2];
+    private readonly BitList _stateVectorList;
+    private readonly ObservableList<string> _items;
 
-        private DWriteTextFormat? _format;
-        private string _checkBoxThemePrefix;
-        private string? _fontName;
-        private ListBoxMode _chooseMode;
-        private ButtonTriState _buttonState;
-        private long _recalcFormat;
-        private float _fontSize;
-        private int _selectedIndex, _itemHeight;
+    private DWriteTextFormat? _format;
+    private string _checkBoxThemePrefix;
+    private string? _fontName;
+    private ListBoxMode _chooseMode;
+    private ButtonTriState _buttonState;
+    private long _recalcFormat;
+    private float _fontSize;
+    private int _selectedIndex, _itemHeight;
 
-        public ListBox(IElementContainer parent) : base(parent, "app.listBox")
+    public ListBox(IElementContainer parent) : base(parent, "app.listBox")
+    {
+        _stateVectorList = new BitList();
+        _items = new ObservableList<string>();
+        _items.Updated += Items_Updated;
+        _items.BeforeAdd += Item_BeforeAdd;
+        ScrollBarType = ScrollBarType.AutoVertial;
+        _fontSize = UIConstants.BoxFontSize;
+        _selectedIndex = -1;
+        _recalcFormat = Booleans.TrueLong;
+        _checkBoxThemePrefix = "app.checkBox";
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ListBox WithAutoWidth()
+    {
+        WidthExpression = AutoWidthDefinition;
+        return this;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ListBox WithAutoHeight()
+    {
+        HeightExpression = AutoHeightDefinition;
+        return this;
+    }
+
+    public void CopySelectedItemsToBuffer(string[] destination, int startIndex, out int itemCopied)
+    {
+        if (startIndex < 0)
+            throw new ArgumentOutOfRangeException(nameof(startIndex));
+        ObservableList<string> items = _items;
+        int count = items.Count;
+        if (count <= 0)
         {
-            _stateVectorList = new BitList();
-            _items = new ObservableList<string>();
-            _items.Updated += Items_Updated;
-            _items.BeforeAdd += Item_BeforeAdd;
-            ScrollBarType = ScrollBarType.AutoVertial;
-            _fontSize = UIConstants.BoxFontSize;
-            _selectedIndex = -1;
-            _recalcFormat = Booleans.TrueLong;
-            _checkBoxThemePrefix = "app.checkBox";
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ListBox WithAutoWidth()
-        {
-            WidthExpression = AutoWidthDefinition;
-            return this;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ListBox WithAutoHeight()
-        {
-            HeightExpression = AutoHeightDefinition;
-            return this;
-        }
-
-        public void CopySelectedItemsToBuffer(string[] destination, int startIndex, out int itemCopied)
-        {
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex));
-            ObservableList<string> items = _items;
-            int count = items.Count;
-            if (count <= 0)
-            {
-                itemCopied = 0;
-                return;
-            }
-            CopySelectedItemsToBufferCore(items, count, destination, startIndex, out itemCopied);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void CopySelectedItemsToBufferCore(ObservableList<string> items, int count, string[] destination, int startIndex, out int itemCopied)
-        {
-            BitList stateVectorList = _stateVectorList;
             itemCopied = 0;
-            for (int i = 0; i < count; i++)
-            {
-                if (!stateVectorList[i])
-                    continue;
-                destination[startIndex++] = items[i];
-                itemCopied++;
-            }
+            return;
         }
+        CopySelectedItemsToBufferCore(items, count, destination, startIndex, out itemCopied);
+    }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void CopySelectedIndicesToBufferCore(int count, int* destination, int startIndex, out int itemCopied)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void CopySelectedItemsToBufferCore(ObservableList<string> items, int count, string[] destination, int startIndex, out int itemCopied)
+    {
+        BitList stateVectorList = _stateVectorList;
+        itemCopied = 0;
+        for (int i = 0; i < count; i++)
         {
-            BitList stateVectorList = _stateVectorList;
-            itemCopied = 0;
-            for (int i = 0; i < count; i++)
-            {
-                if (!stateVectorList[i])
-                    continue;
-                destination[startIndex++] = i;
-                itemCopied++;
-            }
+            if (!stateVectorList[i])
+                continue;
+            destination[startIndex++] = items[i];
+            itemCopied++;
         }
+    }
 
-        protected override void ApplyThemeCore(IThemeResourceProvider provider)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private unsafe void CopySelectedIndicesToBufferCore(int count, int* destination, int startIndex, out int itemCopied)
+    {
+        BitList stateVectorList = _stateVectorList;
+        itemCopied = 0;
+        for (int i = 0; i < count; i++)
         {
-            base.ApplyThemeCore(provider);
-            string fontName = provider.FontName;
-            _fontName = fontName;
-            UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
-            UIElementHelper.ApplyThemeUnsafe(provider, _checkBoxBrushes, _checkBoxBrushNames, _checkBoxThemePrefix, (nuint)CheckBoxBrush._Last);
-            DisposeHelper.SwapDisposeInterlocked(ref _format);
-            InterlockedHelper.Write(ref _recalcFormat, Booleans.TrueLong);
-            InterlockedHelper.Write(ref _itemHeight, MathI.Ceiling(FontHeightHelper.GetFontHeight(fontName, _fontSize)) + 2);
-            RecalculateHeight();
+            if (!stateVectorList[i])
+                continue;
+            destination[startIndex++] = i;
+            itemCopied++;
         }
+    }
 
-        protected override D2D1Brush GetBackBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush);
+    protected override void ApplyThemeCore(IThemeResourceProvider provider)
+    {
+        base.ApplyThemeCore(provider);
+        string fontName = provider.FontName;
+        _fontName = fontName;
+        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
+        UIElementHelper.ApplyThemeUnsafe(provider, _checkBoxBrushes, _checkBoxBrushNames, _checkBoxThemePrefix, (nuint)CheckBoxBrush._Last);
+        DisposeHelper.SwapDisposeInterlocked(ref _format);
+        InterlockedHelper.Write(ref _recalcFormat, Booleans.TrueLong);
+        InterlockedHelper.Write(ref _itemHeight, MathI.Ceiling(FontHeightHelper.GetFontHeight(fontName, _fontSize)) + 2);
+        RecalculateHeight();
+    }
 
-        protected override D2D1Brush GetBackDisabledBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackDisabledBrush);
+    protected override D2D1Brush GetBackBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush);
 
-        protected override D2D1Brush GetBorderBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BorderBrush);
+    protected override D2D1Brush GetBackDisabledBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackDisabledBrush);
 
-        private DWriteTextFormat BuildTextFormat()
+    protected override D2D1Brush GetBorderBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BorderBrush);
+
+    private DWriteTextFormat BuildTextFormat()
+    {
+        DWriteTextFormat textFormat = SharedResources.DWriteFactory.CreateTextFormat(NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
+        textFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
+        return textFormat;
+    }
+
+    private void Items_Updated(object? sender, EventArgs e) => RecalculateHeight();
+
+    private void Item_BeforeAdd(object? sender, BeforeListAddOrRemoveEventArgs<string> e) => _stateVectorList.Add(false);
+
+    public override void Scrolling(int rollStep) => base.Scrolling(rollStep / 4);
+
+    [Inline(InlineBehavior.Remove)]
+    private bool CheckFormatIsNotAvailable([NotNullWhen(false)] DWriteTextFormat? format)
+    {
+        if (Interlocked.Exchange(ref _recalcFormat, Booleans.FalseLong) != Booleans.FalseLong)
         {
-            DWriteTextFormat textFormat = SharedResources.DWriteFactory.CreateTextFormat(NullSafetyHelper.ThrowIfNull(_fontName), _fontSize);
-            textFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
-            return textFormat;
-        }
-
-        private void Items_Updated(object? sender, EventArgs e) => RecalculateHeight();
-
-        private void Item_BeforeAdd(object? sender, BeforeListAddOrRemoveEventArgs<string> e) => _stateVectorList.Add(false);
-
-        public override void Scrolling(int rollStep) => base.Scrolling(rollStep / 4);
-
-        [Inline(InlineBehavior.Remove)]
-        private bool CheckFormatIsNotAvailable([NotNullWhen(false)] DWriteTextFormat? format)
-        {
-            if (Interlocked.Exchange(ref _recalcFormat, Booleans.FalseLong) != Booleans.FalseLong)
-            {
-                format?.Dispose();
-                return true;
-            }
-            return format is null || format.IsDisposed;
-        }
-
-        protected override bool RenderContent(in RegionalRenderingContext context, D2D1Brush backBrush)
-        {
-            if (context.HasDirtyCollector)
-            {
-                RenderBackground(context, backBrush);
-                context.MarkAsDirty();
-            }
-
-            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
-            DWriteTextFormat? format = Interlocked.Exchange(ref _format, null);
-            if (CheckFormatIsNotAvailable(format))
-                format = BuildTextFormat();
-            SizeF renderSize = context.Size;
-            ListBoxMode mode = Mode;
-            float itemHeight = RenderingHelper.RoundInPixel(_itemHeight, Renderer.GetPixelsPerPoint().Y);
-            int currentTop = ViewportPoint.Y;
-            int startIndex = (int)(currentTop / itemHeight);
-            int endIndex = MathI.Ceiling((currentTop + renderSize.Height) / itemHeight);
-            Vector2 pointsPerPixel = context.PixelsPerPoint;
-            float borderWidth = context.DefaultBorderWidth;
-
-            float itemLeftEdge = borderWidth + 2;
-            float textLeftEdge = mode == ListBoxMode.None ? itemLeftEdge : itemLeftEdge * 2 + itemHeight;
-            float itemTopEdge = startIndex * itemHeight - currentTop + borderWidth + 2;
-            float itemRightEdge = renderSize.Width - borderWidth;
-            itemLeftEdge = RenderingHelper.RoundInPixel(itemLeftEdge, pointsPerPixel.X);
-            textLeftEdge = RenderingHelper.RoundInPixel(textLeftEdge, pointsPerPixel.X) - itemLeftEdge;
-            itemTopEdge = RenderingHelper.RoundInPixel(itemTopEdge, pointsPerPixel.Y);
-            float itemWidth = itemRightEdge - itemLeftEdge;
-            // itemRightEdge 無須做 round 操作，因為 renderSize.Width 與 borderWidth 均已對齊 pixel
-
-            BitList stateVectorList = _stateVectorList;
-            D2D1Brush textBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TextBrush);
-            IList<string> items = _items.GetUnderlyingList();
-            for (int i = startIndex, count = items.Count, selectedIndex = _selectedIndex; i <= endIndex && i < count; i++)
-            {
-                string item = items[i];
-                RectF itemBounds = new RectF(itemLeftEdge, itemTopEdge, itemRightEdge, itemTopEdge + itemHeight);
-                using RegionalRenderingContext itemContext = context.WithAxisAlignedClip(itemBounds, D2D1AntialiasMode.Aliased);
-                switch (mode)
-                {
-                    case ListBoxMode.None:
-                        if (StringHelper.IsNullOrWhiteSpace(item))
-                            break;
-                        itemContext.DrawText(item, format, RectF.FromXYWH(textLeftEdge, 0, itemWidth, itemHeight), textBrush, D2D1DrawTextOptions.Clip, DWriteMeasuringMode.Natural);
-                        break;
-                    case ListBoxMode.Any:
-                        DrawRadioBox(in itemContext, itemHeight, stateVectorList[i], selectedIndex == i);
-                        goto case ListBoxMode.None;
-                    case ListBoxMode.Some:
-                        DrawCheckBox(in itemContext, itemHeight, stateVectorList[i], selectedIndex == i);
-                        goto case ListBoxMode.None;
-                }
-                itemTopEdge += itemHeight;
-            }
-            DisposeHelper.NullSwapOrDispose(ref _format, format);
+            format?.Dispose();
             return true;
         }
+        return format is null || format.IsDisposed;
+    }
 
-        private void DrawCheckBox(in RegionalRenderingContext context, float itemHeight, bool checkState, bool isCurrentlyItem)
+    protected override bool RenderContent(in RegionalRenderingContext context, D2D1Brush backBrush)
+    {
+        if (context.HasDirtyCollector)
         {
-            RectangleF renderingBounds = CheckBox.GetCheckBoxRenderingBounds(in context, itemHeight);
-            CheckBox.DrawCheckBox(context, _checkBoxBrushes, renderingBounds, checkState,
-                (ButtonTriState)((uint)_buttonState & UnsafeHelper.Negate(MathHelper.BooleanToUInt32(isCurrentlyItem))));
+            RenderBackground(context, backBrush);
+            context.MarkAsDirty();
         }
 
-        private void DrawRadioBox(in RegionalRenderingContext context, float itemHeight, bool isChecked, bool isCurrentlyItem)
-            => DrawRadioBox(context, itemHeight, isChecked,
-                (ButtonTriState)((uint)_buttonState & UnsafeHelper.Negate(MathHelper.BooleanToUInt32(isCurrentlyItem))));
+        ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
+        DWriteTextFormat? format = Interlocked.Exchange(ref _format, null);
+        if (CheckFormatIsNotAvailable(format))
+            format = BuildTextFormat();
+        SizeF renderSize = context.Size;
+        ListBoxMode mode = Mode;
+        float itemHeight = RenderingHelper.RoundInPixel(_itemHeight, Renderer.GetPixelsPerPoint().Y);
+        int currentTop = ViewportPoint.Y;
+        int startIndex = (int)(currentTop / itemHeight);
+        int endIndex = MathI.Ceiling((currentTop + renderSize.Height) / itemHeight);
+        Vector2 pointsPerPixel = context.PixelsPerPoint;
+        float borderWidth = context.DefaultBorderWidth;
 
-        private void DrawRadioBox(in RegionalRenderingContext context, float itemHeight, bool isChecked, ButtonTriState state)
+        float itemLeftEdge = borderWidth + 2;
+        float textLeftEdge = mode == ListBoxMode.None ? itemLeftEdge : itemLeftEdge * 2 + itemHeight;
+        float itemTopEdge = startIndex * itemHeight - currentTop + borderWidth + 2;
+        float itemRightEdge = renderSize.Width - borderWidth;
+        itemLeftEdge = RenderingHelper.RoundInPixel(itemLeftEdge, pointsPerPixel.X);
+        textLeftEdge = RenderingHelper.RoundInPixel(textLeftEdge, pointsPerPixel.X) - itemLeftEdge;
+        itemTopEdge = RenderingHelper.RoundInPixel(itemTopEdge, pointsPerPixel.Y);
+        float itemWidth = itemRightEdge - itemLeftEdge;
+        // itemRightEdge 無須做 round 操作，因為 renderSize.Width 與 borderWidth 均已對齊 pixel
+
+        BitList stateVectorList = _stateVectorList;
+        D2D1Brush textBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TextBrush);
+        IList<string> items = _items.GetUnderlyingList();
+        for (int i = startIndex, count = items.Count, selectedIndex = _selectedIndex; i <= endIndex && i < count; i++)
         {
-            D2D1Brush? backBrush = UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_checkBoxBrushes),
-                (nuint)CheckBoxBrush.BorderBrush + (nuint)state);
-            if (backBrush is null)
-                return;
-            RectF renderingBounds = new RectF(0.0f, 0.0f, itemHeight, itemHeight);
-            D2D1DeviceContext deviceContext = context.DeviceContext;
-            using RenderingClipScope scope = context.PushPixelAlignedClip(ref renderingBounds, D2D1AntialiasMode.Aliased);
-            (D2D1AntialiasMode lastAntialiasMode, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
-            try
-            {
-                PointF centerPoint = new PointF(renderingBounds.Width * 0.5f, renderingBounds.Height * 0.5f);
-                float borderWidth = context.DefaultBorderWidth;
-                float radiusX = centerPoint.X - borderWidth * 2.0f;
-                float radiusY = radiusX;
-                context.DrawEllipse(GetPixelAlignedEllipse(context, ref centerPoint, ref radiusX, ref radiusY), backBrush, borderWidth);
-                if (isChecked)
-                    context.FillEllipse(new D2D1Ellipse(centerPoint, radiusX - borderWidth * 2.0f, radiusY - borderWidth * 2.0f), backBrush);
-            }
-            finally
-            {
-                deviceContext.AntialiasMode = lastAntialiasMode;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static D2D1Ellipse GetPixelAlignedEllipse(in RegionalRenderingContext context, ref PointF centerPoint, ref float radiusX, ref float radiusY)
-            {
-                Vector2 pixelsPerPoint = context.PixelsPerPoint;
-                (float centerX, float centerY) = centerPoint;
-                PointF predicatedTopLeft = RenderingHelper.CeilingInPixel(new PointF(centerX - radiusX, centerY - radiusY), pixelsPerPoint);
-                PointF predicatedBottomRight = RenderingHelper.FloorInPixel(new PointF(centerX + radiusX, centerY + radiusY), pixelsPerPoint);
-
-                radiusX = (predicatedBottomRight.X - predicatedTopLeft.X) * 0.5f;
-                radiusY = (predicatedBottomRight.Y - predicatedTopLeft.Y) * 0.5f;
-                centerPoint = new PointF(predicatedTopLeft.X + radiusX, predicatedTopLeft.Y + radiusX);
-                return new D2D1Ellipse(
-                    point: centerPoint,
-                    radiusX: radiusX,
-                    radiusY: radiusY);
-            }
-        }
-
-        private void RecalculateHeight() => SurfaceSize = new Size(0, GetPredictedHeight());
-
-        private int GetPredictedHeight() => _items.Count * _itemHeight + UIConstants.ElementMargin;
-
-        private int GetPredictedWidth()
-        {
-            string? fontName = _fontName;
-            if (fontName is null)
-                return UIConstants.ElementMargin;
-            IList<string> items = _items.GetUnderlyingList();
-            int count = items.Count;
-            if (count <= 0)
-                return UIConstants.ElementMargin;
-
-            ArrayPool<string> pool = ArrayPool<string>.Shared;
-            using PooledList<string> list = new PooledList<string>();
-            list.AddRange(items);
-            (string[] buffer, count) = list;
-            try
-            {
-                using DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(fontName, _fontSize);
-                int maxVal = 0;
-                ref string bufferRef = ref UnsafeHelper.GetArrayDataReference(buffer);
-                for (int i = 0; i < count; i++)
-                    maxVal = MathHelper.Max(maxVal, GraphicsUtils.MeasureTextWidthAsInt(UnsafeHelper.AddTypedOffset(ref bufferRef, i), format));
-                return maxVal + UIConstants.ElementMargin;
-            }
-            finally
-            {
-                pool.Return(buffer);
-            }
-        }
-
-        protected override void OnMouseMove(in MouseEventArgs args)
-        {
-            base.OnMouseMove(args);
-            if (!args.IsInSpecificSize(ContentSize))
-            {
-                if (_buttonState != ButtonTriState.None)
-                {
-                    _buttonState = ButtonTriState.None;
-                    Update();
-                }
-                return;
-            }
-            if (Mode == ListBoxMode.None)
-                return;
-            int selectedIndex = (int)((args.Y + ViewportPoint.Y) / _itemHeight);
-            if (selectedIndex >= Items.Count) selectedIndex = -1;
-            if (_selectedIndex == selectedIndex)
-                return;
-            _selectedIndex = selectedIndex;
-            ButtonTriState state = ButtonTriState.None;
-            if (selectedIndex > -1)
-            {
-                if (_buttonState != ButtonTriState.Pressed)
-                    state = ButtonTriState.Hovered;
-            }
-            else
-            {
-                state = ButtonTriState.None;
-            }
-            if (_buttonState != state)
-                _buttonState = state;
-            Update();
-        }
-
-        protected override void OnMouseDown(ref HandleableMouseEventArgs args)
-        {
-            base.OnMouseDown(ref args);
-            if (args.Handled || Mode == ListBoxMode.None || !args.Buttons.HasFlagFast(MouseButtons.LeftButton))
-                return;
-            args.Handle();
-            if (_buttonState == ButtonTriState.Hovered)
-                _buttonState = ButtonTriState.Pressed;
-            Update();
-        }
-
-        protected override void OnMouseUp(in MouseEventArgs args)
-        {
-            base.OnMouseUp(args);
-            ListBoxMode mode = Mode;
-            if (mode == ListBoxMode.None || _buttonState != ButtonTriState.Pressed)
-                return;
-            if (args.IsInSpecificSize(ContentSize))
-                _buttonState = ButtonTriState.Hovered;
-            else
-                _buttonState = ButtonTriState.None;
-            switch (Mode)
-            {
-                case ListBoxMode.Any:
-                    ClearCheckStateCore();
-                    goto case ListBoxMode.Some;
-                case ListBoxMode.Some:
-                    int selectedIndex = _selectedIndex;
-                    RevertCheckStateCore(selectedIndex);
-                    OnSelectedIndicesChanged();
-                    break;
-            }
-            Update();
-        }
-
-        public bool IsChecked(int index) => Mode != ListBoxMode.None && GetCheckStateCore(index);
-
-        public void SetChecked(int index, bool value)
-        {
-            ListBoxMode mode = Mode;
+            string item = items[i];
+            RectF itemBounds = new RectF(itemLeftEdge, itemTopEdge, itemRightEdge, itemTopEdge + itemHeight);
+            using RegionalRenderingContext itemContext = context.WithAxisAlignedClip(itemBounds, D2D1AntialiasMode.Aliased);
             switch (mode)
             {
-                case ListBoxMode.Any:
-                    if (IsChecked(index) == value)
-                        return;
-                    ClearCheckStateCore();
-                    goto case ListBoxMode.Some;
-                case ListBoxMode.Some:
-                    SetCheckStateCore(index, value);
+                case ListBoxMode.None:
+                    if (StringHelper.IsNullOrWhiteSpace(item))
+                        break;
+                    itemContext.DrawText(item, format, RectF.FromXYWH(textLeftEdge, 0, itemWidth, itemHeight), textBrush, D2D1DrawTextOptions.Clip, DWriteMeasuringMode.Natural);
                     break;
+                case ListBoxMode.Any:
+                    DrawRadioBox(in itemContext, itemHeight, stateVectorList[i], selectedIndex == i);
+                    goto case ListBoxMode.None;
+                case ListBoxMode.Some:
+                    DrawCheckBox(in itemContext, itemHeight, stateVectorList[i], selectedIndex == i);
+                    goto case ListBoxMode.None;
             }
+            itemTopEdge += itemHeight;
         }
-
-        private void OnSelectedIndicesChanged() => SelectedIndicesChanged?.Invoke(this, EventArgs.Empty);
-
-        protected override void DisposeCore(bool disposing)
-        {
-            base.DisposeCore(disposing);
-            if (disposing)
-            {
-                DisposeHelper.SwapDisposeInterlocked(ref _format);
-                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
-            }
-            SequenceHelper.Clear(_brushes);
-        }
-
-        protected override void OnScrollBarUpButtonClicked() => Scrolling(-MathI.Ceiling(_itemHeight));
-
-        protected override void OnScrollBarDownButtonClicked() => Scrolling(MathI.Ceiling(_itemHeight));
-
-        [Inline(InlineBehavior.Remove)]
-        private bool GetCheckStateCore(int index) => _stateVectorList[index];
-
-        [Inline(InlineBehavior.Remove)]
-        private void SetCheckStateCore(int index, bool state) => _stateVectorList[index] = state;
-
-        [Inline(InlineBehavior.Remove)]
-        private void RevertCheckStateCore(int index)
-            => RevertCheckStateCore(_stateVectorList, index);
-
-        [Inline(InlineBehavior.Remove)]
-        private static void RevertCheckStateCore(BitList stateVectorList, int index)
-            => stateVectorList[index] = !stateVectorList[index];
-
-        [Inline(InlineBehavior.Remove)]
-        private void ClearCheckStateCore() => _stateVectorList.SetAllBitsAsFalse();
+        DisposeHelper.NullSwapOrDispose(ref _format, format);
+        return true;
     }
+
+    private void DrawCheckBox(in RegionalRenderingContext context, float itemHeight, bool checkState, bool isCurrentlyItem)
+    {
+        RectangleF renderingBounds = CheckBox.GetCheckBoxRenderingBounds(in context, itemHeight);
+        CheckBox.DrawCheckBox(context, _checkBoxBrushes, renderingBounds, checkState,
+            (ButtonTriState)((uint)_buttonState & UnsafeHelper.Negate(MathHelper.BooleanToUInt32(isCurrentlyItem))));
+    }
+
+    private void DrawRadioBox(in RegionalRenderingContext context, float itemHeight, bool isChecked, bool isCurrentlyItem)
+        => DrawRadioBox(context, itemHeight, isChecked,
+            (ButtonTriState)((uint)_buttonState & UnsafeHelper.Negate(MathHelper.BooleanToUInt32(isCurrentlyItem))));
+
+    private void DrawRadioBox(in RegionalRenderingContext context, float itemHeight, bool isChecked, ButtonTriState state)
+    {
+        D2D1Brush? backBrush = UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_checkBoxBrushes),
+            (nuint)CheckBoxBrush.BorderBrush + (nuint)state);
+        if (backBrush is null)
+            return;
+        RectF renderingBounds = new RectF(0.0f, 0.0f, itemHeight, itemHeight);
+        D2D1DeviceContext deviceContext = context.DeviceContext;
+        using RenderingClipScope scope = context.PushPixelAlignedClip(ref renderingBounds, D2D1AntialiasMode.Aliased);
+        (D2D1AntialiasMode lastAntialiasMode, deviceContext.AntialiasMode) = (deviceContext.AntialiasMode, D2D1AntialiasMode.PerPrimitive);
+        try
+        {
+            PointF centerPoint = new PointF(renderingBounds.Width * 0.5f, renderingBounds.Height * 0.5f);
+            float borderWidth = context.DefaultBorderWidth;
+            float radiusX = centerPoint.X - borderWidth * 2.0f;
+            float radiusY = radiusX;
+            context.DrawEllipse(GetPixelAlignedEllipse(context, ref centerPoint, ref radiusX, ref radiusY), backBrush, borderWidth);
+            if (isChecked)
+                context.FillEllipse(new D2D1Ellipse(centerPoint, radiusX - borderWidth * 2.0f, radiusY - borderWidth * 2.0f), backBrush);
+        }
+        finally
+        {
+            deviceContext.AntialiasMode = lastAntialiasMode;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static D2D1Ellipse GetPixelAlignedEllipse(in RegionalRenderingContext context, ref PointF centerPoint, ref float radiusX, ref float radiusY)
+        {
+            Vector2 pixelsPerPoint = context.PixelsPerPoint;
+            (float centerX, float centerY) = centerPoint;
+            PointF predicatedTopLeft = RenderingHelper.CeilingInPixel(new PointF(centerX - radiusX, centerY - radiusY), pixelsPerPoint);
+            PointF predicatedBottomRight = RenderingHelper.FloorInPixel(new PointF(centerX + radiusX, centerY + radiusY), pixelsPerPoint);
+
+            radiusX = (predicatedBottomRight.X - predicatedTopLeft.X) * 0.5f;
+            radiusY = (predicatedBottomRight.Y - predicatedTopLeft.Y) * 0.5f;
+            centerPoint = new PointF(predicatedTopLeft.X + radiusX, predicatedTopLeft.Y + radiusX);
+            return new D2D1Ellipse(
+                point: centerPoint,
+                radiusX: radiusX,
+                radiusY: radiusY);
+        }
+    }
+
+    private void RecalculateHeight() => SurfaceSize = new Size(0, GetPredictedHeight());
+
+    private int GetPredictedHeight() => _items.Count * _itemHeight + UIConstants.ElementMargin;
+
+    private int GetPredictedWidth()
+    {
+        string? fontName = _fontName;
+        if (fontName is null)
+            return UIConstants.ElementMargin;
+        IList<string> items = _items.GetUnderlyingList();
+        int count = items.Count;
+        if (count <= 0)
+            return UIConstants.ElementMargin;
+
+        ArrayPool<string> pool = ArrayPool<string>.Shared;
+        using PooledList<string> list = new PooledList<string>();
+        list.AddRange(items);
+        (string[] buffer, count) = list;
+        try
+        {
+            using DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(fontName, _fontSize);
+            int maxVal = 0;
+            ref string bufferRef = ref UnsafeHelper.GetArrayDataReference(buffer);
+            for (int i = 0; i < count; i++)
+                maxVal = MathHelper.Max(maxVal, GraphicsUtils.MeasureTextWidthAsInt(UnsafeHelper.AddTypedOffset(ref bufferRef, i), format));
+            return maxVal + UIConstants.ElementMargin;
+        }
+        finally
+        {
+            pool.Return(buffer);
+        }
+    }
+
+    protected override void OnMouseMove(in MouseEventArgs args)
+    {
+        base.OnMouseMove(args);
+        if (!args.IsInSpecificSize(ContentSize))
+        {
+            if (_buttonState != ButtonTriState.None)
+            {
+                _buttonState = ButtonTriState.None;
+                Update();
+            }
+            return;
+        }
+        if (Mode == ListBoxMode.None)
+            return;
+        int selectedIndex = (int)((args.Y + ViewportPoint.Y) / _itemHeight);
+        if (selectedIndex >= Items.Count) selectedIndex = -1;
+        if (_selectedIndex == selectedIndex)
+            return;
+        _selectedIndex = selectedIndex;
+        ButtonTriState state = ButtonTriState.None;
+        if (selectedIndex > -1)
+        {
+            if (_buttonState != ButtonTriState.Pressed)
+                state = ButtonTriState.Hovered;
+        }
+        else
+        {
+            state = ButtonTriState.None;
+        }
+        if (_buttonState != state)
+            _buttonState = state;
+        Update();
+    }
+
+    protected override void OnMouseDown(ref HandleableMouseEventArgs args)
+    {
+        base.OnMouseDown(ref args);
+        if (args.Handled || Mode == ListBoxMode.None || !args.Buttons.HasFlagFast(MouseButtons.LeftButton))
+            return;
+        args.Handle();
+        if (_buttonState == ButtonTriState.Hovered)
+            _buttonState = ButtonTriState.Pressed;
+        Update();
+    }
+
+    protected override void OnMouseUp(in MouseEventArgs args)
+    {
+        base.OnMouseUp(args);
+        ListBoxMode mode = Mode;
+        if (mode == ListBoxMode.None || _buttonState != ButtonTriState.Pressed)
+            return;
+        if (args.IsInSpecificSize(ContentSize))
+            _buttonState = ButtonTriState.Hovered;
+        else
+            _buttonState = ButtonTriState.None;
+        switch (Mode)
+        {
+            case ListBoxMode.Any:
+                ClearCheckStateCore();
+                goto case ListBoxMode.Some;
+            case ListBoxMode.Some:
+                int selectedIndex = _selectedIndex;
+                RevertCheckStateCore(selectedIndex);
+                OnSelectedIndicesChanged();
+                break;
+        }
+        Update();
+    }
+
+    public bool IsChecked(int index) => Mode != ListBoxMode.None && GetCheckStateCore(index);
+
+    public void SetChecked(int index, bool value)
+    {
+        ListBoxMode mode = Mode;
+        switch (mode)
+        {
+            case ListBoxMode.Any:
+                if (IsChecked(index) == value)
+                    return;
+                ClearCheckStateCore();
+                goto case ListBoxMode.Some;
+            case ListBoxMode.Some:
+                SetCheckStateCore(index, value);
+                break;
+        }
+    }
+
+    private void OnSelectedIndicesChanged() => SelectedIndicesChanged?.Invoke(this, EventArgs.Empty);
+
+    protected override void DisposeCore(bool disposing)
+    {
+        base.DisposeCore(disposing);
+        if (disposing)
+        {
+            DisposeHelper.SwapDisposeInterlocked(ref _format);
+            DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
+        }
+        SequenceHelper.Clear(_brushes);
+    }
+
+    protected override void OnScrollBarUpButtonClicked() => Scrolling(-MathI.Ceiling(_itemHeight));
+
+    protected override void OnScrollBarDownButtonClicked() => Scrolling(MathI.Ceiling(_itemHeight));
+
+    [Inline(InlineBehavior.Remove)]
+    private bool GetCheckStateCore(int index) => _stateVectorList[index];
+
+    [Inline(InlineBehavior.Remove)]
+    private void SetCheckStateCore(int index, bool state) => _stateVectorList[index] = state;
+
+    [Inline(InlineBehavior.Remove)]
+    private void RevertCheckStateCore(int index)
+        => RevertCheckStateCore(_stateVectorList, index);
+
+    [Inline(InlineBehavior.Remove)]
+    private static void RevertCheckStateCore(BitList stateVectorList, int index)
+        => stateVectorList[index] = !stateVectorList[index];
+
+    [Inline(InlineBehavior.Remove)]
+    private void ClearCheckStateCore() => _stateVectorList.SetAllBitsAsFalse();
 }

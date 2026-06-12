@@ -1,9 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace ConcreteUI.Theme
+namespace ConcreteUI.Theme;
+
+public interface IThemeProvider
 {
-    public interface IThemeProvider
-    {
-        bool TryGetTheme(string themeId, [NotNullWhen(true)] out IThemeContext? theme);
-    }
+    bool TryGetTheme(string themeId, [NotNullWhen(true)] out IThemeContext? theme);
 }

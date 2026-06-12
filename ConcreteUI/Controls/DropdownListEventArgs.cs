@@ -1,14 +1,13 @@
-﻿using System;
+using System;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public sealed class DropdownListEventArgs : EventArgs
 {
-    public sealed class DropdownListEventArgs : EventArgs
-    {
-        public ComboBoxDropdownList DropdownList { get; }
+    public ComboBoxDropdownList DropdownList { get; }
 
-        public DropdownListEventArgs(ComboBoxDropdownList dropdownList)
-        {
-            DropdownList = dropdownList;
-        }
+    public DropdownListEventArgs(ComboBoxDropdownList dropdownList)
+    {
+        DropdownList = dropdownList;
     }
 }

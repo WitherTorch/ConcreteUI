@@ -1,15 +1,14 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 
-namespace ConcreteUI.Theme
+namespace ConcreteUI.Theme;
+
+public interface IThemedElementTemplate
 {
-    public interface IThemedElementTemplate
-    {
-        public string ElementClassName { get; }
+    public string ElementClassName { get; }
 
-        public string[] ThemedBrushNames { get; }
+    public string[] ThemedBrushNames { get; }
 
-        public void ApplyThemedBrushes(IReadOnlyDictionary<string, D2D1Brush> brushes);
-    }
+    public void ApplyThemedBrushes(IReadOnlyDictionary<string, D2D1Brush> brushes);
 }

@@ -1,23 +1,22 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace ConcreteUI.Theme
+namespace ConcreteUI.Theme;
+
+public interface IThemeContext
 {
-    public interface IThemeContext
-    {
-        bool IsDarkTheme { get; }
+    bool IsDarkTheme { get; }
 
-        string FontName { get; set; }
+    string FontName { get; set; }
 
-        IThemeContext Clone();
+    IThemeContext Clone();
 
-        bool TryGetColorFactory(string node, [NotNullWhen(true)] out IThemedColorFactory? colorFactory);
+    bool TryGetColorFactory(string node, [NotNullWhen(true)] out IThemedColorFactory? colorFactory);
 
-        bool TryGetBrushFactory(string node, [NotNullWhen(true)] out IThemedBrushFactory? brushFactory);
+    bool TryGetBrushFactory(string node, [NotNullWhen(true)] out IThemedBrushFactory? brushFactory);
 
-        bool TrySetColorFactory(string node, IThemedColorFactory colorFactory, bool overrides);
+    bool TrySetColorFactory(string node, IThemedColorFactory colorFactory, bool overrides);
 
-        bool TrySetBrushFactory(string node, IThemedBrushFactory brushFactory, bool overrides);
+    bool TrySetBrushFactory(string node, IThemedBrushFactory brushFactory, bool overrides);
 
-        void BuildContextForAnother(IThemeContext other, bool overrides);
-    }
+    void BuildContextForAnother(IThemeContext other, bool overrides);
 }

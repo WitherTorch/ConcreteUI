@@ -9,52 +9,51 @@ using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Windows.Structures;
 
-namespace ConcreteUI.Graphics.Internals
+namespace ConcreteUI.Graphics.Internals;
+
+partial class FrameWaiter
 {
-    partial class FrameWaiter
+    private sealed class ModernImpl : CriticalFinalizerObject, IFrameWaiter
     {
-        private sealed class ModernImpl : CriticalFinalizerObject, IFrameWaiter
+        private readonly IntPtr _handle;
+
+        private ulong _disposed;
+
+        public Rational FramesPerSecond
         {
-            private readonly IntPtr _handle;
+            get => Rational.Zero;
+            set { }
+        }
 
-            private ulong _disposed;
+        public ModernImpl(IntPtr handle)
+        {
+            _handle = handle;
+        }
 
-            public Rational FramesPerSecond
-            {
-                get => Rational.Zero;
-                set { }
-            }
+        public bool TryEnterFrame() => InterlockedHelper.Read(ref _disposed) == 0UL;
 
-            public ModernImpl(IntPtr handle)
-            {
-                _handle = handle;
-            }
+        public void LeaveFrameAndWait()
+        {
+            if (InterlockedHelper.Read(ref _disposed) != 0UL)
+                return;
+            uint hr = Kernel32.WaitForSingleObject(_handle, dwMilliseconds: unchecked((uint)Timeout.Infinite));
+            if (hr == 0xFFFFFFFFu)
+                throw new Win32Exception((int)Kernel32.GetLastError());
+        }
 
-            public bool TryEnterFrame() => InterlockedHelper.Read(ref _disposed) == 0UL;
+        ~ModernImpl() => DisposeCore();
 
-            public void LeaveFrameAndWait()
-            {
-                if (InterlockedHelper.Read(ref _disposed) != 0UL)
-                    return;
-                uint hr = Kernel32.WaitForSingleObject(_handle, dwMilliseconds: unchecked((uint)Timeout.Infinite));
-                if (hr == 0xFFFFFFFFu)
-                    throw new Win32Exception((int)Kernel32.GetLastError());
-            }
+        private void DisposeCore()
+        {
+            if (InterlockedHelper.Exchange(ref _disposed, ulong.MaxValue) != 0UL)
+                return;
+            Kernel32.CloseHandle(_handle);
+        }
 
-            ~ModernImpl() => DisposeCore();
-
-            private void DisposeCore()
-            {
-                if (InterlockedHelper.Exchange(ref _disposed, ulong.MaxValue) != 0UL)
-                    return;
-                Kernel32.CloseHandle(_handle);
-            }
-
-            public void Dispose()
-            {
-                DisposeCore();
-                GC.SuppressFinalize(this);
-            }
+        public void Dispose()
+        {
+            DisposeCore();
+            GC.SuppressFinalize(this);
         }
     }
 }

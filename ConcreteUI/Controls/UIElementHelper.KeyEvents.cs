@@ -1,59 +1,58 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class UIElementHelper
 {
-    partial class UIElementHelper
+    public static unsafe void OnKeyDownForElements<TEnumerable>(TEnumerable elements, ref KeyEventArgs args)
+        where TEnumerable : IEnumerable<UIElement?>
+        => DispatchHandleableEvent(elements, ref args, &OnKeyDownForElement);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void OnKeyDownForElement(UIElement? element, ref KeyEventArgs args)
     {
-        public static unsafe void OnKeyDownForElements<TEnumerable>(TEnumerable elements, ref KeyEventArgs args)
-            where TEnumerable : IEnumerable<UIElement?>
-            => DispatchHandleableEvent(elements, ref args, &OnKeyDownForElement);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void OnKeyDownForElement(UIElement? element, ref KeyEventArgs args)
+        if (element is IElementContainer container)
         {
-            if (element is IElementContainer container)
-            {
-                OnKeyDownForElements(container.GetActiveElements(), ref args);
-                if (args.Handled)
-                    return;
-            }
-            if (element is IKeyboardInteractHandler keyEvents)
-                keyEvents.OnKeyDown(ref args);
+            OnKeyDownForElements(container.GetActiveElements(), ref args);
+            if (args.Handled)
+                return;
         }
+        if (element is IKeyboardInteractHandler keyEvents)
+            keyEvents.OnKeyDown(ref args);
+    }
 
-        public static unsafe void OnKeyUpForElements<TEnumerable>(TEnumerable elements, ref KeyEventArgs args)
-            where TEnumerable : IEnumerable<UIElement?>
-            => DispatchHandleableEvent(elements, ref args, &OnKeyUpForElement);
+    public static unsafe void OnKeyUpForElements<TEnumerable>(TEnumerable elements, ref KeyEventArgs args)
+        where TEnumerable : IEnumerable<UIElement?>
+        => DispatchHandleableEvent(elements, ref args, &OnKeyUpForElement);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void OnKeyUpForElement(UIElement? element, ref KeyEventArgs args)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void OnKeyUpForElement(UIElement? element, ref KeyEventArgs args)
+    {
+        if (element is IElementContainer container)
         {
-            if (element is IElementContainer container)
-            {
-                OnKeyUpForElements(container.GetActiveElements(), ref args);
-                if (args.Handled)
-                    return;
-            }
-            if (element is IKeyboardInteractHandler keyEvents)
-                keyEvents.OnKeyUp(ref args);
+            OnKeyUpForElements(container.GetActiveElements(), ref args);
+            if (args.Handled)
+                return;
         }
+        if (element is IKeyboardInteractHandler keyEvents)
+            keyEvents.OnKeyUp(ref args);
+    }
 
-        public static unsafe void OnCharacterInputForElements<TEnumerable>(TEnumerable elements, ref CharacterEventArgs args)
-            where TEnumerable : IEnumerable<UIElement?>
-            => DispatchHandleableEvent(elements, ref args, &OnCharacterInputForElement);
+    public static unsafe void OnCharacterInputForElements<TEnumerable>(TEnumerable elements, ref CharacterEventArgs args)
+        where TEnumerable : IEnumerable<UIElement?>
+        => DispatchHandleableEvent(elements, ref args, &OnCharacterInputForElement);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void OnCharacterInputForElement(UIElement? element, ref CharacterEventArgs args)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void OnCharacterInputForElement(UIElement? element, ref CharacterEventArgs args)
+    {
+        if (element is IElementContainer container)
         {
-            if (element is IElementContainer container)
-            {
-                OnCharacterInputForElements(container.GetActiveElements(), ref args);
-                if (args.Handled)
-                    return;
-            }
-            if (element is ICharacterInputHandler characterEvents)
-                characterEvents.OnCharacterInput(ref args);
+            OnCharacterInputForElements(container.GetActiveElements(), ref args);
+            if (args.Handled)
+                return;
         }
+        if (element is ICharacterInputHandler characterEvents)
+            characterEvents.OnCharacterInput(ref args);
     }
 }

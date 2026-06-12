@@ -3,24 +3,23 @@ using System.Linq;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 
-namespace ConcreteUI.Theme
+namespace ConcreteUI.Theme;
+
+
+partial class ThemedColorFactory
 {
-
-    partial class ThemedColorFactory
+    private sealed class SimpleImpl : IThemedColorFactory
     {
-        private sealed class SimpleImpl : IThemedColorFactory
-        {
-            private readonly D2D1ColorF _color;
+        private readonly D2D1ColorF _color;
 
-            public SimpleImpl(in D2D1ColorF color) => _color = color;
+        public SimpleImpl(in D2D1ColorF color) => _color = color;
 
-            public D2D1ColorF CreateColorByMaterial(WindowMaterial material) => _color;
+        public D2D1ColorF CreateColorByMaterial(WindowMaterial material) => _color;
 
-            public D2D1ColorF CreateDefaultColor() => _color;
+        public D2D1ColorF CreateDefaultColor() => _color;
 
-            public IEnumerable<WindowMaterial> GetVariants() => Enumerable.Empty<WindowMaterial>();
+        public IEnumerable<WindowMaterial> GetVariants() => Enumerable.Empty<WindowMaterial>();
 
-            internal D2D1ColorF Destruct() => _color;
-        }
+        internal D2D1ColorF Destruct() => _color;
     }
 }

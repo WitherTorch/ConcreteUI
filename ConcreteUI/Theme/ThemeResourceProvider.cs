@@ -6,23 +6,22 @@ using ConcreteUI.Window;
 
 using InlineMethod;
 
-namespace ConcreteUI.Theme
+namespace ConcreteUI.Theme;
+
+public static partial class ThemeResourceProvider
 {
-    public static partial class ThemeResourceProvider
-    {
-        public static readonly IThemeResourceProvider Empty = new EmptyImpl();
+    public static readonly IThemeResourceProvider Empty = new EmptyImpl();
 
-        [Inline(InlineBehavior.Keep, export: true)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IThemeResourceProvider CreateResourceProvider(CoreWindow window, IThemeContext themeContext)
-            => CreateResourceProviderUnsafe(window.GetDeviceContext(), themeContext, window.ActualWindowMaterial);
+    [Inline(InlineBehavior.Keep, export: true)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static IThemeResourceProvider CreateResourceProvider(CoreWindow window, IThemeContext themeContext)
+        => CreateResourceProviderUnsafe(window.GetDeviceContext(), themeContext, window.ActualWindowMaterial);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IThemeResourceProvider CreateResourceProvider(D2D1DeviceContext deviceContext, IThemeContext themeContext, WindowMaterial windowMaterial)
-            => CreateResourceProviderUnsafe(deviceContext, themeContext, SystemHelper.GetActualWindowMaterial(windowMaterial));
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static IThemeResourceProvider CreateResourceProvider(D2D1DeviceContext deviceContext, IThemeContext themeContext, WindowMaterial windowMaterial)
+        => CreateResourceProviderUnsafe(deviceContext, themeContext, SystemHelper.GetActualWindowMaterial(windowMaterial));
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static IThemeResourceProvider CreateResourceProviderUnsafe(D2D1DeviceContext deviceContext, IThemeContext themeContext, WindowMaterial windowMaterial)
-            => new NormalImpl(deviceContext, themeContext, windowMaterial);
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static IThemeResourceProvider CreateResourceProviderUnsafe(D2D1DeviceContext deviceContext, IThemeContext themeContext, WindowMaterial windowMaterial)
+        => new NormalImpl(deviceContext, themeContext, windowMaterial);
 }

@@ -3,35 +3,34 @@ using System;
 using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public abstract class DisposableUIElementBase : UIElement, ICheckableDisposable
 {
-    public abstract class DisposableUIElementBase : UIElement, ICheckableDisposable
+    private bool _disposed;
+
+    protected DisposableUIElementBase(IElementContainer parent, string themePrefix)
+        : base(parent, themePrefix)
     {
-        private bool _disposed;
+        _disposed = false;
+    }
 
-        protected DisposableUIElementBase(IElementContainer parent, string themePrefix)
-            : base(parent, themePrefix)
-        {
-            _disposed = false;
-        }
+    public bool IsDisposed => _disposed;
 
-        public bool IsDisposed => _disposed;
+    protected abstract void DisposeCore(bool disposing);
 
-        protected abstract void DisposeCore(bool disposing);
+    private void Dispose(bool disposing)
+    {
+        if (ReferenceHelper.Exchange(ref _disposed, true))
+            return;
+        DisposeCore(disposing);
+    }
 
-        private void Dispose(bool disposing)
-        {
-            if (ReferenceHelper.Exchange(ref _disposed, true))
-                return;
-            DisposeCore(disposing);
-        }
+    ~DisposableUIElementBase() => Dispose(disposing: false);
 
-        ~DisposableUIElementBase() => Dispose(disposing: false);
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
 }

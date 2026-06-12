@@ -4,14 +4,13 @@ using System.Security;
 
 using WitherTorch.Common.Structures;
 
-namespace ConcreteUI.Graphics.Internals.Native
-{
-    [SuppressUnmanagedCodeSecurity]
-    internal static unsafe class User32
-    {
-        private const string LibraryName = "user32.dll";
+namespace ConcreteUI.Graphics.Internals.Native;
 
-        [DllImport(LibraryName)]
-        public static extern SysBool32 GetClientRect(IntPtr hWnd, Rect* lpRect);
-    }
+[SuppressUnmanagedCodeSecurity]
+internal static unsafe class User32
+{
+    private const string LibraryName = "user32.dll";
+
+    [DllImport(LibraryName)]
+    public static extern SysBool32 GetClientRect(IntPtr hWnd, Rect* lpRect);
 }

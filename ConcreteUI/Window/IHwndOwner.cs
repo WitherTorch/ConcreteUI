@@ -1,9 +1,8 @@
 using WitherTorch.Common;
 
-namespace ConcreteUI.Window
+namespace ConcreteUI.Window;
+
+public interface IHwndOwner : IWindowMessageFilter, ICheckableDisposable
 {
-    public interface IHwndOwner : IWindowMessageFilter, ICheckableDisposable
-    {
-        public nint Handle { get; }
-    }
+    public nint Handle { get; }
 }

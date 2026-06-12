@@ -1,7 +1,6 @@
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public interface IMeasuringContext
 {
-    public interface IMeasuringContext
-    {
-        void Adjust();
-    }
+    void Adjust();
 }

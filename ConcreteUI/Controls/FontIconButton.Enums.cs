@@ -1,13 +1,12 @@
-﻿namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class FontIconButton
 {
-    partial class FontIconButton
+    private enum Brush
     {
-        private enum Brush
-        {
-            ButtonBrush,
-            ButtonHoveredBrush,
-            ButtonPressedBrush,
-            _Last
-        }
+        ButtonBrush,
+        ButtonHoveredBrush,
+        ButtonPressedBrush,
+        _Last
     }
 }

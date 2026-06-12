@@ -1,7 +1,6 @@
-namespace ConcreteUI.Controls
-{
-    public interface IAdaptiveListItem<T> : IListItem
-    {
+namespace ConcreteUI.Controls;
 
-    }
+public interface IAdaptiveListItem<T> : IListItem
+{
+
 }

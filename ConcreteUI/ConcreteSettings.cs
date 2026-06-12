@@ -1,26 +1,25 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 using WitherTorch.Common;
 
-namespace ConcreteUI
+namespace ConcreteUI;
+
+public static class ConcreteSettings
 {
-    public static class ConcreteSettings
+    public const string ReservedGpuName_None = "#none";
+    public const string ReservedGpuName_Default = "#default";
+    public const string ReservedGpuName_MinimumPower = "#default_minimum_power";
+    public const string ReservedGpuName_HighPerformance = "#default_high_performance";
+
+    private static WindowMaterial _windowMaterial = WindowMaterial.Default;
+
+    public static bool UseDebugMode { get; set; } = WTCommon.IsDebug;
+    public static string TargetGpuName { get; set; } = ReservedGpuName_Default;
+    public static WindowMaterial WindowMaterial
     {
-        public const string ReservedGpuName_None = "#none";
-        public const string ReservedGpuName_Default = "#default";
-        public const string ReservedGpuName_MinimumPower = "#default_minimum_power";
-        public const string ReservedGpuName_HighPerformance = "#default_high_performance";
-
-        private static WindowMaterial _windowMaterial = WindowMaterial.Default;
-
-        public static bool UseDebugMode { get; set; } = WTCommon.IsDebug;
-        public static string TargetGpuName { get; set; } = ReservedGpuName_Default;
-        public static WindowMaterial WindowMaterial
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _windowMaterial;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => _windowMaterial = value;
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _windowMaterial;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set => _windowMaterial = value;
     }
 }

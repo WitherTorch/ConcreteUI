@@ -3,22 +3,21 @@ using System.Runtime.CompilerServices;
 
 using WitherTorch.Common.Extensions;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class PopupContainer
 {
-    partial class PopupContainer
+    public bool IsDisposed => _disposed;
+
+    public UIElement? FirstChild
     {
-        public bool IsDisposed => _disposed;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _children.GetUnderlyingList().FirstOrDefault();
+    }
 
-        public UIElement? FirstChild
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _children.GetUnderlyingList().FirstOrDefault();
-        }
-
-        public UIElement? LastChild
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _children.GetUnderlyingList().LastOrDefault();
-        }
+    public UIElement? LastChild
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _children.GetUnderlyingList().LastOrDefault();
     }
 }

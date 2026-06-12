@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 
 using ConcreteUI.Window;
 
-namespace ConcreteUI
+namespace ConcreteUI;
+
+public interface IWindowMessageFilter
 {
-    public interface IWindowMessageFilter
-    {
-        public bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result);
-    }
+    public bool TryProcessWindowMessage(IntPtr hwnd, WindowMessage message, nint wParam, nint lParam, out nint result);
 }

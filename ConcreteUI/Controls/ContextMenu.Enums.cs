@@ -1,17 +1,16 @@
-﻿namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class ContextMenu
 {
-    partial class ContextMenu
+    private enum Brush
     {
-        private enum Brush
-        {
-            BackBrush,
-            BackHoveredBrush,
-            BackPressedBrush,
-            BorderBrush,
-            TextBrush,
-            TextInactiveBrush,
-            TextHoveredBrush,
-            _Last
-        }
+        BackBrush,
+        BackHoveredBrush,
+        BackPressedBrush,
+        BorderBrush,
+        TextBrush,
+        TextInactiveBrush,
+        TextHoveredBrush,
+        _Last
     }
 }

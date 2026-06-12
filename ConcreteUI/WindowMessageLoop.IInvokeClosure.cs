@@ -1,10 +1,9 @@
-﻿namespace ConcreteUI
+namespace ConcreteUI;
+
+partial class WindowMessageLoop
 {
-    partial class WindowMessageLoop
+    private interface IInvokeClosure
     {
-        private interface IInvokeClosure
-        {
-            void Invoke();
-        }
+        void Invoke();
     }
 }

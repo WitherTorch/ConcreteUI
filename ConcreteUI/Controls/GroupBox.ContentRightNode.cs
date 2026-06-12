@@ -2,22 +2,21 @@ using System;
 
 using ConcreteUI.Layout;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class GroupBox
 {
-    partial class GroupBox
+    private sealed class ContentRightNode : LayoutNode
     {
-        private sealed class ContentRightNode : LayoutNode
+        private readonly WeakReference<GroupBox> _reference;
+
+        public ContentRightNode(WeakReference<GroupBox> reference) => _reference = reference;
+
+        public override int Compute(in LayoutNodeManager manager)
         {
-            private readonly WeakReference<GroupBox> _reference;
-
-            public ContentRightNode(WeakReference<GroupBox> reference) => _reference = reference;
-
-            public override int Compute(in LayoutNodeManager manager)
-            {
-                if (!_reference.TryGetTarget(out GroupBox? element))
-                    return 0;
-                return GetContentRightCore(manager.GetComputedValue(element, LayoutProperty.Right));
-            }
+            if (!_reference.TryGetTarget(out GroupBox? element))
+                return 0;
+            return GetContentRightCore(manager.GetComputedValue(element, LayoutProperty.Right));
         }
     }
 }

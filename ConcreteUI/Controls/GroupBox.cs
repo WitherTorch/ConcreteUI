@@ -21,299 +21,298 @@ using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public sealed partial class GroupBox : DisposableUIElementBase, IElementContainer
 {
-    public sealed partial class GroupBox : DisposableUIElementBase, IElementContainer
+    private static readonly string[] _brushNames = new string[(int)Brush._Last]
     {
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
+        "back",
+        "border",
+        "fore"
+    };
+
+    private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+    private readonly LayoutNode?[] _contentLayoutDefinitions = new LayoutNode?[(int)LayoutProperty._Last];
+    private readonly ObservableList<UIElement> _children;
+
+    private WeakReference<GroupBox>? _reference;
+    private TextTopNode? _textTopReference;
+    private DWriteTextLayout? _titleLayout, _textLayout;
+    private string? _fontName;
+    private string _title, _text;
+    private long _redrawTypeRaw, _rawUpdateFlags;
+    private int _titleHeight;
+
+    public GroupBox(IElementContainer parent) : base(parent, "app.groupBox")
+    {
+        _children = new ObservableList<UIElement>(new UnwrappableList<UIElement>(capacity: 0));
+        _children.BeforeAdd += Children_BeforeAdded;
+        _title = string.Empty;
+        _text = string.Empty;
+        _redrawTypeRaw = (long)RedrawType.RedrawAllContent;
+        _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public LayoutNode GetContentLayoutDefinition(LayoutProperty property)
+    {
+        if (property >= LayoutProperty._Last)
+            throw new ArgumentOutOfRangeException(nameof(property));
+        return GetContentLayoutDefinitionCore((nuint)property);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private LayoutNode GetContentLayoutDefinitionCore(nuint property)
+    {
+        ref LayoutNode? variable = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_contentLayoutDefinitions), property);
+        if (variable is null)
         {
-            "back",
-            "border",
-            "fore"
-        };
-
-        private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly LayoutNode?[] _contentLayoutDefinitions = new LayoutNode?[(int)LayoutProperty._Last];
-        private readonly ObservableList<UIElement> _children;
-
-        private WeakReference<GroupBox>? _reference;
-        private TextTopNode? _textTopReference;
-        private DWriteTextLayout? _titleLayout, _textLayout;
-        private string? _fontName;
-        private string _title, _text;
-        private long _redrawTypeRaw, _rawUpdateFlags;
-        private int _titleHeight;
-
-        public GroupBox(IElementContainer parent) : base(parent, "app.groupBox")
-        {
-            _children = new ObservableList<UIElement>(new UnwrappableList<UIElement>(capacity: 0));
-            _children.BeforeAdd += Children_BeforeAdded;
-            _title = string.Empty;
-            _text = string.Empty;
-            _redrawTypeRaw = (long)RedrawType.RedrawAllContent;
-            _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LayoutNode GetContentLayoutDefinition(LayoutProperty property)
-        {
-            if (property >= LayoutProperty._Last)
-                throw new ArgumentOutOfRangeException(nameof(property));
-            return GetContentLayoutDefinitionCore((nuint)property);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private LayoutNode GetContentLayoutDefinitionCore(nuint property)
-        {
-            ref LayoutNode? variable = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_contentLayoutDefinitions), property);
-            if (variable is null)
+            WeakReference<GroupBox>? reference = InterlockedHelper.Read(ref _reference);
+            if (reference is null)
             {
-                WeakReference<GroupBox>? reference = InterlockedHelper.Read(ref _reference);
-                if (reference is null)
-                {
-                    reference = new WeakReference<GroupBox>(this);
-                    WeakReference<GroupBox>? oldReference = InterlockedHelper.CompareExchange(ref _reference, reference, null);
-                    if (oldReference is not null)
-                        reference = oldReference;
-                }
-                variable = property switch
-                {
-                    (nuint)LayoutProperty.Left => new ContentLeftNode(reference),
-                    (nuint)LayoutProperty.Top => new ContentTopNode(reference),
-                    (nuint)LayoutProperty.Right => new ContentRightNode(reference),
-                    (nuint)LayoutProperty.Bottom => new ContentBottomNode(reference),
-                    (nuint)LayoutProperty.Width => new ContentWidthNode(reference),
-                    (nuint)LayoutProperty.Height => new ContentHeightNode(reference),
-                    _ => throw new ArgumentOutOfRangeException(nameof(property))
-                };
+                reference = new WeakReference<GroupBox>(this);
+                WeakReference<GroupBox>? oldReference = InterlockedHelper.CompareExchange(ref _reference, reference, null);
+                if (oldReference is not null)
+                    reference = oldReference;
             }
-            return variable;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<UIElement?> GetElements() => _children;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<UIElement?> GetActiveElements() => ElementContainerDefaults.GetActiveElements(this);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddChild(UIElement element) => _children.Add(element);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddChildren(params UIElement[] elements) => _children.AddRange(elements);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddChildren(IEnumerable<UIElement> elements) => _children.AddRange(elements);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RemoveChild(UIElement element) => _children.Remove(element);
-
-        protected override void ApplyThemeCore(IThemeResourceProvider provider)
-        {
-            UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
-            foreach (UIElement child in _children)
-                child.ApplyTheme(provider);
-            string fontName = provider.FontName;
-            _fontName = fontName;
-            using DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(fontName, UIConstants.DefaultFontSize);
-            format.ParagraphAlignment = DWriteParagraphAlignment.Center;
-            format.TextAlignment = DWriteTextAlignment.Center;
-            format.WordWrapping = DWriteWordWrapping.NoWrap;
-            Interlocked.Exchange(ref _titleHeight, GraphicsUtils.MeasureTextHeightAsInt("Ty", format));
-            DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
-            DisposeHelper.SwapDisposeInterlocked(ref _textLayout);
-            Update(RenderObjectUpdateFlags.Format, RedrawType.RedrawAllContent);
-        }
-
-        public void RenderBackground(UIElement element, in RegionalRenderingContext context)
-            => RenderBackground(context, UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush));
-
-        private void Children_BeforeAdded(object? sender, BeforeListAddOrRemoveEventArgs<UIElement> e) => e.Item.Parent = this;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override void Update() => Update(RedrawType.RedrawAllContent);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Update(RedrawType type)
-        {
-            if (type == RedrawType.NoRedraw)
-                return;
-            InterlockedHelper.Or(ref _redrawTypeRaw, (long)type);
-            UpdateCore();
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private void Update(RenderObjectUpdateFlags flags, RedrawType redrawType)
-        {
-            InterlockedHelper.Or(ref _rawUpdateFlags, (long)flags);
-            Update(redrawType);
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private RedrawType GetRedrawTypeAndReset()
-            => (RedrawType)Interlocked.Exchange(ref _redrawTypeRaw, (long)RedrawType.NoRedraw);
-
-        [Inline(InlineBehavior.Remove)]
-        private RenderObjectUpdateFlags GetAndCleanRenderObjectUpdateFlags()
-            => (RenderObjectUpdateFlags)Interlocked.Exchange(ref _rawUpdateFlags, default);
-
-        public override bool NeedRefresh()
-        {
-            if (_redrawTypeRaw > (long)RedrawType.NoRedraw)
-                return true;
-            return Interlocked.Read(ref _redrawTypeRaw) > (long)RedrawType.NoRedraw;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void GetLayouts(RenderObjectUpdateFlags flags, out DWriteTextLayout? titleLayout, out DWriteTextLayout? textLayout)
-        {
-            titleLayout = Interlocked.Exchange(ref _titleLayout, null);
-            textLayout = Interlocked.Exchange(ref _textLayout, null);
-
-            DWriteFactory factory = SharedResources.DWriteFactory;
-            if ((flags & RenderObjectUpdateFlags.Title) == RenderObjectUpdateFlags.Title)
+            variable = property switch
             {
-                DWriteTextFormat? format = titleLayout;
-                if (CheckFormatIsNotAvailable(format, flags))
-                    format = TextFormatHelper.CreateTextFormat(TextAlignment.MiddleCenter, NullSafetyHelper.ThrowIfNull(_fontName), UIConstants.DefaultFontSize);
-                titleLayout = factory.CreateTextLayout(_title ?? string.Empty, format);
-                format.Dispose();
-                titleLayout.MaxWidth = titleLayout.GetMetrics().Width + UIConstants.ElementMarginDouble;
-                titleLayout.MaxHeight = InterlockedHelper.Read(ref _titleHeight);
-            }
-            if ((flags & RenderObjectUpdateFlags.Text) == RenderObjectUpdateFlags.Text)
-            {
-                DWriteTextFormat? format = textLayout;
-                if (CheckFormatIsNotAvailable(format, flags))
-                {
-                    format = TextFormatHelper.CreateTextFormat(TextAlignment.TopLeft, NullSafetyHelper.ThrowIfNull(_fontName), UIConstants.DefaultFontSize);
-                    format.SetLineSpacing(DWriteLineSpacingMethod.Uniform, 20, 16);
-                    format.WordWrapping = DWriteWordWrapping.EmergencyBreak;
-                }
-                textLayout = factory.CreateTextLayout(_text ?? string.Empty, format);
-                format.Dispose();
-            }
+                (nuint)LayoutProperty.Left => new ContentLeftNode(reference),
+                (nuint)LayoutProperty.Top => new ContentTopNode(reference),
+                (nuint)LayoutProperty.Right => new ContentRightNode(reference),
+                (nuint)LayoutProperty.Bottom => new ContentBottomNode(reference),
+                (nuint)LayoutProperty.Width => new ContentWidthNode(reference),
+                (nuint)LayoutProperty.Height => new ContentHeightNode(reference),
+                _ => throw new ArgumentOutOfRangeException(nameof(property))
+            };
         }
+        return variable;
+    }
 
-        [Inline(InlineBehavior.Remove)]
-        private static bool CheckFormatIsNotAvailable([NotNullWhen(false)] DWriteTextFormat? format, RenderObjectUpdateFlags flags)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public IEnumerable<UIElement?> GetElements() => _children;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public IEnumerable<UIElement?> GetActiveElements() => ElementContainerDefaults.GetActiveElements(this);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddChild(UIElement element) => _children.Add(element);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddChildren(params UIElement[] elements) => _children.AddRange(elements);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddChildren(IEnumerable<UIElement> elements) => _children.AddRange(elements);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void RemoveChild(UIElement element) => _children.Remove(element);
+
+    protected override void ApplyThemeCore(IThemeResourceProvider provider)
+    {
+        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
+        foreach (UIElement child in _children)
+            child.ApplyTheme(provider);
+        string fontName = provider.FontName;
+        _fontName = fontName;
+        using DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(fontName, UIConstants.DefaultFontSize);
+        format.ParagraphAlignment = DWriteParagraphAlignment.Center;
+        format.TextAlignment = DWriteTextAlignment.Center;
+        format.WordWrapping = DWriteWordWrapping.NoWrap;
+        Interlocked.Exchange(ref _titleHeight, GraphicsUtils.MeasureTextHeightAsInt("Ty", format));
+        DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
+        DisposeHelper.SwapDisposeInterlocked(ref _textLayout);
+        Update(RenderObjectUpdateFlags.Format, RedrawType.RedrawAllContent);
+    }
+
+    public void RenderBackground(UIElement element, in RegionalRenderingContext context)
+        => RenderBackground(context, UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush));
+
+    private void Children_BeforeAdded(object? sender, BeforeListAddOrRemoveEventArgs<UIElement> e) => e.Item.Parent = this;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected override void Update() => Update(RedrawType.RedrawAllContent);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void Update(RedrawType type)
+    {
+        if (type == RedrawType.NoRedraw)
+            return;
+        InterlockedHelper.Or(ref _redrawTypeRaw, (long)type);
+        UpdateCore();
+    }
+
+    [Inline(InlineBehavior.Remove)]
+    private void Update(RenderObjectUpdateFlags flags, RedrawType redrawType)
+    {
+        InterlockedHelper.Or(ref _rawUpdateFlags, (long)flags);
+        Update(redrawType);
+    }
+
+    [Inline(InlineBehavior.Remove)]
+    private RedrawType GetRedrawTypeAndReset()
+        => (RedrawType)Interlocked.Exchange(ref _redrawTypeRaw, (long)RedrawType.NoRedraw);
+
+    [Inline(InlineBehavior.Remove)]
+    private RenderObjectUpdateFlags GetAndCleanRenderObjectUpdateFlags()
+        => (RenderObjectUpdateFlags)Interlocked.Exchange(ref _rawUpdateFlags, default);
+
+    public override bool NeedRefresh()
+    {
+        if (_redrawTypeRaw > (long)RedrawType.NoRedraw)
+            return true;
+        return Interlocked.Read(ref _redrawTypeRaw) > (long)RedrawType.NoRedraw;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void GetLayouts(RenderObjectUpdateFlags flags, out DWriteTextLayout? titleLayout, out DWriteTextLayout? textLayout)
+    {
+        titleLayout = Interlocked.Exchange(ref _titleLayout, null);
+        textLayout = Interlocked.Exchange(ref _textLayout, null);
+
+        DWriteFactory factory = SharedResources.DWriteFactory;
+        if ((flags & RenderObjectUpdateFlags.Title) == RenderObjectUpdateFlags.Title)
         {
-            if (format is null || format.IsDisposed)
-                return true;
-            if ((flags & RenderObjectUpdateFlags.Format) == RenderObjectUpdateFlags.Format)
-            {
-                format.Dispose();
-                return true;
-            }
-            return false;
+            DWriteTextFormat? format = titleLayout;
+            if (CheckFormatIsNotAvailable(format, flags))
+                format = TextFormatHelper.CreateTextFormat(TextAlignment.MiddleCenter, NullSafetyHelper.ThrowIfNull(_fontName), UIConstants.DefaultFontSize);
+            titleLayout = factory.CreateTextLayout(_title ?? string.Empty, format);
+            format.Dispose();
+            titleLayout.MaxWidth = titleLayout.GetMetrics().Width + UIConstants.ElementMarginDouble;
+            titleLayout.MaxHeight = InterlockedHelper.Read(ref _titleHeight);
         }
-
-        protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(
-            UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush));
-
-        bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
-
-        public override void Render(in RegionalRenderingContext context) => Render(context, markDirty: false);
-
-        protected override bool RenderCore(in RegionalRenderingContext context)
+        if ((flags & RenderObjectUpdateFlags.Text) == RenderObjectUpdateFlags.Text)
         {
-            RedrawType redrawType = GetRedrawTypeAndReset();
-            if (!context.HasDirtyCollector) // Force redraw
-                redrawType = RedrawType.RedrawAllContent;
-            else if (redrawType == RedrawType.NoRedraw)
-                return true;
-            GetLayouts(GetAndCleanRenderObjectUpdateFlags(), out DWriteTextLayout? titleLayout, out DWriteTextLayout? textLayout);
-            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
-            D2D1Brush backBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BackBrush);
-            D2D1Brush textBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TextBrush);
-            switch (redrawType)
+            DWriteTextFormat? format = textLayout;
+            if (CheckFormatIsNotAvailable(format, flags))
             {
-                case RedrawType.RedrawAllContent:
-                    {
-                        SizeF renderSize = context.Size;
-                        RectF borderBounds = new RectF(0, _titleHeight * 0.5f, renderSize.Width, renderSize.Height);
-                        RenderBackground(context, backBrush);
-                        context.DrawBorder(borderBounds, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BorderBrush));
-                        RenderTitle(context, backBrush, textBrush, titleLayout);
-                        RenderText(context.WithEmptyDirtyCollector(), backBrush, textBrush, textLayout);
-                        context.MarkAsDirty();
-                    }
-                    break;
-                case RedrawType.RedrawText:
-                    RenderText(in context, backBrush, textBrush, textLayout);
-                    if (titleLayout is not null)
-                        DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
-                    break;
+                format = TextFormatHelper.CreateTextFormat(TextAlignment.TopLeft, NullSafetyHelper.ThrowIfNull(_fontName), UIConstants.DefaultFontSize);
+                format.SetLineSpacing(DWriteLineSpacingMethod.Uniform, 20, 16);
+                format.WordWrapping = DWriteWordWrapping.EmergencyBreak;
             }
+            textLayout = factory.CreateTextLayout(_text ?? string.Empty, format);
+            format.Dispose();
+        }
+    }
+
+    [Inline(InlineBehavior.Remove)]
+    private static bool CheckFormatIsNotAvailable([NotNullWhen(false)] DWriteTextFormat? format, RenderObjectUpdateFlags flags)
+    {
+        if (format is null || format.IsDisposed)
+            return true;
+        if ((flags & RenderObjectUpdateFlags.Format) == RenderObjectUpdateFlags.Format)
+        {
+            format.Dispose();
             return true;
         }
+        return false;
+    }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void RenderTitle(in RegionalRenderingContext context, D2D1Brush backBrush, D2D1Brush textBrush, DWriteTextLayout? layout)
+    protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(
+        UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush));
+
+    bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
+
+    public override void Render(in RegionalRenderingContext context) => Render(context, markDirty: false);
+
+    protected override bool RenderCore(in RegionalRenderingContext context)
+    {
+        RedrawType redrawType = GetRedrawTypeAndReset();
+        if (!context.HasDirtyCollector) // Force redraw
+            redrawType = RedrawType.RedrawAllContent;
+        else if (redrawType == RedrawType.NoRedraw)
+            return true;
+        GetLayouts(GetAndCleanRenderObjectUpdateFlags(), out DWriteTextLayout? titleLayout, out DWriteTextLayout? textLayout);
+        ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
+        D2D1Brush backBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BackBrush);
+        D2D1Brush textBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TextBrush);
+        switch (redrawType)
         {
-            if (layout is null)
-                return;
+            case RedrawType.RedrawAllContent:
+                {
+                    SizeF renderSize = context.Size;
+                    RectF borderBounds = new RectF(0, _titleHeight * 0.5f, renderSize.Width, renderSize.Height);
+                    RenderBackground(context, backBrush);
+                    context.DrawBorder(borderBounds, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BorderBrush));
+                    RenderTitle(context, backBrush, textBrush, titleLayout);
+                    RenderText(context.WithEmptyDirtyCollector(), backBrush, textBrush, textLayout);
+                    context.MarkAsDirty();
+                }
+                break;
+            case RedrawType.RedrawText:
+                RenderText(in context, backBrush, textBrush, textLayout);
+                if (titleLayout is not null)
+                    DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
+                break;
+        }
+        return true;
+    }
 
-            RectF bounds = RectF.FromXYWH(UIConstants.ElementMargin, 0, layout.MaxWidth, layout.MaxHeight);
-            using RenderingClipScope scope = context.PushPixelAlignedClip(ref bounds, D2D1AntialiasMode.Aliased);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void RenderTitle(in RegionalRenderingContext context, D2D1Brush backBrush, D2D1Brush textBrush, DWriteTextLayout? layout)
+    {
+        if (layout is null)
+            return;
+
+        RectF bounds = RectF.FromXYWH(UIConstants.ElementMargin, 0, layout.MaxWidth, layout.MaxHeight);
+        using RenderingClipScope scope = context.PushPixelAlignedClip(ref bounds, D2D1AntialiasMode.Aliased);
+        RenderBackground(context, backBrush);
+        context.DrawTextLayout(bounds.Location, layout, textBrush, D2D1DrawTextOptions.Clip | D2D1DrawTextOptions.NoSnap);
+        DisposeHelper.NullSwapOrDispose(ref _titleLayout, layout);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void RenderText(in RegionalRenderingContext context, D2D1Brush backBrush, D2D1Brush textBrush, DWriteTextLayout? layout)
+    {
+        if (layout is null)
+            return;
+        Rect bounds = Bounds;
+        SizeF renderSize = context.Size;
+        Point location = TextLocation;
+
+        RectF textBounds = new RectF(location.X - bounds.X, location.Y - bounds.Y,
+            renderSize.Width - UIConstants.ElementMarginDouble, renderSize.Height - UIConstants.ElementMarginDouble);
+        if (!textBounds.IsValid)
+            return;
+        using RenderingClipScope clipToken = context.PushPixelAlignedClip(ref textBounds, D2D1AntialiasMode.Aliased);
+        layout.MaxWidth = textBounds.Width;
+        if (context.HasDirtyCollector)
+        {
             RenderBackground(context, backBrush);
-            context.DrawTextLayout(bounds.Location, layout, textBrush, D2D1DrawTextOptions.Clip | D2D1DrawTextOptions.NoSnap);
-            DisposeHelper.NullSwapOrDispose(ref _titleLayout, layout);
+            context.MarkAsDirty(textBounds);
         }
+        context.DrawTextLayout(textBounds.Location, layout, textBrush, D2D1DrawTextOptions.None);
+        DisposeHelper.NullSwapOrDispose(ref _textLayout, layout);
+    }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void RenderText(in RegionalRenderingContext context, D2D1Brush backBrush, D2D1Brush textBrush, DWriteTextLayout? layout)
+    [Inline(InlineBehavior.Remove)]
+    private static int GetContentLeftCore(int x) => x + UIConstants.ElementMarginDouble;
+
+    [Inline(InlineBehavior.Remove)]
+    private int GetContentTopCore(int y) => GetTextTopCore(y) + UIConstants.ElementMargin;
+
+    [Inline(InlineBehavior.Remove)]
+    private static int GetContentRightCore(int right) => right - UIConstants.ElementMarginDouble;
+
+    [Inline(InlineBehavior.Remove)]
+    private static int GetContentBottomCore(int bottom) => bottom - UIConstants.ElementMarginDouble;
+
+    [Inline(InlineBehavior.Remove)]
+    private int GetTextTopCore(int y) => y + InterlockedHelper.Read(ref _titleHeight);
+
+    IRenderer IElementContainer.GetRenderer() => Renderer;
+
+    CoreWindow IElementContainer.GetWindow() => Window;
+
+    protected override void DisposeCore(bool disposing)
+    {
+        if (disposing)
         {
-            if (layout is null)
-                return;
-            Rect bounds = Bounds;
-            SizeF renderSize = context.Size;
-            Point location = TextLocation;
-
-            RectF textBounds = new RectF(location.X - bounds.X, location.Y - bounds.Y,
-                renderSize.Width - UIConstants.ElementMarginDouble, renderSize.Height - UIConstants.ElementMarginDouble);
-            if (!textBounds.IsValid)
-                return;
-            using RenderingClipScope clipToken = context.PushPixelAlignedClip(ref textBounds, D2D1AntialiasMode.Aliased);
-            layout.MaxWidth = textBounds.Width;
-            if (context.HasDirtyCollector)
-            {
-                RenderBackground(context, backBrush);
-                context.MarkAsDirty(textBounds);
-            }
-            context.DrawTextLayout(textBounds.Location, layout, textBrush, D2D1DrawTextOptions.None);
-            DisposeHelper.NullSwapOrDispose(ref _textLayout, layout);
+            DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
+            DisposeHelper.SwapDisposeInterlocked(ref _textLayout);
+            DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
         }
-
-        [Inline(InlineBehavior.Remove)]
-        private static int GetContentLeftCore(int x) => x + UIConstants.ElementMarginDouble;
-
-        [Inline(InlineBehavior.Remove)]
-        private int GetContentTopCore(int y) => GetTextTopCore(y) + UIConstants.ElementMargin;
-
-        [Inline(InlineBehavior.Remove)]
-        private static int GetContentRightCore(int right) => right - UIConstants.ElementMarginDouble;
-
-        [Inline(InlineBehavior.Remove)]
-        private static int GetContentBottomCore(int bottom) => bottom - UIConstants.ElementMarginDouble;
-
-        [Inline(InlineBehavior.Remove)]
-        private int GetTextTopCore(int y) => y + InterlockedHelper.Read(ref _titleHeight);
-
-        IRenderer IElementContainer.GetRenderer() => Renderer;
-
-        CoreWindow IElementContainer.GetWindow() => Window;
-
-        protected override void DisposeCore(bool disposing)
-        {
-            if (disposing)
-            {
-                DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
-                DisposeHelper.SwapDisposeInterlocked(ref _textLayout);
-                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
-            }
-            SequenceHelper.Clear(_brushes);
-            ListHelper.CleanAllWeak<UIElement, ObservableList<UIElement>>(_children, disposing);
-        }
+        SequenceHelper.Clear(_brushes);
+        ListHelper.CleanAllWeak<UIElement, ObservableList<UIElement>>(_children, disposing);
     }
 }

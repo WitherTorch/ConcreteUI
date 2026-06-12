@@ -1,16 +1,15 @@
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.DXGI;
 
-namespace ConcreteUI.Graphics
+namespace ConcreteUI.Graphics;
+
+public interface IRenderingControl
 {
-    public interface IRenderingControl
-    {
-        DXGISwapChain GetSwapChain();
+    DXGISwapChain GetSwapChain();
 
-        D2D1DeviceContext GetDeviceContext();
+    D2D1DeviceContext GetDeviceContext();
 
-        RenderingController? GetRenderingController();
+    RenderingController? GetRenderingController();
 
-        void Render(RenderingController controller);
-    }
+    void Render(RenderingController controller);
 }

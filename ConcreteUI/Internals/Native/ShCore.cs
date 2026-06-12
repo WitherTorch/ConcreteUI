@@ -8,30 +8,29 @@ using LocalsInit;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
-namespace ConcreteUI.Internals.Native
-{
-    [SuppressUnmanagedCodeSecurity]
-    internal static unsafe class ShCore
-    {
-        private const string LibraryName = "Shcore.dll";
-        private static readonly void*[] _pointers = NativeMethods.GetImportedMethodPointers(LibraryName,
-            nameof(GetDpiForMonitor));
+namespace ConcreteUI.Internals.Native;
 
-        [LocalsInit(false)]
-        public static int GetDpiForMonitor(IntPtr hMonitor, MonitorDpiType dpiType, out uint dpiX, out uint dpiY)
-        {
-            UnsafeHelper.SkipInit(out dpiX);
-            UnsafeHelper.SkipInit(out dpiY);
-            void* pointer = _pointers[0];
-            if (pointer == null)
-                return Constants.E_NOTIMPL;
-            return ((delegate* unmanaged
+[SuppressUnmanagedCodeSecurity]
+internal static unsafe class ShCore
+{
+    private const string LibraryName = "Shcore.dll";
+    private static readonly void*[] _pointers = NativeMethods.GetImportedMethodPointers(LibraryName,
+        nameof(GetDpiForMonitor));
+
+    [LocalsInit(false)]
+    public static int GetDpiForMonitor(IntPtr hMonitor, MonitorDpiType dpiType, out uint dpiX, out uint dpiY)
+    {
+        UnsafeHelper.SkipInit(out dpiX);
+        UnsafeHelper.SkipInit(out dpiY);
+        void* pointer = _pointers[0];
+        if (pointer == null)
+            return Constants.E_NOTIMPL;
+        return ((delegate* unmanaged
 #if NET8_0_OR_GREATER
-                [Stdcall, SuppressGCTransition]
+            [Stdcall, SuppressGCTransition]
 #else
-                [Stdcall]
+            [Stdcall]
 #endif
-                <IntPtr, MonitorDpiType, uint*, uint*, int>)pointer)(hMonitor, dpiType, UnsafeHelper.AsPointerOut(out dpiX), UnsafeHelper.AsPointerOut(out dpiY));
-        }
+            <IntPtr, MonitorDpiType, uint*, uint*, int>)pointer)(hMonitor, dpiType, UnsafeHelper.AsPointerOut(out dpiX), UnsafeHelper.AsPointerOut(out dpiY));
     }
 }

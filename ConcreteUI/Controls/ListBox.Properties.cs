@@ -12,130 +12,129 @@ using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class ListBox
 {
-    partial class ListBox
+    public event EventHandler? SelectedIndicesChanged;
+
+    public string[] SelectedItems
     {
-        public event EventHandler? SelectedIndicesChanged;
-
-        public string[] SelectedItems
+        get
         {
-            get
+            ObservableList<string> items = _items;
+            int count = items.Count;
+            if (count <= 0)
+                return Array.Empty<string>();
+            ArrayPool<string> pool = ArrayPool<string>.Shared;
+            string[] buffer = pool.Rent(count);
+            try
             {
-                ObservableList<string> items = _items;
-                int count = items.Count;
-                if (count <= 0)
+                CopySelectedItemsToBufferCore(items, count, buffer, 0, out int resultLength);
+                if (resultLength <= 0)
                     return Array.Empty<string>();
-                ArrayPool<string> pool = ArrayPool<string>.Shared;
-                string[] buffer = pool.Rent(count);
-                try
-                {
-                    CopySelectedItemsToBufferCore(items, count, buffer, 0, out int resultLength);
-                    if (resultLength <= 0)
-                        return Array.Empty<string>();
-                    string[] result = new string[resultLength];
-                    Array.Copy(buffer, result, resultLength);
-                    return result;
-                }
-                finally
-                {
-                    pool.Return(buffer);
-                }
+                string[] result = new string[resultLength];
+                Array.Copy(buffer, result, resultLength);
+                return result;
+            }
+            finally
+            {
+                pool.Return(buffer);
             }
         }
+    }
 
-        public unsafe int[] SelectedIndices
+    public unsafe int[] SelectedIndices
+    {
+        get
         {
-            get
+            ObservableList<string> items = _items;
+            int count = items.Count;
+            if (count <= 0)
+                return Array.Empty<int>();
+            NativeMemoryPool pool = NativeMemoryPool.Shared;
+            TypedNativeMemoryBlock<int> buffer = pool.Rent<int>(count);
+            int* ptr = buffer.NativePointer;
+            try
             {
-                ObservableList<string> items = _items;
-                int count = items.Count;
-                if (count <= 0)
+                CopySelectedIndicesToBufferCore(count, ptr, 0, out int resultLength);
+                if (resultLength <= 0)
                     return Array.Empty<int>();
-                NativeMemoryPool pool = NativeMemoryPool.Shared;
-                TypedNativeMemoryBlock<int> buffer = pool.Rent<int>(count);
-                int* ptr = buffer.NativePointer;
-                try
-                {
-                    CopySelectedIndicesToBufferCore(count, ptr, 0, out int resultLength);
-                    if (resultLength <= 0)
-                        return Array.Empty<int>();
-                    int[] result = new int[resultLength];
-                    fixed (int* destination = result)
-                        UnsafeHelper.CopyBlock(destination, ptr, (nuint)resultLength * sizeof(int));
-                    return result;
-                }
-                finally
-                {
-                    pool.Return(buffer);
-                }
+                int[] result = new int[resultLength];
+                fixed (int* destination = result)
+                    UnsafeHelper.CopyBlock(destination, ptr, (nuint)resultLength * sizeof(int));
+                return result;
+            }
+            finally
+            {
+                pool.Return(buffer);
             }
         }
+    }
 
-        public int ItemHeight
+    public int ItemHeight
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => InterlockedHelper.Read(ref _itemHeight);
+    }
+
+    public ListBoxMode Mode
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _chooseMode;
+        set
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => InterlockedHelper.Read(ref _itemHeight);
+            if (_chooseMode == value)
+                return;
+            _chooseMode = value;
+            Update();
         }
+    }
 
-        public ListBoxMode Mode
+    public IList<string> Items
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _items;
+    }
+
+    public float FontSize
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _fontSize;
+        set
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _chooseMode;
-            set
-            {
-                if (_chooseMode == value)
-                    return;
-                _chooseMode = value;
+            if (_fontSize == value)
+                return;
+            _fontSize = value;
+            DisposeHelper.SwapDisposeInterlocked(ref _format);
+            Interlocked.Exchange(ref _recalcFormat, Booleans.TrueLong);
+            if (Items.Count > 0)
                 Update();
-            }
         }
+    }
 
-        public IList<string> Items
+    public string CheckBoxThemePrefix
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _checkBoxThemePrefix;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _items;
+            if (SequenceHelper.Equals(_checkBoxThemePrefix, value))
+                return;
+            _checkBoxThemePrefix = value;
         }
+    }
 
-        public float FontSize
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _fontSize;
-            set
-            {
-                if (_fontSize == value)
-                    return;
-                _fontSize = value;
-                DisposeHelper.SwapDisposeInterlocked(ref _format);
-                Interlocked.Exchange(ref _recalcFormat, Booleans.TrueLong);
-                if (Items.Count > 0)
-                    Update();
-            }
-        }
+    public LayoutNode AutoWidthDefinition
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _autoLayoutDefinitionCache[0] ??= new AutoWidthNode(this);
+    }
 
-        public string CheckBoxThemePrefix
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _checkBoxThemePrefix;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                if (SequenceHelper.Equals(_checkBoxThemePrefix, value))
-                    return;
-                _checkBoxThemePrefix = value;
-            }
-        }
-
-        public LayoutNode AutoWidthDefinition
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _autoLayoutDefinitionCache[0] ??= new AutoWidthNode(this);
-        }
-
-        public LayoutNode AutoHeightDefinition
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _autoLayoutDefinitionCache[1] ??= new AutoHeightNode(this);
-        }
+    public LayoutNode AutoHeightDefinition
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _autoLayoutDefinitionCache[1] ??= new AutoHeightNode(this);
     }
 }

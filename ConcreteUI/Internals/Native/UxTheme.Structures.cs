@@ -1,21 +1,20 @@
 using System.Runtime.InteropServices;
 
-namespace ConcreteUI.Internals.Native
-{
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct Margins
-    {
-        public int Left;
-        public int Right;
-        public int Top;
-        public int Bottom;
+namespace ConcreteUI.Internals.Native;
 
-        public Margins(int value)
-        {
-            Left = value;
-            Right = value;
-            Top = value;
-            Bottom = value;
-        }
+[StructLayout(LayoutKind.Sequential)]
+internal struct Margins
+{
+    public int Left;
+    public int Right;
+    public int Top;
+    public int Bottom;
+
+    public Margins(int value)
+    {
+        Left = value;
+        Right = value;
+        Top = value;
+        Bottom = value;
     }
 }

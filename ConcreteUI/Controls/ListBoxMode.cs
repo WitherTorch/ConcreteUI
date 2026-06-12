@@ -1,9 +1,8 @@
-﻿namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public enum ListBoxMode
 {
-    public enum ListBoxMode
-    {
-        None,
-        Any,
-        Some
-    }
+    None,
+    Any,
+    Some
 }

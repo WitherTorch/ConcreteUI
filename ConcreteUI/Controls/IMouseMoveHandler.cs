@@ -1,7 +1,6 @@
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public interface IMouseMoveHandler
 {
-    public interface IMouseMoveHandler
-    {
-        void OnMouseMove(in MouseEventArgs args);
-    }
+    void OnMouseMove(in MouseEventArgs args);
 }

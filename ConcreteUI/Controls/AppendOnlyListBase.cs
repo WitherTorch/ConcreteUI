@@ -9,163 +9,162 @@ using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public abstract partial class AppendOnlyListBase<TItem, TMeasuringContext> : ScrollableElementBase
+    where TItem : IMeasurableListItem<TMeasuringContext> where TMeasuringContext : IMeasuringContext
 {
-    public abstract partial class AppendOnlyListBase<TItem, TMeasuringContext> : ScrollableElementBase
-        where TItem : IMeasurableListItem<TMeasuringContext> where TMeasuringContext : IMeasuringContext
+    protected readonly AppendOnlyListItemStore<TItem, TMeasuringContext> _itemStore;
+    private bool _ignoreNeedRefresh;
+
+    protected AppendOnlyListBase(IElementContainer parent, string themePrefix, AppendOnlyListItemStore<TItem, TMeasuringContext> itemStore) : base(parent, themePrefix)
     {
-        protected readonly AppendOnlyListItemStore<TItem, TMeasuringContext> _itemStore;
-        private bool _ignoreNeedRefresh;
+        _itemStore = itemStore;
+        itemStore.HeightChanged += ItemStore_HeightChanged;
+        itemStore.Bind(this);
+        Initialize();
+    }
 
-        protected AppendOnlyListBase(IElementContainer parent, string themePrefix, AppendOnlyListItemStore<TItem, TMeasuringContext> itemStore) : base(parent, themePrefix)
+    protected AppendOnlyListBase(IElementContainer parent, string themePrefix, string scrollBarThemePrefix, AppendOnlyListItemStore<TItem, TMeasuringContext> itemStore) : base(parent, themePrefix, scrollBarThemePrefix)
+    {
+        _itemStore = itemStore;
+        itemStore.HeightChanged += ItemStore_HeightChanged;
+        itemStore.Bind(this);
+        Initialize();
+    }
+
+    protected virtual void Initialize()
+    {
+        ScrollBarType = ScrollBarType.AutoVertial;
+        StickBottom = true;
+        _ignoreNeedRefresh = true;
+    }
+
+    protected virtual void Append(TItem item)
+    {
+        FreezeUpdate();
+        try
         {
-            _itemStore = itemStore;
-            itemStore.HeightChanged += ItemStore_HeightChanged;
-            itemStore.Bind(this);
-            Initialize();
+            _itemStore.Append(item);
         }
-
-        protected AppendOnlyListBase(IElementContainer parent, string themePrefix, string scrollBarThemePrefix, AppendOnlyListItemStore<TItem, TMeasuringContext> itemStore) : base(parent, themePrefix, scrollBarThemePrefix)
+        finally
         {
-            _itemStore = itemStore;
-            itemStore.HeightChanged += ItemStore_HeightChanged;
-            itemStore.Bind(this);
-            Initialize();
+            UnfreezeUpdate(forceUpdate: true);
         }
+    }
 
-        protected virtual void Initialize()
+    protected virtual void Append(IEnumerable<TItem> items)
+    {
+        FreezeUpdate();
+        try
         {
-            ScrollBarType = ScrollBarType.AutoVertial;
-            StickBottom = true;
-            _ignoreNeedRefresh = true;
+            _itemStore.Append(items);
         }
-
-        protected virtual void Append(TItem item)
+        finally
         {
-            FreezeUpdate();
-            try
-            {
-                _itemStore.Append(item);
-            }
-            finally
-            {
-                UnfreezeUpdate(forceUpdate: true);
-            }
+            UnfreezeUpdate(forceUpdate: true);
         }
+    }
 
-        protected virtual void Append(IEnumerable<TItem> items)
+    protected override void OnContentBoundsChanged()
+    {
+        FreezeUpdate();
+        try
         {
-            FreezeUpdate();
-            try
-            {
-                _itemStore.Append(items);
-            }
-            finally
-            {
-                UnfreezeUpdate(forceUpdate: true);
-            }
+            base.OnContentBoundsChanged();
+            _itemStore.AdjustAll();
         }
-
-        protected override void OnContentBoundsChanged()
+        finally
         {
-            FreezeUpdate();
-            try
-            {
-                base.OnContentBoundsChanged();
-                _itemStore.AdjustAll();
-            }
-            finally
-            {
-                UnfreezeUpdate(forceUpdate: false);
-            }
+            UnfreezeUpdate(forceUpdate: false);
         }
+    }
 
-        protected override bool RenderContent(in RegionalRenderingContext context, D2D1Brush backBrush)
+    protected override bool RenderContent(in RegionalRenderingContext context, D2D1Brush backBrush)
+    {
+        bool ignoreNeedRefresh = ReferenceHelper.Exchange(ref _ignoreNeedRefresh, false);
+        bool needRenderBackgroundPerItem;
+        if (context.HasDirtyCollector)
         {
-            bool ignoreNeedRefresh = ReferenceHelper.Exchange(ref _ignoreNeedRefresh, false);
-            bool needRenderBackgroundPerItem;
-            if (context.HasDirtyCollector)
+            if (ignoreNeedRefresh)
             {
-                if (ignoreNeedRefresh)
-                {
-                    needRenderBackgroundPerItem = false;
-                    RenderBackground(context, backBrush);
-                    context.MarkAsDirty();
-                }
-                else
-                {
-                    needRenderBackgroundPerItem = true;
-                }
+                needRenderBackgroundPerItem = false;
+                RenderBackground(context, backBrush);
+                context.MarkAsDirty();
             }
             else
             {
-                needRenderBackgroundPerItem = false;
-                ignoreNeedRefresh = true;
+                needRenderBackgroundPerItem = true;
             }
+        }
+        else
+        {
+            needRenderBackgroundPerItem = false;
+            ignoreNeedRefresh = true;
+        }
 
-            Size size = ContentSize;
-            int viewportY = MathHelper.Max(ViewportPoint.Y, 0);
-            int renderLeft = 0, renderRight = size.Width, boundsHeight = size.Height;
+        Size size = ContentSize;
+        int viewportY = MathHelper.Max(ViewportPoint.Y, 0);
+        int renderLeft = 0, renderRight = size.Width, boundsHeight = size.Height;
 
-            (TItem item, int itemTop, int itemHeight)[] array; int count;
-            ArrayPool<(TItem item, int itemTop, int itemHeight)> pool = ArrayPool<(TItem item, int itemTop, int itemHeight)>.Shared;
-            using (PooledList<(TItem item, int itemTop, int itemHeight)> list = new(pool, capacity: 0))
+        (TItem item, int itemTop, int itemHeight)[] array; int count;
+        ArrayPool<(TItem item, int itemTop, int itemHeight)> pool = ArrayPool<(TItem item, int itemTop, int itemHeight)>.Shared;
+        using (PooledList<(TItem item, int itemTop, int itemHeight)> list = new(pool, capacity: 0))
+        {
+            _itemStore.EnumerateItemsToList(viewportY, boundsHeight, list);
+            (array, count) = list;
+        }
+        try
+        {
+            if (count <= 0)
+                return true;
+            ref (TItem item, int itemTop, int itemHeight) itemRef = ref UnsafeHelper.GetArrayDataReference(array);
+            int i = 0;
+            do
             {
-                _itemStore.EnumerateItemsToList(viewportY, boundsHeight, list);
-                (array, count) = list;
-            }
-            try
-            {
-                if (count <= 0)
-                    return true;
-                ref (TItem item, int itemTop, int itemHeight) itemRef = ref UnsafeHelper.GetArrayDataReference(array);
-                int i = 0;
-                do
+                (TItem item, int itemTop, int itemHeight) = UnsafeHelper.AddTypedOffset(ref itemRef, i);
+                if (!ignoreNeedRefresh && !item.NeedRefresh())
+                    continue;
+                int renderTop = itemTop - viewportY;
+                int renderBottom = renderTop + itemHeight;
+                RectF itemBounds = new RectF(renderLeft, renderTop, renderRight, renderBottom);
+                using RegionalRenderingContext clipContext = context.WithAxisAlignedClip(itemBounds, D2D1AntialiasMode.Aliased);
+                if (needRenderBackgroundPerItem)
                 {
-                    (TItem item, int itemTop, int itemHeight) = UnsafeHelper.AddTypedOffset(ref itemRef, i);
-                    if (!ignoreNeedRefresh && !item.NeedRefresh())
-                        continue;
-                    int renderTop = itemTop - viewportY;
-                    int renderBottom = renderTop + itemHeight;
-                    RectF itemBounds = new RectF(renderLeft, renderTop, renderRight, renderBottom);
-                    using RegionalRenderingContext clipContext = context.WithAxisAlignedClip(itemBounds, D2D1AntialiasMode.Aliased);
-                    if (needRenderBackgroundPerItem)
-                    {
-                        RenderBackground(clipContext, backBrush);
-                        clipContext.MarkAsDirty();
-                    }
-                    RenderItem(in clipContext, item, itemBounds.Size);
-                } while (++i < count);
-            }
-            finally
-            {
-                pool.Return(array);
-            }
-
-            return true;
+                    RenderBackground(clipContext, backBrush);
+                    clipContext.MarkAsDirty();
+                }
+                RenderItem(in clipContext, item, itemBounds.Size);
+            } while (++i < count);
         }
-
-        protected virtual void RenderItem(in RegionalRenderingContext context, TItem item, SizeF renderSize)
-            => item.Render(context, renderSize);
-
-        internal protected abstract TMeasuringContext CreateMeasuringContext();
-
-        private void ItemStore_HeightChanged(object? sender, int height)
+        finally
         {
-            _ignoreNeedRefresh = true;
-            SurfaceSize = new Size(0, height);
+            pool.Return(array);
         }
 
-        public override void OnViewportPointChanged()
-        {
-            base.OnViewportPointChanged();
-            _ignoreNeedRefresh = true;
-        }
+        return true;
+    }
 
-        protected override void DisposeCore(bool disposing)
-        {
-            base.DisposeCore(disposing);
-            _itemStore.Dispose();
-        }
+    protected virtual void RenderItem(in RegionalRenderingContext context, TItem item, SizeF renderSize)
+        => item.Render(context, renderSize);
+
+    internal protected abstract TMeasuringContext CreateMeasuringContext();
+
+    private void ItemStore_HeightChanged(object? sender, int height)
+    {
+        _ignoreNeedRefresh = true;
+        SurfaceSize = new Size(0, height);
+    }
+
+    public override void OnViewportPointChanged()
+    {
+        base.OnViewportPointChanged();
+        _ignoreNeedRefresh = true;
+    }
+
+    protected override void DisposeCore(bool disposing)
+    {
+        base.DisposeCore(disposing);
+        _itemStore.Dispose();
     }
 }

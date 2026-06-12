@@ -5,191 +5,190 @@ using System.Drawing;
 
 using WitherTorch.Common.Helpers;
 
-namespace ConcreteUI.Theme
+namespace ConcreteUI.Theme;
+
+partial class DefaultThemeProvider
 {
-    partial class DefaultThemeProvider
+    private abstract class ThemeContextBase : IExtendableThemeContext
     {
-        private abstract class ThemeContextBase : IExtendableThemeContext
+        private readonly Dictionary<string, IThemedColorFactory> _colorDict;
+        private readonly Dictionary<string, IThemedBrushFactory> _brushDict;
+        private readonly HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedColorFactory>>>> _colorFactoryGenerators;
+        private readonly HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedBrushFactory>>>> _brushFactoryGenerators;
+
+        private string _fontName;
+
+        public abstract bool IsDarkTheme { get; }
+
+        public string FontName
         {
-            private readonly Dictionary<string, IThemedColorFactory> _colorDict;
-            private readonly Dictionary<string, IThemedBrushFactory> _brushDict;
-            private readonly HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedColorFactory>>>> _colorFactoryGenerators;
-            private readonly HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedBrushFactory>>>> _brushFactoryGenerators;
+            get => _fontName;
+            set => _fontName = value;
+        }
 
-            private string _fontName;
+        protected ThemeContextBase()
+        {
+            _fontName = NullSafetyHelper.ThrowIfNull(SystemFonts.CaptionFont).Name;
+            _colorFactoryGenerators = new HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedColorFactory>>>>();
+            _brushFactoryGenerators = new HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedBrushFactory>>>>();
 
-            public abstract bool IsDarkTheme { get; }
+            Dictionary<string, IThemedColorFactory> colorDict = new Dictionary<string, IThemedColorFactory>(StringHelper.OrdinalIgnoreCaseEqualityComparer);
+            Dictionary<string, IThemedBrushFactory> brushDict = new Dictionary<string, IThemedBrushFactory>(StringHelper.OrdinalIgnoreCaseEqualityComparer);
 
-            public string FontName
+            foreach (KeyValuePair<string, IThemedColorFactory> item in CreateColorFactories(key => colorDict[key]))
+                colorDict[item.Key] = item.Value;
+            foreach (KeyValuePair<string, IThemedBrushFactory> item in CreateBrushFactories(key => colorDict[key], key => brushDict[key]))
+                brushDict[item.Key] = item.Value;
+
+            _colorDict = colorDict;
+            _brushDict = brushDict;
+        }
+
+        protected ThemeContextBase(ThemeContextBase original)
+        {
+            _fontName = original._fontName;
+            _colorDict = new Dictionary<string, IThemedColorFactory>(original._colorDict);
+            _brushDict = new Dictionary<string, IThemedBrushFactory>(original._brushDict);
+            _colorFactoryGenerators = new HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedColorFactory>>>>(original._colorFactoryGenerators);
+            _brushFactoryGenerators = new HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedBrushFactory>>>>(original._brushFactoryGenerators);
+        }
+
+        public abstract IThemeContext Clone();
+
+        public bool TryGetBrushFactory(string node, [NotNullWhen(true)] out IThemedBrushFactory? brushFactory)
+            => _brushDict.TryGetValue(node, out brushFactory);
+
+        public bool TryGetColorFactory(string node, [NotNullWhen(true)] out IThemedColorFactory? colorFactory)
+            => _colorDict.TryGetValue(node, out colorFactory);
+
+        public bool TrySetBrushFactory(string node, IThemedBrushFactory brushFactory, bool overrides)
+        {
+            Dictionary<string, IThemedBrushFactory> brushDict = _brushDict;
+            if (!overrides && brushDict.ContainsKey(node))
+                return false;
+            brushDict[node] = brushFactory;
+            return true;
+        }
+
+        public bool TrySetColorFactory(string node, IThemedColorFactory colorFactory, bool overrides)
+        {
+            Dictionary<string, IThemedColorFactory> colorDict = _colorDict;
+            if (!overrides && colorDict.ContainsKey(node))
+                return false;
+            colorDict[node] = colorFactory;
+            return true;
+        }
+
+        public void BuildContextForAnother(IThemeContext other, bool overrides)
+        {
+            if (other is ThemeContextBase otherContextBase)
             {
-                get => _fontName;
-                set => _fontName = value;
+                ApplyToOtherContextMethodClosureFast closure = new ApplyToOtherContextMethodClosureFast(this, otherContextBase);
+                foreach (KeyValuePair<string, IThemedColorFactory> item in CreateColorFactories(closure.GetColorFactory))
+                    other.TrySetColorFactory(item.Key, item.Value, overrides);
+                foreach (KeyValuePair<string, IThemedBrushFactory> item in CreateBrushFactories(closure.GetColorFactory, closure.GetBrushFactory))
+                    other.TrySetBrushFactory(item.Key, item.Value, overrides);
             }
-
-            protected ThemeContextBase()
+            else
             {
-                _fontName = NullSafetyHelper.ThrowIfNull(SystemFonts.CaptionFont).Name;
-                _colorFactoryGenerators = new HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedColorFactory>>>>();
-                _brushFactoryGenerators = new HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedBrushFactory>>>>();
-
-                Dictionary<string, IThemedColorFactory> colorDict = new Dictionary<string, IThemedColorFactory>(StringHelper.OrdinalIgnoreCaseEqualityComparer);
-                Dictionary<string, IThemedBrushFactory> brushDict = new Dictionary<string, IThemedBrushFactory>(StringHelper.OrdinalIgnoreCaseEqualityComparer);
-
-                foreach (KeyValuePair<string, IThemedColorFactory> item in CreateColorFactories(key => colorDict[key]))
-                    colorDict[item.Key] = item.Value;
-                foreach (KeyValuePair<string, IThemedBrushFactory> item in CreateBrushFactories(key => colorDict[key], key => brushDict[key]))
-                    brushDict[item.Key] = item.Value;
-
-                _colorDict = colorDict;
-                _brushDict = brushDict;
+                ApplyToOtherContextMethodClosureSlow closure = new ApplyToOtherContextMethodClosureSlow(this, other);
+                foreach (KeyValuePair<string, IThemedColorFactory> item in CreateColorFactories(closure.GetColorFactory))
+                    other.TrySetColorFactory(item.Key, item.Value, overrides);
+                foreach (KeyValuePair<string, IThemedBrushFactory> item in CreateBrushFactories(closure.GetColorFactory, closure.GetBrushFactory))
+                    other.TrySetBrushFactory(item.Key, item.Value, overrides);
             }
-
-            protected ThemeContextBase(ThemeContextBase original)
+            if (other is IExtendableThemeContext extendableOther)
             {
-                _fontName = original._fontName;
-                _colorDict = new Dictionary<string, IThemedColorFactory>(original._colorDict);
-                _brushDict = new Dictionary<string, IThemedBrushFactory>(original._brushDict);
-                _colorFactoryGenerators = new HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedColorFactory>>>>(original._colorFactoryGenerators);
-                _brushFactoryGenerators = new HashSet<Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedBrushFactory>>>>(original._brushFactoryGenerators);
+                foreach (var generator in _colorFactoryGenerators)
+                    extendableOther.RegisterColorFactoryGenerator(generator);
+                foreach (var generator in _brushFactoryGenerators)
+                    extendableOther.RegisterBrushFactoryGenerator(generator);
             }
-
-            public abstract IThemeContext Clone();
-
-            public bool TryGetBrushFactory(string node, [NotNullWhen(true)] out IThemedBrushFactory? brushFactory)
-                => _brushDict.TryGetValue(node, out brushFactory);
-
-            public bool TryGetColorFactory(string node, [NotNullWhen(true)] out IThemedColorFactory? colorFactory)
-                => _colorDict.TryGetValue(node, out colorFactory);
-
-            public bool TrySetBrushFactory(string node, IThemedBrushFactory brushFactory, bool overrides)
+            else
             {
-                Dictionary<string, IThemedBrushFactory> brushDict = _brushDict;
-                if (!overrides && brushDict.ContainsKey(node))
-                    return false;
-                brushDict[node] = brushFactory;
-                return true;
-            }
-
-            public bool TrySetColorFactory(string node, IThemedColorFactory colorFactory, bool overrides)
-            {
-                Dictionary<string, IThemedColorFactory> colorDict = _colorDict;
-                if (!overrides && colorDict.ContainsKey(node))
-                    return false;
-                colorDict[node] = colorFactory;
-                return true;
-            }
-
-            public void BuildContextForAnother(IThemeContext other, bool overrides)
-            {
-                if (other is ThemeContextBase otherContextBase)
+                foreach (var generator in _colorFactoryGenerators)
                 {
-                    ApplyToOtherContextMethodClosureFast closure = new ApplyToOtherContextMethodClosureFast(this, otherContextBase);
-                    foreach (KeyValuePair<string, IThemedColorFactory> item in CreateColorFactories(closure.GetColorFactory))
+                    foreach (KeyValuePair<string, IThemedColorFactory> item in generator.Invoke(other))
                         other.TrySetColorFactory(item.Key, item.Value, overrides);
-                    foreach (KeyValuePair<string, IThemedBrushFactory> item in CreateBrushFactories(closure.GetColorFactory, closure.GetBrushFactory))
+                }
+                foreach (var generator in _brushFactoryGenerators)
+                {
+                    foreach (KeyValuePair<string, IThemedBrushFactory> item in generator.Invoke(other))
                         other.TrySetBrushFactory(item.Key, item.Value, overrides);
                 }
-                else
-                {
-                    ApplyToOtherContextMethodClosureSlow closure = new ApplyToOtherContextMethodClosureSlow(this, other);
-                    foreach (KeyValuePair<string, IThemedColorFactory> item in CreateColorFactories(closure.GetColorFactory))
-                        other.TrySetColorFactory(item.Key, item.Value, overrides);
-                    foreach (KeyValuePair<string, IThemedBrushFactory> item in CreateBrushFactories(closure.GetColorFactory, closure.GetBrushFactory))
-                        other.TrySetBrushFactory(item.Key, item.Value, overrides);
-                }
-                if (other is IExtendableThemeContext extendableOther)
-                {
-                    foreach (var generator in _colorFactoryGenerators)
-                        extendableOther.RegisterColorFactoryGenerator(generator);
-                    foreach (var generator in _brushFactoryGenerators)
-                        extendableOther.RegisterBrushFactoryGenerator(generator);
-                }
-                else
-                {
-                    foreach (var generator in _colorFactoryGenerators)
-                    {
-                        foreach (KeyValuePair<string, IThemedColorFactory> item in generator.Invoke(other))
-                            other.TrySetColorFactory(item.Key, item.Value, overrides);
-                    }
-                    foreach (var generator in _brushFactoryGenerators)
-                    {
-                        foreach (KeyValuePair<string, IThemedBrushFactory> item in generator.Invoke(other))
-                            other.TrySetBrushFactory(item.Key, item.Value, overrides);
-                    }
-                }
+            }
+        }
+
+        protected abstract IEnumerable<KeyValuePair<string, IThemedColorFactory>> CreateColorFactories(Func<string, IThemedColorFactory> queryFunction);
+
+        protected abstract IEnumerable<KeyValuePair<string, IThemedBrushFactory>> CreateBrushFactories(
+            Func<string, IThemedColorFactory> queryColorFunction, Func<string, IThemedBrushFactory> queryBrushFunction);
+
+        public void RegisterColorFactoryGenerator(Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedColorFactory>>> generator)
+        {
+            if (!_colorFactoryGenerators.Add(generator))
+                return;
+            foreach (KeyValuePair<string, IThemedColorFactory> item in generator.Invoke(this))
+                _colorDict[item.Key] = item.Value;
+        }
+
+        public void RegisterBrushFactoryGenerator(Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedBrushFactory>>> generator)
+        {
+            if (!_brushFactoryGenerators.Add(generator))
+                return;
+            foreach (KeyValuePair<string, IThemedBrushFactory> item in generator.Invoke(this))
+                _brushDict[item.Key] = item.Value;
+        }
+
+        private readonly struct ApplyToOtherContextMethodClosureFast
+        {
+            private readonly ThemeContextBase _this;
+            private readonly ThemeContextBase _otherContext;
+
+            public ApplyToOtherContextMethodClosureFast(ThemeContextBase @this, ThemeContextBase otherContext)
+            {
+                _this = @this;
+                _otherContext = otherContext;
             }
 
-            protected abstract IEnumerable<KeyValuePair<string, IThemedColorFactory>> CreateColorFactories(Func<string, IThemedColorFactory> queryFunction);
-
-            protected abstract IEnumerable<KeyValuePair<string, IThemedBrushFactory>> CreateBrushFactories(
-                Func<string, IThemedColorFactory> queryColorFunction, Func<string, IThemedBrushFactory> queryBrushFunction);
-
-            public void RegisterColorFactoryGenerator(Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedColorFactory>>> generator)
+            public IThemedColorFactory GetColorFactory(string node)
             {
-                if (!_colorFactoryGenerators.Add(generator))
-                    return;
-                foreach (KeyValuePair<string, IThemedColorFactory> item in generator.Invoke(this))
-                    _colorDict[item.Key] = item.Value;
+                if (_otherContext._colorDict.TryGetValue(node, out IThemedColorFactory? result))
+                    return result;
+                return _this._colorDict[node];
             }
 
-            public void RegisterBrushFactoryGenerator(Func<IThemeContext, IEnumerable<KeyValuePair<string, IThemedBrushFactory>>> generator)
+            public IThemedBrushFactory GetBrushFactory(string node)
             {
-                if (!_brushFactoryGenerators.Add(generator))
-                    return;
-                foreach (KeyValuePair<string, IThemedBrushFactory> item in generator.Invoke(this))
-                    _brushDict[item.Key] = item.Value;
+                if (_otherContext._brushDict.TryGetValue(node, out IThemedBrushFactory? result))
+                    return result;
+                return _this._brushDict[node];
+            }
+        }
+
+        private readonly struct ApplyToOtherContextMethodClosureSlow
+        {
+            private readonly ThemeContextBase _this;
+            private readonly IThemeContext _otherContext;
+
+            public ApplyToOtherContextMethodClosureSlow(ThemeContextBase @this, IThemeContext otherContext)
+            {
+                _this = @this;
+                _otherContext = otherContext;
             }
 
-            private readonly struct ApplyToOtherContextMethodClosureFast
+            public IThemedColorFactory GetColorFactory(string node)
             {
-                private readonly ThemeContextBase _this;
-                private readonly ThemeContextBase _otherContext;
-
-                public ApplyToOtherContextMethodClosureFast(ThemeContextBase @this, ThemeContextBase otherContext)
-                {
-                    _this = @this;
-                    _otherContext = otherContext;
-                }
-
-                public IThemedColorFactory GetColorFactory(string node)
-                {
-                    if (_otherContext._colorDict.TryGetValue(node, out IThemedColorFactory? result))
-                        return result;
-                    return _this._colorDict[node];
-                }
-
-                public IThemedBrushFactory GetBrushFactory(string node)
-                {
-                    if (_otherContext._brushDict.TryGetValue(node, out IThemedBrushFactory? result))
-                        return result;
-                    return _this._brushDict[node];
-                }
+                if (_otherContext.TryGetColorFactory(node, out IThemedColorFactory? result))
+                    return result;
+                return _this._colorDict[node];
             }
 
-            private readonly struct ApplyToOtherContextMethodClosureSlow
+            public IThemedBrushFactory GetBrushFactory(string node)
             {
-                private readonly ThemeContextBase _this;
-                private readonly IThemeContext _otherContext;
-
-                public ApplyToOtherContextMethodClosureSlow(ThemeContextBase @this, IThemeContext otherContext)
-                {
-                    _this = @this;
-                    _otherContext = otherContext;
-                }
-
-                public IThemedColorFactory GetColorFactory(string node)
-                {
-                    if (_otherContext.TryGetColorFactory(node, out IThemedColorFactory? result))
-                        return result;
-                    return _this._colorDict[node];
-                }
-
-                public IThemedBrushFactory GetBrushFactory(string node)
-                {
-                    if (_otherContext.TryGetBrushFactory(node, out IThemedBrushFactory? result))
-                        return result;
-                    return _this._brushDict[node];
-                }
+                if (_otherContext.TryGetBrushFactory(node, out IThemedBrushFactory? result))
+                    return result;
+                return _this._brushDict[node];
             }
         }
     }

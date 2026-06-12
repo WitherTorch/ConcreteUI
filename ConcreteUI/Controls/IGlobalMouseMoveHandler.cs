@@ -1,7 +1,6 @@
-﻿namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public interface IGlobalMouseMoveHandler
 {
-    public interface IGlobalMouseMoveHandler
-    {
-        void OnMouseMoveGlobally(in MouseEventArgs args);
-    }
+    void OnMouseMoveGlobally(in MouseEventArgs args);
 }

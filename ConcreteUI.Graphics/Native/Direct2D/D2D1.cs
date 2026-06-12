@@ -8,66 +8,65 @@ using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 using WitherTorch.Common.Windows.Helpers;
 
-namespace ConcreteUI.Graphics.Native.Direct2D
+namespace ConcreteUI.Graphics.Native.Direct2D;
+
+[SuppressUnmanagedCodeSecurity]
+public static unsafe class D2D1
 {
-    [SuppressUnmanagedCodeSecurity]
-    public static unsafe class D2D1
+    private const string LibraryName = "d2d1.dll";
+
+    private static readonly void*[] _pointers = NativeMethods.GetImportedMethodPointers(LibraryName,
+        nameof(D2D1CreateDevice), nameof(D2D1ComputeMaximumScaleFactor));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int D2D1CreateDevice(void* dxgiDevice, D2D1CreationProperties* creationProperties, void** d2dDevice)
     {
-        private const string LibraryName = "d2d1.dll";
-
-        private static readonly void*[] _pointers = NativeMethods.GetImportedMethodPointers(LibraryName,
-            nameof(D2D1CreateDevice), nameof(D2D1ComputeMaximumScaleFactor));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int D2D1CreateDevice(void* dxgiDevice, D2D1CreationProperties* creationProperties, void** d2dDevice)
-        {
-            void* pointer = _pointers[0];
-            if (pointer == null)
-                return Constants.E_NOTIMPL;
+        void* pointer = _pointers[0];
+        if (pointer == null)
+            return Constants.E_NOTIMPL;
 #if NET8_0_OR_GREATER
-            return ((delegate* unmanaged[Stdcall, SuppressGCTransition]<void*, D2D1CreationProperties*, void**, int>)pointer)(dxgiDevice, creationProperties, d2dDevice);
+        return ((delegate* unmanaged[Stdcall, SuppressGCTransition]<void*, D2D1CreationProperties*, void**, int>)pointer)(dxgiDevice, creationProperties, d2dDevice);
 #else
-            return ((delegate* unmanaged[Stdcall]<void*, D2D1CreationProperties*, void**, int>)pointer)(dxgiDevice, creationProperties, d2dDevice);
+        return ((delegate* unmanaged[Stdcall]<void*, D2D1CreationProperties*, void**, int>)pointer)(dxgiDevice, creationProperties, d2dDevice);
 #endif
-        }
+    }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float D2D1ComputeMaximumScaleFactor(in Matrix3x2 matrix)
-            => D2D1ComputeMaximumScaleFactor(UnsafeHelper.AsPointerIn(in matrix));
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float D2D1ComputeMaximumScaleFactor(in Matrix3x2 matrix)
+        => D2D1ComputeMaximumScaleFactor(UnsafeHelper.AsPointerIn(in matrix));
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float D2D1ComputeMaximumScaleFactor(Matrix3x2* matrix)
-        {
-            void* pointer = _pointers[1];
-            if (pointer == null)
-                return 1.0f;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float D2D1ComputeMaximumScaleFactor(Matrix3x2* matrix)
+    {
+        void* pointer = _pointers[1];
+        if (pointer == null)
+            return 1.0f;
 #if NET8_0_OR_GREATER
-            return ((delegate* unmanaged[Stdcall, SuppressGCTransition]<Matrix3x2*, float>)pointer)(matrix);
+        return ((delegate* unmanaged[Stdcall, SuppressGCTransition]<Matrix3x2*, float>)pointer)(matrix);
 #else
-            return ((delegate* unmanaged[Stdcall]<Matrix3x2*, float>)pointer)(matrix);
+        return ((delegate* unmanaged[Stdcall]<Matrix3x2*, float>)pointer)(matrix);
 #endif
-        }
+    }
 
-        [Inline(InlineBehavior.Keep, export: true)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float ComputeFlatteningTolerance()
-            => Constants.D2D1_DEFAULT_FLATTENING_TOLERANCE / D2D1ComputeMaximumScaleFactor(Matrix3x2.Identity);
+    [Inline(InlineBehavior.Keep, export: true)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float ComputeFlatteningTolerance()
+        => Constants.D2D1_DEFAULT_FLATTENING_TOLERANCE / D2D1ComputeMaximumScaleFactor(Matrix3x2.Identity);
 
-        [Inline(InlineBehavior.Keep, export: true)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float ComputeFlatteningTolerance(in Matrix3x2 matrix)
-            => Constants.D2D1_DEFAULT_FLATTENING_TOLERANCE / D2D1ComputeMaximumScaleFactor(matrix);
+    [Inline(InlineBehavior.Keep, export: true)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float ComputeFlatteningTolerance(in Matrix3x2 matrix)
+        => Constants.D2D1_DEFAULT_FLATTENING_TOLERANCE / D2D1ComputeMaximumScaleFactor(matrix);
 
-        [Inline(InlineBehavior.Keep, export: true)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float ComputeFlatteningTolerance(in Matrix3x2 matrix, float dpiX, float dpiY, float maxZoomFactor)
-        {
-            Matrix3x2 dpiDependentTransform = matrix * Matrix3x2.CreateScale(dpiX / 96.0f, dpiY / 96.0f);
+    [Inline(InlineBehavior.Keep, export: true)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float ComputeFlatteningTolerance(in Matrix3x2 matrix, float dpiX, float dpiY, float maxZoomFactor)
+    {
+        Matrix3x2 dpiDependentTransform = matrix * Matrix3x2.CreateScale(dpiX / 96.0f, dpiY / 96.0f);
 
-            float absMaxZoomFactor = maxZoomFactor > 0 ? maxZoomFactor : -maxZoomFactor;
+        float absMaxZoomFactor = maxZoomFactor > 0 ? maxZoomFactor : -maxZoomFactor;
 
-            return Constants.D2D1_DEFAULT_FLATTENING_TOLERANCE /
-                (absMaxZoomFactor * D2D1ComputeMaximumScaleFactor(&dpiDependentTransform));
-        }
+        return Constants.D2D1_DEFAULT_FLATTENING_TOLERANCE /
+            (absMaxZoomFactor * D2D1ComputeMaximumScaleFactor(&dpiDependentTransform));
     }
 }

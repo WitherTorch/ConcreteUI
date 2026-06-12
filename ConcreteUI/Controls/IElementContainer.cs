@@ -8,44 +8,43 @@ using ConcreteUI.Window;
 
 using InlineMethod;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public interface IElementContainer
 {
-    public interface IElementContainer
-    {
-        IRenderer GetRenderer();
+    IRenderer GetRenderer();
 
-        CoreWindow GetWindow();
+    CoreWindow GetWindow();
 
-        bool IsBackgroundOpaque(UIElement element);
+    bool IsBackgroundOpaque(UIElement element);
 
-        IEnumerable<UIElement?> GetElements();
+    IEnumerable<UIElement?> GetElements();
 
-        IEnumerable<UIElement?> GetActiveElements()
+    IEnumerable<UIElement?> GetActiveElements()
 #if NET8_0_OR_GREATER
-            => ElementContainerDefaults.GetActiveElements(this);
+        => ElementContainerDefaults.GetActiveElements(this);
 #else
-            ;
+        ;
 #endif
 
-        void RenderBackground(UIElement element, in RegionalRenderingContext context);
-    }
+    void RenderBackground(UIElement element, in RegionalRenderingContext context);
+}
 
-    public interface ICoordinateTranslator
-    {
-        Point PageToWindow(UIElement element, Point point);
+public interface ICoordinateTranslator
+{
+    Point PageToWindow(UIElement element, Point point);
 
-        PointF PageToWindow(UIElement element, PointF point);
+    PointF PageToWindow(UIElement element, PointF point);
 
-        Point WindowToPage(UIElement element, Point point);
+    Point WindowToPage(UIElement element, Point point);
 
-        PointF WindowToPage(UIElement element, PointF point);
-    }
+    PointF WindowToPage(UIElement element, PointF point);
+}
 
-    public static class ElementContainerDefaults
-    {
-        [Inline(InlineBehavior.Keep, export: true)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IEnumerable<UIElement?> GetActiveElements<T>(T container) where T : IElementContainer
-            => container.GetElements();
-    }
+public static class ElementContainerDefaults
+{
+    [Inline(InlineBehavior.Keep, export: true)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static IEnumerable<UIElement?> GetActiveElements<T>(T container) where T : IElementContainer
+        => container.GetElements();
 }

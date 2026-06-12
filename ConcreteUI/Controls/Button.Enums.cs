@@ -1,28 +1,27 @@
-﻿using System;
+using System;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class Button
 {
-    partial class Button
+    [Flags]
+    private enum RenderObjectUpdateFlags : long
     {
-        [Flags]
-        private enum RenderObjectUpdateFlags : long
-        {
-            None = 0,
-            Layout = 0b01,
-            Format = 0b11,
-            FlagsAllTrue = -1L
-        }
+        None = 0,
+        Layout = 0b01,
+        Format = 0b11,
+        FlagsAllTrue = -1L
+    }
 
-        private enum Brush
-        {
-            BorderBrush,
-            BorderHoveredBrush,
-            FaceBrush,
-            FaceHoveredBrush,
-            FacePressedBrush,
-            TextBrush,
-            TextDisabledBrush,
-            _Last
-        }
+    private enum Brush
+    {
+        BorderBrush,
+        BorderHoveredBrush,
+        FaceBrush,
+        FaceHoveredBrush,
+        FacePressedBrush,
+        TextBrush,
+        TextDisabledBrush,
+        _Last
     }
 }

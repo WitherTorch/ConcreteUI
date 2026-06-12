@@ -1,8 +1,7 @@
-﻿namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public interface IGlobalMouseInteractHandler
 {
-    public interface IGlobalMouseInteractHandler
-    {
-        void OnMouseDownGlobally(in MouseEventArgs args);
-        void OnMouseUpGlobally(in MouseEventArgs args);
-    }
+    void OnMouseDownGlobally(in MouseEventArgs args);
+    void OnMouseUpGlobally(in MouseEventArgs args);
 }

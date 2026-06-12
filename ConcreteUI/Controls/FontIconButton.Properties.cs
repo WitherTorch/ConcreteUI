@@ -4,21 +4,20 @@ using ConcreteUI.Utils;
 
 using WitherTorch.Common.Helpers;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class FontIconButton
 {
-    partial class FontIconButton
+    public FontIcon? Icon
     {
-        public FontIcon? Icon
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _icon;
+        set
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _icon;
-            set
-            {
-                if (ReferenceEquals(_icon, value))
-                    return;
-                DisposeHelper.SwapDisposeInterlocked(ref _icon, value);
-                Update();
-            }
+            if (ReferenceEquals(_icon, value))
+                return;
+            DisposeHelper.SwapDisposeInterlocked(ref _icon, value);
+            Update();
         }
     }
 }

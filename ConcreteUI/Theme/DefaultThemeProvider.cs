@@ -2,29 +2,28 @@ using System.Diagnostics.CodeAnalysis;
 
 using WitherTorch.Common.Extensions;
 
-namespace ConcreteUI.Theme
+namespace ConcreteUI.Theme;
+
+public sealed partial class DefaultThemeProvider : IThemeProvider
 {
-    public sealed partial class DefaultThemeProvider : IThemeProvider
+    public static readonly DefaultThemeProvider Instance = new DefaultThemeProvider();
+
+    private readonly LightThemeContext _lightTheme = new LightThemeContext();
+    private readonly DarkThemeContext _darkTheme = new DarkThemeContext();
+
+    public IThemeContext LightTheme => _lightTheme;
+    public IThemeContext DarkTheme => _darkTheme;
+
+    private DefaultThemeProvider() { }
+
+    bool IThemeProvider.TryGetTheme(string themeId, [NotNullWhen(true)] out IThemeContext? theme)
     {
-        public static readonly DefaultThemeProvider Instance = new DefaultThemeProvider();
-
-        private readonly LightThemeContext _lightTheme = new LightThemeContext();
-        private readonly DarkThemeContext _darkTheme = new DarkThemeContext();
-
-        public IThemeContext LightTheme => _lightTheme;
-        public IThemeContext DarkTheme => _darkTheme;
-
-        private DefaultThemeProvider() { }
-
-        bool IThemeProvider.TryGetTheme(string themeId, [NotNullWhen(true)] out IThemeContext? theme)
+        theme = themeId.ToLowerAscii() switch
         {
-            theme = themeId.ToLowerAscii() switch
-            {
-                "#light" => _lightTheme,
-                "#dark" => _darkTheme,
-                _ => null
-            };
-            return theme is not null;
-        }
+            "#light" => _lightTheme,
+            "#dark" => _darkTheme,
+            _ => null
+        };
+        return theme is not null;
     }
 }

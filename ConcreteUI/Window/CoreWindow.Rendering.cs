@@ -40,440 +40,438 @@ using WitherTorch.Common.Threading;
 using ContextMenu = ConcreteUI.Controls.ContextMenu;
 using ToolTip = ConcreteUI.Controls.ToolTip;
 
-namespace ConcreteUI.Window
+namespace ConcreteUI.Window;
+
+public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordinateTranslator
 {
-    public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordinateTranslator
+    [StructLayout(LayoutKind.Auto)]
+    protected ref struct WindowRenderingData
     {
-        [StructLayout(LayoutKind.Auto)]
-        protected ref struct WindowRenderingData
+        public Rectangle MinimizeButtonBounds, MaximizeButtonBounds, CloseButtonBounds, PageBounds, TitleBarBounds;
+        public Point DrawingOffset;
+        public int ActiveBorderWidth;
+    }
+
+    #region Enums
+    [Flags]
+    private enum UpdateFlags : long
+    {
+        None = 0,
+        ChangeTitle = 0b1,
+    }
+
+    protected enum Brush : uint
+    {
+        TitleBackBrush,
+        TitleForeBrush,
+        TitleForeDeactiveBrush,
+        TitleCloseButtonActiveBrush,
+        _Last,
+    }
+    #endregion
+
+    #region Static Fields
+    private static readonly string[] _brushNames = new string[(int)Brush._Last]
+    {
+        "back",
+        "fore.active",
+        "fore.deactive",
+        "closeButton.active",
+    }.WithPrefix("app.title.").ToLowerAscii();
+    private static readonly Pool<LayoutEngine> _layoutEnginePool = new Pool<LayoutEngine>(1);
+
+    #endregion
+
+    #region Fields
+    private readonly LazyTiny<WeakReference> _focusElementRefLazy, _lastHitElementRefLazy, _recordedLastHitElementRefLazy;
+    private readonly object _syncLock;
+    private readonly WindowMaterial _windowMaterial;
+
+    private SimpleGraphicsHost? _host;
+    private DirtyAreaCollector? _collector;
+    private RenderingController? _controller;
+    private UIElement? _overlayElement;
+    private IThemeResourceProvider? _resourceProvider;
+    private WindowMaterial _actualWindowMaterial;
+    private long _updateFlags = Booleans.TrueLong;
+    private bool _isShown;
+    #endregion
+
+    #region Rendering Fields
+    private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+
+    private GraphicsDeviceProvider? _graphicsDeviceProvider;
+    private D2D1DeviceContext? _deviceContext;
+    private DWriteTextLayout? _titleLayout;
+    private D2D1ColorF _clearDCColor, _windowBaseColor;
+    private Point _drawingOffset;
+    private ulong
+        _minimizeButtonLocation, _minimizeButtonSize,
+        _maximizeButtonLocation, _maximizeButtonSize,
+        _closeButtonLocation, _closeButtonSize,
+        _pageLocation, _pageSize,
+        _titleBarLocation, _titleBarSize;
+    private nuint _ownedGDP, _recreateGraphicsDeviceProviderBarrier, _recalculateLayoutVersion;
+    private int _activeBorderWidth;
+
+    protected BitVector64 _titleBarButtonStatus, _titleBarButtonChangedStatus;
+    #endregion
+
+    #region Static Properties
+    public static LayoutNode PageWidthDefinition
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => PageWidthNode.Instance;
+    }
+
+    public static LayoutNode PageHeightDefinition
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => PageHeightNode.Instance;
+    }
+    #endregion
+
+    #region Properties
+    public UIElement? FocusedElement
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _focusElementRefLazy.GetValueDirectly()?.Target as UIElement;
+    }
+
+    public WindowMaterial WindowMaterial => _windowMaterial;
+
+    public WindowMaterial ActualWindowMaterial => _actualWindowMaterial;
+
+    public D2D1ColorF ClearDCColor => _clearDCColor;
+
+    public D2D1ColorF WindowBaseColor => _windowBaseColor;
+
+    public Rectangle MinimizeButtonBounds
+    {
+        get
         {
-            public Rectangle MinimizeButtonBounds, MaximizeButtonBounds, CloseButtonBounds, PageBounds, TitleBarBounds;
-            public Point DrawingOffset;
-            public int ActiveBorderWidth;
-        }
-
-        #region Enums
-        [Flags]
-        private enum UpdateFlags : long
-        {
-            None = 0,
-            ChangeTitle = 0b1,
-        }
-
-        protected enum Brush : uint
-        {
-            TitleBackBrush,
-            TitleForeBrush,
-            TitleForeDeactiveBrush,
-            TitleCloseButtonActiveBrush,
-            _Last,
-        }
-        #endregion
-
-        #region Static Fields
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
-        {
-            "back",
-            "fore.active",
-            "fore.deactive",
-            "closeButton.active",
-        }.WithPrefix("app.title.").ToLowerAscii();
-        private static readonly Pool<LayoutEngine> _layoutEnginePool = new Pool<LayoutEngine>(1);
-
-        #endregion
-
-        #region Fields
-        private readonly ConcurrentDictionary<Type, UIElement> _overlayElementDict = new ConcurrentDictionary<Type, UIElement>();
-        private readonly ConcurrentDictionary<Type, UIElement> _backgroundElementDict = new ConcurrentDictionary<Type, UIElement>();
-        private readonly UnwrappableList<UIElement> _overlayElementList = new UnwrappableList<UIElement>();
-        private readonly UnwrappableList<UIElement> _backgroundElementList = new UnwrappableList<UIElement>();
-        private readonly LazyTiny<WeakReference> _focusElementRefLazy, _lastHitElementRefLazy, _recordedLastHitElementRefLazy;
-        private WindowMaterial _windowMaterial, _actualWindowMaterial;
-        private SimpleGraphicsHost? _host;
-        private DirtyAreaCollector? _collector;
-        private RenderingController? _controller;
-        private IThemeResourceProvider? _resourceProvider;
-        private bool _isShown;
-        private long _updateFlags = Booleans.TrueLong;
-        #endregion
-
-        #region Rendering Fields
-        private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-
-        private GraphicsDeviceProvider? _graphicsDeviceProvider;
-        private D2D1DeviceContext? _deviceContext;
-        private DWriteTextLayout? _titleLayout;
-        private D2D1ColorF _clearDCColor, _windowBaseColor;
-        private Point _drawingOffset;
-        private ulong
-            _minimizeButtonLocation, _minimizeButtonSize,
-            _maximizeButtonLocation, _maximizeButtonSize,
-            _closeButtonLocation, _closeButtonSize,
-            _pageLocation, _pageSize,
-            _titleBarLocation, _titleBarSize;
-        private nuint _ownedGDP, _recreateGraphicsDeviceProviderBarrier, _recalculateLayoutVersion;
-        private int _activeBorderWidth;
-
-        protected BitVector64 _titleBarButtonStatus, _titleBarButtonChangedStatus;
-        #endregion
-
-        #region Static Properties
-        public static LayoutNode PageWidthDefinition
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => PageWidthNode.Instance;
-        }
-
-        public static LayoutNode PageHeightDefinition
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => PageHeightNode.Instance;
-        }
-        #endregion
-
-        #region Properties
-        public ContextMenu? ContextMenu => GetOverlayElement<ContextMenu>();
-
-        public ToolTip? ToolTip => GetBackgroundElement<ToolTip>();
-
-        public UIElement? FocusedElement
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _focusElementRefLazy.GetValueDirectly()?.Target as UIElement;
-        }
-
-        public WindowMaterial WindowMaterial => _windowMaterial;
-
-        public WindowMaterial ActualWindowMaterial => _actualWindowMaterial;
-
-        public D2D1ColorF ClearDCColor => _clearDCColor;
-
-        public D2D1ColorF WindowBaseColor => _windowBaseColor;
-
-        public Rectangle MinimizeButtonBounds
-        {
-            get
+            ulong location, size;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            nuint version = OptimisticLock.Enter(in versionRef);
+            do
             {
-                ulong location, size;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                nuint version = OptimisticLock.Enter(in versionRef);
-                do
-                {
-                    location = Volatile.Read(ref _minimizeButtonLocation);
-                    size = Volatile.Read(ref _minimizeButtonSize);
-                }
-                while (!OptimisticLock.TryLeave(in versionRef, ref version));
-                return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
+                location = Volatile.Read(ref _minimizeButtonLocation);
+                size = Volatile.Read(ref _minimizeButtonSize);
             }
+            while (!OptimisticLock.TryLeave(in versionRef, ref version));
+            return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
         }
+    }
 
-        public Point MinimizeButtonLocation
+    public Point MinimizeButtonLocation
+    {
+        get
         {
-            get
+            ref readonly ulong resultRef = ref _minimizeButtonLocation;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+            while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+            return BoundsHelper.ConvertUInt64ToPoint(result);
+        }
+    }
+
+    public Size MinimizeButtonSize
+    {
+        get
+        {
+            ref readonly ulong resultRef = ref _minimizeButtonSize;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+            while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+            return BoundsHelper.ConvertUInt64ToSize(result);
+        }
+    }
+
+    public Rectangle MaximizeButtonBounds
+    {
+        get
+        {
+            ulong location, size;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            nuint version = OptimisticLock.Enter(in versionRef);
+            do
             {
-                ref readonly ulong resultRef = ref _minimizeButtonLocation;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
-                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
-                return BoundsHelper.ConvertUInt64ToPoint(result);
+                location = Volatile.Read(ref _maximizeButtonLocation);
+                size = Volatile.Read(ref _maximizeButtonSize);
             }
+            while (!OptimisticLock.TryLeave(in versionRef, ref version));
+            return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
         }
+    }
 
-        public Size MinimizeButtonSize
+    public Point MaximizeButtonLocation
+    {
+        get
         {
-            get
+            ref readonly ulong resultRef = ref _maximizeButtonLocation;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+            while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+            return BoundsHelper.ConvertUInt64ToPoint(result);
+        }
+    }
+
+    public Size MaximizeButtonSize
+    {
+        get
+        {
+            ref readonly ulong resultRef = ref _maximizeButtonSize;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+            while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+            return BoundsHelper.ConvertUInt64ToSize(result);
+        }
+    }
+
+    public Rectangle CloseButtonBounds
+    {
+        get
+        {
+            ulong location, size;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            nuint version = OptimisticLock.Enter(in versionRef);
+            do
             {
-                ref readonly ulong resultRef = ref _minimizeButtonSize;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
-                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
-                return BoundsHelper.ConvertUInt64ToSize(result);
+                location = Volatile.Read(ref _closeButtonLocation);
+                size = Volatile.Read(ref _closeButtonSize);
             }
+            while (!OptimisticLock.TryLeave(in versionRef, ref version));
+            return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
         }
+    }
 
-        public Rectangle MaximizeButtonBounds
+    public Point CloseButtonLocation
+    {
+        get
         {
-            get
+            ref readonly ulong resultRef = ref _closeButtonLocation;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+            while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+            return BoundsHelper.ConvertUInt64ToPoint(result);
+        }
+    }
+
+    public Size CloseButtonSize
+    {
+        get
+        {
+            ref readonly ulong resultRef = ref _closeButtonSize;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+            while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+            return BoundsHelper.ConvertUInt64ToSize(result);
+        }
+    }
+
+    public Rectangle TitleBarBounds
+    {
+        get
+        {
+            ulong location, size;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            nuint version = OptimisticLock.Enter(in versionRef);
+            do
             {
-                ulong location, size;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                nuint version = OptimisticLock.Enter(in versionRef);
-                do
-                {
-                    location = Volatile.Read(ref _maximizeButtonLocation);
-                    size = Volatile.Read(ref _maximizeButtonSize);
-                }
-                while (!OptimisticLock.TryLeave(in versionRef, ref version));
-                return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
+                location = Volatile.Read(ref _titleBarLocation);
+                size = Volatile.Read(ref _titleBarSize);
             }
+            while (!OptimisticLock.TryLeave(in versionRef, ref version));
+            return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
         }
+    }
 
-        public Point MaximizeButtonLocation
+    public Point TitleBarLocation
+    {
+        get
         {
-            get
+            ref readonly ulong resultRef = ref _titleBarLocation;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+            while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+            return BoundsHelper.ConvertUInt64ToPoint(result);
+        }
+    }
+
+    public Size TitleBarSize
+    {
+        get
+        {
+            ref readonly ulong resultRef = ref _titleBarSize;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+            while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+            return BoundsHelper.ConvertUInt64ToSize(result);
+        }
+    }
+
+    public Rectangle PageBounds
+    {
+        get
+        {
+            ulong location, size;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            nuint version = OptimisticLock.Enter(in versionRef);
+            do
             {
-                ref readonly ulong resultRef = ref _maximizeButtonLocation;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
-                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
-                return BoundsHelper.ConvertUInt64ToPoint(result);
+                location = Volatile.Read(ref _pageLocation);
+                size = Volatile.Read(ref _pageSize);
             }
+            while (!OptimisticLock.TryLeave(in versionRef, ref version));
+            return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
         }
+    }
 
-        public Size MaximizeButtonSize
+    public Point PageLocation
+    {
+        get
         {
-            get
+            ref readonly ulong resultRef = ref _pageLocation;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+            while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+            return BoundsHelper.ConvertUInt64ToPoint(result);
+        }
+    }
+
+    public Size PageSize
+    {
+        get
+        {
+            ref readonly ulong resultRef = ref _pageSize;
+            ref readonly nuint versionRef = ref _recalculateLayoutVersion;
+            ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
+            while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
+            return BoundsHelper.ConvertUInt64ToSize(result);
+        }
+    }
+    #endregion
+
+    #region Events
+    public event EventHandler<ContextMenu>? ContextMenuChanging;
+
+    public event EventHandler<UIElement?>? FocusElementChanged;
+    #endregion
+
+    #region Event Handlers
+    protected virtual void OnContextMenuChanging(ContextMenu newContextMenu) => ContextMenuChanging?.Invoke(this, newContextMenu);
+    #endregion
+
+    #region Init
+    private static GraphicsDeviceProvider CreateGraphicsDeviceProvider()
+    {
+        string targetGpuName = ConcreteSettings.TargetGpuName;
+        bool isDebug = ConcreteSettings.UseDebugMode;
+        if (StringHelper.IsNullOrEmpty(targetGpuName))
+            return new GraphicsDeviceProvider(DXGIGpuPreference.Invalid, isDebug);
+        if (targetGpuName.StartsWith('#'))
+        {
+            DXGIGpuPreference preference = targetGpuName switch
             {
-                ref readonly ulong resultRef = ref _maximizeButtonSize;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
-                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
-                return BoundsHelper.ConvertUInt64ToSize(result);
-            }
+                ConcreteSettings.ReservedGpuName_Default => DXGIGpuPreference.Unspecified,
+                ConcreteSettings.ReservedGpuName_MinimumPower => DXGIGpuPreference.MinimumPower,
+                ConcreteSettings.ReservedGpuName_HighPerformance => DXGIGpuPreference.HighPerformance,
+                _ => DXGIGpuPreference.Invalid,
+            };
+            return new GraphicsDeviceProvider(preference, isDebug);
+        }
+        return new GraphicsDeviceProvider(targetGpuName, isDebug);
+    }
+
+    [Inline(InlineBehavior.Remove)]
+    private void InitRenderObjects(IntPtr handle)
+    {
+        if (!InitRenderObjectsCore(handle, GetGraphicsDeviceProvider(), out D2D1DeviceContext? deviceContext))
+            return;
+        _deviceContext = deviceContext;
+
+        CoreWindow? parent = _parent;
+        InitializeElements();
+        if (parent is null)
+            ApplyTheme(ThemeResourceProvider.CreateResourceProviderUnsafe(deviceContext, ThemeManager.CurrentTheme, _actualWindowMaterial));
+        else
+            ApplyTheme(parent._resourceProvider!.Clone());
+        SystemEvents.DisplaySettingsChanging += SystemEvents_DisplaySettingsChanging;
+        SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
+        SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
+        SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
+        ConcreteUtils.ApplyWindowStyle(this, out _fixLagObject);
+    }
+
+    private bool InitRenderObjectsCore(IntPtr handle, GraphicsDeviceProvider provider, [NotNullWhen(true)] out D2D1DeviceContext? deviceContext)
+    {
+        if (handle == IntPtr.Zero)
+        {
+            deviceContext = null;
+            return false;
         }
 
-        public Rectangle CloseButtonBounds
+        CoreWindow? parent = _parent;
+
+        SimpleGraphicsHost host;
+        SystemVersionLevel versionLevel = SystemConstants.VersionLevel;
+        bool useFlipModel = ExtendedStyles.HasFlagFast(WindowExtendedStyles.NoRedirectionBitmap);
+        bool useDComp = useFlipModel && provider.IsSupportDComp && provider.IsSupportSwapChain1;
+        host = GraphicsHostHelper.CreateSwapChainGraphicsHost(handle, provider, useFlipModel, useDComp, IsBackgroundOpaque());
+        _host = host;
+        _collector = new DirtyAreaCollector(host);
+        if (parent is null)
+            host.DeviceRemoved += GraphicsHost_DeviceRemoved;
+        deviceContext = host.GetDeviceContext();
+        if (deviceContext is null)
+            return false;
+        (uint dpiX, uint dpiY) = Dpi;
+        if (dpiX != SystemConstants.DefaultDpiX || dpiY != SystemConstants.DefaultDpiY)
+            deviceContext.Dpi = new PointF(dpiX, dpiY);
+        return true;
+    }
+
+    private void GraphicsHost_DeviceRemoved(object? sender, EventArgs e)
+    {
+        if (sender is not SimpleGraphicsHost host || !ReferenceEquals(host, _host))
+            return;
+        WindowMessageLoop.InvokeAsync((Action<CoreWindow>)(static window => window.OnDeviveRemoved()), this);
+    }
+
+    private void OnDeviveRemoved()
+    {
+        if (InterlockedHelper.Exchange(ref _recreateGraphicsDeviceProviderBarrier, UnsafeHelper.GetMaxValue<nuint>()) != 0)
+            return;
+
+        GraphicsDeviceProvider? collectionTarget = InterlockedHelper.Read(ref _graphicsDeviceProvider);
+        if (collectionTarget is not null)
         {
-            get
-            {
-                ulong location, size;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                nuint version = OptimisticLock.Enter(in versionRef);
-                do
-                {
-                    location = Volatile.Read(ref _closeButtonLocation);
-                    size = Volatile.Read(ref _closeButtonSize);
-                }
-                while (!OptimisticLock.TryLeave(in versionRef, ref version));
-                return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
-            }
+            StopAllRenderingFromGDREvent();
+            GC.Collect(GC.GetGeneration(collectionTarget), GCCollectionMode.Forced, blocking: true, compacting: true);
+            GC.WaitForPendingFinalizers();
+            RecreateResourcesFromGDREvent(null, null);
+        }
+        else
+        {
+            StopAllRenderingFromGDREvent();
+            RecreateResourcesFromGDREvent(null, null);
         }
 
-        public Point CloseButtonLocation
+        InterlockedHelper.Exchange(ref _recreateGraphicsDeviceProviderBarrier, 0);
+    }
+
+    private unsafe void StopAllRenderingFromGDREvent()
+    {
+        DebugHelper.WriteLine("GDR event triggered. Stopping all rendering...");
+
+        RenderingController? controller = _controller;
+        if (controller is null)
+            return;
+        controller.Lock();
+        controller.WaitForRendering();
+        Monitor.Enter(_syncLock);
+        try
         {
-            get
-            {
-                ref readonly ulong resultRef = ref _closeButtonLocation;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
-                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
-                return BoundsHelper.ConvertUInt64ToPoint(result);
-            }
-        }
-
-        public Size CloseButtonSize
-        {
-            get
-            {
-                ref readonly ulong resultRef = ref _closeButtonSize;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
-                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
-                return BoundsHelper.ConvertUInt64ToSize(result);
-            }
-        }
-
-        public Rectangle TitleBarBounds
-        {
-            get
-            {
-                ulong location, size;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                nuint version = OptimisticLock.Enter(in versionRef);
-                do
-                {
-                    location = Volatile.Read(ref _titleBarLocation);
-                    size = Volatile.Read(ref _titleBarSize);
-                }
-                while (!OptimisticLock.TryLeave(in versionRef, ref version));
-                return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
-            }
-        }
-
-        public Point TitleBarLocation
-        {
-            get
-            {
-                ref readonly ulong resultRef = ref _titleBarLocation;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
-                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
-                return BoundsHelper.ConvertUInt64ToPoint(result);
-            }
-        }
-
-        public Size TitleBarSize
-        {
-            get
-            {
-                ref readonly ulong resultRef = ref _titleBarSize;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
-                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
-                return BoundsHelper.ConvertUInt64ToSize(result);
-            }
-        }
-
-        public Rectangle PageBounds
-        {
-            get
-            {
-                ulong location, size;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                nuint version = OptimisticLock.Enter(in versionRef);
-                do
-                {
-                    location = Volatile.Read(ref _pageLocation);
-                    size = Volatile.Read(ref _pageSize);
-                }
-                while (!OptimisticLock.TryLeave(in versionRef, ref version));
-                return BoundsHelper.ConvertUInt64SlotsToBounds(location, size);
-            }
-        }
-
-        public Point PageLocation
-        {
-            get
-            {
-                ref readonly ulong resultRef = ref _pageLocation;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
-                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
-                return BoundsHelper.ConvertUInt64ToPoint(result);
-            }
-        }
-
-        public Size PageSize
-        {
-            get
-            {
-                ref readonly ulong resultRef = ref _pageSize;
-                ref readonly nuint versionRef = ref _recalculateLayoutVersion;
-                ulong result = OptimisticLock.EnterWithPrimitive(in resultRef, in versionRef, out nuint version);
-                while (!OptimisticLock.TryLeaveWithPrimitive(in resultRef, in versionRef, ref result, ref version)) ;
-                return BoundsHelper.ConvertUInt64ToSize(result);
-            }
-        }
-        #endregion
-
-        #region Events
-        public event EventHandler<ContextMenu>? ContextMenuChanging;
-
-        public event EventHandler<UIElement?>? FocusElementChanged;
-        #endregion
-
-        #region Event Handlers
-        protected virtual void OnContextMenuChanging(ContextMenu newContextMenu) => ContextMenuChanging?.Invoke(this, newContextMenu);
-        #endregion
-
-        #region Init
-        private static GraphicsDeviceProvider CreateGraphicsDeviceProvider()
-        {
-            string targetGpuName = ConcreteSettings.TargetGpuName;
-            bool isDebug = ConcreteSettings.UseDebugMode;
-            if (StringHelper.IsNullOrEmpty(targetGpuName))
-                return new GraphicsDeviceProvider(DXGIGpuPreference.Invalid, isDebug);
-            if (targetGpuName.StartsWith('#'))
-            {
-                DXGIGpuPreference preference = targetGpuName switch
-                {
-                    ConcreteSettings.ReservedGpuName_Default => DXGIGpuPreference.Unspecified,
-                    ConcreteSettings.ReservedGpuName_MinimumPower => DXGIGpuPreference.MinimumPower,
-                    ConcreteSettings.ReservedGpuName_HighPerformance => DXGIGpuPreference.HighPerformance,
-                    _ => DXGIGpuPreference.Invalid,
-                };
-                return new GraphicsDeviceProvider(preference, isDebug);
-            }
-            return new GraphicsDeviceProvider(targetGpuName, isDebug);
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private void InitRenderObjects(IntPtr handle)
-        {
-            if (!InitRenderObjectsCore(handle, GetGraphicsDeviceProvider(), out D2D1DeviceContext? deviceContext))
-                return;
-            _deviceContext = deviceContext;
-
-            CoreWindow? parent = _parent;
-            ChangeBackgroundElement(new ToolTip(this, element => GetActiveElements().Contains(element)));
-            InitializeElements();
-            if (parent is null)
-                ApplyTheme(ThemeResourceProvider.CreateResourceProviderUnsafe(deviceContext, ThemeManager.CurrentTheme, _actualWindowMaterial));
-            else
-                ApplyTheme(parent._resourceProvider!.Clone());
-            SystemEvents.DisplaySettingsChanging += SystemEvents_DisplaySettingsChanging;
-            SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
-            SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
-            SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
-            ConcreteUtils.ApplyWindowStyle(this, out _fixLagObject);
-        }
-
-        private bool InitRenderObjectsCore(IntPtr handle, GraphicsDeviceProvider provider, [NotNullWhen(true)] out D2D1DeviceContext? deviceContext)
-        {
-            if (handle == IntPtr.Zero)
-            {
-                deviceContext = null;
-                return false;
-            }
-
-            CoreWindow? parent = _parent;
-
-            SimpleGraphicsHost host;
-            SystemVersionLevel versionLevel = SystemConstants.VersionLevel;
-            bool useFlipModel = ExtendedStyles.HasFlagFast(WindowExtendedStyles.NoRedirectionBitmap);
-            bool useDComp = useFlipModel && provider.IsSupportDComp && provider.IsSupportSwapChain1;
-            host = GraphicsHostHelper.CreateSwapChainGraphicsHost(handle, provider, useFlipModel, useDComp, IsBackgroundOpaque());
-            _host = host;
-            _collector = new DirtyAreaCollector(host);
-            if (parent is null)
-                host.DeviceRemoved += GraphicsHost_DeviceRemoved;
-            deviceContext = host.GetDeviceContext();
-            if (deviceContext is null)
-                return false;
-            (uint dpiX, uint dpiY) = Dpi;
-            if (dpiX != SystemConstants.DefaultDpiX || dpiY != SystemConstants.DefaultDpiY)
-                deviceContext.Dpi = new PointF(dpiX, dpiY);
-            return true;
-        }
-
-        private void GraphicsHost_DeviceRemoved(object? sender, EventArgs e)
-        {
-            if (sender is not SimpleGraphicsHost host || !ReferenceEquals(host, _host))
-                return;
-            WindowMessageLoop.InvokeAsync((Action<CoreWindow>)(static window => window.OnDeviveRemoved()), this);
-        }
-
-        private void OnDeviveRemoved()
-        {
-            if (InterlockedHelper.Exchange(ref _recreateGraphicsDeviceProviderBarrier, UnsafeHelper.GetMaxValue<nuint>()) != 0)
-                return;
-
-            GraphicsDeviceProvider? collectionTarget = InterlockedHelper.Read(ref _graphicsDeviceProvider);
-            if (collectionTarget is not null)
-            {
-                StopAllRenderingFromGDREvent();
-                GC.Collect(GC.GetGeneration(collectionTarget), GCCollectionMode.Forced, blocking: true, compacting: true);
-                GC.WaitForPendingFinalizers();
-                RecreateResourcesFromGDREvent(null, null);
-            }
-            else
-            {
-                StopAllRenderingFromGDREvent();
-                RecreateResourcesFromGDREvent(null, null);
-            }
-
-            InterlockedHelper.Exchange(ref _recreateGraphicsDeviceProviderBarrier, 0);
-        }
-
-        private unsafe void StopAllRenderingFromGDREvent()
-        {
-            DebugHelper.WriteLine("GDR event triggered. Stopping all rendering...");
-
-            RenderingController? controller = _controller;
-            if (controller is null)
-                return;
-            controller.Lock();
-            controller.WaitForRendering();
             DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider, ThemeResourceProvider.Empty);
             ApplyThemeCore(ThemeResourceProvider.Empty);
             DisposeHelper.SwapDisposeInterlocked(ref _host);
@@ -500,8 +498,15 @@ namespace ConcreteUI.Window
                 }
             }
         }
+        catch (Exception)
+        {
+            Monitor.Exit(_syncLock);
+        }
+    }
 
-        private unsafe void RecreateResourcesFromGDREvent(GraphicsDeviceProvider? deviceProvider, IThemeResourceProvider? resourceProvider)
+    private unsafe void RecreateResourcesFromGDREvent(GraphicsDeviceProvider? deviceProvider, IThemeResourceProvider? resourceProvider)
+    {
+        try
         {
             if (deviceProvider is null)
             {
@@ -553,1181 +558,1108 @@ namespace ConcreteUI.Window
             controller.RequestResize(Volatile.Read(ref _sizeModeState));
             controller.Unlock();
         }
-        #endregion
-
-        #region Override Methods
-        protected override void OnShown(EventArgs args)
+        finally
         {
-            base.OnShown(args);
-            UpdateFirstTime();
-            WindowMessageLoop.InvokeAsync(OnShown2);
+            Monitor.Exit(_syncLock);
         }
+    }
+    #endregion
 
-        private void OnShown2()
+    #region Override Methods
+    protected override void OnShown(EventArgs args)
+    {
+        base.OnShown(args);
+        UpdateFirstTime();
+        WindowMessageLoop.InvokeAsync(OnShown2);
+    }
+
+    private void OnShown2()
+    {
+        PointF point = PointToClient(MouseHelper.GetMousePosition());
+        OnMouseMove(new HandleableMouseEventArgs(point));
+    }
+
+    protected override void OnClosing(ref ClosingEventArgs args)
+    {
+        base.OnClosing(ref args);
+
+        if (args.Cancelled)
+            return;
+
+        SystemEvents.DisplaySettingsChanging -= SystemEvents_DisplaySettingsChanging;
+        SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
+        SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
+        SystemEvents.SessionSwitch -= SystemEvents_SessionSwitch;
+    }
+    #endregion
+
+    #region Implements Methods
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public GraphicsDeviceProvider GetGraphicsDeviceProvider()
+    {
+        if (InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0)
+            SpinWait.SpinUntil(() => InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) == 0);
+        GraphicsDeviceProvider? deviceProvider = InterlockedHelper.Read(ref _graphicsDeviceProvider);
+        if (deviceProvider is not null)
+            goto Return;
+        deviceProvider = CreateGraphicsDeviceProvider();
+        GraphicsDeviceProvider? oldDeviceProvider = InterlockedHelper.CompareExchange(ref _graphicsDeviceProvider, deviceProvider, null);
+        if (oldDeviceProvider is null)
         {
-            PointF point = PointToClient(MouseHelper.GetMousePosition());
-            OnMouseMove(new HandleableMouseEventArgs(point));
+            InterlockedHelper.Write(ref _ownedGDP, UnsafeHelper.GetMaxValue<nuint>());
+            goto Return;
         }
+        deviceProvider.Dispose();
+        return oldDeviceProvider;
 
-        protected override void OnClosing(ref ClosingEventArgs args)
+    Return:
+        return deviceProvider;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryGetGraphicsDeviceProvider([NotNullWhen(true)] out GraphicsDeviceProvider? deviceProvider)
+    {
+        deviceProvider = InterlockedHelper.Read(ref _graphicsDeviceProvider);
+        if (deviceProvider is null)
+            return false;
+        if (InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0)
+            SpinWait.SpinUntil(() => InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) == 0);
+        deviceProvider = InterlockedHelper.Read(ref _graphicsDeviceProvider);
+        return deviceProvider is not null;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public DXGISwapChain GetSwapChain() => _host!.GetSwapChain();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public D2D1DeviceContext GetDeviceContext() => NullSafetyHelper.ThrowIfNull(_deviceContext);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public RenderingController? GetRenderingController() => _controller;
+
+    public virtual void RenderBackground(UIElement element, in RegionalRenderingContext context)
+        => context.Clear(_windowBaseColor);
+
+    void IRenderingControl.Render(RenderingController controller)
+    {
+        RenderingFlags flags = controller.GetAndResetRenderingFlags();
+        if (!RenderCore(controller, flags))
+            controller.RequestUpdateUnsafe(flags);
+    }
+
+    public IThemeResourceProvider? GetThemeResourceProvider() => InterlockedHelper.Read(ref _resourceProvider);
+
+    IEnumerable<UIElement?> IElementContainer.GetActiveElements() => GetActiveElements();
+
+    bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
+
+    IRenderer IElementContainer.GetRenderer() => this;
+
+    CoreWindow IElementContainer.GetWindow() => this;
+
+    Point ICoordinateTranslator.PageToWindow(UIElement element, Point point) => PageToWindow(element, point);
+
+    PointF ICoordinateTranslator.PageToWindow(UIElement element, PointF point) => PageToWindow(element, point);
+
+    Point ICoordinateTranslator.WindowToPage(UIElement element, Point point) => WindowToPage(element, point);
+
+    PointF ICoordinateTranslator.WindowToPage(UIElement element, PointF point) => WindowToPage(element, point);
+
+    Vector2 IRenderer.GetPixelsPerPoint() => _pixelsPerPoint;
+
+    Vector2 IRenderer.GetPointsPerPixel() => _pointsPerPixel;
+
+    void IRenderer.Refresh() => Refresh();
+
+    void IRenderer.Update() => Update();
+
+    private bool IsBackgroundOpaque() => _actualWindowMaterial == WindowMaterial.None;
+    #endregion
+
+    #region Abstract Methods
+    protected abstract void InitializeElements();
+
+    protected abstract IEnumerable<UIElement?> GetActiveElements();
+    #endregion
+
+    #region Virtual Methods
+    protected virtual void RecalculateOverlayLayout(UIElement element)
+    {
+        LayoutEngine engine = RentLayoutEngine();
+        try
         {
-            base.OnClosing(ref args);
-
-            if (args.Cancelled)
-                return;
-
-            SystemEvents.DisplaySettingsChanging -= SystemEvents_DisplaySettingsChanging;
-            SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
-            SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
-            SystemEvents.SessionSwitch -= SystemEvents_SessionSwitch;
+            engine.RecalculateLayout(PageSize, element);
         }
-        #endregion
-
-        #region Implements Methods
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GraphicsDeviceProvider GetGraphicsDeviceProvider()
+        finally
         {
-            if (InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0)
-                SpinWait.SpinUntil(() => InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) == 0);
-            GraphicsDeviceProvider? deviceProvider = InterlockedHelper.Read(ref _graphicsDeviceProvider);
-            if (deviceProvider is not null)
-                goto Return;
-            deviceProvider = CreateGraphicsDeviceProvider();
-            GraphicsDeviceProvider? oldDeviceProvider = InterlockedHelper.CompareExchange(ref _graphicsDeviceProvider, deviceProvider, null);
-            if (oldDeviceProvider is null)
+            ReturnLayoutEngine(engine);
+        }
+    }
+
+    public virtual IEnumerable<UIElement?> GetElements() => GetActiveElements()
+        .ConcatOptimized(GetOverlayElement());
+
+    protected virtual void ApplyThemeCore(IThemeResourceProvider provider)
+    {
+        _clearDCColor = provider.TryGetColor(ThemeConstants.ClearDCColorNode, out D2D1ColorF color) ? color : default;
+        _windowBaseColor = provider.TryGetColor(ThemeConstants.WindowBaseColorNode, out color) ? color : default;
+        GetOverlayElement()?.ApplyTheme(provider);
+        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
+        ConcreteUtils.ResetBlur(this);
+    }
+
+    protected virtual Point PageToWindow(UIElement element, Point point) => PageToWindow(point);
+
+    protected virtual PointF PageToWindow(UIElement element, PointF point) => PageToWindow(point);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected Point PageToWindow(Point point)
+    {
+        Point baseLoc = PageLocation;
+        return new Point(baseLoc.X + point.X, baseLoc.Y + point.Y);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected PointF PageToWindow(PointF point)
+    {
+        Point baseLoc = PageLocation;
+        return new PointF(baseLoc.X + point.X, baseLoc.Y + point.Y);
+    }
+
+    protected virtual Point WindowToPage(UIElement element, Point point) => WindowToPage(point);
+
+    protected virtual PointF WindowToPage(UIElement element, PointF point) => WindowToPage(point);
+
+    protected Point WindowToPage(Point point)
+    {
+        Point baseLoc = PageLocation;
+        return new Point(
+            x: point.X - baseLoc.X,
+            y: point.Y - baseLoc.Y
+            );
+    }
+
+    protected PointF WindowToPage(PointF point)
+    {
+        PointF baseLoc = PageLocation;
+        return new PointF(
+            x: point.X - baseLoc.X,
+            y: point.Y - baseLoc.Y
+            );
+    }
+
+    protected virtual Point PointToPixel(Point point) => GraphicsUtils.ScalingPoint(point, _pixelsPerPoint);
+
+    protected virtual PointF PointToPixel(PointF point) => GraphicsUtils.ScalingPoint(point, _pixelsPerPoint);
+
+    protected virtual Point PixelToPoint(Point point) => GraphicsUtils.ScalingPoint(point, _pointsPerPixel);
+
+    protected virtual PointF PixelToPoint(PointF point) => GraphicsUtils.ScalingPoint(point, _pointsPerPixel);
+
+    protected virtual void OnMouseDownForElements(ref HandleableMouseEventArgs args)
+    {
+        if (args.Handled)
+            return;
+        UIElement? overlayElement = GetOverlayElement();
+        if (overlayElement is not null)
+            UIElementHelper.OnMouseDownForElement(overlayElement, ref args);
+        else
+            UIElementHelper.OnMouseDownForElements(GetActiveElements(), ref args);
+    }
+
+    protected virtual void OnMouseMoveForElements(in MouseEventArgs args)
+    {
+        UIElementHelper.MouseMoveData data = default;
+        UIElement? overlayElement = GetOverlayElement();
+        if (overlayElement is not null)
+            UIElementHelper.OnMouseMoveForElement(overlayElement, args, ref data);
+        else
+            UIElementHelper.OnMouseMoveForElements(GetActiveElements(), args, ref data);
+        Cursor = SystemCursors.GetSystemCursor(data.CursorType ?? SystemCursorType.Default);
+        ChangeLastHitElement(data.LastHitElement, args);
+    }
+
+    protected virtual void OnMouseUpForElements(in MouseEventArgs args)
+    {
+        UIElement? overlayElement = GetOverlayElement();
+        if (overlayElement is not null)
+            UIElementHelper.OnMouseUpForElement(overlayElement, args);
+        else
+            UIElementHelper.OnMouseUpForElements(GetActiveElements(), args);
+    }
+
+    protected virtual void OnMouseScrollForElements(ref HandleableMouseEventArgs args)
+    {
+        if (args.Handled)
+            return;
+        UIElement? overlayElement = GetOverlayElement();
+        if (overlayElement is not null)
+            UIElementHelper.OnMouseScrollForElement(overlayElement, ref args);
+        else
+            UIElementHelper.OnMouseScrollForElements(GetActiveElements(), ref args);
+    }
+
+    protected virtual void OnKeyDownForElements(ref KeyEventArgs args)
+    {
+        if (args.Handled)
+            return;
+        UIElement? overlayElement = GetOverlayElement();
+        if (overlayElement is not null)
+            UIElementHelper.OnKeyDownForElement(overlayElement, ref args);
+        else
+            UIElementHelper.OnKeyDownForElements(GetActiveElements(), ref args);
+    }
+
+    protected virtual void OnKeyUpForElements(ref KeyEventArgs args)
+    {
+        if (args.Handled)
+            return;
+        UIElement? overlayElement = GetOverlayElement();
+        if (overlayElement is not null)
+            UIElementHelper.OnKeyUpForElement(overlayElement, ref args);
+        else
+            UIElementHelper.OnKeyUpForElements(GetActiveElements(), ref args);
+    }
+
+    protected virtual void OnCharacterInputForElements(ref CharacterEventArgs args)
+    {
+        if (args.Handled)
+            return;
+        UIElement? overlayElement = GetOverlayElement();
+        if (overlayElement is not null)
+            UIElementHelper.OnCharacterInputForElement(overlayElement, ref args);
+        else
+            UIElementHelper.OnCharacterInputForElements(GetActiveElements(), ref args);
+    }
+
+    protected virtual void OnDpiChangedForElements(in DpiChangedEventArgs args)
+    {
+        UIElementHelper.OnDpiChangedForElement(GetOverlayElement(), in args);
+        UIElementHelper.OnDpiChangedForElements(GetActiveElements(), in args);
+    }
+
+    private void ChangeLastHitElement(UIElement? element, in MouseEventArgs args)
+    {
+        LazyTiny<WeakReference> lastHitElementRefLazy = _lastHitElementRefLazy;
+        if (element is null)
+        {
+            WeakReference? lastHitElementRef = lastHitElementRefLazy.GetValueDirectly();
+            if (lastHitElementRef is not null)
             {
-                InterlockedHelper.Write(ref _ownedGDP, UnsafeHelper.GetMaxValue<nuint>());
-                goto Return;
-            }
-            deviceProvider.Dispose();
-            return oldDeviceProvider;
-
-        Return:
-            return deviceProvider;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryGetGraphicsDeviceProvider([NotNullWhen(true)] out GraphicsDeviceProvider? deviceProvider)
-        {
-            deviceProvider = InterlockedHelper.Read(ref _graphicsDeviceProvider);
-            if (deviceProvider is null)
-                return false;
-            if (InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0)
-                SpinWait.SpinUntil(() => InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) == 0);
-            deviceProvider = InterlockedHelper.Read(ref _graphicsDeviceProvider);
-            return deviceProvider is not null;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public DXGISwapChain GetSwapChain() => _host!.GetSwapChain();
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public D2D1DeviceContext GetDeviceContext() => NullSafetyHelper.ThrowIfNull(_deviceContext);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public RenderingController? GetRenderingController() => _controller;
-
-        public virtual void RenderBackground(UIElement element, in RegionalRenderingContext context)
-            => context.Clear(_windowBaseColor);
-
-        void IRenderingControl.Render(RenderingController controller)
-        {
-            RenderingFlags flags = controller.GetAndResetRenderingFlags();
-            if (!RenderCore(controller, flags))
-                controller.RequestUpdateUnsafe(flags);
-        }
-
-        ToolTip? IRenderer.GetToolTip() => GetBackgroundElement<ToolTip>();
-
-        public IThemeResourceProvider? GetThemeResourceProvider() => InterlockedHelper.Read(ref _resourceProvider);
-
-        IEnumerable<UIElement?> IElementContainer.GetActiveElements() => GetActiveElements();
-
-        bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
-
-        IRenderer IElementContainer.GetRenderer() => this;
-
-        CoreWindow IElementContainer.GetWindow() => this;
-
-        Point ICoordinateTranslator.PageToWindow(UIElement element, Point point) => PageToWindow(element, point);
-
-        PointF ICoordinateTranslator.PageToWindow(UIElement element, PointF point) => PageToWindow(element, point);
-
-        Point ICoordinateTranslator.WindowToPage(UIElement element, Point point) => WindowToPage(element, point);
-
-        PointF ICoordinateTranslator.WindowToPage(UIElement element, PointF point) => WindowToPage(element, point);
-
-        Vector2 IRenderer.GetPixelsPerPoint() => _pixelsPerPoint;
-
-        Vector2 IRenderer.GetPointsPerPixel() => _pointsPerPixel;
-
-        void IRenderer.Refresh() => Refresh();
-
-        void IRenderer.Update() => Update();
-
-        private bool IsBackgroundOpaque() => _actualWindowMaterial == WindowMaterial.None;
-        #endregion
-
-        #region Abstract Methods
-        protected abstract void InitializeElements();
-
-        protected abstract IEnumerable<UIElement?> GetActiveElements();
-        #endregion
-
-        #region Virtual Methods
-        protected virtual void RecalculateOverlayLayout(UIElement element)
-        {
-            LayoutEngine engine = RentLayoutEngine();
-            try
-            {
-                engine.RecalculateLayout(PageSize, element);
-            }
-            finally
-            {
-                ReturnLayoutEngine(engine);
-            }
-        }
-
-        public virtual IEnumerable<UIElement?> GetElements() => GetActiveElements()
-            .ConcatOptimized(GetOverlayElements())
-            .ConcatOptimized(GetBackgroundElements());
-
-        protected virtual void ApplyThemeCore(IThemeResourceProvider provider)
-        {
-            _clearDCColor = provider.TryGetColor(ThemeConstants.ClearDCColorNode, out D2D1ColorF color) ? color : default;
-            _windowBaseColor = provider.TryGetColor(ThemeConstants.WindowBaseColorNode, out color) ? color : default;
-            UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
-            UIElementHelper.ApplyTheme(provider, _overlayElementList);
-            UIElementHelper.ApplyTheme(provider, _backgroundElementList);
-            ConcreteUtils.ResetBlur(this);
-        }
-
-        protected virtual Point PageToWindow(UIElement element, Point point) => PageToWindow(point);
-
-        protected virtual PointF PageToWindow(UIElement element, PointF point) => PageToWindow(point);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected Point PageToWindow(Point point)
-        {
-            Point baseLoc = PageLocation;
-            return new Point(baseLoc.X + point.X, baseLoc.Y + point.Y);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected PointF PageToWindow(PointF point)
-        {
-            Point baseLoc = PageLocation;
-            return new PointF(baseLoc.X + point.X, baseLoc.Y + point.Y);
-        }
-
-        protected virtual Point WindowToPage(UIElement element, Point point) => WindowToPage(point);
-
-        protected virtual PointF WindowToPage(UIElement element, PointF point) => WindowToPage(point);
-
-        protected Point WindowToPage(Point point)
-        {
-            Point baseLoc = PageLocation;
-            return new Point(
-                x: point.X - baseLoc.X,
-                y: point.Y - baseLoc.Y
-                );
-        }
-
-        protected PointF WindowToPage(PointF point)
-        {
-            PointF baseLoc = PageLocation;
-            return new PointF(
-                x: point.X - baseLoc.X,
-                y: point.Y - baseLoc.Y
-                );
-        }
-
-        protected virtual Point PointToPixel(Point point) => GraphicsUtils.ScalingPoint(point, _pixelsPerPoint);
-
-        protected virtual PointF PointToPixel(PointF point) => GraphicsUtils.ScalingPoint(point, _pixelsPerPoint);
-
-        protected virtual Point PixelToPoint(Point point) => GraphicsUtils.ScalingPoint(point, _pointsPerPixel);
-
-        protected virtual PointF PixelToPoint(PointF point) => GraphicsUtils.ScalingPoint(point, _pointsPerPixel);
-
-        protected virtual void OnMouseDownForElements(ref HandleableMouseEventArgs args)
-        {
-            if (args.Handled)
-                return;
-            IEnumerable<UIElement?> elements = GetOverlayElements();
-            if (!elements.HasNonNullItem())
-                elements = GetActiveElements();
-            UIElementHelper.OnMouseDownForElements(elements, ref args);
-            UIElementHelper.OnMouseDownForElements(GetBackgroundElements(), ref args);
-        }
-
-        protected virtual void OnMouseMoveForElements(in MouseEventArgs args)
-        {
-            IEnumerable<UIElement?> elements = GetOverlayElements();
-            if (!elements.HasNonNullItem())
-                elements = GetActiveElements();
-            UIElementHelper.MouseMoveData data = default;
-            UIElementHelper.OnMouseMoveForElements(elements, args, ref data);
-            UIElementHelper.OnMouseMoveForElements(GetBackgroundElements(), args, ref data);
-            (SystemCursorType? cursorType, UIElement? hitElement) = data;
-            LazyTiny<WeakReference> lastHitElementRefLazy = _lastHitElementRefLazy;
-            if (hitElement is null)
-            {
-                WeakReference? lastHitElementRef = lastHitElementRefLazy.GetValueDirectly();
-                if (lastHitElementRef is not null)
-                {
-                    object? target = lastHitElementRef.Target;
-                    if (target is UIElement lastHitElement && target is IMouseMoveHandler handler)
-                        handler.OnMouseMove(new MouseEventArgs(lastHitElement.PageToLocal(args.Location), args.Buttons, args.Delta));
-                    lastHitElementRef.Target = null;
-                }
-            }
-            else
-            {
-                WeakReference lastHitElementRef = lastHitElementRefLazy.Value;
                 object? target = lastHitElementRef.Target;
-                if (!ReferenceEquals(hitElement, target) && target is UIElement lastHitElement && target is IMouseMoveHandler handler)
+                if (target is UIElement lastHitElement && target is IMouseMoveHandler handler)
                     handler.OnMouseMove(new MouseEventArgs(lastHitElement.PageToLocal(args.Location), args.Buttons, args.Delta));
-                lastHitElementRef.Target = hitElement;
+                lastHitElementRef.Target = null;
             }
-
-            Cursor = SystemCursors.GetSystemCursor(cursorType ?? SystemCursorType.Default);
         }
-
-        protected virtual void OnMouseUpForElements(in MouseEventArgs args)
+        else
         {
-            IEnumerable<UIElement?> elements = GetOverlayElements();
-            if (!elements.HasNonNullItem())
-                elements = GetActiveElements();
-            UIElementHelper.OnMouseUpForElements(elements, args);
-            UIElementHelper.OnMouseUpForElements(GetBackgroundElements(), args);
+            WeakReference lastHitElementRef = lastHitElementRefLazy.Value;
+            object? target = lastHitElementRef.Target;
+            if (!ReferenceEquals(element, target) && target is UIElement lastHitElement && target is IMouseMoveHandler handler)
+                handler.OnMouseMove(new MouseEventArgs(lastHitElement.PageToLocal(args.Location), args.Buttons, args.Delta));
+            lastHitElementRef.Target = element;
         }
+    }
 
-        protected virtual void OnMouseScrollForElements(ref HandleableMouseEventArgs args)
+    protected unsafe virtual void RecalculateLayout(ref WindowRenderingData data, Size windowSize)
+    {
+        Rectangle pageBounds;
+        Size pageSize;
+        if (_isIntegratedMaterial)
         {
-            if (args.Handled)
-                return;
-            IEnumerable<UIElement?> elements = GetOverlayElements();
-            if (!elements.HasNonNullItem())
-                elements = GetActiveElements();
-            UIElementHelper.OnMouseScrollForElements(elements, ref args);
-            if (args.Handled)
-                return;
-            UIElementHelper.OnMouseScrollForElements(GetBackgroundElements(), ref args);
+            pageSize = ClientSize;
+            pageBounds = new Rectangle(Point.Empty, pageSize);
         }
-
-        protected virtual void OnKeyDownForElements(ref KeyEventArgs args)
+        else
         {
-            if (args.Handled)
+            IntPtr handle = Handle;
+            if (handle == IntPtr.Zero)
                 return;
-            IEnumerable<UIElement?> elements = GetOverlayElements();
-            if (!elements.HasNonNullItem())
-                elements = GetActiveElements();
-            UIElementHelper.OnKeyDownForElements(elements, ref args);
-            if (args.Handled)
-                return;
-            UIElementHelper.OnKeyDownForElements(GetBackgroundElements(), ref args);
-        }
 
-        protected virtual void OnKeyUpForElements(ref KeyEventArgs args)
-        {
-            if (args.Handled)
-                return;
-            IEnumerable<UIElement?> elements = GetOverlayElements();
-            if (!elements.HasNonNullItem())
-                elements = GetActiveElements();
-            UIElementHelper.OnKeyUpForElements(elements, ref args);
-            if (args.Handled)
-                return;
-            UIElementHelper.OnKeyUpForElements(GetBackgroundElements(), ref args);
-        }
-
-        protected virtual void OnCharacterInputForElements(ref CharacterEventArgs args)
-        {
-            if (args.Handled)
-                return;
-            IEnumerable<UIElement?> elements = GetOverlayElements();
-            if (!elements.HasNonNullItem())
-                elements = GetActiveElements();
-            UIElementHelper.OnCharacterInputForElements(elements, ref args);
-            if (args.Handled)
-                return;
-            UIElementHelper.OnCharacterInputForElements(GetBackgroundElements(), ref args);
-        }
-
-        protected virtual void OnDpiChangedForElements(in DpiChangedEventArgs args)
-        {
-            UIElementHelper.OnDpiChangedForElements(GetOverlayElements(), in args);
-            UIElementHelper.OnDpiChangedForElements(GetActiveElements(), in args);
-            UIElementHelper.OnDpiChangedForElements(GetBackgroundElements(), in args);
-        }
-
-        protected unsafe virtual void RecalculateLayout(ref WindowRenderingData data, Size windowSize)
-        {
-            Rectangle pageBounds;
-            Size pageSize;
-            if (_isIntegratedMaterial)
+            Vector2 pointsPerPixel = _pointsPerPixel;
+            int activeBorderWidth, drawingOffsetX, drawingOffsetY;
+            if (User32.IsZoomed(handle))
             {
-                pageSize = ClientSize;
-                pageBounds = new Rectangle(Point.Empty, pageSize);
+                Rect windowRect;
+                if (!User32.GetWindowRect(handle, &windowRect))
+                    Marshal.ThrowExceptionForHR(Kernel32.GetLastError());
+                if (!Screen.TryGetScreenInfoFromHwnd(handle, out ScreenInfo screenInfo))
+                    screenInfo = default;
+                Rect workingArea = screenInfo.WorkingArea;
+                drawingOffsetX = MathI.Round((workingArea.Left - windowRect.Left) * pointsPerPixel.X, MidpointRounding.AwayFromZero);
+                drawingOffsetY = MathI.Round((workingArea.Top - windowRect.Top) * pointsPerPixel.Y, MidpointRounding.AwayFromZero);
+                activeBorderWidth = 0;
             }
             else
             {
-                IntPtr handle = Handle;
-                if (handle == IntPtr.Zero)
-                    return;
-
-                Vector2 pointsPerPixel = _pointsPerPixel;
-                int activeBorderWidth, drawingOffsetX, drawingOffsetY;
-                if (User32.IsZoomed(handle))
-                {
-                    Rect windowRect;
-                    if (!User32.GetWindowRect(handle, &windowRect))
-                        Marshal.ThrowExceptionForHR(Kernel32.GetLastError());
-                    if (!Screen.TryGetScreenInfoFromHwnd(handle, out ScreenInfo screenInfo))
-                        screenInfo = default;
-                    Rect workingArea = screenInfo.WorkingArea;
-                    drawingOffsetX = MathI.Round((workingArea.Left - windowRect.Left) * pointsPerPixel.X, MidpointRounding.AwayFromZero);
-                    drawingOffsetY = MathI.Round((workingArea.Top - windowRect.Top) * pointsPerPixel.Y, MidpointRounding.AwayFromZero);
-                    activeBorderWidth = 0;
-                }
-                else
-                {
-                    activeBorderWidth = _borderWidth;
-                    drawingOffsetX = 0;
-                    drawingOffsetY = 0;
-                }
-                data.ActiveBorderWidth = activeBorderWidth;
-                data.DrawingOffset = new Point(drawingOffsetX, drawingOffsetY);
-                int x = windowSize.Width - 1 - drawingOffsetX, y = drawingOffsetY;
-                data.CloseButtonBounds = new Rectangle(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
-                data.MaximizeButtonBounds = new Rectangle(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
-                data.MinimizeButtonBounds = new Rectangle(x - UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
-                Rectangle titleBarBounds = new Rectangle(drawingOffsetX + 1, drawingOffsetY + 1, Size.Width - 2, 26);
-                pageBounds = Rectangle.FromLTRB(
-                    left: drawingOffsetX + activeBorderWidth,
-                    top: titleBarBounds.Bottom + 1,
-                    right: windowSize.Width - drawingOffsetX - activeBorderWidth,
-                    bottom: windowSize.Height - activeBorderWidth);
-                pageSize = pageBounds.Size;
-                data.TitleBarBounds = titleBarBounds;
+                activeBorderWidth = _borderWidth;
+                drawingOffsetX = 0;
+                drawingOffsetY = 0;
             }
-
-            data.PageBounds = pageBounds;
+            data.ActiveBorderWidth = activeBorderWidth;
+            data.DrawingOffset = new Point(drawingOffsetX, drawingOffsetY);
+            int x = windowSize.Width - 1 - drawingOffsetX, y = drawingOffsetY;
+            data.CloseButtonBounds = new Rectangle(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
+            data.MaximizeButtonBounds = new Rectangle(x -= UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
+            data.MinimizeButtonBounds = new Rectangle(x - UIConstantsPrivate.TitleBarButtonSizeWidth, y, UIConstantsPrivate.TitleBarButtonSizeWidth, UIConstantsPrivate.TitleBarButtonSizeHeight);
+            Rectangle titleBarBounds = new Rectangle(drawingOffsetX + 1, drawingOffsetY + 1, Size.Width - 2, 26);
+            pageBounds = Rectangle.FromLTRB(
+                left: drawingOffsetX + activeBorderWidth,
+                top: titleBarBounds.Bottom + 1,
+                right: windowSize.Width - drawingOffsetX - activeBorderWidth,
+                bottom: windowSize.Height - activeBorderWidth);
+            pageSize = pageBounds.Size;
+            data.TitleBarBounds = titleBarBounds;
         }
 
-        protected virtual void RecalculatePageLayout(Size pageSize)
+        data.PageBounds = pageBounds;
+    }
+
+    protected virtual void RecalculatePageLayout(Size pageSize)
+    {
+        LayoutEngine layoutEngine = RentLayoutEngine();
+        try
         {
-            LayoutEngine layoutEngine = RentLayoutEngine();
-            try
-            {
-                layoutEngine.RecalculateLayout(pageSize, GetActiveElements());
-                layoutEngine.RecalculateLayout(pageSize, GetOverlayElements());
-            }
-            finally
-            {
-                ReturnLayoutEngine(layoutEngine);
-                Thread.MemoryBarrier();
-            }
+            layoutEngine.RecalculateLayout(pageSize, GetActiveElements());
+            layoutEngine.RecalculateLayout(pageSize, GetOverlayElement());
         }
-        #endregion
-
-        #region Rendering
-        protected IEnumerable<UIElement> GetOverlayElements() => _overlayElementList;
-
-        protected IEnumerable<UIElement> GetBackgroundElements() => _backgroundElementList;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected D2D1Brush GetBrush(Brush brush)
+        finally
         {
-            if (brush >= Brush._Last)
-                throw new ArgumentOutOfRangeException(nameof(brush));
-            return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)brush);
+            ReturnLayoutEngine(layoutEngine);
+            Thread.MemoryBarrier();
         }
+    }
+    #endregion
 
-        [Inline]
-        private bool RenderCore(RenderingController controller, RenderingFlags flags)
+    #region Rendering
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected UIElement? GetOverlayElement() => _overlayElement;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected D2D1Brush GetBrush(Brush brush)
+    {
+        if (brush >= Brush._Last)
+            throw new ArgumentOutOfRangeException(nameof(brush));
+        return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)brush);
+    }
+
+    [Inline]
+    private bool RenderCore(RenderingController controller, RenderingFlags flags)
+    {
+        SimpleGraphicsHost? host = _host;
+        if (host is null || host.IsDisposed)
+            return false;
+        DirtyAreaCollector? collector = _collector;
+        if (collector is null)
+            return false;
+
+        WindowRenderingData data = new WindowRenderingData()
         {
-            SimpleGraphicsHost? host = _host;
-            if (host is null || host.IsDisposed)
+            MinimizeButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_minimizeButtonLocation, _minimizeButtonSize),
+            MaximizeButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_maximizeButtonLocation, _maximizeButtonSize),
+            CloseButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_closeButtonLocation, _closeButtonSize),
+            PageBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_pageLocation, _pageSize),
+            TitleBarBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_titleBarLocation, _titleBarSize),
+            DrawingOffset = _drawingOffset,
+            ActiveBorderWidth = _activeBorderWidth
+        };
+        bool redrawAll = flags.HasFlagFast(RenderingFlags.RedrawAll);
+        if (flags.HasFlagFast(RenderingFlags.Resize))
+        {
+            bool resizeTemporarily = flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag);
+            Size size = RawClientSize;
+            if (size.Width <= 0 || size.Height <= 0)
                 return false;
-            DirtyAreaCollector? collector = _collector;
-            if (collector is null)
-                return false;
-
-            WindowRenderingData data = new WindowRenderingData()
-            {
-                MinimizeButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_minimizeButtonLocation, _minimizeButtonSize),
-                MaximizeButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_maximizeButtonLocation, _maximizeButtonSize),
-                CloseButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_closeButtonLocation, _closeButtonSize),
-                PageBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_pageLocation, _pageSize),
-                TitleBarBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_titleBarLocation, _titleBarSize),
-                DrawingOffset = _drawingOffset,
-                ActiveBorderWidth = _activeBorderWidth
-            };
-            bool redrawAll = flags.HasFlagFast(RenderingFlags.RedrawAll);
-            if (flags.HasFlagFast(RenderingFlags.Resize))
-            {
-                bool resizeTemporarily = flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag);
-                Size size = RawClientSize;
-                if (size.Width <= 0 || size.Height <= 0)
-                    return false;
-                if (resizeTemporarily)
-                    redrawAll |= host.ResizeTemporarily(size);
-                else
-                    redrawAll |= host.Resize(size);
-                Thread.MemoryBarrier();
-                if (redrawAll)
-                {
-                    RecalculateLayout(
-                        data: ref data,
-                        windowSize: GraphicsUtils.ScalingSizeAndConvert(size, _pointsPerPixel));
-                    BoundsHelper.SaveBoundsToUInt64Fields(data.MinimizeButtonBounds, ref _minimizeButtonLocation, ref _minimizeButtonSize);
-                    BoundsHelper.SaveBoundsToUInt64Fields(data.MaximizeButtonBounds, ref _maximizeButtonLocation, ref _maximizeButtonSize);
-                    BoundsHelper.SaveBoundsToUInt64Fields(data.CloseButtonBounds, ref _closeButtonLocation, ref _closeButtonSize);
-                    BoundsHelper.SaveBoundsToUInt64Fields(data.PageBounds, ref _pageLocation, ref _pageSize);
-                    BoundsHelper.SaveBoundsToUInt64Fields(data.TitleBarBounds, ref _titleBarLocation, ref _titleBarSize);
-                    _drawingOffset = data.DrawingOffset;
-                    _activeBorderWidth = data.ActiveBorderWidth;
-                    InterlockedHelper.Increment(ref _recalculateLayoutVersion);
-
-                    Size pageSize = data.PageBounds.Size;
-                    if (pageSize.IsValid())
-                        RecalculatePageLayout(pageSize);
-                }
-                flags = controller.GetAndResetRenderingFlags();
-                redrawAll |= flags.HasFlagFast(RenderingFlags.RedrawAll);
-                if (resizeTemporarily || flags.HasFlagFast(RenderingFlags.Resize))
-                    controller.RequestResize(flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag), redrawAll: false);
-            }
-            D2D1DeviceContext? deviceContext = host.BeginDraw();
-            if (deviceContext is null || deviceContext.IsDisposed)
-                return true;
-
-            ClearTypeSwitcher.SetClearType(deviceContext, false);
-
+            if (resizeTemporarily)
+                redrawAll |= host.ResizeTemporarily(size);
+            else
+                redrawAll |= host.Resize(size);
+            Thread.MemoryBarrier();
             if (redrawAll)
-                return RenderCore_RedrawAll(host, deviceContext, in data);
-            else
-                return RenderCore_Normal(host, deviceContext, collector, in data);
-        }
-
-        private bool RenderCore_RedrawAll(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, in WindowRenderingData data)
-        {
-            DirtyAreaCollector collector = DirtyAreaCollector.Empty;
-            RenderTitle(deviceContext, collector, force: true, in data);
-            Rectangle pageBounds = data.PageBounds;
-            if (pageBounds.IsValid())
             {
-                using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, _pixelsPerPoint,
-                    pageBounds, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
-                RenderPage(context, in data);
+                RecalculateLayout(
+                    data: ref data,
+                    windowSize: GraphicsUtils.ScalingSizeAndConvert(size, _pointsPerPixel));
+                BoundsHelper.SaveBoundsToUInt64Fields(data.MinimizeButtonBounds, ref _minimizeButtonLocation, ref _minimizeButtonSize);
+                BoundsHelper.SaveBoundsToUInt64Fields(data.MaximizeButtonBounds, ref _maximizeButtonLocation, ref _maximizeButtonSize);
+                BoundsHelper.SaveBoundsToUInt64Fields(data.CloseButtonBounds, ref _closeButtonLocation, ref _closeButtonSize);
+                BoundsHelper.SaveBoundsToUInt64Fields(data.PageBounds, ref _pageLocation, ref _pageSize);
+                BoundsHelper.SaveBoundsToUInt64Fields(data.TitleBarBounds, ref _titleBarLocation, ref _titleBarSize);
+                _drawingOffset = data.DrawingOffset;
+                _activeBorderWidth = data.ActiveBorderWidth;
+                InterlockedHelper.Increment(ref _recalculateLayoutVersion);
+
+                Size pageSize = data.PageBounds.Size;
+                if (pageSize.IsValid())
+                    RecalculatePageLayout(pageSize);
             }
-            host.EndDraw();
-
-            return host.TryPresent();
+            flags = controller.GetAndResetRenderingFlags();
+            redrawAll |= flags.HasFlagFast(RenderingFlags.RedrawAll);
+            if (resizeTemporarily || flags.HasFlagFast(RenderingFlags.Resize))
+                controller.RequestResize(flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag), redrawAll: false);
         }
+        D2D1DeviceContext? deviceContext = host.BeginDraw();
+        if (deviceContext is null || deviceContext.IsDisposed)
+            return true;
 
-        private bool RenderCore_Normal(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in WindowRenderingData data)
+        ClearTypeSwitcher.SetClearType(deviceContext, false);
+
+        if (redrawAll)
+            return RenderCore_RedrawAll(host, deviceContext, in data);
+        else
+            return RenderCore_Normal(host, deviceContext, collector, in data);
+    }
+
+    private bool RenderCore_RedrawAll(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, in WindowRenderingData data)
+    {
+        DirtyAreaCollector collector = DirtyAreaCollector.Empty;
+        RenderTitle(deviceContext, collector, force: true, in data);
+        Rectangle pageBounds = data.PageBounds;
+        if (pageBounds.IsValid())
         {
-            Vector2 pixelsPerPoint = _pixelsPerPoint;
+            using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, _pixelsPerPoint,
+                pageBounds, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
+            RenderPage(context, in data);
+        }
+        host.EndDraw();
 
-            RenderTitle(deviceContext, collector, force: false, in data);
-            Rectangle pageBounds = data.PageBounds;
-            if (pageBounds.IsValid())
+        return host.TryPresent();
+    }
+
+    private bool RenderCore_Normal(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in WindowRenderingData data)
+    {
+        Vector2 pixelsPerPoint = _pixelsPerPoint;
+
+        RenderTitle(deviceContext, collector, force: false, in data);
+        Rectangle pageBounds = data.PageBounds;
+        if (pageBounds.IsValid())
+        {
+            using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, pixelsPerPoint,
+                pageBounds, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
+            RenderPage(context, in data);
+        }
+        host.EndDraw();
+
+        return collector.TryPresent(pixelsPerPoint);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected virtual void RenderPageBackground(in RegionalRenderingContext context, in WindowRenderingData data)
+        => context.Clear(_windowBaseColor);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected virtual void RenderPage(in RegionalRenderingContext context, in WindowRenderingData data)
+    {
+        bool force = context.IsForceRendering;
+        if (force)
+            RenderPageBackground(context, in data);
+        UIElementHelper.RenderElements(context, GetActiveElements(), ignoreNeedRefresh: force);
+        UIElementHelper.RenderElement(context, _overlayElement, ignoreNeedRefresh: force || context.HasAnyDirtyArea());
+    }
+
+    protected virtual void ClearDCForTitle(D2D1DeviceContext deviceContext)
+    {
+        if (_isIntegratedMaterial)
+        {
+            deviceContext.Clear();
+            return;
+        }
+        GraphicsUtils.ClearAndFill(deviceContext, UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.TitleBackBrush), _clearDCColor);
+    }
+
+    protected virtual void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force, in WindowRenderingData data)
+    {
+        if (_isIntegratedMaterial)
+            return;
+        ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
+        Vector2 pixelsPerPoint = _pixelsPerPoint;
+
+        BitVector64 TitleBarButtonChangedStatus = _titleBarButtonChangedStatus;
+        BitVector64 titleBarStates = _titleBarStates;
+        _titleBarButtonChangedStatus.Reset();
+        #region 繪製標題
+        if (force)
+        {
+            DWriteTextLayout? titleLayout = Interlocked.Exchange(ref _titleLayout, null);
+            if (titleLayout is null || (Interlocked.Exchange(ref _updateFlags, Booleans.FalseLong) & (long)UpdateFlags.ChangeTitle) == (long)UpdateFlags.ChangeTitle)
             {
-                using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, pixelsPerPoint,
-                    pageBounds, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
-                RenderPage(context, in data);
-            }
-            host.EndDraw();
-
-            return collector.TryPresent(pixelsPerPoint);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void RenderPageBackground(in RegionalRenderingContext context, in WindowRenderingData data)
-            => context.Clear(_windowBaseColor);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void RenderPage(in RegionalRenderingContext context, in WindowRenderingData data)
-        {
-            bool force = context.IsForceRendering;
-            if (force)
-                RenderPageBackground(context, in data);
-            UIElementHelper.RenderElements(context, GetActiveElements(), ignoreNeedRefresh: force);
-            UIElementHelper.RenderElements(context, GetOverlayElements(), ignoreNeedRefresh: force || context.HasAnyDirtyArea());
-        }
-
-        protected virtual void ClearDCForTitle(D2D1DeviceContext deviceContext)
-        {
-            if (_isIntegratedMaterial)
-            {
-                deviceContext.Clear();
-                return;
-            }
-            GraphicsUtils.ClearAndFill(deviceContext, UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.TitleBackBrush), _clearDCColor);
-        }
-
-        protected virtual void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force, in WindowRenderingData data)
-        {
-            if (_isIntegratedMaterial)
-                return;
-            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
-            Vector2 pixelsPerPoint = _pixelsPerPoint;
-
-            BitVector64 TitleBarButtonChangedStatus = _titleBarButtonChangedStatus;
-            BitVector64 titleBarStates = _titleBarStates;
-            _titleBarButtonChangedStatus.Reset();
-            #region 繪製標題
-            if (force)
-            {
-                DWriteTextLayout? titleLayout = Interlocked.Exchange(ref _titleLayout, null);
-                if (titleLayout is null || (Interlocked.Exchange(ref _updateFlags, Booleans.FalseLong) & (long)UpdateFlags.ChangeTitle) == (long)UpdateFlags.ChangeTitle)
+                DWriteFactory factory = SharedResources.DWriteFactory;
+                DWriteTextFormat? titleFormat = titleLayout;
+                if (titleFormat is null || titleFormat.IsDisposed)
                 {
-                    DWriteFactory factory = SharedResources.DWriteFactory;
-                    DWriteTextFormat? titleFormat = titleLayout;
-                    if (titleFormat is null || titleFormat.IsDisposed)
-                    {
-                        titleFormat = factory.CreateTextFormat(_resourceProvider!.FontName, UIConstants.TitleFontSize);
-                        titleFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
-                    }
-                    titleLayout = GraphicsUtils.CreateCustomTextLayout(Text, titleFormat, 26);
-                    titleFormat.Dispose();
+                    titleFormat = factory.CreateTextFormat(_resourceProvider!.FontName, UIConstants.TitleFontSize);
+                    titleFormat.ParagraphAlignment = DWriteParagraphAlignment.Center;
                 }
-                ClearDCForTitle(deviceContext);
-                if (titleBarStates[0])
-                {
-                    Point drawingOffset = _drawingOffset;
-                    RectF titleBarRect = RenderingHelper.RoundInPixel(data.TitleBarBounds, pixelsPerPoint);
-                    deviceContext.PushAxisAlignedClip(titleBarRect, D2D1AntialiasMode.Aliased);
-                    deviceContext.DrawTextLayout(new PointF(drawingOffset.X + 7.5f, drawingOffset.Y + 1.5f),
-                        titleLayout, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeBrush));
-                    deviceContext.PopAxisAlignedClip();
-                }
-                DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
+                titleLayout = GraphicsUtils.CreateCustomTextLayout(Text, titleFormat, 26);
+                titleFormat.Dispose();
             }
-            BitVector64 TitleBarButtonStatus = _titleBarButtonStatus;
-            FontIconResources iconStorer = FontIconResources.Instance;
-            if (HasSizableBorder)
+            ClearDCForTitle(deviceContext);
+            if (titleBarStates[0])
             {
-                if (titleBarStates[1] && (TitleBarButtonChangedStatus[0] || force))
-                {
-                    RectF minRect = RenderingHelper.RoundInPixel(data.MinimizeButtonBounds, pixelsPerPoint);
-                    deviceContext.PushAxisAlignedClip(minRect, D2D1AntialiasMode.Aliased);
-                    if (!force)
-                        ClearDCForTitle(deviceContext);
-                    DebugHelper.ThrowUnless((nuint)Brush.TitleForeDeactiveBrush - 1 == (nuint)Brush.TitleForeBrush);
-                    iconStorer.RenderMinimizeButton(deviceContext, (RectangleF)minRect,
-                        UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeDeactiveBrush - MathHelper.BooleanToNativeUnsigned(TitleBarButtonStatus[0])));
-                    deviceContext.PopAxisAlignedClip();
-                    collector.MarkAsDirty(minRect);
-                }
-                if (titleBarStates[2] && (TitleBarButtonChangedStatus[1] || force))
-                {
-                    RectF maxRect = RenderingHelper.RoundInPixel(data.MaximizeButtonBounds, pixelsPerPoint);
-                    deviceContext.PushAxisAlignedClip(maxRect, D2D1AntialiasMode.Aliased);
-                    if (!force)
-                    {
-                        ClearDCForTitle(deviceContext);
-                    }
-                    DebugHelper.ThrowUnless((nuint)Brush.TitleForeDeactiveBrush - 1 == (nuint)Brush.TitleForeBrush);
-                    D2D1Brush foreBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeDeactiveBrush - MathHelper.BooleanToNativeUnsigned(TitleBarButtonStatus[1]));
-                    if (_isMaximized)
-                        iconStorer.RenderRestoreButton(deviceContext, (RectangleF)maxRect, foreBrush);
-                    else
-                        iconStorer.RenderMaximizeButton(deviceContext, (RectangleF)maxRect, foreBrush);
-                    collector.MarkAsDirty(maxRect);
-                    deviceContext.PopAxisAlignedClip();
-                }
+                Point drawingOffset = _drawingOffset;
+                RectF titleBarRect = RenderingHelper.RoundInPixel(data.TitleBarBounds, pixelsPerPoint);
+                deviceContext.PushAxisAlignedClip(titleBarRect, D2D1AntialiasMode.Aliased);
+                deviceContext.DrawTextLayout(new PointF(drawingOffset.X + 7.5f, drawingOffset.Y + 1.5f),
+                    titleLayout, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeBrush));
+                deviceContext.PopAxisAlignedClip();
             }
-            if (TitleBarButtonChangedStatus[2] || force)
+            DisposeHelper.NullSwapOrDispose(ref _titleLayout, titleLayout);
+        }
+        BitVector64 TitleBarButtonStatus = _titleBarButtonStatus;
+        FontIconResources iconStorer = FontIconResources.Instance;
+        if (HasSizableBorder)
+        {
+            if (titleBarStates[1] && (TitleBarButtonChangedStatus[0] || force))
             {
-                RectF closeRect = RenderingHelper.RoundInPixel(data.CloseButtonBounds, pixelsPerPoint);
-                deviceContext.PushAxisAlignedClip(closeRect, D2D1AntialiasMode.Aliased);
+                RectF minRect = RenderingHelper.RoundInPixel(data.MinimizeButtonBounds, pixelsPerPoint);
+                deviceContext.PushAxisAlignedClip(minRect, D2D1AntialiasMode.Aliased);
+                if (!force)
+                    ClearDCForTitle(deviceContext);
+                DebugHelper.ThrowUnless((nuint)Brush.TitleForeDeactiveBrush - 1 == (nuint)Brush.TitleForeBrush);
+                iconStorer.RenderMinimizeButton(deviceContext, (RectangleF)minRect,
+                    UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeDeactiveBrush - MathHelper.BooleanToNativeUnsigned(TitleBarButtonStatus[0])));
+                deviceContext.PopAxisAlignedClip();
+                collector.MarkAsDirty(minRect);
+            }
+            if (titleBarStates[2] && (TitleBarButtonChangedStatus[1] || force))
+            {
+                RectF maxRect = RenderingHelper.RoundInPixel(data.MaximizeButtonBounds, pixelsPerPoint);
+                deviceContext.PushAxisAlignedClip(maxRect, D2D1AntialiasMode.Aliased);
                 if (!force)
                 {
                     ClearDCForTitle(deviceContext);
                 }
-                DebugHelper.ThrowUnless((nuint)Brush.TitleForeDeactiveBrush + 1 == (nuint)Brush.TitleCloseButtonActiveBrush);
-                iconStorer.RenderCloseButton(deviceContext, (RectangleF)closeRect,
-                        UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeDeactiveBrush + MathHelper.BooleanToNativeUnsigned(TitleBarButtonStatus[2])));
+                DebugHelper.ThrowUnless((nuint)Brush.TitleForeDeactiveBrush - 1 == (nuint)Brush.TitleForeBrush);
+                D2D1Brush foreBrush = UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeDeactiveBrush - MathHelper.BooleanToNativeUnsigned(TitleBarButtonStatus[1]));
+                if (_isMaximized)
+                    iconStorer.RenderRestoreButton(deviceContext, (RectangleF)maxRect, foreBrush);
+                else
+                    iconStorer.RenderMaximizeButton(deviceContext, (RectangleF)maxRect, foreBrush);
+                collector.MarkAsDirty(maxRect);
                 deviceContext.PopAxisAlignedClip();
-                collector.MarkAsDirty(closeRect);
             }
-            #endregion
+        }
+        if (TitleBarButtonChangedStatus[2] || force)
+        {
+            RectF closeRect = RenderingHelper.RoundInPixel(data.CloseButtonBounds, pixelsPerPoint);
+            deviceContext.PushAxisAlignedClip(closeRect, D2D1AntialiasMode.Aliased);
+            if (!force)
+            {
+                ClearDCForTitle(deviceContext);
+            }
+            DebugHelper.ThrowUnless((nuint)Brush.TitleForeDeactiveBrush + 1 == (nuint)Brush.TitleCloseButtonActiveBrush);
+            iconStorer.RenderCloseButton(deviceContext, (RectangleF)closeRect,
+                    UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeDeactiveBrush + MathHelper.BooleanToNativeUnsigned(TitleBarButtonStatus[2])));
+            deviceContext.PopAxisAlignedClip();
+            collector.MarkAsDirty(closeRect);
         }
         #endregion
+    }
+    #endregion
 
-        #region Event Handlers
-        private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e) => _controller?.Unlock();
+    #region Event Handlers
+    private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e) => _controller?.Unlock();
 
-        private void SystemEvents_DisplaySettingsChanging(object? sender, EventArgs e) => _controller?.Lock();
+    private void SystemEvents_DisplaySettingsChanging(object? sender, EventArgs e) => _controller?.Lock();
 
-        private void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e)
+    private void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e)
+    {
+        switch (e.Reason)
         {
-            switch (e.Reason)
+            case SessionSwitchReason.SessionLock:
+                _controller?.Lock();
+                break;
+            case SessionSwitchReason.SessionUnlock:
+                _controller?.Unlock();
+                break;
+        }
+    }
+
+    private void SystemEvents_PowerModeChanged(object sender, PowerModeChangedEventArgs e)
+    {
+        switch (e.Mode)
+        {
+            case PowerModes.Suspend:
+                _controller?.Lock();
+                break;
+            case PowerModes.Resume:
+                _controller?.Unlock();
+                break;
+        }
+    }
+    #endregion
+
+    #region Public Methods
+
+    private void ResetBlur()
+    {
+        ConcreteUtils.ResetBlur(this);
+    }
+
+    protected override void OnResized(EventArgs args)
+    {
+        base.OnResized(args);
+        TriggerResize();
+    }
+
+    private void UpdateFirstTime()
+    {
+        _isShown = true;
+        RenderingController controller = new RenderingController(this, GetWindowFps(Handle));
+        if (_isSystemPrepareBoosting)
+            controller.SetSystemBoosting(true);
+        _controller = controller;
+        UpdateCoreUnchecked(controller);
+    }
+
+    [Inline(InlineBehavior.Remove)]
+    private static void UpdateCoreUnchecked(RenderingController controller) => controller.RequestUpdate(true);
+
+    [Inline(InlineBehavior.Remove)]
+    private static void UpdateCore(RenderingController? controller)
+    {
+        if (controller is null)
+            return;
+        UpdateCoreUnchecked(controller);
+    }
+
+    [Inline(InlineBehavior.Remove)]
+    private void ChangeDpi_RenderingPart(PointU dpi, Vector2 pointsPerPixel, Vector2 pixelsPerPoint)
+    {
+        SimpleGraphicsHost? host = _host;
+        if (host is null || host.IsDisposed)
+            return;
+        RenderingController? controller = _controller;
+        if (controller is null)
+            return;
+        controller.Lock();
+        controller.WaitForRendering();
+        try
+        {
+            lock (_syncLock)
             {
-                case SessionSwitchReason.SessionLock:
-                    _controller?.Lock();
-                    break;
-                case SessionSwitchReason.SessionUnlock:
-                    _controller?.Unlock();
-                    break;
+                host.GetDeviceContext().Dpi = new PointF(dpi.X, dpi.Y);
+                OnDpiChangedForElements(new DpiChangedEventArgs(dpi, pointsPerPixel, pixelsPerPoint));
             }
         }
-
-        private void SystemEvents_PowerModeChanged(object sender, PowerModeChangedEventArgs e)
+        finally
         {
-            switch (e.Mode)
-            {
-                case PowerModes.Suspend:
-                    _controller?.Lock();
-                    break;
-                case PowerModes.Resume:
-                    _controller?.Unlock();
-                    break;
-            }
-        }
-        #endregion
-
-        #region Public Methods
-
-        private void ResetBlur()
-        {
-            ConcreteUtils.ResetBlur(this);
-        }
-
-        protected override void OnResized(EventArgs args)
-        {
-            base.OnResized(args);
-            TriggerResize();
-        }
-
-        private void UpdateFirstTime()
-        {
-            _isShown = true;
-            RenderingController controller = new RenderingController(this, GetWindowFps(Handle));
-            if (_isSystemPrepareBoosting)
-                controller.SetSystemBoosting(true);
-            _controller = controller;
-            UpdateCoreUnchecked(controller);
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private static void UpdateCoreUnchecked(RenderingController controller) => controller.RequestUpdate(true);
-
-        [Inline(InlineBehavior.Remove)]
-        private static void UpdateCore(RenderingController? controller)
-        {
-            if (controller is null)
-                return;
-            UpdateCoreUnchecked(controller);
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private void ChangeDpi_RenderingPart(PointU dpi, Vector2 pointsPerPixel, Vector2 pixelsPerPoint)
-        {
-            SimpleGraphicsHost? host = _host;
-            if (host is null || host.IsDisposed)
-                return;
-            RenderingController? controller = _controller;
-            if (controller is null)
-                return;
-            controller.Lock();
-            controller.WaitForRendering();
-            host.GetDeviceContext().Dpi = new PointF(dpi.X, dpi.Y);
-            OnDpiChangedForElements(new DpiChangedEventArgs(dpi, pointsPerPixel, pixelsPerPoint));
             controller.Unlock();
         }
+    }
 
-        [Inline(InlineBehavior.Remove)]
-        private void OnWindowStateChangedRenderingPart(in WindowStateChangedEventArgs args)
+    [Inline(InlineBehavior.Remove)]
+    private void OnWindowStateChangedRenderingPart(in WindowStateChangedEventArgs args)
+    {
+        RenderingController? controller = _controller;
+        if (controller is null)
+            return;
+        switch (args.NewState)
         {
-            RenderingController? controller = _controller;
-            if (controller is null)
-                return;
-            switch (args.NewState)
-            {
-                case WindowState.Maximized:
-                    {
-                        controller.RequestUpdate(true);
-                        if (args.OldState == WindowState.Minimized)
-                            controller.Unlock();
-                    }
-                    break;
-                case WindowState.Normal:
-                    {
-                        controller.RequestUpdate(true);
-                        if (args.OldState == WindowState.Minimized)
-                            controller.Unlock();
-                    }
-                    break;
-                case WindowState.Minimized:
-                    {
-                        controller.Lock();
-                    }
-                    break;
-            }
-        }
-
-        private void CloseContextMenu(object? sender, EventArgs e) => ChangeOverlayElement(typeof(ContextMenu), null);
-        #endregion
-
-        #region Normal Methods
-        protected void TriggerResize() => _controller?.RequestResize(Volatile.Read(ref _sizeModeState));
-
-        protected void Update()
-        {
-            if (!_isShown)
-                return;
-            UpdateCore(_controller);
-        }
-
-        protected void Refresh()
-        {
-            if (!_isShown)
-                return;
-            _controller?.RequestUpdate(false);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected static LayoutEngine RentLayoutEngine() => _layoutEnginePool.Rent();
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected static void ReturnLayoutEngine(LayoutEngine engine) => _layoutEnginePool.Return(engine);
-
-        public void ChangeFocusElement(UIElement element)
-        {
-            WeakReference reference = _focusElementRefLazy.Value;
-            if (ReferenceEquals(reference.Target, element))
-                return;
-            reference.Target = element;
-            FocusElementChanged?.Invoke(this, element);
-        }
-
-        protected void ClearFocusElement()
-        {
-            _focusElementRefLazy.GetValueDirectly()?.Target = null;
-            FocusElementChanged?.Invoke(this, null);
-        }
-
-        public void ClearFocusElement(UIElement elementForValidation)
-        {
-            WeakReference? reference = _focusElementRefLazy.GetValueDirectly();
-            if (reference is null || !ReferenceEquals(reference.Target, elementForValidation))
-                return;
-            ClearFocusElement();
-        }
-
-        protected T? GetOverlayElement<T>() where T : UIElement => GetOverlayElement(typeof(T)) as T;
-
-        protected UIElement? GetOverlayElement(Type type) => _overlayElementDict.GetOrDefault(type, null);
-
-        protected T? ChangeOverlayElement<T>(T element, Predicate<T>? predicate = null) where T : UIElement
-        {
-            Predicate<UIElement>? translatedPredicate;
-            if (predicate is null)
-                translatedPredicate = null;
-            else
-                translatedPredicate = obj => obj is not T castedObj || predicate(castedObj);
-            return ChangeOverlayElement(typeof(T), element, translatedPredicate) as T;
-        }
-
-        protected UIElement? ChangeOverlayElement(Type type, UIElement? element, Predicate<UIElement>? predicate = null)
-        {
-            _controller?.Lock();
-            try
-            {
-                ConcurrentDictionary<Type, UIElement> overlayElementDict = _overlayElementDict;
-                UnwrappableList<UIElement> overlayElementList = _overlayElementList;
-                UIElement? result;
-                if (element is null)
+            case WindowState.Maximized:
                 {
-                    if (overlayElementDict.TryRemove(type, out result))
-                    {
-                        lock (overlayElementList)
-                        {
-                            overlayElementList.Remove(result);
-                            _lastHitElementRefLazy.GetValueDirectly()?.Target = null;
-                            WeakReference? recordedRef = _recordedLastHitElementRefLazy.GetValueDirectly();
-                            if (recordedRef is not null)
-                            {
-                                (object? recordedTarget, recordedRef.Target) = (recordedRef.Target, null);
-                                if (recordedTarget is UIElement recordedElement && recordedTarget is IMouseMoveHandler handler)
-                                    handler.OnMouseMove(new MouseEventArgs(recordedElement.PageToLocal(PointToClient(MouseHelper.GetMousePosition()))));
-                            }
-                        }
-                    }
-                    return result;
+                    controller.RequestUpdate(true);
+                    if (args.OldState == WindowState.Minimized)
+                        controller.Unlock();
                 }
-                WeakReference? lastHitRef = _lastHitElementRefLazy.GetValueDirectly();
-                if (lastHitRef is not null)
+                break;
+            case WindowState.Normal:
                 {
-                    (object? recordedTarget, lastHitRef.Target) = (lastHitRef.Target, null);
-                    if (recordedTarget is not null)
-                        _recordedLastHitElementRefLazy.Value.Target = recordedTarget;
+                    controller.RequestUpdate(true);
+                    if (args.OldState == WindowState.Minimized)
+                        controller.Unlock();
                 }
-                if (!overlayElementDict.TryGetValue(type, out result))
+                break;
+            case WindowState.Minimized:
                 {
-                    lock (overlayElementList)
-                    {
-                        IThemeResourceProvider? resourceProvider = _resourceProvider;
-                        if (resourceProvider is not null)
-                            element.ApplyTheme(resourceProvider);
-
-                        RecalculateOverlayLayout(element);
-                        Thread.MemoryBarrier();
-
-                        overlayElementDict.TryAdd(type, element);
-                        overlayElementList.Add(element);
-                    }
-                    return null;
+                    controller.Lock();
                 }
-                if (result is null || predicate is null || predicate.Invoke(result))
-                {
-                    lock (overlayElementList)
-                    {
-                        IThemeResourceProvider? resourceProvider = _resourceProvider;
-                        if (resourceProvider is not null)
-                            element.ApplyTheme(resourceProvider);
+                break;
+        }
+    }
+    #endregion
 
-                        RecalculateOverlayLayout(element);
-                        Thread.MemoryBarrier();
+    #region Normal Methods
+    protected void TriggerResize() => _controller?.RequestResize(Volatile.Read(ref _sizeModeState));
 
-                        int index = result is null ? -1 : overlayElementList.IndexOf(result);
-                        overlayElementDict[type] = element;
-                        if (index > -1)
-                            overlayElementList[index] = element;
-                        else
-                            overlayElementList.Add(element);
+    protected void Update()
+    {
+        if (!_isShown)
+            return;
+        UpdateCore(_controller);
+    }
 
-                        return result;
-                    }
-                }
-                return null;
-            }
-            finally
+    protected void Refresh()
+    {
+        if (!_isShown)
+            return;
+        _controller?.RequestUpdate(false);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected static LayoutEngine RentLayoutEngine() => _layoutEnginePool.Rent();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected static void ReturnLayoutEngine(LayoutEngine engine) => _layoutEnginePool.Return(engine);
+
+    public void ChangeFocusElement(UIElement element)
+    {
+        WeakReference reference = _focusElementRefLazy.Value;
+        if (ReferenceEquals(reference.Target, element))
+            return;
+        reference.Target = element;
+        FocusElementChanged?.Invoke(this, element);
+    }
+
+    protected void ClearFocusElement()
+    {
+        _focusElementRefLazy.GetValueDirectly()?.Target = null;
+        FocusElementChanged?.Invoke(this, null);
+    }
+
+    public void ClearFocusElement(UIElement elementForValidation)
+    {
+        WeakReference? reference = _focusElementRefLazy.GetValueDirectly();
+        if (reference is null || !ReferenceEquals(reference.Target, elementForValidation))
+            return;
+        ClearFocusElement();
+    }
+
+    protected UIElement? ChangeOverlayElement(UIElement? element)
+    {
+        RenderingController? controller = _controller;
+        if (controller is not null)
+        {
+            controller.Lock();
+            controller.WaitForRendering();
+        }
+        try
+        {
+            lock (_syncLock)
             {
-                _controller?.Unlock();
+                if (element is not null)
+                {
+                    IThemeResourceProvider? provider = _resourceProvider;
+                    if (provider is not null)
+                        element.ApplyTheme(provider);
+                }
+                return ReferenceHelper.Exchange(ref _overlayElement, element);
             }
         }
-
-        protected T? GetBackgroundElement<T>() where T : UIElement => GetBackgroundElement(typeof(T)) as T;
-
-        protected UIElement? GetBackgroundElement(Type type) => _backgroundElementDict.GetOrDefault(type, null);
-
-        protected T? ChangeBackgroundElement<T>(T element, Predicate<T>? predicate = null) where T : UIElement
+        finally
         {
-            Predicate<UIElement>? translatedPredicate;
-            if (predicate is null)
-                translatedPredicate = null;
-            else
-                translatedPredicate = obj => obj is not T castedObj || predicate(castedObj);
-            return ChangeBackgroundElement(typeof(T), element, translatedPredicate) as T;
-        }
-
-        protected UIElement? ChangeBackgroundElement(Type type, UIElement? element, Predicate<UIElement>? predicate = null)
-        {
-            ConcurrentDictionary<Type, UIElement> backgroundElementDict = _backgroundElementDict;
-            UnwrappableList<UIElement> backgroundElementList = _backgroundElementList;
-            UIElement? result;
-            if (element is null)
-            {
-                if (backgroundElementDict.TryRemove(type, out result))
-                {
-                    backgroundElementList.Remove(result);
-                    Update();
-                }
-                return result;
-            }
-            if (!backgroundElementDict.TryGetValue(type, out result))
-            {
-                backgroundElementDict.TryAdd(type, element);
-                backgroundElementList.Add(element);
-                return null;
-            }
-            if (result is null || predicate is null || predicate.Invoke(result))
-            {
-                int index = result is null ? -1 : backgroundElementList.IndexOf(result);
-                backgroundElementDict[type] = element;
-                if (index > -1)
-                    backgroundElementList[index] = element;
-                else
-                    backgroundElementList.Add(element);
-                return result;
-            }
-            return null;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void OpenContextMenu(UIElement elementRelativeTo, ContextMenu.ContextMenuItem[] items, Point location)
-        {
-            if (!items.HasAnyItem())
-                return;
-
-            OpenContextMenuCore(items, elementRelativeTo.LocalToPage(location));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void OpenContextMenu(ContextMenu.ContextMenuItem[] items, Point location)
-        {
-            if (!items.HasAnyItem())
-                return;
-
-            OpenContextMenuCore(items, location);
-        }
-
-        private void OpenContextMenuCore(ContextMenu.ContextMenuItem[] items, Point location)
-        {
-            ContextMenu contextMenu = new ContextMenu(this, items);
-            ChangeOverlayElement(contextMenu)?.Dispose();
-            Rectangle pageBounds = PageBounds;
-            if (location.X + contextMenu.Width >= pageBounds.Right)
-                location.X = location.X - contextMenu.Width + 1;
-            if (location.Y + contextMenu.Height >= pageBounds.Bottom)
-                location.Y = location.Y - contextMenu.Height + 1;
-            contextMenu.Location = location;
-        }
-
-        [Inline(InlineBehavior.Keep, export: true)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CloseOverlayElement(UIElement elementForValidate)
-            => CloseOverlayElement(elementForValidate.GetType(), elementForValidate);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CloseOverlayElement(Type elementType, UIElement elementForValidate)
-            => (ChangeOverlayElement(elementType, null, _element => ReferenceEquals(_element, elementForValidate)) as IDisposable)?.Dispose();
-
-        protected unsafe void ApplyTheme(IThemeResourceProvider provider)
-        {
-            RenderingController? controller = _controller;
-            if (controller is not null)
-            {
-                controller.Lock();
-                controller.WaitForRendering();
-            }
-            SimpleGraphicsHost? host = _host;
-            if (host is null || host.IsDisposed)
-                return;
-            DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider, provider);
-            ApplyThemeCore(provider);
-            if (TryGetWindowListSnapshot(_childrenReferenceList, out NativeMemoryPool? pool,
-                out TypedNativeMemoryBlock<GCHandle> handles, out int count))
-            {
-                try
-                {
-                    DebugHelper.ThrowIf(count <= 0);
-                    GCHandle* ptr = handles.NativePointer;
-                    for (int i = 0; i < count; i++)
-                    {
-                        GCHandle handle = ptr[i];
-                        if (!handle.IsAllocated || handle.Target is not CoreWindow window || window.IsDisposed)
-                            continue;
-                        window.ApplyTheme(provider.Clone());
-                    }
-                }
-                finally
-                {
-                    pool.Return(handles);
-                }
-            }
             if (controller is not null)
             {
                 controller.RequestResize(Volatile.Read(ref _sizeModeState));
                 controller.Unlock();
             }
         }
-        #endregion
+    }
 
-        #region Static Methods
-        internal static unsafe void NotifyThemeChanged(IThemeContext themeContext)
+    protected void ChangeOverlayElement(UIElement? element, UIElement? oldElement)
+    {
+        RenderingController? controller = _controller;
+        if (controller is not null)
         {
-            if (!TryGetWindowListSnapshot(_rootWindowList, out NativeMemoryPool? pool,
+            controller.Lock();
+            controller.WaitForRendering();
+        }
+        try
+        {
+            lock (_syncLock)
+            {
+                if (!ReferenceEquals(element, _overlayElement))
+                    return;
+                if (element is not null)
+                {
+                    IThemeResourceProvider? provider = _resourceProvider;
+                    if (provider is not null)
+                        element.ApplyTheme(provider);
+                }
+                _overlayElement = element;
+            }
+        }
+        finally
+        {
+            if (controller is not null)
+            {
+                controller.RequestResize(Volatile.Read(ref _sizeModeState));
+                controller.Unlock();
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void OpenContextMenu(UIElement elementRelativeTo, ContextMenu.ContextMenuItem[] items, Point location)
+    {
+        if (!items.HasAnyItem())
+            return;
+
+        OpenContextMenuCore(items, elementRelativeTo.LocalToPage(location));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void OpenContextMenu(ContextMenu.ContextMenuItem[] items, Point location)
+    {
+        if (!items.HasAnyItem())
+            return;
+
+        OpenContextMenuCore(items, location);
+    }
+
+    private void OpenContextMenuCore(ContextMenu.ContextMenuItem[] items, Point location)
+    {
+        ContextMenu contextMenu = new ContextMenu(this, items);
+        (ChangeOverlayElement(contextMenu) as IDisposable)?.Dispose();
+        Rectangle pageBounds = PageBounds;
+        if (location.X + contextMenu.Width >= pageBounds.Right)
+            location.X = location.X - contextMenu.Width + 1;
+        if (location.Y + contextMenu.Height >= pageBounds.Bottom)
+            location.Y = location.Y - contextMenu.Height + 1;
+        contextMenu.Location = location;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CloseOverlayElement(UIElement elementForValidate)
+        => ChangeOverlayElement(null, elementForValidate);
+
+    protected unsafe void ApplyTheme(IThemeResourceProvider provider)
+    {
+        RenderingController? controller = _controller;
+        if (controller is not null)
+        {
+            controller.Lock();
+            controller.WaitForRendering();
+        }
+        try
+        {
+            lock (_syncLock)
+            {
+                SimpleGraphicsHost? host = _host;
+                if (host is null || host.IsDisposed)
+                    return;
+                DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider, provider);
+                ApplyThemeCore(provider);
+                if (TryGetWindowListSnapshot(_childrenReferenceList, out NativeMemoryPool? pool,
                     out TypedNativeMemoryBlock<GCHandle> handles, out int count))
-                return;
+                {
+                    try
+                    {
+                        DebugHelper.ThrowIf(count <= 0);
+                        GCHandle* ptr = handles.NativePointer;
+                        for (int i = 0; i < count; i++)
+                        {
+                            GCHandle handle = ptr[i];
+                            if (!handle.IsAllocated || handle.Target is not CoreWindow window || window.IsDisposed)
+                                continue;
+                            window.ApplyTheme(provider.Clone());
+                        }
+                    }
+                    finally
+                    {
+                        pool.Return(handles);
+                    }
+                }
+            }
+        }
+        finally
+        {
+            if (controller is not null)
+            {
+                controller.RequestResize(Volatile.Read(ref _sizeModeState));
+                controller.Unlock();
+            }
+        }
+    }
+    #endregion
+
+    #region Static Methods
+    internal static unsafe void NotifyThemeChanged(IThemeContext themeContext)
+    {
+        if (!TryGetWindowListSnapshot(_rootWindowList, out NativeMemoryPool? pool,
+                out TypedNativeMemoryBlock<GCHandle> handles, out int count))
+            return;
+        try
+        {
+            DebugHelper.ThrowIf(count <= 0);
+            GCHandle* ptr = handles.NativePointer;
+            for (int i = 0; i < count; i++)
+            {
+                GCHandle handle = ptr[i];
+                if (!handle.IsAllocated || handle.Target is not CoreWindow window || window.IsDisposed)
+                    continue;
+                D2D1DeviceContext? deviceContext = window._deviceContext;
+                if (deviceContext is null || deviceContext.IsDisposed)
+                    continue;
+                window.ApplyTheme(ThemeResourceProvider.CreateResourceProvider(window, themeContext));
+            }
+        }
+        finally
+        {
+            pool.Return(handles);
+        }
+    }
+
+    private static unsafe bool TryGetWindowListSnapshot(UnwrappableList<GCHandle> windowList,
+        [NotNullWhen(true)] out NativeMemoryPool? pool, [NotNullWhen(true)] out TypedNativeMemoryBlock<GCHandle> handles, out int count)
+    {
+        lock (windowList)
+        {
+            count = windowList.Count;
+            if (count <= 0)
+                goto Failed;
+            pool = NativeMemoryPool.Shared;
+            count -= ClearInvalidHandles(pool, windowList, count);
+            if (count <= 0)
+                goto Failed;
+            handles = pool.Rent<GCHandle>(count);
+            fixed (GCHandle* source = windowList.Unwrap())
+            {
+                GCHandle* destination = handles.NativePointer;
+                UnsafeHelper.CopyBlockUnaligned(destination, source, (uint)(count * sizeof(GCHandle)));
+            }
+            return true;
+        }
+
+    Failed:
+        pool = null;
+        handles = TypedNativeMemoryBlock<GCHandle>.Empty;
+        return false;
+
+        static int ClearInvalidHandles(NativeMemoryPool pool, UnwrappableList<GCHandle> list, int count)
+        {
+            TypedNativeMemoryBlock<int> removeIndicesBuffer = pool.Rent<int>(count);
             try
             {
-                DebugHelper.ThrowIf(count <= 0);
-                GCHandle* ptr = handles.NativePointer;
-                for (int i = 0; i < count; i++)
+                int* removeIndicesPtr = removeIndicesBuffer.NativePointer;
+                int removeIndicesCount = 0;
                 {
-                    GCHandle handle = ptr[i];
-                    if (!handle.IsAllocated || handle.Target is not CoreWindow window || window.IsDisposed)
-                        continue;
-                    D2D1DeviceContext? deviceContext = window._deviceContext;
-                    if (deviceContext is null || deviceContext.IsDisposed)
-                        continue;
-                    window.ApplyTheme(ThemeResourceProvider.CreateResourceProvider(window, themeContext));
+                    ref GCHandle handleRef = ref UnsafeHelper.GetArrayDataReference(list.Unwrap());
+                    for (int i = 0; i < count; i++)
+                    {
+                        GCHandle handle = UnsafeHelper.AddTypedOffset(ref handleRef, i);
+                        if (!handle.IsAllocated || handle.Target is not CoreWindow window || window.IsDisposed)
+                        {
+                            handle.Free();
+                            removeIndicesPtr[removeIndicesCount++] = i;
+                        }
+                    }
                 }
+                for (int j = removeIndicesCount - 1; j >= 0; j--)
+                {
+                    // 從最後面開始減，提高效能
+                    list.RemoveAt(removeIndicesPtr[j]);
+                }
+                DebugHelper.ThrowIf(removeIndicesCount > count);
+                return removeIndicesCount;
             }
             finally
             {
-                pool.Return(handles);
+                pool.Return(removeIndicesBuffer);
             }
         }
-
-        private static unsafe bool TryGetWindowListSnapshot(UnwrappableList<GCHandle> windowList,
-            [NotNullWhen(true)] out NativeMemoryPool? pool, [NotNullWhen(true)] out TypedNativeMemoryBlock<GCHandle> handles, out int count)
-        {
-            lock (windowList)
-            {
-                count = windowList.Count;
-                if (count <= 0)
-                    goto Failed;
-                pool = NativeMemoryPool.Shared;
-                count -= ClearInvalidHandles(pool, windowList, count);
-                if (count <= 0)
-                    goto Failed;
-                handles = pool.Rent<GCHandle>(count);
-                fixed (GCHandle* source = windowList.Unwrap())
-                {
-                    GCHandle* destination = handles.NativePointer;
-                    UnsafeHelper.CopyBlockUnaligned(destination, source, (uint)(count * sizeof(GCHandle)));
-                }
-                return true;
-            }
-
-        Failed:
-            pool = null;
-            handles = TypedNativeMemoryBlock<GCHandle>.Empty;
-            return false;
-
-            static int ClearInvalidHandles(NativeMemoryPool pool, UnwrappableList<GCHandle> list, int count)
-            {
-                TypedNativeMemoryBlock<int> removeIndicesBuffer = pool.Rent<int>(count);
-                try
-                {
-                    int* removeIndicesPtr = removeIndicesBuffer.NativePointer;
-                    int removeIndicesCount = 0;
-                    {
-                        ref GCHandle handleRef = ref UnsafeHelper.GetArrayDataReference(list.Unwrap());
-                        for (int i = 0; i < count; i++)
-                        {
-                            GCHandle handle = UnsafeHelper.AddTypedOffset(ref handleRef, i);
-                            if (!handle.IsAllocated || handle.Target is not CoreWindow window || window.IsDisposed)
-                            {
-                                handle.Free();
-                                removeIndicesPtr[removeIndicesCount++] = i;
-                            }
-                        }
-                    }
-                    for (int j = removeIndicesCount - 1; j >= 0; j--)
-                    {
-                        // 從最後面開始減，提高效能
-                        list.RemoveAt(removeIndicesPtr[j]);
-                    }
-                    DebugHelper.ThrowIf(removeIndicesCount > count);
-                    return removeIndicesCount;
-                }
-                finally
-                {
-                    pool.Return(removeIndicesBuffer);
-                }
-            }
-        }
-        #endregion
-
-        #region Disposing
-        protected override void DisposeCore(bool disposing)
-        {
-            if (disposing)
-            {
-                DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider);
-                DisposeHelper.SwapDisposeInterlocked(ref _controller);
-                DisposeHelper.SwapDisposeInterlocked(ref _host);
-                DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
-                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
-                DisposeElements(GetElements());
-
-                if (InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0)
-                    SpinWait.SpinUntil(() => InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0);
-                if (InterlockedHelper.Read(ref _ownedGDP) != 0)
-                    DisposeHelper.SwapDisposeInterlocked(ref _graphicsDeviceProvider);
-                else
-                    InterlockedHelper.Write(ref _graphicsDeviceProvider, null);
-            }
-            _overlayElementList.Clear();
-            _backgroundElementList.Clear();
-            SequenceHelper.Clear(_brushes);
-            base.DisposeCore(disposing);
-        }
-
-        private static void DisposeElements(IEnumerable<UIElement?> elements)
-        {
-            switch (elements)
-            {
-                case UIElement?[] array:
-                    DisposeElementsCore(array, array.Length);
-                    return;
-                case IList<UIElement?> list:
-                    DisposeElementsCore(list);
-                    return;
-                case ICollection<UIElement?> collection:
-                    DisposeElementsCore(collection);
-                    return;
-                default:
-                    DisposeElementsCore(elements);
-                    return;
-            }
-        }
-
-        private static void DisposeElementsCore(UIElement?[] elements, int length)
-        {
-            if (length <= 0)
-                return;
-            ref UIElement? elementRef = ref UnsafeHelper.GetArrayDataReference(elements);
-            for (int i = 0; i < length; i++)
-                (UnsafeHelper.AddTypedOffset(ref elementRef, i) as IDisposable)?.Dispose();
-        }
-
-        private static void DisposeElementsCore(IList<UIElement?> elements)
-        {
-            switch (elements)
-            {
-                case UnwrappableList<UIElement?> list:
-                    DisposeElementsCore(list.Unwrap(), list.Count);
-                    return;
-                case ObservableList<UIElement?> list:
-                    {
-                        IList<UIElement?> underlyingList = list.GetUnderlyingList();
-                        if (ReferenceEquals(underlyingList, list))
-                            return;
-                        DisposeElementsCore(list);
-                    }
-                    return;
-                default:
-                    {
-                        int count = elements.Count;
-                        if (count <= 0)
-                            return;
-                        for (int i = 0; i < count; i++)
-                            (elements[i] as IDisposable)?.Dispose();
-                    }
-                    return;
-            }
-        }
-
-        private static void DisposeElementsCore(ICollection<UIElement?> elements)
-        {
-            int count = elements.Count;
-            if (count <= 0)
-                return;
-            using IEnumerator<UIElement?> enumerator = elements.GetEnumerator();
-            enumerator.MoveNext();
-            for (int i = 0; i < count; i++)
-            {
-                (enumerator.Current as IDisposable)?.Dispose();
-                if (!enumerator.MoveNext())
-                    break;
-            }
-        }
-
-        private static void DisposeElementsCore(IEnumerable<UIElement?> elements)
-        {
-            foreach (UIElement? element in elements)
-                (element as IDisposable)?.Dispose();
-        }
-        #endregion
     }
+    #endregion
+
+    #region Disposing
+    protected override void DisposeCore(bool disposing)
+    {
+        if (disposing)
+        {
+            DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider);
+            DisposeHelper.SwapDisposeInterlocked(ref _controller);
+            DisposeHelper.SwapDisposeInterlocked(ref _host);
+            DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
+            DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
+            DisposeElements(GetElements());
+
+            if (InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0)
+                SpinWait.SpinUntil(() => InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0);
+            if (InterlockedHelper.Read(ref _ownedGDP) != 0)
+                DisposeHelper.SwapDisposeInterlocked(ref _graphicsDeviceProvider);
+            else
+                InterlockedHelper.Write(ref _graphicsDeviceProvider, null);
+        }
+        _overlayElement = null;
+        SequenceHelper.Clear(_brushes);
+        base.DisposeCore(disposing);
+    }
+
+    private static void DisposeElements(IEnumerable<UIElement?> elements)
+    {
+        switch (elements)
+        {
+            case UIElement?[] array:
+                DisposeElementsCore(array, array.Length);
+                return;
+            case IList<UIElement?> list:
+                DisposeElementsCore(list);
+                return;
+            case ICollection<UIElement?> collection:
+                DisposeElementsCore(collection);
+                return;
+            default:
+                DisposeElementsCore(elements);
+                return;
+        }
+    }
+
+    private static void DisposeElementsCore(UIElement?[] elements, int length)
+    {
+        if (length <= 0)
+            return;
+        ref UIElement? elementRef = ref UnsafeHelper.GetArrayDataReference(elements);
+        for (int i = 0; i < length; i++)
+            (UnsafeHelper.AddTypedOffset(ref elementRef, i) as IDisposable)?.Dispose();
+    }
+
+    private static void DisposeElementsCore(IList<UIElement?> elements)
+    {
+        switch (elements)
+        {
+            case UnwrappableList<UIElement?> list:
+                DisposeElementsCore(list.Unwrap(), list.Count);
+                return;
+            case ObservableList<UIElement?> list:
+                {
+                    IList<UIElement?> underlyingList = list.GetUnderlyingList();
+                    if (ReferenceEquals(underlyingList, list))
+                        return;
+                    DisposeElementsCore(list);
+                }
+                return;
+            default:
+                {
+                    int count = elements.Count;
+                    if (count <= 0)
+                        return;
+                    for (int i = 0; i < count; i++)
+                        (elements[i] as IDisposable)?.Dispose();
+                }
+                return;
+        }
+    }
+
+    private static void DisposeElementsCore(ICollection<UIElement?> elements)
+    {
+        int count = elements.Count;
+        if (count <= 0)
+            return;
+        using IEnumerator<UIElement?> enumerator = elements.GetEnumerator();
+        enumerator.MoveNext();
+        for (int i = 0; i < count; i++)
+        {
+            (enumerator.Current as IDisposable)?.Dispose();
+            if (!enumerator.MoveNext())
+                break;
+        }
+    }
+
+    private static void DisposeElementsCore(IEnumerable<UIElement?> elements)
+    {
+        foreach (UIElement? element in elements)
+            (element as IDisposable)?.Dispose();
+    }
+    #endregion
 }

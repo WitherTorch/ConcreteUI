@@ -10,65 +10,64 @@ using InlineMethod;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 
-namespace ConcreteUI.Graphics.Native.Direct2D
+namespace ConcreteUI.Graphics.Native.Direct2D;
+
+/// <summary>
+/// Enables creation and drawing of geometry realization objects.
+/// </summary>
+[SuppressUnmanagedCodeSecurity]
+public sealed unsafe class D2D1DeviceContext1 : D2D1DeviceContext
 {
-    /// <summary>
-    /// Enables creation and drawing of geometry realization objects.
-    /// </summary>
-    [SuppressUnmanagedCodeSecurity]
-    public sealed unsafe class D2D1DeviceContext1 : D2D1DeviceContext
+    public static readonly Guid IID_IDeviceContext1 = new Guid(0xd37f57e4, 0x6908, 0x459f, 0xa1, 0x99, 0xe7, 0x2f, 0x24, 0xf7, 0x99, 0x87);
+
+    private new enum MethodTable
     {
-        public static readonly Guid IID_IDeviceContext1 = new Guid(0xd37f57e4, 0x6908, 0x459f, 0xa1, 0x99, 0xe7, 0x2f, 0x24, 0xf7, 0x99, 0x87);
+        _Start = D2D1DeviceContext.MethodTable._End,
+        CreateFilledGeometryRealization = _Start,
+        CreateStrokedGeometryRealization,
+        DrawGeometryRealization,
+        _End
+    }
 
-        private new enum MethodTable
-        {
-            _Start = D2D1DeviceContext.MethodTable._End,
-            CreateFilledGeometryRealization = _Start,
-            CreateStrokedGeometryRealization,
-            DrawGeometryRealization,
-            _End
-        }
+    public D2D1DeviceContext1() : base() { }
 
-        public D2D1DeviceContext1() : base() { }
+    public D2D1DeviceContext1(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
 
-        public D2D1DeviceContext1(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
+    public D2D1GeometryRealization CreateFilledGeometryRealization(D2D1Geometry geometry, float flatteningTolerance)
+    {
+        void* nativePointer = NativePointer;
+        void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateFilledGeometryRealization);
+        int hr = ((delegate* unmanaged[Stdcall]<void*, void*, float, void**, int>)functionPointer)(nativePointer, geometry.NativePointer, flatteningTolerance, &nativePointer);
+        ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+        return new D2D1GeometryRealization(nativePointer, ReferenceType.Owned);
+    }
 
-        public D2D1GeometryRealization CreateFilledGeometryRealization(D2D1Geometry geometry, float flatteningTolerance)
-        {
-            void* nativePointer = NativePointer;
-            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateFilledGeometryRealization);
-            int hr = ((delegate* unmanaged[Stdcall]<void*, void*, float, void**, int>)functionPointer)(nativePointer, geometry.NativePointer, flatteningTolerance, &nativePointer);
-            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
-            return new D2D1GeometryRealization(nativePointer, ReferenceType.Owned);
-        }
+    [Inline(InlineBehavior.Keep, export: true)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public D2D1GeometryRealization CreateStrokedGeometryRealization(D2D1Geometry geometry, float flatteningTolerance, float strokeWidth)
+        => CreateStrokedGeometryRealization(geometry, flatteningTolerance, strokeWidth, null);
 
-        [Inline(InlineBehavior.Keep, export: true)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public D2D1GeometryRealization CreateStrokedGeometryRealization(D2D1Geometry geometry, float flatteningTolerance, float strokeWidth)
-            => CreateStrokedGeometryRealization(geometry, flatteningTolerance, strokeWidth, null);
+    public D2D1GeometryRealization CreateStrokedGeometryRealization(D2D1Geometry geometry, float flatteningTolerance, float strokeWidth,
+        D2D1StrokeStyle? strokeStyle)
+    {
+        void* nativePointer = NativePointer;
+        void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateStrokedGeometryRealization);
+        int hr = ((delegate* unmanaged[Stdcall]<void*, void*, float, float, void*, void**, int>)functionPointer)(nativePointer,
+            geometry.NativePointer, flatteningTolerance, strokeWidth, strokeStyle == null ? null : strokeStyle.NativePointer, &nativePointer);
+        ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+        return new D2D1GeometryRealization(nativePointer, ReferenceType.Owned);
+    }
 
-        public D2D1GeometryRealization CreateStrokedGeometryRealization(D2D1Geometry geometry, float flatteningTolerance, float strokeWidth,
-            D2D1StrokeStyle? strokeStyle)
-        {
-            void* nativePointer = NativePointer;
-            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.CreateStrokedGeometryRealization);
-            int hr = ((delegate* unmanaged[Stdcall]<void*, void*, float, float, void*, void**, int>)functionPointer)(nativePointer,
-                geometry.NativePointer, flatteningTolerance, strokeWidth, strokeStyle == null ? null : strokeStyle.NativePointer, &nativePointer);
-            ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
-            return new D2D1GeometryRealization(nativePointer, ReferenceType.Owned);
-        }
-
-        public void DrawGeometryRealization(D2D1GeometryRealization geometryRealization, D2D1Brush brush)
-        {
-            void* nativePointer = NativePointer;
-            void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawGeometryRealization);
-            ((delegate* unmanaged
+    public void DrawGeometryRealization(D2D1GeometryRealization geometryRealization, D2D1Brush brush)
+    {
+        void* nativePointer = NativePointer;
+        void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.DrawGeometryRealization);
+        ((delegate* unmanaged
 #if NET8_0_OR_GREATER
-            [Stdcall, SuppressGCTransition]
+        [Stdcall, SuppressGCTransition]
 #else
-            [Stdcall]
+        [Stdcall]
 #endif
-            <void*, void*, void*, void>)functionPointer)(nativePointer, geometryRealization.NativePointer, brush.NativePointer);
-        }
+        <void*, void*, void*, void>)functionPointer)(nativePointer, geometryRealization.NativePointer, brush.NativePointer);
     }
 }

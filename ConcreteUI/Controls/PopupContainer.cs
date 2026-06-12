@@ -13,88 +13,87 @@ using ConcreteUI.Window;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public sealed partial class PopupContainer : PopupElementBase, IElementContainer, IDisposable
 {
-    public sealed partial class PopupContainer : PopupElementBase, IElementContainer, IDisposable
+    private static readonly string[] _brushNames = new string[(int)Brush._Last]
     {
-        private static readonly string[] _brushNames = new string[(int)Brush._Last]
-        {
-            "back",
-            "border"
-        };
+        "back",
+        "border"
+    };
 
-        private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-        private readonly ObservableList<UIElement> _children;
+    private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
+    private readonly ObservableList<UIElement> _children;
 
-        private bool _disposed;
+    private bool _disposed;
 
-        public PopupContainer(CoreWindow window) : base(window, "app.control")
-        {
-            _children = new ObservableList<UIElement>(new UnwrappableList<UIElement>());
-        }
+    public PopupContainer(CoreWindow window) : base(window, "app.control")
+    {
+        _children = new ObservableList<UIElement>(new UnwrappableList<UIElement>());
+    }
 
-        protected override void ApplyThemeCore(IThemeResourceProvider provider)
-        {
-            UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
-            foreach (UIElement child in _children)
-                child.ApplyTheme(provider);
-        }
+    protected override void ApplyThemeCore(IThemeResourceProvider provider)
+    {
+        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
+        foreach (UIElement child in _children)
+            child.ApplyTheme(provider);
+    }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<UIElement?> GetElements() => _children;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public IEnumerable<UIElement?> GetElements() => _children;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerable<UIElement?> GetActiveElements() => ElementContainerDefaults.GetActiveElements(this);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public IEnumerable<UIElement?> GetActiveElements() => ElementContainerDefaults.GetActiveElements(this);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddChild(UIElement element) => _children.Add(element);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddChild(UIElement element) => _children.Add(element);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddChildren(params UIElement[] elements) => _children.AddRange(elements);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddChildren(params UIElement[] elements) => _children.AddRange(elements);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddChildren(IEnumerable<UIElement> elements) => _children.AddRange(elements);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddChildren(IEnumerable<UIElement> elements) => _children.AddRange(elements);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RemoveChild(UIElement element) => _children.Remove(element);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void RemoveChild(UIElement element) => _children.Remove(element);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RenderBackground(UIElement element, in RegionalRenderingContext context)
-            => RenderBackground(context, UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush));
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void RenderBackground(UIElement element, in RegionalRenderingContext context)
+        => RenderBackground(context, UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush));
 
-        protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(_brushes[(int)Brush.BackBrush]);
+    protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(_brushes[(int)Brush.BackBrush]);
 
-        bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
+    bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
 
-        protected override bool RenderCore(in RegionalRenderingContext context)
-        {
-            ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
-            RenderBackground(context, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BackBrush));
-            context.DrawBorder(UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BorderBrush));
+    protected override bool RenderCore(in RegionalRenderingContext context)
+    {
+        ref D2D1Brush brushesRef = ref UnsafeHelper.GetArrayDataReference(_brushes);
+        RenderBackground(context, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BackBrush));
+        context.DrawBorder(UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.BorderBrush));
 
-            return true;
-        }
+        return true;
+    }
 
-        IRenderer IElementContainer.GetRenderer() => Renderer;
+    IRenderer IElementContainer.GetRenderer() => Renderer;
 
-        CoreWindow IElementContainer.GetWindow() => Window;
+    CoreWindow IElementContainer.GetWindow() => Window;
 
-        private void DisposeCore(bool disposing)
-        {
-            if (ReferenceHelper.Exchange(ref _disposed, true))
-                return;
-            if (disposing)
-                DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
-            SequenceHelper.Clear(_brushes);
-            ListHelper.CleanAllWeak<UIElement, ObservableList<UIElement>>(_children, disposing);
-        }
+    private void DisposeCore(bool disposing)
+    {
+        if (ReferenceHelper.Exchange(ref _disposed, true))
+            return;
+        if (disposing)
+            DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
+        SequenceHelper.Clear(_brushes);
+        ListHelper.CleanAllWeak<UIElement, ObservableList<UIElement>>(_children, disposing);
+    }
 
-        ~PopupContainer() => DisposeCore(disposing: false);
+    ~PopupContainer() => DisposeCore(disposing: false);
 
-        public void Dispose()
-        {
-            DisposeCore(disposing: true);
-            GC.SuppressFinalize(this);
-        }
+    public void Dispose()
+    {
+        DisposeCore(disposing: true);
+        GC.SuppressFinalize(this);
     }
 }

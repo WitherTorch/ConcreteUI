@@ -8,712 +8,711 @@ using WitherTorch.Common;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+public delegate void HeightChangedEventHandler<TItem, TMeasuringContext>(object? sender, int height)
+    where TItem : IMeasurableListItem<TMeasuringContext> where TMeasuringContext : IMeasuringContext;
+public delegate void ItemRemovedEventHandler<TItem, TMeasuringContext>(object? sender, TItem item)
+    where TItem : IMeasurableListItem<TMeasuringContext> where TMeasuringContext : IMeasuringContext;
+
+public sealed class AppendOnlyListItemStore<TItem, TMeasuringContext> : ICheckableDisposable
+    where TItem : IMeasurableListItem<TMeasuringContext> where TMeasuringContext : IMeasuringContext
 {
-    public delegate void HeightChangedEventHandler<TItem, TMeasuringContext>(object? sender, int height)
-        where TItem : IMeasurableListItem<TMeasuringContext> where TMeasuringContext : IMeasuringContext;
-    public delegate void ItemRemovedEventHandler<TItem, TMeasuringContext>(object? sender, TItem item)
-        where TItem : IMeasurableListItem<TMeasuringContext> where TMeasuringContext : IMeasuringContext;
+    private readonly IAppendOnlyCollection<int> _keys;
+    private readonly IAppendOnlyCollection<TItem> _values;
+    private readonly object _syncLock;
 
-    public sealed class AppendOnlyListItemStore<TItem, TMeasuringContext> : ICheckableDisposable
-        where TItem : IMeasurableListItem<TMeasuringContext> where TMeasuringContext : IMeasuringContext
+    private AppendOnlyListBase<TItem, TMeasuringContext>? _owner;
+    private TMeasuringContext? _context;
+    private ulong _disposed;
+
+    public event HeightChangedEventHandler<TItem, TMeasuringContext>? HeightChanged;
+    public event ItemRemovedEventHandler<TItem, TMeasuringContext>? ItemRemoved;
+
+    public bool IsDisposed => InterlockedHelper.Read(ref _disposed) != 0UL;
+
+    private AppendOnlyListItemStore(IAppendOnlyCollection<int> keys, IAppendOnlyCollection<TItem> values)
     {
-        private readonly IAppendOnlyCollection<int> _keys;
-        private readonly IAppendOnlyCollection<TItem> _values;
-        private readonly object _syncLock;
+        _keys = keys;
+        _values = values;
+        _owner = null;
+        _syncLock = new object();
+    }
 
-        private AppendOnlyListBase<TItem, TMeasuringContext>? _owner;
-        private TMeasuringContext? _context;
-        private ulong _disposed;
+    public void Bind(AppendOnlyListBase<TItem, TMeasuringContext> owner) => _owner = owner;
 
-        public event HeightChangedEventHandler<TItem, TMeasuringContext>? HeightChanged;
-        public event ItemRemovedEventHandler<TItem, TMeasuringContext>? ItemRemoved;
+    public static AppendOnlyListItemStore<TItem, TMeasuringContext> CreateLimited(int capacity)
+        => new AppendOnlyListItemStore<TItem, TMeasuringContext>(
+            keys: AppendOnlyCollection.CreateLimitedCollection<int>(capacity),
+            values: AppendOnlyCollection.CreateLimitedCollection<TItem>(capacity));
 
-        public bool IsDisposed => InterlockedHelper.Read(ref _disposed) != 0UL;
+    public static AppendOnlyListItemStore<TItem, TMeasuringContext> CreateUnlimited()
+        => new AppendOnlyListItemStore<TItem, TMeasuringContext>(
+            keys: AppendOnlyCollection.CreateUnlimitedCollection<int>(),
+            values: AppendOnlyCollection.CreateUnlimitedCollection<TItem>());
 
-        private AppendOnlyListItemStore(IAppendOnlyCollection<int> keys, IAppendOnlyCollection<TItem> values)
+    public void Append(TItem item)
+    {
+        if (IsDisposed)
+            return;
+        lock (_syncLock)
+            AppendCore(item);
+    }
+
+    public void Append(IEnumerable<TItem> items)
+    {
+        if (IsDisposed)
+            return;
+        lock (_syncLock)
+            AppendCore(items);
+    }
+
+    public void Clear()
+    {
+        if (IsDisposed)
+            return;
+        lock (_syncLock)
+            ClearCore();
+    }
+
+    public void AdjustAll()
+    {
+        if (IsDisposed)
+            return;
+        lock (_syncLock)
+            AdjustAllCore(triggerEvent: true);
+    }
+
+    public void ResetAll()
+    {
+        if (IsDisposed)
+            return;
+        lock (_syncLock)
+            ResetAllCore(triggerEvent: true);
+    }
+
+    public bool TryGetItem(int height, [NotNullWhen(true)] out TItem? item, out int itemTop, out int itemHeight)
+    {
+        if (height < 0 || IsDisposed)
+            goto Failed;
+        lock (_syncLock)
+            return TryGetItemCore(height, out item, out itemTop, out itemHeight);
+    Failed:
+        item = default;
+        itemHeight = 0;
+        itemTop = 0;
+        return false;
+    }
+
+    public bool TryGetHeight(TItem item, out int itemTop, out int itemHeight)
+    {
+        if (IsDisposed)
+            goto Failed;
+        lock (_syncLock)
+            return TryGetHeightCore_EqualityCompare(item, EqualityComparer<TItem>.Default, out itemTop, out itemHeight);
+    Failed:
+        itemHeight = 0;
+        itemTop = 0;
+        return false;
+    }
+
+    public bool TryGetHeight(TItem item, bool useBinarySearch, out int itemTop, out int itemHeight)
+    {
+        if (IsDisposed)
+            goto Failed;
+        lock (_syncLock)
         {
-            _keys = keys;
-            _values = values;
-            _owner = null;
-            _syncLock = new object();
-        }
-
-        public void Bind(AppendOnlyListBase<TItem, TMeasuringContext> owner) => _owner = owner;
-
-        public static AppendOnlyListItemStore<TItem, TMeasuringContext> CreateLimited(int capacity)
-            => new AppendOnlyListItemStore<TItem, TMeasuringContext>(
-                keys: AppendOnlyCollection.CreateLimitedCollection<int>(capacity),
-                values: AppendOnlyCollection.CreateLimitedCollection<TItem>(capacity));
-
-        public static AppendOnlyListItemStore<TItem, TMeasuringContext> CreateUnlimited()
-            => new AppendOnlyListItemStore<TItem, TMeasuringContext>(
-                keys: AppendOnlyCollection.CreateUnlimitedCollection<int>(),
-                values: AppendOnlyCollection.CreateUnlimitedCollection<TItem>());
-
-        public void Append(TItem item)
-        {
-            if (IsDisposed)
-                return;
-            lock (_syncLock)
-                AppendCore(item);
-        }
-
-        public void Append(IEnumerable<TItem> items)
-        {
-            if (IsDisposed)
-                return;
-            lock (_syncLock)
-                AppendCore(items);
-        }
-
-        public void Clear()
-        {
-            if (IsDisposed)
-                return;
-            lock (_syncLock)
-                ClearCore();
-        }
-
-        public void AdjustAll()
-        {
-            if (IsDisposed)
-                return;
-            lock (_syncLock)
-                AdjustAllCore(triggerEvent: true);
-        }
-
-        public void ResetAll()
-        {
-            if (IsDisposed)
-                return;
-            lock (_syncLock)
-                ResetAllCore(triggerEvent: true);
-        }
-
-        public bool TryGetItem(int height, [NotNullWhen(true)] out TItem? item, out int itemTop, out int itemHeight)
-        {
-            if (height < 0 || IsDisposed)
-                goto Failed;
-            lock (_syncLock)
-                return TryGetItemCore(height, out item, out itemTop, out itemHeight);
-        Failed:
-            item = default;
-            itemHeight = 0;
-            itemTop = 0;
-            return false;
-        }
-
-        public bool TryGetHeight(TItem item, out int itemTop, out int itemHeight)
-        {
-            if (IsDisposed)
-                goto Failed;
-            lock (_syncLock)
+            if (useBinarySearch)
+                return TryGetHeightCore_BinarySearch(item, null, out itemTop, out itemHeight);
+            else
                 return TryGetHeightCore_EqualityCompare(item, EqualityComparer<TItem>.Default, out itemTop, out itemHeight);
-        Failed:
-            itemHeight = 0;
-            itemTop = 0;
-            return false;
         }
+    Failed:
+        itemHeight = 0;
+        itemTop = 0;
+        return false;
+    }
 
-        public bool TryGetHeight(TItem item, bool useBinarySearch, out int itemTop, out int itemHeight)
+    public bool TryGetHeight(TItem item, bool useBinarySearch, IComparer<TItem> comparer, out int itemTop, out int itemHeight)
+    {
+        if (IsDisposed)
+            goto Failed;
+        lock (_syncLock)
         {
-            if (IsDisposed)
-                goto Failed;
-            lock (_syncLock)
-            {
-                if (useBinarySearch)
-                    return TryGetHeightCore_BinarySearch(item, null, out itemTop, out itemHeight);
-                else
-                    return TryGetHeightCore_EqualityCompare(item, EqualityComparer<TItem>.Default, out itemTop, out itemHeight);
-            }
-        Failed:
-            itemHeight = 0;
-            itemTop = 0;
-            return false;
-        }
-
-        public bool TryGetHeight(TItem item, bool useBinarySearch, IComparer<TItem> comparer, out int itemTop, out int itemHeight)
-        {
-            if (IsDisposed)
-                goto Failed;
-            lock (_syncLock)
-            {
-                if (useBinarySearch)
-                    return TryGetHeightCore_BinarySearch(item, comparer, out itemTop, out itemHeight);
-                else
-                    return TryGetHeightCore_Compare(item, comparer, out itemTop, out itemHeight);
-            }
-        Failed:
-            itemHeight = 0;
-            itemTop = 0;
-            return false;
-        }
-
-        public bool TryGetHeight(TItem item, IEqualityComparer<TItem> comparer, out int itemTop, out int itemHeight)
-        {
-            if (IsDisposed)
-                goto Failed;
-            lock (_syncLock)
-                return TryGetHeightCore_EqualityCompare(item, comparer, out itemTop, out itemHeight);
-        Failed:
-            itemHeight = 0;
-            itemTop = 0;
-            return false;
-        }
-
-        public bool TryGetHeight(TItem item, IComparer<TItem> comparer, out int itemTop, out int itemHeight)
-        {
-            if (IsDisposed)
-                goto Failed;
-            lock (_syncLock)
+            if (useBinarySearch)
+                return TryGetHeightCore_BinarySearch(item, comparer, out itemTop, out itemHeight);
+            else
                 return TryGetHeightCore_Compare(item, comparer, out itemTop, out itemHeight);
-        Failed:
-            itemHeight = 0;
+        }
+    Failed:
+        itemHeight = 0;
+        itemTop = 0;
+        return false;
+    }
+
+    public bool TryGetHeight(TItem item, IEqualityComparer<TItem> comparer, out int itemTop, out int itemHeight)
+    {
+        if (IsDisposed)
+            goto Failed;
+        lock (_syncLock)
+            return TryGetHeightCore_EqualityCompare(item, comparer, out itemTop, out itemHeight);
+    Failed:
+        itemHeight = 0;
+        itemTop = 0;
+        return false;
+    }
+
+    public bool TryGetHeight(TItem item, IComparer<TItem> comparer, out int itemTop, out int itemHeight)
+    {
+        if (IsDisposed)
+            goto Failed;
+        lock (_syncLock)
+            return TryGetHeightCore_Compare(item, comparer, out itemTop, out itemHeight);
+    Failed:
+        itemHeight = 0;
+        itemTop = 0;
+        return false;
+    }
+
+    public int EnumerateItemsToList(IList<TItem> list)
+    {
+        if (IsDisposed)
+            goto Failed;
+        lock (_syncLock)
+            return EnumerateItemsCore(list);
+    Failed:
+        return 0;
+    }
+
+    public int EnumerateItemsToList(int baseY, int height, IList<TItem> list)
+    {
+        if (baseY < 0 || height < 0 || IsDisposed)
+            goto Failed;
+        int endY = baseY + height;
+        if (endY < 0)
+            goto Failed;
+        lock (_syncLock)
+            return EnumerateItemsCore(baseY, endY, list);
+    Failed:
+        return 0;
+    }
+
+    public int EnumerateItemsToList(int baseY, int height, IList<(TItem item, int itemTop, int itemHeight)> list)
+    {
+        if (baseY < 0 || height < 0 || IsDisposed)
+            goto Failed;
+        int endY = baseY + height;
+        if (endY < 0)
+            goto Failed;
+        lock (_syncLock)
+            return EnumerateItemsCore(baseY, endY, list);
+    Failed:
+        return 0;
+    }
+
+    private void AppendCore(TItem item) => HeightChanged?.Invoke(this, AppendCoreInternal(item));
+
+    private void AppendCore(IEnumerable<TItem> items)
+    {
+        switch (items)
+        {
+            case TItem[] array:
+                AppendCoreInternal(array, array.Length);
+                break;
+            case UnwrappableList<TItem> list:
+                AppendCoreInternal(list.Unwrap(), list.Count);
+                break;
+            case IList<TItem> list:
+                AppendCoreInternal(list);
+                break;
+            case IReadOnlyList<TItem> list:
+                AppendCoreInternal(list);
+                break;
+            default:
+                AppendCoreInternal(items);
+                break;
+        }
+    }
+
+    private void AppendCoreInternal(TItem[] items, int count)
+    {
+        if (count <= 0)
+            return;
+        ref TItem itemRef = ref UnsafeHelper.GetArrayDataReference(items);
+        int key, i = 0;
+        do
+        {
+            key = AppendCoreInternal(UnsafeHelper.AddTypedOffset(ref itemRef, i));
+        } while (++i < count);
+        HeightChanged?.Invoke(this, key);
+    }
+
+    private void AppendCoreInternal(IList<TItem> items)
+    {
+        int count = items.Count;
+        if (count <= 0)
+            return;
+        int key, i = 0;
+        do
+        {
+            key = AppendCoreInternal(items[i]);
+        } while (++i < count);
+        HeightChanged?.Invoke(this, key);
+    }
+
+    private void AppendCoreInternal(IReadOnlyList<TItem> items)
+    {
+        int count = items.Count;
+        if (count <= 0)
+            return;
+        int key, i = 0;
+        do
+        {
+            key = AppendCoreInternal(items[i]);
+        } while (++i < count);
+        HeightChanged?.Invoke(this, key);
+    }
+
+    private void AppendCoreInternal(IEnumerable<TItem> items)
+    {
+        using IEnumerator<TItem> enumerator = items.GetEnumerator();
+        if (!enumerator.MoveNext())
+            return;
+        int key;
+        do
+        {
+            key = AppendCoreInternal(enumerator.Current);
+        } while (enumerator.MoveNext());
+        HeightChanged?.Invoke(this, key);
+    }
+
+    private int AppendCoreInternal(TItem item)
+    {
+        IAppendOnlyCollection<int>? keys = _keys;
+        IAppendOnlyCollection<TItem>? values = _values;
+
+        int count = values.Count;
+
+        int referenceKey;
+        TItem? referenceValue;
+        if (count <= 0)
+        {
+            referenceKey = 0;
+            referenceValue = default;
+        }
+        else
+        {
+            int lastIndex = count - 1;
+            referenceKey = keys[lastIndex];
+            referenceValue = values[lastIndex];
+        }
+        int height = item.ResetHeight(GetMeasuringContext(modified: false));
+        if (height < 0)
+            throw new InvalidOperationException("The item's height cannot be negative!");
+        int key = referenceKey + height;
+        int capacity = values.Capacity;
+        if (capacity < count)
+        {
+            // WTF?
+            throw new InvalidOperationException("The capacity of the list cannot lower than the count of the list!");
+        }
+        else if (capacity == count)
+        {
+            int keyHead = keys[0];
+            keys.Append(key);
+            for (int i = 0; i < count; i++)
+            {
+                key = keys[i];
+                if (key < keyHead) // KeyList is broken, need rebuild keys
+                {
+                    AdjustAllCore(triggerEvent: false);
+                    break;
+                }
+                key -= keyHead;
+                keys[i] = key;
+            }
+            TItem headValue = values[0];
+            values.Append(item);
+            ItemRemoved?.Invoke(this, headValue);
+            headValue.Dispose();
+        }
+        else
+        {
+            keys.Append(key);
+            values.Append(item);
+        }
+        return key;
+    }
+
+    private void ClearCore()
+    {
+        _keys.Clear();
+        _values.Clear();
+        HeightChanged?.Invoke(this, 0);
+    }
+
+    private int AdjustAllAndCheck(bool triggerEvent)
+    {
+        AdjustAllCore(triggerEvent);
+        int count = _keys.Count;
+        if (count != _values.Count)
+            throw new InvalidOperationException("The keys and values are out of sync!");
+        return count;
+    }
+
+    private void AdjustAllCore(bool triggerEvent) => RecalcAllCore(resetAll: false, triggerEvent);
+
+    private void ResetAllCore(bool triggerEvent) => RecalcAllCore(resetAll: true, triggerEvent);
+
+    [Inline(InlineBehavior.Remove)]
+    private void RecalcAllCore([InlineParameter] bool resetAll, bool triggerEvent)
+    {
+        IAppendOnlyCollection<int>? keys = _keys;
+        IAppendOnlyCollection<TItem>? values = _values;
+
+        int count = values.Count;
+        if (count <= 0)
+            return;
+        TItem value = values[0];
+        TMeasuringContext context = GetMeasuringContext(resetAll);
+        int key = RecalcItemHeight(value, context, resetAll);
+        if (keys.Count == count)
+        {
+            keys[0] = key;
+            for (int i = 1; i < count; i++)
+            {
+                key += RecalcItemHeight(values[i], context, resetAll);
+                keys[i] = key;
+            }
+        }
+        else
+        {
+            keys.Clear();
+            keys.Append(key);
+            for (int i = 1; i < count; i++)
+            {
+                key += RecalcItemHeight(values[i], context, resetAll);
+                keys.Append(key);
+            }
+        }
+        if (triggerEvent)
+            HeightChanged?.Invoke(this, key);
+    }
+
+    [Inline(InlineBehavior.Remove)]
+    private static int RecalcItemHeight(TItem item, TMeasuringContext context, [InlineParameter] bool reset)
+        => reset ? item.ResetHeight(context) : item.AdjustHeight(context);
+
+    private bool TryGetItemCore(int height, [NotNullWhen(true)] out TItem? item, out int itemTop, out int itemHeight)
+    {
+        IAppendOnlyCollection<int>? keys = _keys;
+        IAppendOnlyCollection<TItem>? values = _values;
+
+        int count = keys.Count;
+        if (count != values.Count)
+            count = AdjustAllAndCheck(triggerEvent: true);
+        int index = keys.BinarySearch(height);
+        if (index < 0)
+            index = ~index;
+        if (index >= count)
+            goto Failed;
+        item = values[index];
+        itemTop = index > 0 ? keys[index - 1] : 0;
+        itemHeight = keys[index] - itemTop;
+        return true;
+
+    Failed:
+        item = default;
+        itemHeight = 0;
+        itemTop = 0;
+        return false;
+    }
+
+    private bool TryGetHeightCore_EqualityCompare<TEqualityComparer>(TItem item, TEqualityComparer comparer, out int itemTop, out int itemHeight)
+        where TEqualityComparer : IEqualityComparer<TItem>
+    {
+        IAppendOnlyCollection<int>? keys = _keys;
+        IAppendOnlyCollection<TItem>? values = _values;
+
+        int count = keys.Count;
+        if (count != values.Count)
+        {
+            AdjustAllCore(triggerEvent: true);
+            count = keys.Count;
+        }
+        if (count == 0)
+            goto Failed;
+
+        if (comparer.Equals(values[0], item))
+        {
             itemTop = 0;
-            return false;
+            itemHeight = keys[0];
+            return true;
         }
 
-        public int EnumerateItemsToList(IList<TItem> list)
+        for (int i = 1; i < count; i++)
         {
-            if (IsDisposed)
-                goto Failed;
-            lock (_syncLock)
-                return EnumerateItemsCore(list);
-        Failed:
-            return 0;
+            if (!comparer.Equals(values[i], item))
+                continue;
+            itemTop = keys[i - 1];
+            itemHeight = keys[i] - itemTop;
+            return true;
         }
 
-        public int EnumerateItemsToList(int baseY, int height, IList<TItem> list)
+        goto Failed;
+    Failed:
+        itemTop = 0;
+        itemHeight = 0;
+        return false;
+    }
+
+    private bool TryGetHeightCore_Compare<TComparer>(TItem item, TComparer comparer, out int itemTop, out int itemHeight)
+        where TComparer : IComparer<TItem>
+    {
+        IAppendOnlyCollection<int>? keys = _keys;
+        IAppendOnlyCollection<TItem>? values = _values;
+
+        int count = keys.Count;
+        if (count != values.Count)
+            count = AdjustAllAndCheck(triggerEvent: true);
+
+        if (count == 0)
+            goto Failed;
+
+        if (comparer.Compare(values[0], item) == 0)
         {
-            if (baseY < 0 || height < 0 || IsDisposed)
-                goto Failed;
-            int endY = baseY + height;
-            if (endY < 0)
-                goto Failed;
-            lock (_syncLock)
-                return EnumerateItemsCore(baseY, endY, list);
-        Failed:
-            return 0;
+            itemTop = 0;
+            itemHeight = keys[0];
+            return true;
         }
 
-        public int EnumerateItemsToList(int baseY, int height, IList<(TItem item, int itemTop, int itemHeight)> list)
+        for (int i = 1; i < count; i++)
         {
-            if (baseY < 0 || height < 0 || IsDisposed)
-                goto Failed;
-            int endY = baseY + height;
-            if (endY < 0)
-                goto Failed;
-            lock (_syncLock)
-                return EnumerateItemsCore(baseY, endY, list);
-        Failed:
-            return 0;
+            if (comparer.Compare(values[i], item) != 0)
+                continue;
+            itemTop = keys[i - 1];
+            itemHeight = keys[i] - itemTop;
+            return true;
         }
 
-        private void AppendCore(TItem item) => HeightChanged?.Invoke(this, AppendCoreInternal(item));
+        goto Failed;
+    Failed:
+        itemTop = 0;
+        itemHeight = 0;
+        return false;
+    }
 
-        private void AppendCore(IEnumerable<TItem> items)
+    private bool TryGetHeightCore_BinarySearch(TItem item, IComparer<TItem>? comparer, out int itemTop, out int itemHeight)
+    {
+        IAppendOnlyCollection<int>? keys = _keys;
+        IAppendOnlyCollection<TItem>? values = _values;
+
+        int count = keys.Count;
+        if (count != values.Count)
+            count = AdjustAllAndCheck(triggerEvent: true);
+
+        if (count == 0)
+            goto Failed;
+
+        int index;
+        if (comparer is null)
+            index = values.BinarySearch(item);
+        else
+            index = values.BinarySearch(item, comparer);
+        if (index < 0 || index >= count)
+            goto Failed;
+
+        if (index == 0)
         {
-            switch (items)
-            {
-                case TItem[] array:
-                    AppendCoreInternal(array, array.Length);
-                    break;
-                case UnwrappableList<TItem> list:
-                    AppendCoreInternal(list.Unwrap(), list.Count);
-                    break;
-                case IList<TItem> list:
-                    AppendCoreInternal(list);
-                    break;
-                case IReadOnlyList<TItem> list:
-                    AppendCoreInternal(list);
-                    break;
-                default:
-                    AppendCoreInternal(items);
-                    break;
-            }
+            itemTop = 0;
+            itemHeight = keys[index];
         }
-
-        private void AppendCoreInternal(TItem[] items, int count)
+        else
         {
-            if (count <= 0)
-                return;
-            ref TItem itemRef = ref UnsafeHelper.GetArrayDataReference(items);
-            int key, i = 0;
-            do
-            {
-                key = AppendCoreInternal(UnsafeHelper.AddTypedOffset(ref itemRef, i));
-            } while (++i < count);
-            HeightChanged?.Invoke(this, key);
-        }
-
-        private void AppendCoreInternal(IList<TItem> items)
-        {
-            int count = items.Count;
-            if (count <= 0)
-                return;
-            int key, i = 0;
-            do
-            {
-                key = AppendCoreInternal(items[i]);
-            } while (++i < count);
-            HeightChanged?.Invoke(this, key);
-        }
-
-        private void AppendCoreInternal(IReadOnlyList<TItem> items)
-        {
-            int count = items.Count;
-            if (count <= 0)
-                return;
-            int key, i = 0;
-            do
-            {
-                key = AppendCoreInternal(items[i]);
-            } while (++i < count);
-            HeightChanged?.Invoke(this, key);
-        }
-
-        private void AppendCoreInternal(IEnumerable<TItem> items)
-        {
-            using IEnumerator<TItem> enumerator = items.GetEnumerator();
-            if (!enumerator.MoveNext())
-                return;
-            int key;
-            do
-            {
-                key = AppendCoreInternal(enumerator.Current);
-            } while (enumerator.MoveNext());
-            HeightChanged?.Invoke(this, key);
-        }
-
-        private int AppendCoreInternal(TItem item)
-        {
-            IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<TItem>? values = _values;
-
-            int count = values.Count;
-
-            int referenceKey;
-            TItem? referenceValue;
-            if (count <= 0)
-            {
-                referenceKey = 0;
-                referenceValue = default;
-            }
-            else
-            {
-                int lastIndex = count - 1;
-                referenceKey = keys[lastIndex];
-                referenceValue = values[lastIndex];
-            }
-            int height = item.ResetHeight(GetMeasuringContext(modified: false));
-            if (height < 0)
-                throw new InvalidOperationException("The item's height cannot be negative!");
-            int key = referenceKey + height;
-            int capacity = values.Capacity;
-            if (capacity < count)
-            {
-                // WTF?
-                throw new InvalidOperationException("The capacity of the list cannot lower than the count of the list!");
-            }
-            else if (capacity == count)
-            {
-                int keyHead = keys[0];
-                keys.Append(key);
-                for (int i = 0; i < count; i++)
-                {
-                    key = keys[i];
-                    if (key < keyHead) // KeyList is broken, need rebuild keys
-                    {
-                        AdjustAllCore(triggerEvent: false);
-                        break;
-                    }
-                    key -= keyHead;
-                    keys[i] = key;
-                }
-                TItem headValue = values[0];
-                values.Append(item);
-                ItemRemoved?.Invoke(this, headValue);
-                headValue.Dispose();
-            }
-            else
-            {
-                keys.Append(key);
-                values.Append(item);
-            }
-            return key;
-        }
-
-        private void ClearCore()
-        {
-            _keys.Clear();
-            _values.Clear();
-            HeightChanged?.Invoke(this, 0);
-        }
-
-        private int AdjustAllAndCheck(bool triggerEvent)
-        {
-            AdjustAllCore(triggerEvent);
-            int count = _keys.Count;
-            if (count != _values.Count)
-                throw new InvalidOperationException("The keys and values are out of sync!");
-            return count;
-        }
-
-        private void AdjustAllCore(bool triggerEvent) => RecalcAllCore(resetAll: false, triggerEvent);
-
-        private void ResetAllCore(bool triggerEvent) => RecalcAllCore(resetAll: true, triggerEvent);
-
-        [Inline(InlineBehavior.Remove)]
-        private void RecalcAllCore([InlineParameter] bool resetAll, bool triggerEvent)
-        {
-            IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<TItem>? values = _values;
-
-            int count = values.Count;
-            if (count <= 0)
-                return;
-            TItem value = values[0];
-            TMeasuringContext context = GetMeasuringContext(resetAll);
-            int key = RecalcItemHeight(value, context, resetAll);
-            if (keys.Count == count)
-            {
-                keys[0] = key;
-                for (int i = 1; i < count; i++)
-                {
-                    key += RecalcItemHeight(values[i], context, resetAll);
-                    keys[i] = key;
-                }
-            }
-            else
-            {
-                keys.Clear();
-                keys.Append(key);
-                for (int i = 1; i < count; i++)
-                {
-                    key += RecalcItemHeight(values[i], context, resetAll);
-                    keys.Append(key);
-                }
-            }
-            if (triggerEvent)
-                HeightChanged?.Invoke(this, key);
-        }
-
-        [Inline(InlineBehavior.Remove)]
-        private static int RecalcItemHeight(TItem item, TMeasuringContext context, [InlineParameter] bool reset)
-            => reset ? item.ResetHeight(context) : item.AdjustHeight(context);
-
-        private bool TryGetItemCore(int height, [NotNullWhen(true)] out TItem? item, out int itemTop, out int itemHeight)
-        {
-            IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<TItem>? values = _values;
-
-            int count = keys.Count;
-            if (count != values.Count)
-                count = AdjustAllAndCheck(triggerEvent: true);
-            int index = keys.BinarySearch(height);
-            if (index < 0)
-                index = ~index;
-            if (index >= count)
-                goto Failed;
-            item = values[index];
-            itemTop = index > 0 ? keys[index - 1] : 0;
+            itemTop = keys[index - 1];
             itemHeight = keys[index] - itemTop;
-            return true;
-
-        Failed:
-            item = default;
-            itemHeight = 0;
-            itemTop = 0;
-            return false;
         }
+        return true;
 
-        private bool TryGetHeightCore_EqualityCompare<TEqualityComparer>(TItem item, TEqualityComparer comparer, out int itemTop, out int itemHeight)
-            where TEqualityComparer : IEqualityComparer<TItem>
-        {
-            IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<TItem>? values = _values;
+    Failed:
+        itemTop = 0;
+        itemHeight = 0;
+        return false;
+    }
 
-            int count = keys.Count;
-            if (count != values.Count)
-            {
-                AdjustAllCore(triggerEvent: true);
-                count = keys.Count;
-            }
-            if (count == 0)
-                goto Failed;
-
-            if (comparer.Equals(values[0], item))
-            {
-                itemTop = 0;
-                itemHeight = keys[0];
-                return true;
-            }
-
-            for (int i = 1; i < count; i++)
-            {
-                if (!comparer.Equals(values[i], item))
-                    continue;
-                itemTop = keys[i - 1];
-                itemHeight = keys[i] - itemTop;
-                return true;
-            }
-
-            goto Failed;
-        Failed:
-            itemTop = 0;
-            itemHeight = 0;
-            return false;
-        }
-
-        private bool TryGetHeightCore_Compare<TComparer>(TItem item, TComparer comparer, out int itemTop, out int itemHeight)
-            where TComparer : IComparer<TItem>
-        {
-            IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<TItem>? values = _values;
-
-            int count = keys.Count;
-            if (count != values.Count)
-                count = AdjustAllAndCheck(triggerEvent: true);
-
-            if (count == 0)
-                goto Failed;
-
-            if (comparer.Compare(values[0], item) == 0)
-            {
-                itemTop = 0;
-                itemHeight = keys[0];
-                return true;
-            }
-
-            for (int i = 1; i < count; i++)
-            {
-                if (comparer.Compare(values[i], item) != 0)
-                    continue;
-                itemTop = keys[i - 1];
-                itemHeight = keys[i] - itemTop;
-                return true;
-            }
-
-            goto Failed;
-        Failed:
-            itemTop = 0;
-            itemHeight = 0;
-            return false;
-        }
-
-        private bool TryGetHeightCore_BinarySearch(TItem item, IComparer<TItem>? comparer, out int itemTop, out int itemHeight)
-        {
-            IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<TItem>? values = _values;
-
-            int count = keys.Count;
-            if (count != values.Count)
-                count = AdjustAllAndCheck(triggerEvent: true);
-
-            if (count == 0)
-                goto Failed;
-
-            int index;
-            if (comparer is null)
-                index = values.BinarySearch(item);
-            else
-                index = values.BinarySearch(item, comparer);
-            if (index < 0 || index >= count)
-                goto Failed;
-
-            if (index == 0)
-            {
-                itemTop = 0;
-                itemHeight = keys[index];
-            }
-            else
-            {
-                itemTop = keys[index - 1];
-                itemHeight = keys[index] - itemTop;
-            }
-            return true;
-
-        Failed:
-            itemTop = 0;
-            itemHeight = 0;
-            return false;
-        }
-
-        private int EnumerateItemsCore(IList<TItem> list)
-        {
-            IAppendOnlyCollection<TItem>? values = _values;
-            int result = values.Count;
-            if (list is CustomListBase<TItem> customList)
-                customList.EnsureCapacity(customList.Count + result);
+    private int EnumerateItemsCore(IList<TItem> list)
+    {
+        IAppendOnlyCollection<TItem>? values = _values;
+        int result = values.Count;
+        if (list is CustomListBase<TItem> customList)
+            customList.EnsureCapacity(customList.Count + result);
 #if NET8_0_OR_GREATER
-            else if (list is List<TItem> normalList)
-                normalList.EnsureCapacity(normalList.Count + result);
+        else if (list is List<TItem> normalList)
+            normalList.EnsureCapacity(normalList.Count + result);
 #endif
-            foreach (TItem item in values)
-                list.Add(item);
+        foreach (TItem item in values)
+            list.Add(item);
 
-            return result;
+        return result;
+    }
+
+    private int EnumerateItemsCore(int startY, int endY, IList<TItem> list)
+    {
+        IAppendOnlyCollection<int>? keys = _keys;
+        IAppendOnlyCollection<TItem>? values = _values;
+
+        int count = keys.Count;
+        if (count != values.Count)
+            count = AdjustAllAndCheck(triggerEvent: true);
+
+        int startIndex = keys.BinarySearch(startY);
+        if (startIndex < 0)
+        {
+            startIndex = ~startIndex;
+            if (startIndex >= count)
+                goto Failed;
+            if (startIndex > 0)
+                startIndex--;
+        }
+        else
+        {
+            if (startIndex >= count)
+                goto Failed;
         }
 
-        private int EnumerateItemsCore(int startY, int endY, IList<TItem> list)
-        {
-            IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<TItem>? values = _values;
+        int endIndex = keys.BinarySearch(endY);
+        if (endIndex < 0)
+            endIndex = ~endIndex;
+        if (endIndex >= count)
+            endIndex = count - 1;
 
-            int count = keys.Count;
-            if (count != values.Count)
-                count = AdjustAllAndCheck(triggerEvent: true);
-
-            int startIndex = keys.BinarySearch(startY);
-            if (startIndex < 0)
-            {
-                startIndex = ~startIndex;
-                if (startIndex >= count)
-                    goto Failed;
-                if (startIndex > 0)
-                    startIndex--;
-            }
-            else
-            {
-                if (startIndex >= count)
-                    goto Failed;
-            }
-
-            int endIndex = keys.BinarySearch(endY);
-            if (endIndex < 0)
-                endIndex = ~endIndex;
-            if (endIndex >= count)
-                endIndex = count - 1;
-
-            int result = endIndex - startIndex + 1;
-            if (list is CustomListBase<TItem> customList)
-                customList.EnsureCapacity(customList.Count + result);
+        int result = endIndex - startIndex + 1;
+        if (list is CustomListBase<TItem> customList)
+            customList.EnsureCapacity(customList.Count + result);
 #if NET8_0_OR_GREATER
-            else if (list is List<TItem> normalList)
-                normalList.EnsureCapacity(normalList.Count + result);
+        else if (list is List<TItem> normalList)
+            normalList.EnsureCapacity(normalList.Count + result);
 #endif
-            int key = 0;
-            for (int i = startIndex, j = 0; i <= endIndex; i++, j++)
-            {
-                int newKey = keys[i];
-                list.Add(values[i]);
-                key = newKey;
-            }
-
-            return result;
-        Failed:
-            return 0;
+        int key = 0;
+        for (int i = startIndex, j = 0; i <= endIndex; i++, j++)
+        {
+            int newKey = keys[i];
+            list.Add(values[i]);
+            key = newKey;
         }
 
-        private int EnumerateItemsCore(int startY, int endY, IList<(TItem item, int itemTop, int itemHeight)> list)
+        return result;
+    Failed:
+        return 0;
+    }
+
+    private int EnumerateItemsCore(int startY, int endY, IList<(TItem item, int itemTop, int itemHeight)> list)
+    {
+        IAppendOnlyCollection<int>? keys = _keys;
+        IAppendOnlyCollection<TItem>? values = _values;
+
+        int count = keys.Count;
+        if (count != values.Count)
+            count = AdjustAllAndCheck(triggerEvent: true);
+
+        int startIndex = keys.BinarySearch(startY);
+        if (startIndex < 0)
         {
-            IAppendOnlyCollection<int>? keys = _keys;
-            IAppendOnlyCollection<TItem>? values = _values;
+            startIndex = ~startIndex;
+            if (startIndex >= count)
+                goto Failed;
+            if (startIndex > 0)
+                startIndex--;
+        }
+        else
+        {
+            if (startIndex >= count)
+                goto Failed;
+        }
 
-            int count = keys.Count;
-            if (count != values.Count)
-                count = AdjustAllAndCheck(triggerEvent: true);
+        int endIndex = keys.BinarySearch(endY);
+        if (endIndex < 0)
+            endIndex = ~endIndex;
+        if (endIndex >= count)
+            endIndex = count - 1;
 
-            int startIndex = keys.BinarySearch(startY);
-            if (startIndex < 0)
-            {
-                startIndex = ~startIndex;
-                if (startIndex >= count)
-                    goto Failed;
-                if (startIndex > 0)
-                    startIndex--;
-            }
-            else
-            {
-                if (startIndex >= count)
-                    goto Failed;
-            }
-
-            int endIndex = keys.BinarySearch(endY);
-            if (endIndex < 0)
-                endIndex = ~endIndex;
-            if (endIndex >= count)
-                endIndex = count - 1;
-
-            int result = endIndex - startIndex + 1;
-            if (list is CustomListBase<(TItem item, int itemTop, int itemHeight)> customList)
-                customList.EnsureCapacity(customList.Count + result);
+        int result = endIndex - startIndex + 1;
+        if (list is CustomListBase<(TItem item, int itemTop, int itemHeight)> customList)
+            customList.EnsureCapacity(customList.Count + result);
 #if NET8_0_OR_GREATER
-            else if (list is List<(TItem item, int itemTop, int itemHeight)> normalList)
-                normalList.EnsureCapacity(normalList.Count + result);
+        else if (list is List<(TItem item, int itemTop, int itemHeight)> normalList)
+            normalList.EnsureCapacity(normalList.Count + result);
 #endif
-            int key = 0;
-            for (int i = startIndex, j = 0; i <= endIndex; i++, j++)
-            {
-                int newKey = keys[i];
-                list.Add((values[i], key, newKey - key));
-                key = newKey;
-            }
-
-            return result;
-        Failed:
-            return 0;
+        int key = 0;
+        for (int i = startIndex, j = 0; i <= endIndex; i++, j++)
+        {
+            int newKey = keys[i];
+            list.Add((values[i], key, newKey - key));
+            key = newKey;
         }
 
-        private TMeasuringContext GetMeasuringContext(bool modified)
-        {
-            const string ErrorMessage = $"This {nameof(AppendOnlyListItemStore<,>)} doesn't bind any {nameof(AppendOnlyListBase<,>)}!";
+        return result;
+    Failed:
+        return 0;
+    }
 
-            TMeasuringContext? context;
-            if (modified)
+    private TMeasuringContext GetMeasuringContext(bool modified)
+    {
+        const string ErrorMessage = $"This {nameof(AppendOnlyListItemStore<,>)} doesn't bind any {nameof(AppendOnlyListBase<,>)}!";
+
+        TMeasuringContext? context;
+        if (modified)
+        {
+            context = NullSafetyHelper.ThrowIfNull(_owner, ErrorMessage).CreateMeasuringContext();
+            TMeasuringContext? oldContext = _context;
+            _context = context;
+            (oldContext as IDisposable)?.Dispose();
+        }
+        else
+        {
+            context = _context;
+            if (context is null)
             {
                 context = NullSafetyHelper.ThrowIfNull(_owner, ErrorMessage).CreateMeasuringContext();
-                TMeasuringContext? oldContext = _context;
                 _context = context;
-                (oldContext as IDisposable)?.Dispose();
             }
             else
             {
-                context = _context;
-                if (context is null)
-                {
-                    context = NullSafetyHelper.ThrowIfNull(_owner, ErrorMessage).CreateMeasuringContext();
-                    _context = context;
-                }
-                else
-                {
-                    context.Adjust();
-                }
+                context.Adjust();
             }
-            return context;
         }
+        return context;
+    }
 
-        private void DisposeCore(bool disposing)
+    private void DisposeCore(bool disposing)
+    {
+        if (InterlockedHelper.Exchange(ref _disposed, ulong.MaxValue) != 0UL)
+            return;
+        lock (_syncLock)
         {
-            if (InterlockedHelper.Exchange(ref _disposed, ulong.MaxValue) != 0UL)
-                return;
-            lock (_syncLock)
+            IAppendOnlyCollection<int> keys = _keys;
+            IAppendOnlyCollection<TItem> values = _values;
+
+            keys.Clear();
+            if (disposing)
             {
-                IAppendOnlyCollection<int> keys = _keys;
-                IAppendOnlyCollection<TItem> values = _values;
-
-                keys.Clear();
-                if (disposing)
-                {
-                    foreach (TItem value in _values)
-                        value.Dispose();
-                }
-                values.Clear();
-
-                TMeasuringContext? context = _context;
-                if (disposing)
-                    _context = default;
-                (context as IDisposable)?.Dispose();
+                foreach (TItem value in _values)
+                    value.Dispose();
             }
-        }
+            values.Clear();
 
-        ~AppendOnlyListItemStore() => DisposeCore(disposing: false);
-
-        public void Dispose()
-        {
-            DisposeCore(disposing: true);
-            GC.SuppressFinalize(this);
+            TMeasuringContext? context = _context;
+            if (disposing)
+                _context = default;
+            (context as IDisposable)?.Dispose();
         }
+    }
+
+    ~AppendOnlyListItemStore() => DisposeCore(disposing: false);
+
+    public void Dispose()
+    {
+        DisposeCore(disposing: true);
+        GC.SuppressFinalize(this);
     }
 }

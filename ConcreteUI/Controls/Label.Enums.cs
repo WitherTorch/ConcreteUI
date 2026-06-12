@@ -1,21 +1,20 @@
-﻿using System;
+using System;
 
-namespace ConcreteUI.Controls
+namespace ConcreteUI.Controls;
+
+partial class Label
 {
-    partial class Label
+    [Flags]
+    private enum RenderObjectUpdateFlags
     {
-        [Flags]
-        private enum RenderObjectUpdateFlags
-        {
-            None = 0,
-            Layout = 0b01,
-            Format = 0b11
-        }
+        None = 0,
+        Layout = 0b01,
+        Format = 0b11
+    }
 
-        private enum Brush
-        {
-            ForeBrush,
-            _Last
-        }
+    private enum Brush
+    {
+        ForeBrush,
+        _Last
     }
 }
