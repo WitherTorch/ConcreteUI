@@ -26,8 +26,6 @@ public sealed partial class PopupContainer : PopupElementBase, IElementContainer
     private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
     private readonly ObservableList<UIElement> _children;
 
-    private bool _disposed;
-
     public PopupContainer(CoreWindow window) : base(window, "app.control")
     {
         _children = new ObservableList<UIElement>(new UnwrappableList<UIElement>());
@@ -79,21 +77,11 @@ public sealed partial class PopupContainer : PopupElementBase, IElementContainer
 
     CoreWindow IElementContainer.GetWindow() => Window;
 
-    private void DisposeCore(bool disposing)
+    protected override void DisposeCore(bool disposing)
     {
-        if (ReferenceHelper.Exchange(ref _disposed, true))
-            return;
         if (disposing)
             DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
         SequenceHelper.Clear(_brushes);
         ListHelper.CleanAllWeak<UIElement, ObservableList<UIElement>>(_children, disposing);
-    }
-
-    ~PopupContainer() => DisposeCore(disposing: false);
-
-    public void Dispose()
-    {
-        DisposeCore(disposing: true);
-        GC.SuppressFinalize(this);
     }
 }

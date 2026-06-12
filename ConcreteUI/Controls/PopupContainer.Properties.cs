@@ -7,8 +7,6 @@ namespace ConcreteUI.Controls;
 
 partial class PopupContainer
 {
-    public bool IsDisposed => _disposed;
-
     public UIElement? FirstChild
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

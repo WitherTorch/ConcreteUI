@@ -15,15 +15,29 @@ namespace ConcreteUI.Controls;
 
 partial class UIElement
 {
+    public bool IsDisposed
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => InterlockedHelper.Read(ref _disposed) != 0;
+    }
+
     public int ElementId
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _identifier;
     }
 
-    public CoreWindow Window => Parent.GetWindow();
+    public CoreWindow Window
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Parent.GetWindow();
+    }
 
-    protected IRenderer Renderer => Parent.GetRenderer();
+    protected IRenderer Renderer
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Parent.GetRenderer();
+    }
 
     public bool IsRenderedOnce
     {

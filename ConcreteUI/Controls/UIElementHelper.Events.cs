@@ -18,7 +18,7 @@ namespace ConcreteUI.Controls;
 partial class UIElementHelper
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void DispatchHandleableEvent<TEnumerable, TEventArgs>(TEnumerable elements, ref TEventArgs args,
+    public static unsafe void DispatchHandleableEvent<TEnumerable, TEventArgs>(TEnumerable elements, ref TEventArgs args,
         delegate* managed<UIElement, ref TEventArgs, void> eventHandler) where TEnumerable : IEnumerable<UIElement?> where TEventArgs : struct, IHandleableEventArgs
     {
         if (args.Handled)
@@ -156,17 +156,153 @@ partial class UIElementHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void DispatchReadOnlyEvent<TEnumerable, TEventArgs>(TEnumerable elements, in TEventArgs args,
+    public static unsafe void DispatchReadOnlyEvent<TEnumerable>(TEnumerable elements,
+        delegate* managed<UIElement, void> eventHandler) where TEnumerable : IEnumerable<UIElement?>
+    {
+        UIElement?[] array;
+        int length;
+
+        if (typeof(TEnumerable) == typeof(UIElement?[]))
+            goto Array;
+        if (typeof(TEnumerable) == typeof(UnwrappableList<UIElement?>))
+            goto UnwrappableList;
+        if (typeof(TEnumerable) == typeof(ObservableList<UIElement?>))
+            goto ObservableList;
+        if (typeof(TEnumerable) == typeof(IList<UIElement?>))
+            goto List;
+        if (typeof(TEnumerable) == typeof(IReadOnlyList<UIElement?>))
+            goto ReadOnlyList;
+
+        switch (elements)
+        {
+            case UIElement?[]:
+                goto Array;
+            case UnwrappableList<UIElement?>:
+                goto UnwrappableList;
+            case ObservableList<UIElement?>:
+                goto ObservableList;
+            case IList<UIElement?>:
+                goto List;
+            case IReadOnlyList<UIElement?>:
+                goto ReadOnlyList;
+            default:
+                goto Fallback;
+        }
+
+    Array:
+        array = UnsafeHelper.As<TEnumerable, UIElement?[]>(elements);
+        length = array.Length;
+        goto ArrayLike;
+
+    UnwrappableList:
+        UnwrappableList<UIElement?> unwrappableList = UnsafeHelper.As<TEnumerable, UnwrappableList<UIElement?>>(elements);
+        array = unwrappableList.Unwrap();
+        length = unwrappableList.Count;
+        goto ArrayLike;
+
+    ObservableList:
+        IList<UIElement?> underlyingList = UnsafeHelper.As<TEnumerable, ObservableList<UIElement?>>(elements).GetUnderlyingList();
+        elements = UnsafeHelper.As<IList<UIElement?>, TEnumerable>(underlyingList);
+        if (underlyingList is UIElement?[])
+            goto Array;
+        if (underlyingList is UnwrappableList<UIElement?>)
+            goto UnwrappableList;
+        if (underlyingList is ObservableList<UIElement?>)
+            goto ObservableList;
+        goto List;
+
+    ArrayLike:
+        if (length > 0)
+        {
+            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
+            UIElement?[] buffer = pool.Rent(length);
+            try
+            {
+                Array.Copy(array, buffer, length);
+                DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, eventHandler);
+            }
+            finally
+            {
+                pool.Return(buffer);
+            }
+        }
+        return;
+
+    List:
+        IList<UIElement?> list = UnsafeHelper.As<TEnumerable, IList<UIElement?>>(elements);
+        length = list.Count;
+        if (length > 0)
+        {
+            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
+            UIElement?[] buffer = pool.Rent(length);
+            try
+            {
+                list.CopyTo(buffer, 0);
+                DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, eventHandler);
+            }
+            finally
+            {
+                pool.Return(buffer);
+            }
+        }
+        return;
+
+    ReadOnlyList:
+        IReadOnlyList<UIElement?> readOnlyList = UnsafeHelper.As<TEnumerable, IReadOnlyList<UIElement?>>(elements);
+        length = readOnlyList.Count;
+        if (length > 0)
+        {
+            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
+            UIElement?[] buffer = pool.Rent(length);
+            ref UIElement? bufferRef = ref UnsafeHelper.GetArrayDataReference(buffer);
+            try
+            {
+                for (int i = 0; i < length; i++)
+                    UnsafeHelper.AddTypedOffset(ref bufferRef, i) = readOnlyList[i];
+                DispatchEventCore(ref bufferRef, (nuint)length, eventHandler);
+            }
+            finally
+            {
+                pool.Return(buffer);
+            }
+        }
+        return;
+
+    Fallback:
+        using IEnumerator<UIElement?> enumerator = elements.GetEnumerator();
+        if (enumerator.MoveNext())
+        {
+            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
+            using PooledList<UIElement?> bufferList = new(pool);
+            do
+            {
+                bufferList.Add(enumerator.Current);
+            } while (enumerator.MoveNext());
+            (UIElement?[] buffer, length) = bufferList;
+            try
+            {
+                DispatchEventCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, eventHandler);
+            }
+            finally
+            {
+                pool.Return(buffer);
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void DispatchReadOnlyEvent<TEnumerable, TEventArgs>(TEnumerable elements, in TEventArgs args,
         delegate* managed<UIElement, in TEventArgs, void> eventHandler) where TEnumerable : IEnumerable<UIElement?> where TEventArgs : struct
         => DispatchEvent(elements, ref UnsafeHelper.AsRefIn(in args), (delegate* managed<UIElement, ref TEventArgs, void>)eventHandler);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void DispatchReadOnlyEvent<TEnumerable, TEventArgs>(TEnumerable elements, in TEventArgs args, Point focusPoint,
+    public static unsafe void DispatchReadOnlyEvent<TEnumerable, TEventArgs>(TEnumerable elements, in TEventArgs args, Point focusPoint,
         delegate* managed<UIElement, in TEventArgs, bool, void> eventHandler) where TEnumerable : IEnumerable<UIElement?> where TEventArgs : struct
         => DispatchEvent(elements, ref UnsafeHelper.AsRefIn(in args), focusPoint, (delegate* managed<UIElement, ref TEventArgs, bool, void>)eventHandler);
 
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void DispatchEvent<TEnumerable, TEventArgs>(TEnumerable elements, ref TEventArgs args,
+    public static unsafe void DispatchEvent<TEnumerable, TEventArgs>(TEnumerable elements, ref TEventArgs args,
         delegate* managed<UIElement, ref TEventArgs, void> eventHandler) where TEnumerable : IEnumerable<UIElement?> where TEventArgs : struct
     {
         UIElement?[] array;
@@ -301,7 +437,7 @@ partial class UIElementHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void DispatchEvent<TEnumerable, TEventArgs, TData>(TEnumerable elements, in TEventArgs args, ref TData data,
+    public static unsafe void DispatchEvent<TEnumerable, TEventArgs, TData>(TEnumerable elements, in TEventArgs args, ref TData data,
         delegate* managed<UIElement, in TEventArgs, ref TData, void> eventHandler) where TEnumerable : IEnumerable<UIElement?> where TEventArgs : struct
     {
         UIElement?[] array;
@@ -438,7 +574,7 @@ partial class UIElementHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void DispatchEvent<TEnumerable, TEventArgs>(TEnumerable elements, ref TEventArgs args, PointF focusPoint,
+    public static unsafe void DispatchEvent<TEnumerable, TEventArgs>(TEnumerable elements, ref TEventArgs args, PointF focusPoint,
         delegate* managed<UIElement, ref TEventArgs, bool, void> eventHandler) where TEnumerable : IEnumerable<UIElement?> where TEventArgs : struct
     {
         UIElement?[] array;
@@ -574,7 +710,7 @@ partial class UIElementHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void DispatchEvent<TEnumerable, TEventArgs, TData>(TEnumerable elements, in TEventArgs args, ref TData data, PointF focusPoint,
+    public static unsafe void DispatchEvent<TEnumerable, TEventArgs, TData>(TEnumerable elements, in TEventArgs args, ref TData data, PointF focusPoint,
         delegate* managed<UIElement, in TEventArgs, ref TData, bool, void> eventHandler) where TEnumerable : IEnumerable<UIElement?> where TEventArgs : struct
     {
         UIElement?[] array;
@@ -706,6 +842,43 @@ partial class UIElementHelper
             {
                 pool.Return(buffer);
             }
+        }
+    }
+
+    private static unsafe void DispatchEventCore(ref readonly UIElement? elementArrayRef, nuint length,
+        delegate* managed<UIElement, void> eventHandler)
+    {
+        DebugHelper.ThrowIf(length < 1);
+        for (; length >= 4; length -= 4)
+        {
+            CallEventHandler(in elementArrayRef, length - 1, eventHandler);
+            CallEventHandler(in elementArrayRef, length - 2, eventHandler);
+            CallEventHandler(in elementArrayRef, length - 3, eventHandler);
+            CallEventHandler(in elementArrayRef, length - 4, eventHandler);
+        }
+        switch (length)
+        {
+            case 3:
+                CallEventHandler(in elementArrayRef, length - 1, eventHandler);
+                CallEventHandler(in elementArrayRef, length - 2, eventHandler);
+                CallEventHandler(in elementArrayRef, length - 3, eventHandler);
+                break;
+            case 2:
+                CallEventHandler(in elementArrayRef, length - 1, eventHandler);
+                CallEventHandler(in elementArrayRef, length - 2, eventHandler);
+                break;
+            case 1:
+                CallEventHandler(in elementArrayRef, length - 1, eventHandler);
+                break;
+        }
+
+        static void CallEventHandler(ref readonly UIElement? elementArrayRef, nuint i,
+            delegate* managed<UIElement, void> eventHandler)
+        {
+            UIElement? element = UnsafeHelper.AddTypedOffset(in elementArrayRef, i);
+            if (element is null)
+                return;
+            eventHandler(element);
         }
     }
 

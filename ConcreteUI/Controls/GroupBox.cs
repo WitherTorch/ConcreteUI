@@ -23,7 +23,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls;
 
-public sealed partial class GroupBox : DisposableUIElementBase, IElementContainer
+public sealed partial class GroupBox : UIElement, IElementContainer
 {
     private static readonly string[] _brushNames = new string[(int)Brush._Last]
     {

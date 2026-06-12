@@ -1411,7 +1411,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     private void OpenContextMenuCore(ContextMenu.ContextMenuItem[] items, Point location)
     {
         ContextMenu contextMenu = new ContextMenu(this, items);
-        (ChangeOverlayElement(contextMenu) as IDisposable)?.Dispose();
+        ChangeOverlayElement(contextMenu)?.Dispose();
         Rectangle pageBounds = PageBounds;
         if (location.X + contextMenu.Width >= pageBounds.Right)
             location.X = location.X - contextMenu.Width + 1;
@@ -1572,7 +1572,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             DisposeHelper.SwapDisposeInterlocked(ref _host);
             DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
             DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
-            DisposeElements(GetElements());
+            UIElementHelper.DisposeForElements(GetElements());
 
             if (InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0)
                 SpinWait.SpinUntil(() => InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0);
@@ -1584,82 +1584,6 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         _overlayElement = null;
         SequenceHelper.Clear(_brushes);
         base.DisposeCore(disposing);
-    }
-
-    private static void DisposeElements(IEnumerable<UIElement?> elements)
-    {
-        switch (elements)
-        {
-            case UIElement?[] array:
-                DisposeElementsCore(array, array.Length);
-                return;
-            case IList<UIElement?> list:
-                DisposeElementsCore(list);
-                return;
-            case ICollection<UIElement?> collection:
-                DisposeElementsCore(collection);
-                return;
-            default:
-                DisposeElementsCore(elements);
-                return;
-        }
-    }
-
-    private static void DisposeElementsCore(UIElement?[] elements, int length)
-    {
-        if (length <= 0)
-            return;
-        ref UIElement? elementRef = ref UnsafeHelper.GetArrayDataReference(elements);
-        for (int i = 0; i < length; i++)
-            (UnsafeHelper.AddTypedOffset(ref elementRef, i) as IDisposable)?.Dispose();
-    }
-
-    private static void DisposeElementsCore(IList<UIElement?> elements)
-    {
-        switch (elements)
-        {
-            case UnwrappableList<UIElement?> list:
-                DisposeElementsCore(list.Unwrap(), list.Count);
-                return;
-            case ObservableList<UIElement?> list:
-                {
-                    IList<UIElement?> underlyingList = list.GetUnderlyingList();
-                    if (ReferenceEquals(underlyingList, list))
-                        return;
-                    DisposeElementsCore(list);
-                }
-                return;
-            default:
-                {
-                    int count = elements.Count;
-                    if (count <= 0)
-                        return;
-                    for (int i = 0; i < count; i++)
-                        (elements[i] as IDisposable)?.Dispose();
-                }
-                return;
-        }
-    }
-
-    private static void DisposeElementsCore(ICollection<UIElement?> elements)
-    {
-        int count = elements.Count;
-        if (count <= 0)
-            return;
-        using IEnumerator<UIElement?> enumerator = elements.GetEnumerator();
-        enumerator.MoveNext();
-        for (int i = 0; i < count; i++)
-        {
-            (enumerator.Current as IDisposable)?.Dispose();
-            if (!enumerator.MoveNext())
-                break;
-        }
-    }
-
-    private static void DisposeElementsCore(IEnumerable<UIElement?> elements)
-    {
-        foreach (UIElement? element in elements)
-            (element as IDisposable)?.Dispose();
     }
     #endregion
 }

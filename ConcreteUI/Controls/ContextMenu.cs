@@ -36,7 +36,7 @@ public sealed partial class ContextMenu : PopupElementBase, ICheckableDisposable
     private DWriteTextLayout[]? _layouts;
     private float _itemHeight;
     private int _hoveredIndex;
-    private bool _isPressed, _disposed;
+    private bool _isPressed;
 
     public ContextMenu(IElementContainer parent, ContextMenuItem[] items) : base(parent, "app.contextMenu")
     {
@@ -207,11 +207,8 @@ public sealed partial class ContextMenu : PopupElementBase, ICheckableDisposable
         //Do nothing
     }
 
-    private void DisposeCore(bool disposing)
+    protected override void DisposeCore(bool disposing)
     {
-        if (ReferenceHelper.Exchange(ref _disposed, true))
-            return;
-
         DWriteTextLayout[]? layouts = InterlockedHelper.Read(ref _layouts);
         if (disposing)
         {
@@ -221,13 +218,5 @@ public sealed partial class ContextMenu : PopupElementBase, ICheckableDisposable
         if (layouts is not null)
             SequenceHelper.Clear(layouts);
         SequenceHelper.Clear(_brushes);
-    }
-
-    ~ContextMenu() => DisposeCore(disposing: false);
-
-    public void Dispose()
-    {
-        DisposeCore(disposing: true);
-        GC.SuppressFinalize(this);
     }
 }

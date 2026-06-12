@@ -18,7 +18,7 @@ using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Controls;
 
-public sealed partial class Label : DisposableUIElementBase
+public sealed partial class Label : UIElement
 {
     private static readonly string[] _brushNames = new string[(int)Brush._Last]
     {

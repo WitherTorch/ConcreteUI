@@ -22,7 +22,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls;
 
-public sealed partial class CheckBox : DisposableUIElementBase, IMouseInteractHandler, IMouseMoveHandler
+public sealed partial class CheckBox : UIElement, IMouseInteractHandler, IMouseMoveHandler
 {
     private static readonly string[] _brushNames = new string[(int)Brush._Last]
     {

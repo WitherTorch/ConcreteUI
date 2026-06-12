@@ -12,7 +12,7 @@ using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Controls;
 
-public sealed partial class ProgressBar : UIElement, IDisposable
+public sealed partial class ProgressBar : UIElement
 {
     private static readonly string[] _brushNames = new string[(int)Brush._Last]
     {
@@ -24,7 +24,6 @@ public sealed partial class ProgressBar : UIElement, IDisposable
     private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
 
     private double _value, _maximium;
-    private bool _disposed;
 
     public ProgressBar(IElementContainer parent) : base(parent, "app.progressBar")
     {
@@ -52,27 +51,10 @@ public sealed partial class ProgressBar : UIElement, IDisposable
         return true;
     }
 
-    private void Dispose(bool disposing)
+    protected override void DisposeCore(bool disposing)
     {
-        if (_disposed)
-            return;
-        _disposed = true;
-
         if (disposing)
-        {
             DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
-        }
         SequenceHelper.Clear(_brushes);
-    }
-
-    ~ProgressBar()
-    {
-        Dispose(disposing: false);
-    }
-
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
     }
 }

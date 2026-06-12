@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 using WitherTorch.Common.Extensions;
@@ -7,7 +6,7 @@ using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Controls;
 
-public abstract partial class ButtonBase : DisposableUIElementBase, IMouseInteractHandler, IMouseMoveHandler
+public abstract partial class ButtonBase : UIElement, IMouseInteractHandler, IMouseMoveHandler
 {
     private nuint _version;
     private uint _pressState;

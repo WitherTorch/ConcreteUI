@@ -17,4 +17,11 @@ partial class UIElementHelper
         if (element is IDpiAwareEvents keyEvents)
             keyEvents.OnDpiChanged(in args);
     }
+
+    public static unsafe void DisposeForElements<TEnumerable>(TEnumerable elements)
+        where TEnumerable : IEnumerable<UIElement?>
+        => DispatchReadOnlyEvent(elements, &DisposeForElement);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void DisposeForElement(UIElement? element) => element?.Dispose();
 }

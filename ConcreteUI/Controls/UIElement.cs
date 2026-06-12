@@ -13,13 +13,14 @@ using ConcreteUI.Window;
 
 using InlineMethod;
 
+using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Controls;
 
-public abstract partial class UIElement
+public abstract partial class UIElement : ICheckableDisposable
 {
     private static int _identifierGenerator = 0;
 
@@ -33,8 +34,7 @@ public abstract partial class UIElement
     private IThemeContext? _themeContext;
     private string _themePrefix;
     private ulong _location, _size;
-    private nuint _requestRedraw, _shouldUpdateWhenUnfreeze, _parentVersion, _boundsVersion;
-    private nint _freezeCount;
+    private nuint _requestRedraw, _shouldUpdateWhenUnfreeze, _freezeCount, _parentVersion, _boundsVersion, _disposed;
 
     public UIElement(IElementContainer parent, string themePrefix)
     {
@@ -110,7 +110,7 @@ public abstract partial class UIElement
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void FreezeUpdate()
     {
-        if (InterlockedHelper.Increment(ref _freezeCount) != 1)
+        if (InterlockedHelper.Read(ref _disposed) != default || InterlockedHelper.LimitedIncrement(ref _freezeCount, UnsafeHelper.GetMaxValue<nuint>()) != 1)
             return;
         InterlockedHelper.Exchange(ref _shouldUpdateWhenUnfreeze, 0);
     }
@@ -118,24 +118,20 @@ public abstract partial class UIElement
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void UnfreezeUpdate(bool forceUpdate)
     {
-        switch (InterlockedHelper.GetAndDecrement(ref _freezeCount))
-        {
-            case 1:
-                if (forceUpdate || InterlockedHelper.Exchange(ref _shouldUpdateWhenUnfreeze, default) != default)
-                    Update();
-                break;
-            case 0:
-                InterlockedHelper.CompareExchange(ref _freezeCount, 0, -1);
-                break;
-            default:
-                break;
-        }
+        if (InterlockedHelper.Read(ref _disposed) != default ||
+            InterlockedHelper.LimitedDecrement(ref _freezeCount, 0) > 0 ||
+            (!forceUpdate && InterlockedHelper.Exchange(ref _shouldUpdateWhenUnfreeze, default) == default))
+            return;
+        Update();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected virtual void Update()
     {
         const nuint RequestRedrawBit = 0b01;
+
+        if (InterlockedHelper.Read(ref _disposed) != default)
+            return;
 
         InterlockedHelper.CompareExchange(ref _shouldUpdateWhenUnfreeze, UnsafeHelper.GetMaxValue<nuint>(), 0);
         if (InterlockedHelper.Read(ref _freezeCount) != default ||
@@ -342,6 +338,24 @@ public abstract partial class UIElement
     public override int GetHashCode() => _identifier;
 
     public override bool Equals(object? obj) => ReferenceEquals(obj, this);
+
+    protected virtual void DisposeCore(bool disposing) { }
+
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    ~UIElement() => Dispose(disposing: false);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void Dispose(bool disposing)
+    {
+        if (InterlockedHelper.Exchange(ref _disposed, UnsafeHelper.GetMaxValue<nuint>()) != default)
+            return;
+        DisposeCore(disposing);
+    }
 
     [Inline(InlineBehavior.Remove)]
     private Point GetLocationCore()
