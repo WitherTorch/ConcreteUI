@@ -7,7 +7,7 @@ using ConcreteUI.Window;
 
 namespace ConcreteUI.Test;
 
-partial class MainWindow : TabbedWindow
+partial class MainWindow
 {
     private readonly List<UIElement>[] _elementLists = new List<UIElement>[3];
     private InputMethod? _ime;
