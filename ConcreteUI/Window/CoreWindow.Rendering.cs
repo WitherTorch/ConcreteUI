@@ -552,8 +552,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
                     pool.Return(handles);
                 }
             }
-            controller.RequestResize(Volatile.Read(ref _sizeModeState));
-            controller.Unlock();
+            controller.Unlock(resizeAll: true);
         }
         finally
         {
@@ -1156,20 +1155,11 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     #endregion
 
     #region Event Handlers
-    private void SystemEvents_DisplaySettingsChanging(object? sender, EventArgs e)
-    {
-        _controller?.Lock();
-    }
+    private void SystemEvents_DisplaySettingsChanging(object? sender, EventArgs e) 
+        => _controller?.Lock();
 
     private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e)
-    {
-        RenderingController? controller = _controller;
-        if (controller is not null)
-        {
-            controller.RequestResize(temporarily: false);
-            controller.Unlock();
-        }
-    }
+        => _controller?.Unlock(resizeAll: true);
 
     private void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e)
     {
@@ -1253,7 +1243,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         }
         finally
         {
-            controller.Unlock();
+            controller.Unlock(resizeAll: true);
         }
     }
 
@@ -1362,10 +1352,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         finally
         {
             if (controller is not null)
-            {
-                controller.RequestResize(Volatile.Read(ref _sizeModeState));
-                controller.Unlock();
-            }
+                controller.Unlock(resizeAll: true);
         }
     }
 
@@ -1397,10 +1384,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         finally
         {
             if (controller is not null)
-            {
-                controller.RequestResize(Volatile.Read(ref _sizeModeState));
-                controller.Unlock();
-            }
+                controller.Unlock(resizeAll: true);
         }
     }
 
@@ -1503,11 +1487,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         }
         finally
         {
-            if (controller is not null)
-            {
-                controller.RequestResize(Volatile.Read(ref _sizeModeState));
-                controller.Unlock();
-            }
+            controller?.Unlock(resizeAll: true);
         }
     }
     #endregion

@@ -38,12 +38,18 @@ public abstract class PagedWindow : CoreWindow
                 return;
             RenderingController? controller = GetRenderingController();
             controller?.Lock();
-            OnCurrentPageChanging();
-            ClearFocusElement();
-            _pageIndex = value;
-            _isPageChanged = true;
-            OnCurrentPageChanged();
-            controller?.Unlock();
+            try
+            {
+                OnCurrentPageChanging();
+                ClearFocusElement();
+                _pageIndex = value;
+                _isPageChanged = true;
+                OnCurrentPageChanged();
+            }
+            finally
+            {
+                controller?.Unlock();
+            }
         }
     }
     #endregion
@@ -92,7 +98,7 @@ public abstract class PagedWindow : CoreWindow
 
     protected override void RenderPage(in RegionalRenderingContext context, in WindowRenderingData data)
     {
-        if (RecalculatePageLayoutIfPageChanged(PageSize))
+        if (RecalculatePageLayoutIfPageChanged(data.PageBounds.Size))
             context.UsePresentAllModeOnce();
         RenderPageCore(context, in data);
     }
