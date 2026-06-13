@@ -27,12 +27,7 @@ internal sealed class MainWindow : TabbedWindow
     }
 
     protected override CreateWindowInfo GetCreateWindowInfo()
-    {
-        CreateWindowInfo windowInfo = base.GetCreateWindowInfo();
-        windowInfo.Width = 950;
-        windowInfo.Height = 700;
-        return windowInfo;
-    }
+        => base.GetCreateWindowInfo() with { Width = 950, Height = 700 };
 
     protected override void OnHandleCreated(nint handle)
     {
@@ -63,17 +58,20 @@ internal sealed class MainWindow : TabbedWindow
         }
     }
 
-    protected override IEnumerable<UIElement?> EnumerateActiveElementsInAllPages()
-        => _elementLists[0]
-        .ConcatOptimized(_elementLists[1])
-        .ConcatOptimized(_elementLists[2]);
-
     protected override IEnumerable<UIElement?> GetActiveElements(uint pageIndex)
         => _elementLists[pageIndex];
 
     protected override void InitializeElements()
     {
         _ime = new InputMethod(this);
+
+        InitializeFirstPageElements();
+        InitializeSecondPageElements();
+        InitializeThirdPageElements();
+    }
+
+    private void InitializeFirstPageElements()
+    {
         List<UIElement> elementList = new List<UIElement>();
 
         Button button = new Button(this)
@@ -171,8 +169,20 @@ internal sealed class MainWindow : TabbedWindow
         _progressBar = progressBar;
 
         _elementLists[0] = elementList;
-        _elementLists[1] = new();
-        _elementLists[2] = new();
+    }
+
+    private void InitializeSecondPageElements()
+    {
+        List<UIElement> elementList = new List<UIElement>();
+
+        _elementLists[1] = elementList;
+    }
+
+    private void InitializeThirdPageElements()
+    {
+        List<UIElement> elementList = new List<UIElement>();
+
+        _elementLists[2] = elementList;
     }
 
     private void ComboBox_RequestDropdownListOpening(object? sender, DropdownListEventArgs e)
