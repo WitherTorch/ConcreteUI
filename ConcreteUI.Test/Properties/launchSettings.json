@@ -3,7 +3,7 @@
     "ConcreteUI.Test": {
       "commandName": "Project",
       "hotReloadEnabled": true,
-      "debugEngines": "managed-framework,native"
+      "debugEngines": "managed,native"
     }
   }
 }
