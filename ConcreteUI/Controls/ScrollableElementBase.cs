@@ -195,7 +195,7 @@ public abstract partial class ScrollableElementBase : UIElement,
         if (hasScrollBar && redrawScrollBar)
         {
             if (recalcScrollBar)
-                RecalculateScrollBarButton(surfaceSize, contentBounds.Size, viewportPoint);
+                RecalculateScrollBarButton(viewportPoint.Y, surfaceSize.Height, contentBounds.Height, bounds.Size);
             RectF scrollBarBounds = (RectF)_scrollBarBounds;
             RectF scrollButtonBounds = _scrollBarScrollButtonBounds;
             RectF upButtonBounds = _scrollBarUpButtonBounds;
@@ -251,7 +251,7 @@ public abstract partial class ScrollableElementBase : UIElement,
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private D2D1Brush GetButtonStateBrush(ButtonTriState state)
-        => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), 
+        => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes),
             (nuint)Brush.ScrollBarForeBrush + (state > ButtonTriState.Pressed ? (nuint)ButtonTriState.None : (nuint)state));
 
     public override void OnSizeChanged() => Update(ScrollableElementUpdateFlags.RecalcLayout);
@@ -353,20 +353,29 @@ public abstract partial class ScrollableElementBase : UIElement,
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void RecalculateScrollBarButton(Size surfaceSize, Size contentSize, Point viewportPoint)
+    private void RecalculateScrollBarButton(int viewportY, int surfaceHeight, int contentHeight, Size boundsSize)
     {
-        Rect scrollBarBounds = Rect.FromXYWH(contentSize.Width, 0, UIConstantsPrivate.ScrollBarWidth, contentSize.Height);
+        const float MinimumScrollBarButtonHeight = 10.0f;
+
+        if (surfaceHeight <= 0 || surfaceHeight <= contentHeight)
+        {
+            _scrollBarUpButtonBounds = default;
+            _scrollBarDownButtonBounds = default;
+            _scrollBarScrollButtonBounds = default;
+            _scrollBarBounds = default;
+            return;
+        }
+
+        Rect scrollBarBounds = new Rect(boundsSize.Width - UIConstantsPrivate.ScrollBarWidth, 0, boundsSize.Width, boundsSize.Height);
         int baseX = scrollBarBounds.X;
-        _scrollBarUpButtonBounds = RectF.FromXYWH(baseX, scrollBarBounds.Y, UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth);
-        _scrollBarDownButtonBounds = RectF.FromXYWH(baseX, scrollBarBounds.Bottom - UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth);
-        float scrollBarMaxHeight = _scrollBarDownButtonBounds.Top - _scrollBarUpButtonBounds.Bottom;
-        int surfaceHeight = surfaceSize.Height;
-        if (surfaceHeight == 0) surfaceHeight = 1;
-        double surfaceHeightPerBarHeight = scrollBarMaxHeight < surfaceHeight ? scrollBarMaxHeight * 1.0 / surfaceHeight : 1.0;
-        float height = MathHelper.Max((float)(contentSize.Height * surfaceHeightPerBarHeight), 10.0f);
-        surfaceHeightPerBarHeight = (scrollBarMaxHeight - height) * 1.0 / (surfaceHeight - contentSize.Height);
-        float Y = _scrollBarUpButtonBounds.Bottom + (float)(viewportPoint.Y * surfaceHeightPerBarHeight);
-        _scrollBarScrollButtonBounds = RectF.FromXYWH(baseX, Y, UIConstantsPrivate.ScrollBarWidth, height);
+        RectF scrollBarUpButtonBounds = RectF.FromXYWH(baseX, scrollBarBounds.Y, UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth);
+        RectF scrollBarDownButtonBounds = RectF.FromXYWH(baseX, scrollBarBounds.Bottom - UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth, UIConstantsPrivate.ScrollBarWidth);
+        float scrollBarMaxHeight = scrollBarDownButtonBounds.Top - scrollBarUpButtonBounds.Bottom;
+        float height = MathHelper.Max((float)(contentHeight * 1.0 / surfaceHeight * scrollBarMaxHeight), MinimumScrollBarButtonHeight);
+        float top = scrollBarUpButtonBounds.Bottom + (viewportY * 1.0f / (surfaceHeight - contentHeight)* (scrollBarMaxHeight - height));
+        _scrollBarUpButtonBounds = scrollBarUpButtonBounds;
+        _scrollBarDownButtonBounds = scrollBarDownButtonBounds;
+        _scrollBarScrollButtonBounds = RectF.FromXYWH(baseX, top, UIConstantsPrivate.ScrollBarWidth, height);
         _scrollBarBounds = scrollBarBounds;
     }
 

@@ -958,6 +958,13 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
         if (caretIndex >= length)
             return length;
 
+        if (caretIndex > 0)
+        {
+            UnsafeStringRef stringRef = str.AsUnsafeRef();
+            if (stringRef[caretIndex] == '\n')
+                return caretIndex - MathHelper.BooleanToInt32(stringRef[caretIndex - 1] == '\r');
+        }
+
         GraphemeInfo graphemeInfo = InterlockedHelper.Read(ref _textGraphemeInfoLazy).Value;
         int[] indices = ReferenceEquals(str, graphemeInfo.Original) ? graphemeInfo.GraphemeIndices : GraphemeHelper.GetGraphemeIndices(str);
         return AdjustCaretIndexCore(caretIndex, length, indices, takeGreaterIfNotExists);

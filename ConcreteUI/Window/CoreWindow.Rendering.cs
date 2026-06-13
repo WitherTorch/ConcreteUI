@@ -1,14 +1,11 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
-using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Xml.Linq;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
@@ -39,7 +36,6 @@ using WitherTorch.Common.Structures;
 using WitherTorch.Common.Threading;
 
 using ContextMenu = ConcreteUI.Controls.ContextMenu;
-using ToolTip = ConcreteUI.Controls.ToolTip;
 
 namespace ConcreteUI.Window;
 
@@ -1160,9 +1156,20 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     #endregion
 
     #region Event Handlers
-    private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e) => _controller?.Unlock();
+    private void SystemEvents_DisplaySettingsChanging(object? sender, EventArgs e)
+    {
+        _controller?.Lock();
+    }
 
-    private void SystemEvents_DisplaySettingsChanging(object? sender, EventArgs e) => _controller?.Lock();
+    private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e)
+    {
+        RenderingController? controller = _controller;
+        if (controller is not null)
+        {
+            controller.RequestResize(temporarily: false);
+            controller.Unlock();
+        }
+    }
 
     private void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e)
     {

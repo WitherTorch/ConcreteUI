@@ -2,6 +2,7 @@ using System.Collections.Generic;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Input;
+using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Window;
 
@@ -140,7 +141,29 @@ partial class MainWindow
     private void InitializeSecondPageElements()
     {
         List<UIElement> elementList = new List<UIElement>();
+        TextBox textbox = new TextBox(this, _ime)
+        {
+            LeftExpression = UIConstants.ElementMarginDefinition,
+            TopExpression = UIConstants.ElementMarginDefinition,
+            RightExpression = PageWidthDefinition - UIConstants.ElementMarginDefinition,
+            Watermark = "盡情輸入文字吧!",
+            MultiLine = true
+        };
+        textbox.HeightExpression = LayoutNode.Min(textbox.AutoHeightDefinition, PageHeightDefinition / 2 - textbox.TopDefinition);
+        textbox.TextChanging += (_, _) => GetRenderingController()?.Lock(); // 避免閃爍
+        textbox.TextChanged += (_, _) => GetRenderingController()?.Unlock(resizeAll: true);
 
+        Label label = new Label(this)
+        {
+            Text = "不過這條標籤將永遠在文字框的底下，而且文字框最大只能到頁面的一半高度",
+            Alignment = TextAlignment.MiddleCenter,
+            LeftExpression = textbox.LeftDefinition,
+            TopExpression = textbox.BottomDefinition + UIConstants.ElementMarginDefinition,
+            RightExpression = textbox.RightDefinition,
+        }.WithAutoHeight();
+
+        elementList.Add(textbox);
+        elementList.Add(label);
         _elementLists[1] = elementList;
     }
 
