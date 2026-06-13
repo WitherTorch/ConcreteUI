@@ -1,10 +1,12 @@
+using System;
 using System.Collections.Generic;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Input;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
-using ConcreteUI.Window;
+
+using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Test;
 
@@ -170,7 +172,16 @@ partial class MainWindow
     private void InitializeThirdPageElements()
     {
         List<UIElement> elementList = new List<UIElement>();
-
+        Button rollingButton = new Button(this)
+        {
+            Text = "按鈕!"
+        }.WithAutoWidth().WithAutoHeight();
+        rollingButton.LeftExpression = LayoutNode.Custom(static (in manager) 
+            => manager.GetPageSize().Width / 2 - MathI.Round(Math.Cos(_rollingDegree * (Math.PI / 180.0)) * 200));
+        rollingButton.TopExpression = LayoutNode.Custom(static (in manager) 
+            => manager.GetPageSize().Height / 2 - MathI.Round(Math.Sin(_rollingDegree * (Math.PI / 180.0)) * 200));
+        rollingButton.Click += RollingButton_Click;
+        elementList.Add(rollingButton);
         _elementLists[2] = elementList;
     }
 }
