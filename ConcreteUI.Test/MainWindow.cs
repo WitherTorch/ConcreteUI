@@ -11,12 +11,13 @@ using ConcreteUI.Utils;
 using ConcreteUI.Window;
 
 using WitherTorch.Common.Collections;
+using WitherTorch.Common.Extensions;
 
 namespace ConcreteUI.Test;
 
 internal sealed class MainWindow : TabbedWindow
 {
-    private readonly UnwrappableList<UIElement>[] _elementLists = new UnwrappableList<UIElement>[3];
+    private readonly List<UIElement>[] _elementLists = new List<UIElement>[3];
     private InputMethod? _ime;
     private ProgressBar? _progressBar;
 
@@ -54,26 +55,26 @@ internal sealed class MainWindow : TabbedWindow
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
     {
         base.ApplyThemeCore(provider);
-        foreach (UnwrappableList<UIElement> elementList in _elementLists)
+        foreach (List<UIElement> elementList in _elementLists)
         {
             if (elementList is null)
                 continue;
-            foreach (UIElement element in elementList)
-            {
-                if (element is null)
-                    continue;
-                element.ApplyTheme(provider);
-            }
+            UIElementHelper.ApplyTheme(provider, elementList);
         }
     }
 
-    protected override IEnumerable<UIElement> GetActiveElements(uint pageIndex)
+    protected override IEnumerable<UIElement?> EnumerateActiveElementsInAllPages()
+        => _elementLists[0]
+        .ConcatOptimized(_elementLists[1])
+        .ConcatOptimized(_elementLists[2]);
+
+    protected override IEnumerable<UIElement?> GetActiveElements(uint pageIndex)
         => _elementLists[pageIndex];
 
     protected override void InitializeElements()
     {
         _ime = new InputMethod(this);
-        UnwrappableList<UIElement> elementList = new UnwrappableList<UIElement>();
+        List<UIElement> elementList = new List<UIElement>();
 
         Button button = new Button(this)
         {
@@ -208,18 +209,6 @@ internal sealed class MainWindow : TabbedWindow
     protected override void DisposeCore(bool disposing)
     {
         base.DisposeCore(disposing);
-        if (disposing)
-        {
-            foreach (UnwrappableList<UIElement> elementList in _elementLists)
-            {
-                if (elementList is null)
-                    continue;
-                foreach (UIElement element in elementList)
-                {
-                    (element as IDisposable)?.Dispose();
-                }
-            }
-        }
         _ime?.Dispose();
     }
 }
