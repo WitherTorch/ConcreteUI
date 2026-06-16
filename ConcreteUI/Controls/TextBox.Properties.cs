@@ -162,7 +162,7 @@ partial class TextBox
 
     public bool HasSelection => _selectionRange.Length > 0;
 
-    public LayoutNode AutoHeightDefinition
+    public new LayoutNode AutoHeightDefinition
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _autoLayoutDefinitionCache[0] ??= new AutoHeightNode(this);
