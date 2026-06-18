@@ -75,7 +75,6 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         "fore.deactive",
         "closeButton.active",
     }.WithPrefix("app.title.").ToLowerAscii();
-    private static readonly Pool<LayoutEngine> _layoutEnginePool = new Pool<LayoutEngine>(1);
 
     #endregion
 
@@ -91,7 +90,6 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     private IThemeResourceProvider? _resourceProvider;
     private WindowMaterial _actualWindowMaterial;
     private long _updateFlags = Booleans.TrueLong;
-    private bool _isShown;
     #endregion
 
     #region Rendering Fields
@@ -552,7 +550,8 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
                     pool.Return(handles);
                 }
             }
-            controller.Unlock(resizeAll: true);
+            UpdateAndResizeCoreUnchecked(controller, ref _sizeModeState);
+            controller.Unlock();
         }
         finally
         {
@@ -679,19 +678,6 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     #endregion
 
     #region Virtual Methods
-    protected virtual void RecalculateOverlayLayout(UIElement element)
-    {
-        LayoutEngine engine = RentLayoutEngine();
-        try
-        {
-            engine.RecalculateLayout(PageSize, element);
-        }
-        finally
-        {
-            ReturnLayoutEngine(engine);
-        }
-    }
-
     public virtual IEnumerable<UIElement?> GetElements() => GetActiveElements()
         .ConcatOptimized(GetOverlayElement());
 
@@ -914,17 +900,10 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
 
     protected virtual void RecalculatePageLayout(Size pageSize)
     {
-        LayoutEngine layoutEngine = RentLayoutEngine();
-        try
-        {
-            layoutEngine.RecalculateLayout(pageSize, GetActiveElements());
-            layoutEngine.RecalculateLayout(pageSize, GetOverlayElement());
-        }
-        finally
-        {
-            ReturnLayoutEngine(layoutEngine);
-            Thread.MemoryBarrier();
-        }
+        using LayoutEngineRentScope engine = LayoutEngine.Rent();
+        engine.RecalculateLayout(pageSize, GetActiveElements());
+        engine.RecalculateLayout(pageSize, GetOverlayElement());
+        Thread.MemoryBarrier();
     }
     #endregion
 
@@ -993,7 +972,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             flags = controller.GetAndResetRenderingFlags();
             redrawAll |= flags.HasFlagFast(RenderingFlags.RedrawAll);
             if (resizeTemporarily || flags.HasFlagFast(RenderingFlags.Resize))
-                controller.RequestResize(flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag), redrawAll: false);
+                controller.RequestUpdateAndResize(flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag), redrawAll: false);
         }
         D2D1DeviceContext? deviceContext = host.BeginDraw();
         if (deviceContext is null || deviceContext.IsDisposed)
@@ -1155,11 +1134,17 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     #endregion
 
     #region Event Handlers
-    private void SystemEvents_DisplaySettingsChanging(object? sender, EventArgs e) 
+    private void SystemEvents_DisplaySettingsChanging(object? sender, EventArgs e)
         => _controller?.Lock();
 
     private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e)
-        => _controller?.Unlock(resizeAll: true);
+    {
+        RenderingController? controller = _controller;
+        if (controller is null)
+            return;
+        UpdateAndResizeCoreUnchecked(controller, ref _sizeModeState);
+        controller.Unlock();
+    }
 
     private void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e)
     {
@@ -1169,7 +1154,14 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
                 _controller?.Lock();
                 break;
             case SessionSwitchReason.SessionUnlock:
-                _controller?.Unlock();
+                {
+                    RenderingController? controller = _controller;
+                    if (controller is not null)
+                    {
+                        UpdateAndResizeCoreUnchecked(controller, ref _sizeModeState);
+                        controller.Unlock();
+                    }
+                }
                 break;
         }
     }
@@ -1182,7 +1174,14 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
                 _controller?.Lock();
                 break;
             case PowerModes.Resume:
-                _controller?.Unlock();
+                {
+                    RenderingController? controller = _controller;
+                    if (controller is not null)
+                    {
+                        UpdateAndResizeCoreUnchecked(controller, ref _sizeModeState);
+                        controller.Unlock();
+                    }
+                }
                 break;
         }
     }
@@ -1198,17 +1197,27 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     protected override void OnResized(EventArgs args)
     {
         base.OnResized(args);
-        TriggerResize();
+        UpdateAndResize();
     }
 
     private void UpdateFirstTime()
     {
-        _isShown = true;
         RenderingController controller = new RenderingController(this, GetWindowFps(Handle));
         if (_isSystemPrepareBoosting)
             controller.SetSystemBoosting(true);
         _controller = controller;
         UpdateCoreUnchecked(controller);
+    }
+
+    [Inline(InlineBehavior.Remove)]
+    private static void RefreshCoreUnchecked(RenderingController controller) => controller.RequestUpdate(false);
+
+    [Inline(InlineBehavior.Remove)]
+    private static void RefreshCore(RenderingController? controller)
+    {
+        if (controller is null)
+            return;
+        RefreshCoreUnchecked(controller);
     }
 
     [Inline(InlineBehavior.Remove)]
@@ -1220,6 +1229,18 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         if (controller is null)
             return;
         UpdateCoreUnchecked(controller);
+    }
+
+    [Inline(InlineBehavior.Remove)]
+    private static void UpdateAndResizeCoreUnchecked(RenderingController controller, ref bool sizeModeState)
+        => controller.RequestUpdateAndResize(Volatile.Read(ref sizeModeState));
+
+    [Inline(InlineBehavior.Remove)]
+    private static void UpdateAndResizeCore(RenderingController? controller, ref bool sizeModeState)
+    {
+        if (controller is null)
+            return;
+        UpdateAndResizeCoreUnchecked(controller, ref sizeModeState);
     }
 
     [Inline(InlineBehavior.Remove)]
@@ -1243,7 +1264,8 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         }
         finally
         {
-            controller.Unlock(resizeAll: true);
+            UpdateAndResizeCoreUnchecked(controller, ref _sizeModeState);
+            controller.Unlock();
         }
     }
 
@@ -1279,27 +1301,11 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     #endregion
 
     #region Normal Methods
-    protected void TriggerResize() => _controller?.RequestResize(Volatile.Read(ref _sizeModeState));
+    protected void UpdateAndResize() => UpdateAndResizeCore(_controller, ref _sizeModeState);
 
-    protected void Update()
-    {
-        if (!_isShown)
-            return;
-        UpdateCore(_controller);
-    }
+    protected void Update() => UpdateCore(_controller);
 
-    protected void Refresh()
-    {
-        if (!_isShown)
-            return;
-        _controller?.RequestUpdate(false);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected static LayoutEngine RentLayoutEngine() => _layoutEnginePool.Rent();
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected static void ReturnLayoutEngine(LayoutEngine engine) => _layoutEnginePool.Return(engine);
+    protected void Refresh() => RefreshCore(_controller);
 
     public void ChangeFocusElement(UIElement element)
     {
@@ -1352,7 +1358,10 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         finally
         {
             if (controller is not null)
-                controller.Unlock(resizeAll: true);
+            {
+                UpdateAndResizeCoreUnchecked(controller, ref _sizeModeState);
+                controller.Unlock();
+            }
         }
     }
 
@@ -1384,7 +1393,10 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         finally
         {
             if (controller is not null)
-                controller.Unlock(resizeAll: true);
+            {
+                UpdateAndResizeCoreUnchecked(controller, ref _sizeModeState);
+                controller.Unlock();
+            }
         }
     }
 
@@ -1487,7 +1499,11 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         }
         finally
         {
-            controller?.Unlock(resizeAll: true);
+            if (controller is not null)
+            {
+                UpdateAndResizeCoreUnchecked(controller, ref _sizeModeState);
+                controller.Unlock();
+            }
         }
     }
     #endregion

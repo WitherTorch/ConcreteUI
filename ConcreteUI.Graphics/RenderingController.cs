@@ -59,25 +59,25 @@ public sealed partial class RenderingController : CriticalFinalizerObject, IDisp
 
     public void RequestUpdate(bool force)
     {
-        if (InterlockedHelper.Read(ref _lockedCount) != 0UL)
-            return;
         if (force)
             InterlockedHelper.Or(ref _state, (ulong)RenderingFlags.RedrawAll);
+
+        if (InterlockedHelper.Read(ref _lockedCount) != 0UL)
+            return;
         _thread.DoRender();
     }
 
     public void RequestUpdateUnsafe(RenderingFlags flags)
     {
+        InterlockedHelper.Or(ref _state, (ulong)flags); 
+
         if (InterlockedHelper.Read(ref _lockedCount) != 0UL)
             return;
-        InterlockedHelper.Or(ref _state, (ulong)flags);
         _thread.DoRender();
     }
 
-    public void RequestResize(bool temporarily)
+    public void RequestUpdateAndResize(bool temporarily)
     {
-        if (InterlockedHelper.Read(ref _lockedCount) != 0UL)
-            return;
         ulong state;
 #if NET8_0_OR_GREATER
         state = temporarily ? (ulong)RenderingFlags.ResizeTemporarilyAndRedrawAll : (ulong)RenderingFlags.ResizeAndRedrawAll;
@@ -85,13 +85,13 @@ public sealed partial class RenderingController : CriticalFinalizerObject, IDisp
         state = (ulong)RenderingFlags.ResizeAndRedrawAll | ((ulong)RenderingFlags._ResizeTemporarilyFlag & UnsafeHelper.Negate(MathHelper.BooleanToUInt64(temporarily)));
 #endif
         InterlockedHelper.Or(ref _state, state);
+        if (InterlockedHelper.Read(ref _lockedCount) != 0UL)
+            return;
         _thread.DoRender();
     }
 
-    public void RequestResize(bool temporarily, bool redrawAll)
+    public void RequestUpdateAndResize(bool temporarily, bool redrawAll)
     {
-        if (InterlockedHelper.Read(ref _lockedCount) != 0UL)
-            return;
         ulong state;
 #if NET8_0_OR_GREATER
         state = (temporarily ? (ulong)RenderingFlags.ResizeTemporarily : (ulong)RenderingFlags.Resize) | (redrawAll ? (ulong)RenderingFlags.RedrawAll : default);
@@ -101,6 +101,8 @@ public sealed partial class RenderingController : CriticalFinalizerObject, IDisp
             ((ulong)RenderingFlags.RedrawAll & UnsafeHelper.Negate(MathHelper.BooleanToUInt64(redrawAll)));
 #endif
         InterlockedHelper.Or(ref _state, state);
+        if (InterlockedHelper.Read(ref _lockedCount) != 0UL)
+            return;
         _thread.DoRender();
     }
 
@@ -124,18 +126,19 @@ public sealed partial class RenderingController : CriticalFinalizerObject, IDisp
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Lock()
     {
-        if (InterlockedHelper.Read(ref _disposed) != default)
+        if (InterlockedHelper.Read(ref _disposed) != default ||
+            InterlockedHelper.LimitedIncrement(ref _lockedCount, UnsafeHelper.GetMaxValue<nuint>()) > 1)
             return;
-        InterlockedHelper.LimitedIncrement(ref _lockedCount, UnsafeHelper.GetMaxValue<nuint>());
+        _thread.StartNextWaiting();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Unlock()
     {
         if (InterlockedHelper.Read(ref _disposed) != default || 
-            InterlockedHelper.LimitedDecrement(ref _lockedCount, default) > 0)
+            InterlockedHelper.LimitedDecrement(ref _lockedCount, default) > 0 ||
+            InterlockedHelper.Read(ref _state) == default)
             return;
-        InterlockedHelper.Or(ref _state, (ulong)RenderingFlags.RedrawAll);
         _thread.DoRender();
     }
 

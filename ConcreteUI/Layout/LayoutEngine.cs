@@ -5,8 +5,6 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Controls;
 
-using InlineMethod;
-
 using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
@@ -17,8 +15,10 @@ using WitherTorch.Common.Extensions;
 
 namespace ConcreteUI.Layout;
 
-public sealed class LayoutEngine
+public sealed class LayoutEngine : ILayoutEngine
 {
+    private static readonly Pool<LayoutEngine> _pool = new Pool<LayoutEngine>(1);
+
     private const int Capacity = 1 << 9; // 512
     private const int SegmentLength = (int)LayoutProperty._Last;
 
@@ -30,54 +30,196 @@ public sealed class LayoutEngine
     private int _currentAvailableIndex;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void QueueElements(IEnumerable<UIElement?> elements)
+    public static LayoutEngineRentScope Rent() => LayoutEngineRentScope.Rent(_pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void RecalculateLayout(Size pageSize, UIElement? element)
     {
+        if (element is null || pageSize.Width < 0 || pageSize.Height < 0)
+            return;
+        QueueElement(element);
+        RecalculateLayoutCore(pageSize);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements) where TEnumerable : IEnumerable<UIElement?>
+    {
+        if (pageSize.Width < 0 || pageSize.Height < 0)
+            return;
+        QueueElements(elements);
+        if (_elementDict.Count <= 0)
+            return;
+        RecalculateLayoutCore(pageSize);
+    }
+
+    private void QueueElements<TEnumerable>(TEnumerable elements) where TEnumerable : IEnumerable<UIElement?>
+    {
+        UIElement?[] array;
+        int length;
+
+        if (typeof(TEnumerable) == typeof(UIElement?[]))
+            goto Array;
+        if (typeof(TEnumerable) == typeof(UnwrappableList<UIElement?>))
+            goto UnwrappableList;
+        if (typeof(TEnumerable) == typeof(ObservableList<UIElement?>))
+            goto ObservableList;
+        if (typeof(TEnumerable) == typeof(IList<UIElement?>))
+            goto List;
+        if (typeof(TEnumerable) == typeof(IReadOnlyList<UIElement?>))
+            goto ReadOnlyList;
+
         switch (elements)
         {
-            case UIElement?[] _array:
-                QueueElements(_array);
-                break;
-            case UnwrappableList<UIElement?> _list:
-                QueueElements(_list);
-                break;
+            case UIElement?[]:
+                goto Array;
+            case UnwrappableList<UIElement?>:
+                goto UnwrappableList;
+            case ObservableList<UIElement?>:
+                goto ObservableList;
+            case IList<UIElement?>:
+                goto List;
+            case IReadOnlyList<UIElement?>:
+                goto ReadOnlyList;
             default:
-                QueueElementsCore(elements);
+                goto Fallback;
+        }
+
+    Array:
+        array = UnsafeHelper.As<TEnumerable, UIElement?[]>(elements);
+        length = array.Length;
+        goto ArrayLike;
+
+    UnwrappableList:
+        UnwrappableList<UIElement?> unwrappableList = UnsafeHelper.As<TEnumerable, UnwrappableList<UIElement?>>(elements);
+        array = unwrappableList.Unwrap();
+        length = unwrappableList.Count;
+        goto ArrayLike;
+
+    ObservableList:
+        IList<UIElement?> underlyingList = UnsafeHelper.As<TEnumerable, ObservableList<UIElement?>>(elements).GetUnderlyingList();
+        elements = UnsafeHelper.As<IList<UIElement?>, TEnumerable>(underlyingList);
+        if (underlyingList is UIElement?[])
+            goto Array;
+        if (underlyingList is UnwrappableList<UIElement?>)
+            goto UnwrappableList;
+        if (underlyingList is ObservableList<UIElement?>)
+            goto ObservableList;
+        goto List;
+
+    ArrayLike:
+        if (length > 0)
+        {
+            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
+            UIElement?[] buffer = pool.Rent(length);
+            try
+            {
+                Array.Copy(array, buffer, length);
+                QueueElementsCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length);
+            }
+            finally
+            {
+                pool.Return(buffer);
+            }
+        }
+        return;
+
+    List:
+        IList<UIElement?> list = UnsafeHelper.As<TEnumerable, IList<UIElement?>>(elements);
+        length = list.Count;
+        if (length > 0)
+        {
+            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
+            UIElement?[] buffer = pool.Rent(length);
+            try
+            {
+                list.CopyTo(buffer, 0);
+                QueueElementsCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length);
+            }
+            finally
+            {
+                pool.Return(buffer);
+            }
+        }
+        return;
+
+    ReadOnlyList:
+        IReadOnlyList<UIElement?> readOnlyList = UnsafeHelper.As<TEnumerable, IReadOnlyList<UIElement?>>(elements);
+        length = readOnlyList.Count;
+        if (length > 0)
+        {
+            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
+            UIElement?[] buffer = pool.Rent(length);
+            ref UIElement? bufferRef = ref UnsafeHelper.GetArrayDataReference(buffer);
+            try
+            {
+                for (int i = 0; i < length; i++)
+                    UnsafeHelper.AddTypedOffset(ref bufferRef, i) = readOnlyList[i];
+                QueueElementsCore(ref bufferRef, (nuint)length);
+            }
+            finally
+            {
+                pool.Return(buffer);
+            }
+        }
+        return;
+
+    Fallback:
+        using IEnumerator<UIElement?> enumerator = elements.GetEnumerator();
+        if (enumerator.MoveNext())
+        {
+            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
+            using PooledList<UIElement?> bufferList = new(pool);
+            do
+            {
+                bufferList.Add(enumerator.Current);
+            } while (enumerator.MoveNext());
+            (UIElement?[] buffer, length) = bufferList;
+            try
+            {
+                QueueElementsCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length);
+            }
+            finally
+            {
+                pool.Return(buffer);
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void QueueElementsCore(ref readonly UIElement? elementArrayRef, nuint length)
+    {
+        DebugHelper.ThrowIf(length < 1);
+        for (; length >= 4; length -= 4)
+        {
+            QueueElementCore(in elementArrayRef, length - 1);
+            QueueElementCore(in elementArrayRef, length - 2);
+            QueueElementCore(in elementArrayRef, length - 3);
+            QueueElementCore(in elementArrayRef, length - 4);
+        }
+        switch (length)
+        {
+            case 3:
+                QueueElementCore(in elementArrayRef, length - 1);
+                QueueElementCore(in elementArrayRef, length - 2);
+                QueueElementCore(in elementArrayRef, length - 3);
+                break;
+            case 2:
+                QueueElementCore(in elementArrayRef, length - 1);
+                QueueElementCore(in elementArrayRef, length - 2);
+                break;
+            case 1:
+                QueueElementCore(in elementArrayRef, length - 1);
                 break;
         }
     }
 
-    [Inline(InlineBehavior.Remove)]
-    private void QueueElementsCore(IEnumerable<UIElement?> elements)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void QueueElementCore(ref readonly UIElement? elementArrayRef, nuint i)
     {
-        IEnumerator<UIElement?> enumerator = elements.GetEnumerator();
-        while (enumerator.MoveNext())
-        {
-            UIElement? element = enumerator.Current;
-            if (element is null)
-                continue;
-            QueueElement(element);
-        }
-        enumerator.Dispose();
-    }
-
-    [Inline(InlineBehavior.Remove)]
-    private void QueueElements(UnwrappableList<UIElement?> list)
-        => QueueElements(list.Unwrap(), list.Count);
-
-    [Inline(InlineBehavior.Remove)]
-    private void QueueElements(UIElement?[] elements)
-        => QueueElements(elements, elements.Length);
-
-    [Inline(InlineBehavior.Remove)]
-    private void QueueElements(UIElement?[] elements, int length)
-    {
-        for (int i = 0; i < length; i++)
-        {
-            UIElement? element = elements[i];
-            if (element is null)
-                continue;
-            QueueElement(element);
-        }
+        UIElement? element = UnsafeHelper.AddTypedOffset(in elementArrayRef, i);
+        if (element is null)
+            return;
+        QueueElement(element);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -104,67 +246,6 @@ public sealed class LayoutEngine
             _elementDict[element] = segment;
         if (element is IElementContainer container)
             QueueElements(container.GetElements());
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RecalculateLayout(Size pageSize, UIElement? element)
-    {
-        if (element is null || pageSize.Width < 0 || pageSize.Height < 0)
-            return;
-        QueueElement(element);
-        RecalculateLayoutCore(pageSize);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RecalculateLayout(Size pageSize, UIElement?[]? elements)
-    {
-        if (elements is null || pageSize.Width < 0 || pageSize.Height < 0)
-            return;
-        RecalculateLayoutCore(pageSize, elements, elements.Length);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RecalculateLayout(Size pageSize, IEnumerable<UIElement?>? elements)
-    {
-        if (elements is null || pageSize.Width < 0 || pageSize.Height < 0)
-            return;
-        switch (elements)
-        {
-            case UIElement?[] array:
-                RecalculateLayoutCore(pageSize, array, array.Length);
-                break;
-            case UnwrappableList<UIElement?> list:
-                RecalculateLayoutCore(pageSize, list.Unwrap(), list.Count);
-                break;
-            default:
-                RecalculateLayoutCore(pageSize, elements);
-                break;
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void RecalculateLayoutCore(Size pageSize, UIElement?[] elements, int length)
-    {
-        if (length <= 0 || !ArrayHelper.HasNonNullItem(elements))
-            return;
-        QueueElements(elements, length);
-        RecalculateLayoutCore(pageSize);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void RecalculateLayoutCore(Size pageSize, IEnumerable<UIElement?> elements)
-    {
-        bool hasAnyItems = false;
-        foreach (UIElement? element in elements)
-        {
-            if (element is null)
-                return;
-            hasAnyItems = true;
-            QueueElement(element);
-        }
-        if (!hasAnyItems)
-            return;
-        RecalculateLayoutCore(pageSize);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

@@ -79,7 +79,7 @@ public abstract class WizardWindow : PagedWindow
         {
             _title = value ?? string.Empty;
             InterlockedHelper.Or(ref _updateFlags, (long)UpdateFlags.UpdateTitle);
-            TriggerResize();
+            UpdateAndResize();
         }
     }
 
@@ -92,7 +92,7 @@ public abstract class WizardWindow : PagedWindow
         {
             _titleDescription = value ?? string.Empty;
             InterlockedHelper.Or(ref _updateFlags, (long)UpdateFlags.UpdateTitleDescription);
-            TriggerResize();
+            UpdateAndResize();
         }
     }
     #endregion

@@ -48,7 +48,11 @@ public abstract class PagedWindow : CoreWindow
             }
             finally
             {
-                controller?.Unlock();
+                if (controller is not null)
+                {
+                    controller.RequestUpdate(force: true);
+                    controller.Unlock();
+                }
             }
         }
     }
@@ -117,16 +121,10 @@ public abstract class PagedWindow : CoreWindow
     #region Virtual Methods
     protected virtual void RecalculatePageLayout(Size pageSize, uint pageIndex)
     {
-        LayoutEngine layoutEngine = RentLayoutEngine();
-        try
-        {
-            layoutEngine.RecalculateLayout(pageSize, GetActiveElements(pageIndex));
-            layoutEngine.RecalculateLayout(pageSize, GetOverlayElement());
-        }
-        finally
-        {
-            ReturnLayoutEngine(layoutEngine);
-        }
+        using LayoutEngineRentScope engine = LayoutEngine.Rent();
+        engine.RecalculateLayout(pageSize, GetActiveElements(pageIndex));
+        engine.RecalculateLayout(pageSize, GetOverlayElement());
+        Thread.MemoryBarrier();
     }
 
     protected virtual IEnumerable<UIElement?> EnumerateActiveElementsInAllPages()
@@ -165,7 +163,7 @@ public abstract class PagedWindow : CoreWindow
     {
         if (pageIndex < 0)
         {
-            TriggerResize();
+            UpdateAndResize();
             return;
         }
         _recalcState.InterlockedSet(pageIndex, false);
