@@ -143,17 +143,6 @@ public sealed partial class RenderingController : CriticalFinalizerObject, IDisp
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Unlock(bool resizeAll)
-    {
-        if (InterlockedHelper.Read(ref _disposed) != default || 
-            InterlockedHelper.LimitedDecrement(ref _lockedCount, default) > 0)
-            return;
-        InterlockedHelper.Or(ref _state, (ulong)RenderingFlags.RedrawAll | 
-            ((ulong)RenderingFlags.Resize & UnsafeHelper.Negate(MathHelper.BooleanToUInt64(resizeAll))));
-        _thread.DoRender();
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public RenderingFlags GetAndResetRenderingFlags()
     {
         _thread.StartNextWaiting();
