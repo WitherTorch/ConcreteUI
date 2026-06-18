@@ -153,7 +153,7 @@ partial class MainWindow
         };
         textbox.HeightExpression = LayoutNode.Min(textbox.AutoHeightDefinition, PageHeightDefinition / 2 - textbox.TopDefinition);
         textbox.TextChanging += (_, _) => GetRenderingController()?.Lock(); // 避免閃爍
-        textbox.TextChanged += (_, _) => GetRenderingController()?.Unlock(resizeAll: true);
+        textbox.TextChanged += (_, _) => GetRenderingController()?.Unlock();
 
         Label label = new Label(this)
         {

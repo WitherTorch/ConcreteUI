@@ -96,7 +96,7 @@ internal sealed partial class MainWindow : TabbedWindow
             while (!cancellationToken.IsCancellationRequested)
             {
                 _rollingDegree = (_rollingDegree + 1) % 360;
-                controller.RequestResize(temporarily: false);
+                controller.RequestUpdateAndResize(temporarily: false);
                 await Task.Delay(8, cancellationToken);
             }
         }
