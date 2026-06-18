@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 
 using ConcreteUI.Internals;
+using ConcreteUI.Layout;
 
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Threading;
@@ -11,6 +12,12 @@ namespace ConcreteUI.Controls;
 
 partial class ScrollableElementBase
 {
+    public LayoutNode AutoHeightDefinition
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _autoHeightLayoutNode ??= new AutoHeightNode(this);
+    }
+
     public bool Enabled
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

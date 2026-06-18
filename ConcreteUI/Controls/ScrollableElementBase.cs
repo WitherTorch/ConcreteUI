@@ -9,6 +9,7 @@ using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Internals;
+using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
 
@@ -37,6 +38,7 @@ public abstract partial class ScrollableElementBase : UIElement,
     private readonly Timer _repeatingTimer;
     private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
 
+    private LayoutNode? _autoHeightLayoutNode;
     private string _scrollBarThemePrefix;
     private Action? _repeatingAction;
     private Point _oldViewportPoint;
