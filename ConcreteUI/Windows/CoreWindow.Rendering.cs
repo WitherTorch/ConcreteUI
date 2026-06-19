@@ -1402,9 +1402,9 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
                         element.ApplyTheme(provider);
                 }
                 oldElement = ReferenceHelper.Exchange(ref _overlayElement, element);
-            }
 
-            OnOverlayLayerChanged(element, oldElement);
+                OnOverlayLayerChanged(element, oldElement);
+            }
             return oldElement;
         }
         finally
@@ -1438,9 +1438,9 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
                         element.ApplyTheme(provider);
                 }
                 _overlayElement = element;
-            }
 
-            OnOverlayLayerChanged(element, oldElement);
+                OnOverlayLayerChanged(element, oldElement);
+            }
         }
         finally
         {
@@ -1454,7 +1454,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
 
     private void OnOverlayLayerChanged(UIElement? element, UIElement? oldElement)
     {
-        ClearFocusElement();
+        ClearFocusElementCore();
         if (element is null)
         {
             WeakReference? recordedLastHitElementRef = _recordedLastHitElementRefLazy.GetValueDirectly();

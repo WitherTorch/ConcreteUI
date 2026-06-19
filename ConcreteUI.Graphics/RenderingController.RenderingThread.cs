@@ -21,7 +21,10 @@ partial class RenderingController
         private readonly Thread _thread;
 
         private IntPtr _renderingWaitingHandle, _exitTriggerHandle;
+        private uint _renderingThreadId;
         private bool _disposed;
+
+        public uint RenderingThreadId => InterlockedHelper.Read(ref _renderingThreadId);
 
         public RenderingThread(RenderingController controller, IFrameWaiter frameWaiter)
         {
@@ -61,6 +64,8 @@ partial class RenderingController
             const uint Infinite = unchecked((uint)Timeout.Infinite);
 
             ThreadHelper.SetCurrentThreadName("Concrete UI Rendering Thread #" + InterlockedHelper.GetAndIncrement(ref _idCounter).ToString("D"));
+            InterlockedHelper.Write(ref _renderingThreadId, NativeMethods.GetCurrentThreadId());
+
             RenderingController controller = _controller;
             IFrameWaiter frameWaiter = _frameWaiter;
 
@@ -100,6 +105,8 @@ partial class RenderingController
 
         public bool WaitForExit(int millisecondsTimeout)
         {
+            if (NativeMethods.GetCurrentThreadId() == InterlockedHelper.Read(ref _renderingThreadId))
+                return false;
             IntPtr handle = InterlockedHelper.Read(ref _exitTriggerHandle);
             if (handle == IntPtr.Zero || millisecondsTimeout < Timeout.Infinite)
                 return true;

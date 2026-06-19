@@ -150,7 +150,12 @@ public sealed partial class RenderingController : CriticalFinalizerObject, IDisp
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WaitForRendering() => NativeMethods.WaitForWaitingHandle(_waitForRenderingTrigger);
+    public void WaitForRendering()
+    {
+        if (NativeMethods.GetCurrentThreadId() == _thread.RenderingThreadId)
+            return;
+        NativeMethods.WaitForWaitingHandle(_waitForRenderingTrigger);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetFramesPerSecond(Rational value) => _frameWaiter.FramesPerSecond = value;
