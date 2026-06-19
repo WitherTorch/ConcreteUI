@@ -1454,6 +1454,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
 
     private void OnOverlayLayerChanged(UIElement? element, UIElement? oldElement)
     {
+        ClearFocusElement();
         if (element is null)
         {
             WeakReference? recordedLastHitElementRef = _recordedLastHitElementRefLazy.GetValueDirectly();
