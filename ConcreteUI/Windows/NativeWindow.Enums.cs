@@ -1,6 +1,6 @@
 using System;
 
-namespace ConcreteUI.Window;
+namespace ConcreteUI.Windows;
 
 public enum CloseReason : uint
 {

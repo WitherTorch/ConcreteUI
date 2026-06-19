@@ -2,7 +2,7 @@ using System;
 
 using ConcreteUI.Internals.Native;
 using ConcreteUI.Internals.NativeHelpers;
-using ConcreteUI.Window;
+using ConcreteUI.Windows;
 
 namespace ConcreteUI.Internals;
 

@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Internals;
 using ConcreteUI.Internals.Native;
-using ConcreteUI.Window;
+using ConcreteUI.Windows;
 
 using InlineMethod;
 

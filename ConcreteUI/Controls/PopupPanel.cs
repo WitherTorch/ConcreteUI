@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Theme;
-using ConcreteUI.Window;
+using ConcreteUI.Windows;
 
 using WitherTorch.Common;
 using WitherTorch.Common.Extensions;

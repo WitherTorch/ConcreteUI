@@ -2,7 +2,7 @@ using System;
 
 using ConcreteUI.Internals.Native;
 using ConcreteUI.Utils;
-using ConcreteUI.Window;
+using ConcreteUI.Windows;
 
 using WitherTorch.Common;
 using WitherTorch.Common.Helpers;

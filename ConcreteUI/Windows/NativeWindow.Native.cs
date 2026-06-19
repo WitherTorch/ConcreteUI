@@ -9,7 +9,7 @@ using ConcreteUI.Internals.Native;
 
 using WitherTorch.Common.Helpers;
 
-namespace ConcreteUI.Window;
+namespace ConcreteUI.Windows;
 
 partial class NativeWindow
 {

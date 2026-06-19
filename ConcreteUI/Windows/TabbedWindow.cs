@@ -15,7 +15,7 @@ using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
-namespace ConcreteUI.Window;
+namespace ConcreteUI.Windows;
 
 public abstract class TabbedWindow : PagedWindow
 {

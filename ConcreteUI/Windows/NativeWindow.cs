@@ -14,7 +14,7 @@ using InlineMethod;
 
 using WitherTorch.Common.Helpers;
 
-namespace ConcreteUI.Window;
+namespace ConcreteUI.Windows;
 
 public abstract partial class NativeWindow : CriticalFinalizerObject, IHwndOwner
 {

@@ -7,7 +7,7 @@ using System.Threading;
 using ConcreteUI.Graphics;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
-using ConcreteUI.Window;
+using ConcreteUI.Windows;
 
 namespace ConcreteUI.Controls;
 

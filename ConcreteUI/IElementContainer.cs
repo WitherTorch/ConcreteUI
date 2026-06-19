@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
-using ConcreteUI.Window;
+using ConcreteUI.Windows;
 
 using InlineMethod;
 

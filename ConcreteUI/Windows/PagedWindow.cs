@@ -13,7 +13,7 @@ using ConcreteUI.Theme;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Structures;
 
-namespace ConcreteUI.Window;
+namespace ConcreteUI.Windows;
 
 public abstract class PagedWindow : CoreWindow
 {

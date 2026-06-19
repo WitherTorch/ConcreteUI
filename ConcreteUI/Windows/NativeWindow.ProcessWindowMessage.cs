@@ -20,7 +20,7 @@ using GdiGraphics = System.Drawing.Graphics;
 using System.Collections.Frozen;
 #endif
 
-namespace ConcreteUI.Window;
+namespace ConcreteUI.Windows;
 
 unsafe partial class NativeWindow
 {

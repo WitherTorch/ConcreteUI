@@ -1,6 +1,6 @@
 using System;
 
-using ConcreteUI.Window;
+using ConcreteUI.Windows;
 
 namespace ConcreteUI;
 

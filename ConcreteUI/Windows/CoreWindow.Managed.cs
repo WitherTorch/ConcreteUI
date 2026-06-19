@@ -17,7 +17,7 @@ using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Threading;
 
-namespace ConcreteUI.Window;
+namespace ConcreteUI.Windows;
 
 public abstract partial class CoreWindow : NativeWindow
 {

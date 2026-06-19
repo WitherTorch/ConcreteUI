@@ -2,7 +2,7 @@ using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
 
-using ConcreteUI.Window;
+using ConcreteUI.Windows;
 
 using WitherTorch.Common.Structures;
 

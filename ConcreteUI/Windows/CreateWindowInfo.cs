@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace ConcreteUI.Window;
+namespace ConcreteUI.Windows;
 
 [StructLayout(LayoutKind.Auto)]
 public struct CreateWindowInfo

@@ -37,7 +37,7 @@ using WitherTorch.Common.Threading;
 
 using ContextMenu = ConcreteUI.Controls.ContextMenu;
 
-namespace ConcreteUI.Window;
+namespace ConcreteUI.Windows;
 
 public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordinateTranslator
 {

@@ -9,7 +9,7 @@ using ConcreteUI.Layout;
 using ConcreteUI.Layout.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
-using ConcreteUI.Window;
+using ConcreteUI.Windows;
 
 using InlineMethod;
 

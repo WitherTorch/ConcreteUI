@@ -21,7 +21,7 @@ using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Windows.Structures;
 
-namespace ConcreteUI.Window;
+namespace ConcreteUI.Windows;
 
 public unsafe partial class CoreWindow
 {

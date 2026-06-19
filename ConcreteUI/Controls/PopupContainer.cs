@@ -8,7 +8,7 @@ using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Internals;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
-using ConcreteUI.Window;
+using ConcreteUI.Windows;
 
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;

@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Utils;
-using ConcreteUI.Window;
+using ConcreteUI.Windows;
 
 using InlineMethod;
 

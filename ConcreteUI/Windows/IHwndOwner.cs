@@ -1,6 +1,6 @@
 using WitherTorch.Common;
 
-namespace ConcreteUI.Window;
+namespace ConcreteUI.Windows;
 
 public interface IHwndOwner : IWindowMessageFilter, ICheckableDisposable
 {
