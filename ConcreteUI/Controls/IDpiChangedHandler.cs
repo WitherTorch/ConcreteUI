@@ -6,7 +6,7 @@ namespace ConcreteUI.Controls;
 
 public readonly record struct DpiChangedEventArgs(PointU Dpi, Vector2 PointsPerPixel, Vector2 PixelsPerPoint);
 
-public interface IDpiAwareHandler
+public interface IDpiChangedHandler
 {
     void OnDpiChanged(in DpiChangedEventArgs args);
 }

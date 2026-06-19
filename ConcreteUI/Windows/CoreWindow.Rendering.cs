@@ -76,8 +76,9 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     #endregion
 
     #region Fields
-    private readonly LazyTiny<WeakReference> _focusElementRefLazy, _lastHitElementRefLazy, _recordedLastHitElementRefLazy;
-    private readonly object _syncLock;
+    private readonly LazyTiny<WeakReference> _lastHitElementRefLazy, _recordedLastHitElementRefLazy;
+    private readonly LazyTiny<WeakReference> _focusElementRefLazy;
+    private readonly Lock _syncLock = new Lock();
     private readonly WindowMaterial _windowMaterial;
 
     private SimpleGraphicsHost? _host;
@@ -124,12 +125,6 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     #endregion
 
     #region Properties
-    public UIElement? FocusedElement
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _focusElementRefLazy.GetValueDirectly()?.Target as UIElement;
-    }
-
     public WindowMaterial WindowMaterial => _windowMaterial;
 
     public WindowMaterial ActualWindowMaterial => _actualWindowMaterial;
@@ -344,10 +339,6 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     }
     #endregion
 
-    #region Events
-    public event EventHandler<UIElement?>? FocusElementChanged;
-    #endregion
-
     #region Init
     private static GraphicsDeviceProvider CreateGraphicsDeviceProvider()
     {
@@ -455,7 +446,8 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             return;
         controller.Lock();
         controller.WaitForRendering();
-        Monitor.Enter(_syncLock);
+        Lock syncLock = _syncLock;
+        syncLock.Enter();
         try
         {
             DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider, ThemeResourceProvider.Empty);
@@ -486,7 +478,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         }
         catch (Exception)
         {
-            Monitor.Exit(_syncLock);
+            syncLock.Exit();
         }
     }
 
@@ -546,7 +538,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         }
         finally
         {
-            Monitor.Exit(_syncLock);
+            _syncLock.Exit();
         }
     }
     #endregion
@@ -733,11 +725,13 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     {
         if (args.Handled)
             return;
+        UIElementHelper.HitTestData data = default;
         UIElement? overlayElement = GetOverlayElement();
         if (overlayElement is not null)
-            UIElementHelper.OnMouseDownForElement(overlayElement, ref args);
+            UIElementHelper.OnMouseDownForElement(overlayElement, ref args, ref data);
         else
-            UIElementHelper.OnMouseDownForElements(GetActiveElements(), ref args);
+            UIElementHelper.OnMouseDownForElements(GetActiveElements(), ref args, ref data);
+        ChangeFocusElement(data.LastHitElement);
     }
 
     protected virtual void OnMouseMoveForElements(in MouseEventArgs args)
@@ -811,27 +805,102 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         UIElementHelper.OnDpiChangedForElements(GetActiveElements(), in args);
     }
 
+    public void ChangeFocusElement(UIElement? element)
+    {
+        if (element is not IFocusChangedHandler handler)
+        {
+            lock (_syncLock)
+                ClearFocusElementCore();
+        }
+        else
+        {
+            lock (_syncLock)
+                ChangeFocusElementCore(element, handler);
+        }
+    }
+
+    protected void ClearFocusElement()
+    {
+        lock (_syncLock)
+            ClearFocusElementCore();
+    }
+
+    public void ClearFocusElement(UIElement? elementForValidation)
+    {
+        lock (_syncLock)
+            ClearFocusElementCore(elementForValidation);
+    }
+
+    private void ChangeFocusElementCore(UIElement element, IFocusChangedHandler handler)
+    {
+        WeakReference focusElementRef = _focusElementRefLazy.Value;
+        object? target = focusElementRef.Target;
+        if (!ReferenceEquals(element, target) && target is IFocusChangedHandler oldHandler)
+            oldHandler.OnFocusChanged(new FocusChangedEventArgs(State: false, FocusedElement: null));
+        handler.OnFocusChanged(new FocusChangedEventArgs(State: true, FocusedElement: element));
+        focusElementRef.Target = element;
+    }
+
+    private void ClearFocusElementCore()
+    {
+        WeakReference? focusElementRef = _focusElementRefLazy.GetValueDirectly();
+        if (focusElementRef is not null)
+        {
+            object? target = focusElementRef.Target;
+            if (target is IFocusChangedHandler oldHandler)
+                oldHandler.OnFocusChanged(new FocusChangedEventArgs(State: false, FocusedElement: null));
+            focusElementRef.Target = null;
+        }
+    }
+
+    private void ClearFocusElementCore(UIElement? elementForValidation)
+    {
+        WeakReference? focusElementRef = _focusElementRefLazy.GetValueDirectly();
+        if (focusElementRef is not null)
+        {
+            object? target = focusElementRef.Target;
+            if (!ReferenceEquals(target, elementForValidation))
+                return;
+
+            if (target is IFocusChangedHandler oldHandler)
+                oldHandler.OnFocusChanged(new FocusChangedEventArgs(State: false, FocusedElement: null));
+            focusElementRef.Target = null;
+        }
+    }
+
     private void ChangeLastHitElement(UIElement? element, in MouseEventArgs args)
     {
         LazyTiny<WeakReference> lastHitElementRefLazy = _lastHitElementRefLazy;
         if (element is null)
         {
-            WeakReference? lastHitElementRef = lastHitElementRefLazy.GetValueDirectly();
-            if (lastHitElementRef is not null)
-            {
-                object? target = lastHitElementRef.Target;
-                if (target is UIElement lastHitElement && target is IMouseMoveHandler handler)
-                    handler.OnMouseMove(new MouseEventArgs(lastHitElement.PageToLocal(args.Location), args.Buttons, args.Delta));
-                lastHitElementRef.Target = null;
-            }
+            lock (_syncLock)
+                ClearLastHitElementCore(args);
         }
         else
         {
-            WeakReference lastHitElementRef = lastHitElementRefLazy.Value;
+            lock (_syncLock)
+                ChangeLastHitElementCore(element, args);
+        }
+    }
+
+    private void ChangeLastHitElementCore(UIElement element, in MouseEventArgs args)
+    {
+        WeakReference lastHitElementRef = _lastHitElementRefLazy.Value;
+        object? target = lastHitElementRef.Target;
+        if (!ReferenceEquals(element, target) && target is UIElement lastHitElement && target is IMouseMoveHandler handler)
+            handler.OnMouseMove(new MouseEventArgs(lastHitElement.PageToLocal(args.Location), args.Buttons, args.Delta));
+        lastHitElementRef.Target = element;
+    }
+
+    private void ClearLastHitElementCore(in MouseEventArgs args)
+    {
+        WeakReference? lastHitElementRef = _lastHitElementRefLazy.GetValueDirectly();
+        if (lastHitElementRef is not null)
+        {
             object? target = lastHitElementRef.Target;
-            if (!ReferenceEquals(element, target) && target is UIElement lastHitElement && target is IMouseMoveHandler handler)
+            if (target is UIElement lastHitElement && target is IMouseMoveHandler handler)
                 handler.OnMouseMove(new MouseEventArgs(lastHitElement.PageToLocal(args.Location), args.Buttons, args.Delta));
-            lastHitElementRef.Target = element;
+            lastHitElementRef.Target = null;
         }
     }
 
@@ -900,7 +969,18 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
 
     #region Rendering
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected UIElement? GetOverlayElement() => _overlayElement;
+    protected UIElement? GetFocusedElement()
+    {
+        lock (_syncLock)
+            return _focusElementRefLazy.GetValueDirectly()?.Target as UIElement;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected UIElement? GetOverlayElement()
+    {
+        lock (_syncLock)
+            return _overlayElement;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected D2D1Brush GetBrush(Brush brush)
@@ -1297,29 +1377,6 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     protected void Update() => UpdateCore(_controller);
 
     protected void Refresh() => RefreshCore(_controller);
-
-    public void ChangeFocusElement(UIElement element)
-    {
-        WeakReference reference = _focusElementRefLazy.Value;
-        if (ReferenceEquals(reference.Target, element))
-            return;
-        reference.Target = element;
-        FocusElementChanged?.Invoke(this, element);
-    }
-
-    protected void ClearFocusElement()
-    {
-        _focusElementRefLazy.GetValueDirectly()?.Target = null;
-        FocusElementChanged?.Invoke(this, null);
-    }
-
-    public void ClearFocusElement(UIElement elementForValidation)
-    {
-        WeakReference? reference = _focusElementRefLazy.GetValueDirectly();
-        if (reference is null || !ReferenceEquals(reference.Target, elementForValidation))
-            return;
-        ClearFocusElement();
-    }
 
     public UIElement? ChangeOverlayElement(UIElement? element)
     {

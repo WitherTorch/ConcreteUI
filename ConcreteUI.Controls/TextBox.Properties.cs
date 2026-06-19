@@ -21,7 +21,7 @@ partial class TextBox
     #endregion
 
     #region Properties
-    public SystemCursorType? PredicatedCursor => SystemCursorType.IBeam;
+    public SystemCursorType? Cursor => SystemCursorType.IBeam;
 
     public TextAlignment Alignment
     {

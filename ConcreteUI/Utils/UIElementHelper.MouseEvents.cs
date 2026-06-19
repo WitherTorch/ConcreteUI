@@ -12,6 +12,12 @@ namespace ConcreteUI.Utils;
 partial class UIElementHelper
 {
     [StructLayout(LayoutKind.Auto)]
+    public struct HitTestData
+    {
+        public UIElement? LastHitElement;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
     public struct MouseMoveData
     {
         public SystemCursorType? CursorType;
@@ -24,36 +30,44 @@ partial class UIElementHelper
         }
     }
 
-    public static unsafe void OnMouseDownForElements<TEnumerable>(TEnumerable elements, ref HandleableMouseEventArgs args)
+    public static unsafe void OnMouseDownForElements<TEnumerable>(TEnumerable elements, ref HandleableMouseEventArgs args, ref HitTestData data)
         where TEnumerable : IEnumerable<UIElement?>
-        => DispatchEvent(elements, ref args, args.Location, &OnMouseDownForElement);
+        => DispatchEvent(elements, ref args, ref data, args.Location, &OnMouseDownForElement);
 
-    private static void OnMouseDownForElement_OutOfBounds(UIElement element, ref HandleableMouseEventArgs args)
-        => OnMouseDownForElement(element, ref args, false);
+    private static void OnMouseDownForElement_OutOfBounds(UIElement element, ref HandleableMouseEventArgs args, ref HitTestData data)
+        => OnMouseDownForElement(element, ref args, ref data, false);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void OnMouseDownForElement(UIElement element, ref HandleableMouseEventArgs args) 
-        => OnMouseDownForElement(element, ref args, element.Bounds.Contains(args.Location));
+    public static void OnMouseDownForElement(UIElement element, ref HandleableMouseEventArgs args, ref HitTestData data) 
+        => OnMouseDownForElement(element, ref args, ref data, element.Bounds.Contains(args.Location));
 
-    private static unsafe void OnMouseDownForElement(UIElement element, ref HandleableMouseEventArgs args, bool isContains)
+    private static unsafe void OnMouseDownForElement(UIElement element, ref HandleableMouseEventArgs args, ref HitTestData data, bool isContains)
     {
-        if (element is IElementContainer container)
+        if (isContains)
         {
-            IEnumerable<UIElement?> elements = container.GetActiveElements();
-            if (isContains)
-                DispatchEvent(elements, ref args, args.Location, &OnMouseDownForElement);
-            else
-                DispatchEvent(elements, ref args, &OnMouseDownForElement_OutOfBounds);
+            data.LastHitElement = element;
+            if (element is IElementContainer container)
+            {
+                DispatchEvent(container.GetActiveElements(), ref args, ref data, args.Location, &OnMouseDownForElement);
+
+                isContains = ReferenceEquals(data.LastHitElement, element);
+            }
+            if (element is IGlobalMouseInteractHandler globalHandler)
+                globalHandler.OnMouseDownGlobally(in UnsafeHelper.As<HandleableMouseEventArgs, MouseEventArgs>(ref args));
+            if (element is IMouseInteractHandler handler)
+            {
+                HandleableMouseEventArgs relativeArgs = new HandleableMouseEventArgs(element.PageToLocal(args.Location), args.Buttons, args.Delta);
+                handler.OnMouseDown(ref relativeArgs);
+                if (relativeArgs.Handled)
+                    args.Handle();
+            }
         }
-        if (element is IGlobalMouseInteractHandler globalHandler)
-            globalHandler.OnMouseDownGlobally(in UnsafeHelper.As<HandleableMouseEventArgs, MouseEventArgs>(ref args));
-        if (isContains && !args.Handled && element is IMouseInteractHandler handler)
+        else
         {
-            HandleableMouseEventArgs relativeArgs = new HandleableMouseEventArgs(element.PageToLocal(args.Location), args.Buttons, args.Delta);
-            handler.OnMouseDown(ref relativeArgs);
-            if (relativeArgs.Handled)
-                args.Handle();
-            return;
+            if (element is IElementContainer container)
+                DispatchEvent(container.GetActiveElements(), ref args, ref data, &OnMouseDownForElement_OutOfBounds);
+            if (element is IGlobalMouseInteractHandler globalHandler)
+                globalHandler.OnMouseDownGlobally(in UnsafeHelper.As<HandleableMouseEventArgs, MouseEventArgs>(ref args));
         }
     }
 
@@ -74,7 +88,7 @@ partial class UIElementHelper
 
     public static unsafe void OnMouseMoveForElements<TEnumerable>(TEnumerable elements, in MouseEventArgs args, ref MouseMoveData data)
         where TEnumerable : IEnumerable<UIElement?>
-        => DispatchEvent(elements, in args, ref data, args.Location, &OnMouseMoveForElement);
+        => DispatchReadOnlyEvent(elements, in args, ref data, args.Location, &OnMouseMoveForElement);
 
     private static void OnMouseMoveForElement_OutOfBounds(UIElement element, in MouseEventArgs args, ref MouseMoveData data)
         => OnMouseMoveForElement(element, in args, ref data, false);
@@ -90,7 +104,7 @@ partial class UIElementHelper
             data.LastHitElement = element;
             if (element is IElementContainer container)
             {
-                DispatchEvent(container.GetActiveElements(), in args, ref data, args.Location, &OnMouseMoveForElement);
+                DispatchReadOnlyEvent(container.GetActiveElements(), in args, ref data, args.Location, &OnMouseMoveForElement);
 
                 isContains = ReferenceEquals(data.LastHitElement, element);
             }
@@ -98,13 +112,13 @@ partial class UIElementHelper
                 globalHandler.OnMouseMoveGlobally(in args);
             if (element is IMouseMoveHandler handler)
                 handler.OnMouseMove(new MouseEventArgs(element.PageToLocal(args.Location), args.Buttons, args.Delta));
-            if (isContains && element is ICursorPredicator predicator)
-                data.CursorType = predicator.PredicatedCursor;
+            if (isContains && element is ICursorStateHandler predicator)
+                data.CursorType = predicator.Cursor;
         }
         else
         {
             if (element is IElementContainer container)
-                DispatchEvent(container.GetActiveElements(), in args, ref data, &OnMouseMoveForElement_OutOfBounds);
+                DispatchReadOnlyEvent(container.GetActiveElements(), in args, ref data, &OnMouseMoveForElement_OutOfBounds);
             if (element is IGlobalMouseMoveHandler globalHandler)
                 globalHandler.OnMouseMoveGlobally(in args);
         }

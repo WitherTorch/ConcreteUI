@@ -31,8 +31,9 @@ using WitherTorch.Common.Threading;
 
 namespace ConcreteUI.Controls;
 
-public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler,
-    IGlobalMouseInteractHandler, IKeyboardInteractHandler, ICharacterInputHandler, ICursorPredicator
+public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler, ICharacterInputHandler,
+    IGlobalMouseInteractHandler, IKeyboardInteractHandler,
+    ICursorStateHandler, IFocusChangedHandler
 {
     private static readonly LazyTiny<GraphemeInfo> EmptyGraphemeInfoLazy =
         new LazyTiny<GraphemeInfo>(new GraphemeInfo(string.Empty, Array.Empty<int>()));
@@ -71,7 +72,6 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
 
     public TextBox(IElementContainer parent) : base(parent, "app.textBox")
     {
-        Window.FocusElementChanged += Window_FocusElementChanged;
         _caretTimer = new Timer(CaretTimer_Tick, this, Timeout.Infinite, Timeout.Infinite);
         _caretState = true;
         _caretIndex = 0;
@@ -156,9 +156,9 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
         return new GraphemeInfo(str, GraphemeHelper.GetGraphemeIndices(str));
     }
 
-    private void Window_FocusElementChanged(object? sender, UIElement? element)
+    void IFocusChangedHandler.OnFocusChanged(in FocusChangedEventArgs args)
     {
-        bool newFocus = this == element;
+        bool newFocus = args.State;
         if (_focused == newFocus)
             return;
         _focused = newFocus;
@@ -1246,7 +1246,6 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
             }
             return;
         }
-        Window.ChangeFocusElement(this);
         PointF location = LocalToPage(args.Location);
         if (!ContentBounds.Contains(location))
         {

@@ -272,7 +272,6 @@ public abstract partial class CoreWindow : NativeWindow
         _focusElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.PublicationOnly);
         _recordedLastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.PublicationOnly);
         _lastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.None);
-        _syncLock = _focusElementRefLazy; //物件重用
         _graphicsDeviceProvider = deviceProvider;
         _windowMaterial = ConcreteSettings.WindowMaterial;
         UnwrappableList<GCHandle> windowList = _rootWindowList;
@@ -288,7 +287,6 @@ public abstract partial class CoreWindow : NativeWindow
         _focusElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.PublicationOnly);
         _recordedLastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.PublicationOnly);
         _lastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.None);
-        _syncLock = _focusElementRefLazy; //物件重用
         UnwrappableList<GCHandle> windowList;
         if (parent is null)
         {

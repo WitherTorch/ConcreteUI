@@ -16,7 +16,7 @@ partial class UIElementHelper
     {
         if (element is IElementContainer container)
             OnDpiChangedForElements(container.GetActiveElements(), in args);
-        if (element is IDpiAwareHandler keyEvents)
+        if (element is IDpiChangedHandler keyEvents)
             keyEvents.OnDpiChanged(in args);
     }
 
