@@ -1,6 +1,6 @@
 using System;
 
-using ConcreteUI.Element;
+using ConcreteUI.Controls;
 
 namespace ConcreteUI.Layout.Internals;
 
