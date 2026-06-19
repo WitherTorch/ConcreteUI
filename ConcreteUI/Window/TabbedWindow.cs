@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Numerics;
 using System.Threading;
 
-using ConcreteUI.Controls;
+using ConcreteUI.Element;
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;

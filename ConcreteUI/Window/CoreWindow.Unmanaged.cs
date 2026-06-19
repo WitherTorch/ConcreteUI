@@ -4,7 +4,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using ConcreteUI.Controls;
+using ConcreteUI.Element;
 using ConcreteUI.Graphics;
 using ConcreteUI.Internals;
 using ConcreteUI.Internals.Native;

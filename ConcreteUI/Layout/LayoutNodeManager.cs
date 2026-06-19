@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-using ConcreteUI.Controls;
+using ConcreteUI.Element;
 using ConcreteUI.Layout.Internals;
 
 using WitherTorch.Common.Helpers;

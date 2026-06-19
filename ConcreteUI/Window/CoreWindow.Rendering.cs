@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-using ConcreteUI.Controls;
+using ConcreteUI.Element;
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Hosts;
@@ -35,7 +35,7 @@ using WitherTorch.Common.Native;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Threading;
 
-using ContextMenu = ConcreteUI.Controls.ContextMenu;
+using ContextMenu = ConcreteUI.Element.ContextMenu;
 
 namespace ConcreteUI.Window;
 

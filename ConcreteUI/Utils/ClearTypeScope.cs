@@ -2,7 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using ConcreteUI.Controls;
+using ConcreteUI.Element;
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
