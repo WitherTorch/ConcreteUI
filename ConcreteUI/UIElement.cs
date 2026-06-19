@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
@@ -26,7 +27,7 @@ public abstract partial class UIElement : ICheckableDisposable
 
     private readonly LayoutNode?[] _layoutDefinitions = new LayoutNode?[(int)LayoutProperty._Last];
     private readonly LayoutNode?[] _layoutExpressions = new LayoutNode?[(int)LayoutProperty._Last];
-    private readonly object _syncLock;
+    private readonly Lock _syncLock;
     private readonly int _identifier;
 
     private WeakReference<UIElement>? _reference;
@@ -43,7 +44,7 @@ public abstract partial class UIElement : ICheckableDisposable
         _identifier = InterlockedHelper.GetAndIncrement(ref _identifierGenerator);
         _themePrefix = themePrefix;
         _requestRedraw = UnsafeHelper.GetMaxValue<nuint>();
-        _syncLock = _layoutDefinitions; // 物件重用
+        _syncLock = new Lock(); // 物件重用
     }
 
     [Inline(InlineBehavior.Remove)]
@@ -104,7 +105,7 @@ public abstract partial class UIElement : ICheckableDisposable
     public bool IsBackgroundOpaque() => IsBackgroundOpaqueCore() || _parent.IsBackgroundOpaque(this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected MonitorLockScope EnterSyncScope() => MonitorLockScope.Enter(_syncLock);
+    protected Lock.Scope EnterSyncScope() => _syncLock.EnterScope();
 
     protected virtual bool IsBackgroundOpaqueCore() => false;
 

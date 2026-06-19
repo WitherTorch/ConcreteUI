@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 using InlineMethod;
 
@@ -20,7 +21,7 @@ public sealed class AppendOnlyListItemStore<TItem, TMeasuringContext> : ICheckab
 {
     private readonly IAppendOnlyCollection<int> _keys;
     private readonly IAppendOnlyCollection<TItem> _values;
-    private readonly object _syncLock;
+    private readonly Lock _syncLock;
 
     private AppendOnlyListBase<TItem, TMeasuringContext>? _owner;
     private TMeasuringContext? _context;
@@ -36,7 +37,7 @@ public sealed class AppendOnlyListItemStore<TItem, TMeasuringContext> : ICheckab
         _keys = keys;
         _values = values;
         _owner = null;
-        _syncLock = new object();
+        _syncLock = new Lock();
     }
 
     public void Bind(AppendOnlyListBase<TItem, TMeasuringContext> owner) => _owner = owner;
