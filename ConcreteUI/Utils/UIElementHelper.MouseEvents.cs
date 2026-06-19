@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 
 using ConcreteUI.Controls;
 
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Utils;

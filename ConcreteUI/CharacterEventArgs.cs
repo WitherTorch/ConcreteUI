@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace ConcreteUI.Controls;
+namespace ConcreteUI;
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
 public struct CharacterEventArgs : IHandleableEventArgs

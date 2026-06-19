@@ -1,7 +1,5 @@
 using System;
 
-using ConcreteUI.Controls;
-
 namespace ConcreteUI.Layout.Internals;
 
 internal sealed class UIElementLayoutNode : LayoutNode

@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 
 using ConcreteUI.Controls;
+using ConcreteUI.Graphics;
 using ConcreteUI.Input;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
+using ConcreteUI.Utils;
 
-using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Test;
 
@@ -152,8 +154,15 @@ partial class MainWindow
             MultiLine = true
         };
         textbox.HeightExpression = LayoutNode.Min(textbox.AutoHeightDefinition, PageHeightDefinition / 2 - textbox.TopDefinition);
-        textbox.TextChanging += (_, _) => GetRenderingController()?.Lock(); // 避免閃爍
-        textbox.TextChanged += (_, _) => GetRenderingController()?.Unlock();
+        textbox.TextChanging += (_, ref _) => GetRenderingController()?.Lock(); // 避免閃爍
+        textbox.TextChanged += (_, _) =>
+        {
+            RenderingController? controller = GetRenderingController();
+            if (controller is null)
+                return;
+            controller.RequestUpdateAndResize(temporarily: false);
+            controller.Unlock();
+        };
 
         Label label = new Label(this)
         {
@@ -176,10 +185,8 @@ partial class MainWindow
         {
             Text = "按鈕!"
         }.WithAutoWidth().WithAutoHeight();
-        rollingButton.LeftExpression = LayoutNode.Custom(static (in manager) 
-            => manager.GetPageSize().Width / 2 - MathI.Round(Math.Cos(_rollingDegree * (Math.PI / 180.0)) * 200));
-        rollingButton.TopExpression = LayoutNode.Custom(static (in manager) 
-            => manager.GetPageSize().Height / 2 - MathI.Round(Math.Sin(_rollingDegree * (Math.PI / 180.0)) * 200));
+        rollingButton.LeftExpression = (PageWidthDefinition - rollingButton.WidthDefinition) / 2;
+        rollingButton.TopExpression = (PageHeightDefinition - rollingButton.HeightDefinition) / 2;
         rollingButton.Click += RollingButton_Click;
         elementList.Add(rollingButton);
         _elementLists[2] = elementList;

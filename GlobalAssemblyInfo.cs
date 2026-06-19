@@ -1,9 +1,9 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyCompany("WitherTorch 製作組")]
 [assembly: AssemblyProduct("Concrete UI")]
-[assembly: AssemblyCopyright("Copyright © WitherTorch 製作組 2025")]
+[assembly: AssemblyCopyright("Copyright © WitherTorch 製作組 2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: AssemblyVersion("2.0.0.0")]

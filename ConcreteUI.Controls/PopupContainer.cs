@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
+using ConcreteUI.Controls.Internals;
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Internals;

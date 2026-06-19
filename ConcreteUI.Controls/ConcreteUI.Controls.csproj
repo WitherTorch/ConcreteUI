@@ -1,0 +1,106 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8;net472</TargetFrameworks>
+		<Nullable>enable</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+		<Deterministic>True</Deterministic>
+		<SignAssembly>True</SignAssembly>
+		<LangVersion>latest</LangVersion>
+		<EnableNETAnalyzers>True</EnableNETAnalyzers>
+		<Platforms>AnyCPU;x64;ARM64;x86</Platforms>
+		<Configurations>Debug;Release</Configurations>
+		<AssemblyOriginatorKeyFile>keypair.snk</AssemblyOriginatorKeyFile>
+		<FileAlignment>4096</FileAlignment>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net472'">
+		<PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<CompilerVisibleProperty Include="PolySharpIncludeRuntimeSupportedAttributes" />
+	</ItemGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
+		<Optimize>False</Optimize>
+		<DebugType>pdbonly</DebugType>
+		<AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+		<ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+		<WeaverConfiguration>
+			<Weavers>
+				<InlineIL />
+			</Weavers>
+		</WeaverConfiguration>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Release'">
+		<Optimize>True</Optimize>
+		<DebugType>none</DebugType>
+		<AccelerateBuildsInVisualStudio>false</AccelerateBuildsInVisualStudio>
+		<ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+		<AllowedReferenceRelatedFileExtensions>
+			-
+		</AllowedReferenceRelatedFileExtensions>
+		<WeaverConfiguration>
+			<Weavers>
+				<InlineIL />
+				<LocalsInit />
+				<InlineMethod />
+				<Absence />
+			</Weavers>
+		</WeaverConfiguration>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Include="..\GlobalAssemblyInfo.cs" Link="GlobalAssemblyInfo.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Fody" Version="6.9.3">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Absence.Fody" Version="2.0.11">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="InlineIL.Fody" Version="1.10.2">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="InlineMethod.Fody" Version="0.8.7">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="LocalsInit.Fody" Version="1.1.0">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="PolySharp" Version="1.15.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+	
+	<ItemGroup>
+		<ProjectReference Include="..\ConcreteUI\ConcreteUI.csproj" />
+		<ProjectReference Include="..\ConcreteUI.Graphics\ConcreteUI.Graphics.csproj" />
+		<ProjectReference Include="$(SolutionDir)\WitherTorch.Common\WitherTorch.Common.Windows\WitherTorch.Common.Windows.csproj" />
+		<ProjectReference Include="$(SolutionDir)\WitherTorch.Common\WitherTorch.Common\WitherTorch.Common.csproj" />
+	</ItemGroup>
+
+	<PropertyGroup Condition="'$(Platform)'=='AnyCPU'">
+		<DefineConstants>$(DefineConstants);ANYCPU</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Platform)'=='x64'">
+		<DefineConstants>$(DefineConstants);B64_ARCH;X86_ARCH</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Platform)'=='x86'">
+		<DefineConstants>$(DefineConstants);B32_ARCH;X86_ARCH</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Platform)'=='ARM64'">
+		<DefineConstants>$(DefineConstants);B64_ARCH;ARM_ARCH</DefineConstants>
+	</PropertyGroup>
+
+</Project>

@@ -1,7 +1,7 @@
 using System;
 
+using ConcreteUI.Controls.Internals;
 using ConcreteUI.Graphics.Native.DirectWrite;
-using ConcreteUI.Internals;
 using ConcreteUI.Layout;
 
 namespace ConcreteUI.Controls;

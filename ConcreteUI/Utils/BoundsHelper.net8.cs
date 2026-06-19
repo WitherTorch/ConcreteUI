@@ -1,6 +1,4 @@
 #if NET8_0_OR_GREATER
-using System.Drawing;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -10,7 +8,7 @@ using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
-namespace ConcreteUI.Internals;
+namespace ConcreteUI.Utils;
 
 unsafe partial class BoundsHelper
 {

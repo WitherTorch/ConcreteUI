@@ -27,15 +27,12 @@ using InlineMethod;
 using Microsoft.Win32;
 
 using WitherTorch.Common;
-using WitherTorch.Common.Buffers;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Native;
 using WitherTorch.Common.Structures;
 using WitherTorch.Common.Threading;
-
-using ContextMenu = ConcreteUI.Controls.ContextMenu;
 
 namespace ConcreteUI.Windows;
 
@@ -348,13 +345,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     #endregion
 
     #region Events
-    public event EventHandler<ContextMenu>? ContextMenuChanging;
-
     public event EventHandler<UIElement?>? FocusElementChanged;
-    #endregion
-
-    #region Event Handlers
-    protected virtual void OnContextMenuChanging(ContextMenu newContextMenu) => ContextMenuChanging?.Invoke(this, newContextMenu);
     #endregion
 
     #region Init
@@ -1330,7 +1321,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         ClearFocusElement();
     }
 
-    protected UIElement? ChangeOverlayElement(UIElement? element)
+    public UIElement? ChangeOverlayElement(UIElement? element)
     {
         RenderingController? controller = _controller;
         if (controller is not null)
@@ -1365,7 +1356,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         }
     }
 
-    protected void ChangeOverlayElement(UIElement? element, UIElement? oldElement)
+    public void ChangeOverlayElement(UIElement? element, UIElement? oldElement)
     {
         RenderingController? controller = _controller;
         if (controller is not null)
@@ -1422,36 +1413,6 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             }
         }
         OnMouseMoveForElements(new MouseEventArgs(WindowToPage(PointToClient(MouseHelper.GetMousePosition()))));
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void OpenContextMenu(UIElement elementRelativeTo, ContextMenu.ContextMenuItem[] items, Point location)
-    {
-        if (!items.HasAnyItem())
-            return;
-
-        OpenContextMenuCore(items, elementRelativeTo.LocalToPage(location));
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void OpenContextMenu(ContextMenu.ContextMenuItem[] items, Point location)
-    {
-        if (!items.HasAnyItem())
-            return;
-
-        OpenContextMenuCore(items, location);
-    }
-
-    private void OpenContextMenuCore(ContextMenu.ContextMenuItem[] items, Point location)
-    {
-        ContextMenu contextMenu = new ContextMenu(this, items);
-        ChangeOverlayElement(contextMenu)?.Dispose();
-        Rectangle pageBounds = PageBounds;
-        if (location.X + contextMenu.Width >= pageBounds.Right)
-            location.X = location.X - contextMenu.Width + 1;
-        if (location.Y + contextMenu.Height >= pageBounds.Bottom)
-            location.Y = location.Y - contextMenu.Height + 1;
-        contextMenu.Location = location;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

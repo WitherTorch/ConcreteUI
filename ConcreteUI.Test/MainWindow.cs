@@ -7,19 +7,21 @@ using System.Threading.Tasks;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
+using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;
-using ConcreteUI.Window;
+using ConcreteUI.Windows;
 
 using WitherTorch.Common.Helpers;
+using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Test;
 
 internal sealed partial class MainWindow : TabbedWindow
 {
-    private static int _rollingDegree = 0;
-
     private CancellationTokenSource? _tokenSource;
+    private ulong _startingTime;
+    private bool _isAnimating = false;
 
     public MainWindow(CoreWindow? parent) : base(parent, ["頁面A", "頁面B", "頁面C"])
     {
@@ -80,37 +82,71 @@ internal sealed partial class MainWindow : TabbedWindow
 
     private void RollingButton_Click(UIElement sender, in MouseEventArgs args)
     {
+        CancellationTokenSource tokenSource = new CancellationTokenSource();
+        DisposeHelper.SwapDispose(ref _tokenSource, tokenSource);
+        DoAnimationTimer(sender, tokenSource);
+    }
+
+    private async void DoAnimationTimer(UIElement sender, CancellationTokenSource cancellationTokenSource)
+    {
+        const int MinimumRotatingRange = 250;
+        const int MaximumRotatingRange = 100;
+
         RenderingController? controller = GetRenderingController();
         if (controller is null)
             return;
-        CancellationTokenSource tokenSource = new CancellationTokenSource();
-        DisposeHelper.SwapDispose(ref _tokenSource, tokenSource);
-        DoAnimationTick(controller, tokenSource.Token);
-        DoAnimationTimer(tokenSource);
-    }
 
-    private static async void DoAnimationTick(RenderingController controller, CancellationToken cancellationToken)
-    {
+        LayoutNode sharedNode = LayoutNode.Custom(SharedFunc);
+
+        controller.Lock();
+        sender.LeftExpression = LayoutNode.Custom(CustomXFunc);
+        sender.TopExpression = LayoutNode.Custom(CustomYFunc);
+        _startingTime = NativeMethods.GetTicksForSystem();
+        _isAnimating = true;
+        UpdateAndResize();
+        controller.Unlock();
+
         try
         {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                _rollingDegree = (_rollingDegree + 1) % 360;
-                controller.RequestUpdateAndResize(temporarily: false);
-                await Task.Delay(8, cancellationToken);
-            }
+            await Task.Delay(10000, cancellationTokenSource.Token);
         }
         catch (OperationCanceledException)
         {
+            return;
         }
-    }
-
-    private static async void DoAnimationTimer(CancellationTokenSource cancellationTokenSource)
-    {
-        await Task.Delay(10000);
         if (cancellationTokenSource.IsCancellationRequested)
             return;
-        cancellationTokenSource.Cancel();
+        try
+        {
+            cancellationTokenSource.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            return;
+        }
+        Volatile.Write(ref _isAnimating, false);
+
+        controller.Lock();
+        sender.LeftExpression = (PageWidthDefinition - sender.WidthDefinition) / 2;
+        sender.TopExpression = (PageHeightDefinition - sender.HeightDefinition) / 2;
+        UpdateAndResize();
+        controller.Unlock();
+
+        int SharedFunc(in LayoutNodeManager manager) => (int)((NativeMethods.GetTicksForSystem() - _startingTime) / (TimeSpan.TicksPerSecond / 60));
+
+        int CustomXFunc(in LayoutNodeManager manager)
+        {
+            int stateDiff = manager.GetComputedValue(sharedNode);
+            double rotateRange = MinimumRotatingRange + ((stateDiff % 60) * 1.0 / 60) * (MaximumRotatingRange - MinimumRotatingRange);
+            return manager.GetPageSize().Width / 2 - MathI.Round(Math.Cos(stateDiff * (Math.PI / 180.0)) * rotateRange);
+        }
+
+        int CustomYFunc(in LayoutNodeManager manager)
+        {
+            int stateDiff = manager.GetComputedValue(sharedNode);
+            double rotateRange = MinimumRotatingRange + ((stateDiff % 60) * 1.0 / 60) * (MaximumRotatingRange - MinimumRotatingRange);
+            return manager.GetPageSize().Height / 2 - MathI.Round(Math.Sin(stateDiff * (Math.PI / 180.0)) * rotateRange);
+        }
     }
 
     protected override void DisposeCore(bool disposing)

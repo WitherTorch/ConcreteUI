@@ -2,7 +2,7 @@ using System;
 
 using WitherTorch.Common.Helpers;
 
-namespace ConcreteUI.Internals;
+namespace ConcreteUI.Controls.Internals;
 
 partial class ListHelper
 {

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using WitherTorch.Common.Collections;
 using WitherTorch.Common.Helpers;
 
-namespace ConcreteUI.Internals;
+namespace ConcreteUI.Controls.Internals;
 
 internal static partial class ListHelper
 {

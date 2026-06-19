@@ -5,13 +5,13 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+using ConcreteUI.Controls.Internals;
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Input;
-using ConcreteUI.Internals;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
 using ConcreteUI.Utils;

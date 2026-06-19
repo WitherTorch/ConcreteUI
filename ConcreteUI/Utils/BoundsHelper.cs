@@ -1,10 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
-
-using ConcreteUI.Controls;
 
 using InlineIL;
 
@@ -14,9 +11,9 @@ using WitherTorch.Common;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
-namespace ConcreteUI.Internals;
+namespace ConcreteUI.Utils;
 
-internal static unsafe partial class BoundsHelper
+public static unsafe partial class BoundsHelper
 {
     public static void CopyFromElements(Rect* buffer, ref readonly UIElement? elementRef, nuint length)
     {
@@ -114,16 +111,16 @@ internal static unsafe partial class BoundsHelper
         return IL.Return<Rect>();
     }
 
-    [Inline(InlineBehavior.Remove)]
+    [Inline(InlineBehavior.Keep, export: true)]
     public static ulong ConvertPointToUInt64(Point value) => (ulong)(uint)value.X << 32 | (uint)value.Y;
 
-    [Inline(InlineBehavior.Remove)]
+    [Inline(InlineBehavior.Keep, export: true)]
     public static ulong ConvertSizeToUInt64(Size value) => (ulong)(uint)value.Width << 32 | (uint)value.Height;
 
-    [Inline(InlineBehavior.Remove)]
+    [Inline(InlineBehavior.Keep, export: true)]
     public static Point ConvertUInt64ToPoint(ulong value) => new Point((int)(uint)(value >>> 32), (int)(uint)value);
 
-    [Inline(InlineBehavior.Remove)]
+    [Inline(InlineBehavior.Keep, export: true)]
     public static Size ConvertUInt64ToSize(ulong value) => new Size((int)(uint)(value >>> 32), (int)(uint)value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

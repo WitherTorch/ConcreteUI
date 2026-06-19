@@ -1,7 +1,7 @@
 using ConcreteUI.Graphics.Native.DirectWrite;
 using ConcreteUI.Utils;
 
-namespace ConcreteUI.Internals;
+namespace ConcreteUI.Controls.Internals;
 
 internal static class TextFormatHelper
 {

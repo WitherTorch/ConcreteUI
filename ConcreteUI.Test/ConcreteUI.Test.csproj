@@ -60,6 +60,7 @@
 	
 	<ItemGroup>
 	  <ProjectReference Include="..\ConcreteUI\ConcreteUI.csproj" />
+	  <ProjectReference Include="..\ConcreteUI.Controls\ConcreteUI.Controls.csproj" />
 	</ItemGroup>
 	
 	<ItemGroup>

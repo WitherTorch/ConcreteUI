@@ -159,7 +159,7 @@ public abstract class PagedWindow : CoreWindow
         return false;
     }
 
-    protected void TriggerResize(int pageIndex)
+    protected void UpdateAndResize(int pageIndex)
     {
         if (pageIndex < 0)
         {
