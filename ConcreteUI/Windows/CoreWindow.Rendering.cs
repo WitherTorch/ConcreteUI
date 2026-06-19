@@ -1615,6 +1615,9 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     #endregion
 
     #region Disposing
+    protected virtual void DisposeAllElements()
+        => UIElementHelper.DisposeForElements(GetElements());
+
     protected override void DisposeCore(bool disposing)
     {
         if (disposing)
@@ -1624,8 +1627,8 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             DisposeHelper.SwapDisposeInterlocked(ref _host);
             DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
             DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
-            UIElementHelper.DisposeForElements(GetElements());
             UIElementHelper.DisposeForElement(_overlayElement);
+            DisposeAllElements();
 
             if (InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0)
                 SpinWait.SpinUntil(() => InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0);
