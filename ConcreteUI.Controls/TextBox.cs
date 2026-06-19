@@ -89,7 +89,7 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
         StickBottom = true;
     }
 
-    public TextBox(CoreWindow window, InputMethod? ime) : this(window)
+    public TextBox(IElementContainer parent, InputMethod? ime) : this(parent)
     {
         _ime = ime;
         _imeEnabled = ime is not null;
@@ -142,8 +142,6 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
         }
         else
         {
-            Point location = bounds.Location;
-            Size size = bounds.Size;
             bounds = new Rectangle(bounds.X + UIConstants.ElementMarginHalf, bounds.Y + UIConstants.ElementMarginHalf,
                 bounds.Width - UIConstants.ElementMargin, bounds.Height - UIConstants.ElementMargin);
         }

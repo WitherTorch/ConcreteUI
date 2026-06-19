@@ -9,6 +9,7 @@ using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
+using ConcreteUI.Utils;
 
 using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Structures;
@@ -90,8 +91,16 @@ public abstract class PagedWindow : CoreWindow
         return GetActiveElements(pageIndex);
     }
 
-    public override IEnumerable<UIElement?> GetElements() => EnumerateActiveElementsInAllPages()
-        .ConcatOptimized(GetOverlayElement());
+    public override IEnumerable<UIElement?> GetElements()
+    {
+        uint pageCount = PageCount;
+        if (pageCount <= 0)
+            return Enumerable.Empty<UIElement?>();
+        IEnumerable<UIElement?> elements = GetActiveElements(0);
+        for (uint i = 1; i < pageCount; i++)
+            elements = elements.ConcatOptimized(GetActiveElements(i));
+        return elements;
+    }
 
     protected override void RecalculatePageLayout(Size pageSize)
     {
@@ -159,13 +168,8 @@ public abstract class PagedWindow : CoreWindow
         return false;
     }
 
-    protected void UpdateAndResize(int pageIndex)
+    protected void UpdateAndResize(uint pageIndex)
     {
-        if (pageIndex < 0)
-        {
-            UpdateAndResize();
-            return;
-        }
         _recalcState.InterlockedSet(pageIndex, false);
         _isPageChanged = true;
         Update();

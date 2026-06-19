@@ -661,17 +661,21 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     #endregion
 
     #region Virtual Methods
-    public virtual IEnumerable<UIElement?> GetElements() => GetActiveElements()
-        .ConcatOptimized(GetOverlayElement());
+    public virtual IEnumerable<UIElement?> GetElements() => GetActiveElements();
 
     protected virtual void ApplyThemeCore(IThemeResourceProvider provider)
     {
         _clearDCColor = provider.TryGetColor(ThemeConstants.ClearDCColorNode, out D2D1ColorF color) ? color : default;
         _windowBaseColor = provider.TryGetColor(ThemeConstants.WindowBaseColorNode, out color) ? color : default;
-        GetOverlayElement()?.ApplyTheme(provider);
         UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
         ConcreteUtils.ResetBlur(this);
+
+        UIElementHelper.ApplyTheme(provider, GetOverlayElement());
+        ApplyThemeToElements(provider);
     }
+
+    protected virtual void ApplyThemeToElements(IThemeResourceProvider provider)
+        => UIElementHelper.ApplyTheme(provider, GetElements());
 
     protected virtual Point PageToWindow(UIElement element, Point point) => PageToWindow(point);
 
@@ -1627,7 +1631,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             DisposeHelper.SwapDisposeInterlocked(ref _host);
             DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);
             DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
-            UIElementHelper.DisposeForElement(_overlayElement);
+            GetOverlayElement()?.Dispose();
             DisposeAllElements();
 
             if (InterlockedHelper.Read(ref _recreateGraphicsDeviceProviderBarrier) != 0)

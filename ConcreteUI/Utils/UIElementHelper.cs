@@ -61,8 +61,12 @@ public static partial class UIElementHelper
         => DisposeHelper.SwapDispose(ref brushRef, provider.TryGetBrush(node, out D2D1Brush? result) ? result.Clone() : null);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ApplyTheme(IThemeResourceProvider provider, UIElement? element)
+        => element?.ApplyTheme(provider);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ApplyTheme<TEnumerable>(IThemeResourceProvider provider, TEnumerable elements)
-        where TEnumerable : IEnumerable<UIElement>
+        where TEnumerable : IEnumerable<UIElement?>
     {
         UIElement?[] array;
         int length;
