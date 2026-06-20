@@ -1,14 +1,9 @@
-using System;
 using System.Collections.Generic;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
 using ConcreteUI.Input;
 using ConcreteUI.Layout;
-using ConcreteUI.Theme;
-using ConcreteUI.Utils;
-
-using WitherTorch.Common.Native;
 
 namespace ConcreteUI.Test;
 
@@ -17,17 +12,6 @@ partial class MainWindow
     private readonly List<UIElement>[] _elementLists = new List<UIElement>[3];
     private InputMethod? _ime;
     private ProgressBar? _progressBar;
-
-    protected override void ApplyThemeCore(IThemeResourceProvider provider)
-    {
-        base.ApplyThemeCore(provider);
-        foreach (List<UIElement> elementList in _elementLists)
-        {
-            if (elementList is null)
-                continue;
-            UIElementHelper.ApplyTheme(provider, elementList);
-        }
-    }
 
     protected override IEnumerable<UIElement?> GetActiveElements(uint pageIndex)
         => _elementLists[pageIndex];
