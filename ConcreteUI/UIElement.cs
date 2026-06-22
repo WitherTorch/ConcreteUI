@@ -136,9 +136,11 @@ public abstract partial class UIElement : ICheckableDisposable
     internal bool CheckLayoutOutdated()
     {
         CoreWindow window = Window;
-        if (window.CheckLayoutTimestampOutdated(InterlockedHelper.Read(ref _lastLayoutTimestamp)))
+        if (window.CheckLayoutTimestampOutdated(InterlockedHelper.Read(ref _lastLayoutTimestamp)) || InterlockedHelper.Read(ref _themeContext) is not null)
             return true;
         IThemeResourceProvider? provider = window.GetThemeResourceProvider();
+        if (provider is null)
+            return false;
         lock (_themeAccessLock)
             return !ReferenceEquals(_themeResourceProviderReference.Target, provider);
     }
