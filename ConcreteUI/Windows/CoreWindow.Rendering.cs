@@ -1029,6 +1029,51 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         bool renderAll = flags.HasFlagFast(RenderingFlags.RedrawAll);
         if (flags.HasFlagFast(RenderingFlags.Resize))
         {
+            if (!TryResize(host, controller, ref data, flags, renderAll))
+                return false;
+        }
+        D2D1DeviceContext? deviceContext = host.BeginDraw();
+        if (deviceContext is null || deviceContext.IsDisposed)
+            return true;
+
+        (bool Presented, bool LayoutOutdated) result;
+        ClearTypeSwitcher.SetClearType(deviceContext, false);
+        if (renderAll)
+            result = Render_All(host, deviceContext, in data);
+        else
+            result = Render_Incremental(host, deviceContext, collector, in data);
+
+        if (result.LayoutOutdated) // De-sync case: some elements haven't recalculate layout
+        {
+            Size pageSize = data.PageBounds.Size;
+            if (!pageSize.IsValid())
+                return false;
+
+            do
+            {
+                flags = controller.GetAndResetRenderingFlags(); // 反正都要二次重繪，那就在拉取一次最新的渲染旗標並重置，以減少過度渲染的機會
+                if (flags.HasFlagFast(RenderingFlags.Resize))
+                {
+                    if (!TryResize(host, controller, ref data, flags, renderAll))
+                        return false;
+                }
+                else
+                {
+                    RecalculatePageLayout(pageSize, data.ResizeTimestamp);
+                }
+
+                deviceContext = host.BeginDraw();
+                if (deviceContext is null || deviceContext.IsDisposed)
+                    return true;
+
+                deviceContext.Clear();
+            } while ((result = Render_All(host, deviceContext, in data)).LayoutOutdated); // Always redraw everything here!
+        }
+
+        return result.Presented;
+
+        bool TryResize(SimpleGraphicsHost host, RenderingController controller, ref WindowRenderingData data, RenderingFlags flags, bool renderAll)
+        {
             bool resizeTemporarily = flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag);
             Size clirentSizeInPixel = RawClientSize;
             if (clirentSizeInPixel.Width <= 0 || clirentSizeInPixel.Height <= 0)
@@ -1063,37 +1108,8 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             renderAll |= flags.HasFlagFast(RenderingFlags.RedrawAll);
             if (resizeTemporarily || flags.HasFlagFast(RenderingFlags.Resize))
                 controller.RequestUpdateAndResize(flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag), redrawAll: false);
-        }
-        D2D1DeviceContext? deviceContext = host.BeginDraw();
-        if (deviceContext is null || deviceContext.IsDisposed)
             return true;
-
-        (bool Presented, bool LayoutOutdated) result;
-        ClearTypeSwitcher.SetClearType(deviceContext, false);
-        if (renderAll)
-            result = Render_All(host, deviceContext, in data);
-        else
-            result = Render_Incremental(host, deviceContext, collector, in data);
-
-        if (result.LayoutOutdated) // De-sync case: some elements haven't recalculate layout
-        {
-            Size pageSize = data.PageBounds.Size;
-            if (!pageSize.IsValid())
-                return false;
-
-            do
-            {
-                RecalculatePageLayout(pageSize, data.ResizeTimestamp);
-
-                deviceContext = host.BeginDraw();
-                if (deviceContext is null || deviceContext.IsDisposed)
-                    return true;
-
-                deviceContext.Clear();
-            } while ((result = Render_All(host, deviceContext, in data)).LayoutOutdated); // Always redraw everything here!
         }
-
-        return result.Presented;
 
         (bool Presented, bool LayoutOutdated) Render_All(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, in WindowRenderingData data)
         {
@@ -1448,12 +1464,6 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             UIElement? oldElement;
             lock (_syncLock)
             {
-                if (element is not null)
-                {
-                    IThemeResourceProvider? provider = _resourceProvider;
-                    if (provider is not null)
-                        element.ApplyTheme(provider);
-                }
                 oldElement = ReferenceHelper.Exchange(ref _overlayElement, element);
 
                 OnOverlayLayerChanged(element, oldElement);
@@ -1484,12 +1494,6 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             {
                 if (!ReferenceEquals(_overlayElement, oldElement))
                     return;
-                if (element is not null)
-                {
-                    IThemeResourceProvider? provider = _resourceProvider;
-                    if (provider is not null)
-                        element.ApplyTheme(provider);
-                }
                 _overlayElement = element;
 
                 OnOverlayLayerChanged(element, oldElement);

@@ -50,6 +50,7 @@ public sealed partial class FontIconButton : ButtonBase
 
     protected override void DisposeCore(bool disposing)
     {
+        base.DisposeCore(disposing);
         if (disposing)
         {
             DisposeHelper.SwapDisposeInterlocked(ref _icon);

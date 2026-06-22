@@ -133,6 +133,7 @@ public sealed partial class Label : UIElement
 
     protected override void DisposeCore(bool disposing)
     {
+        base.DisposeCore(disposing);
         if (disposing)
         {
             DisposeHelper.SwapDisposeInterlocked(ref _layout);

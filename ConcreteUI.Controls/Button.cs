@@ -147,6 +147,7 @@ public sealed partial class Button : ButtonBase
 
     protected override void DisposeCore(bool disposing)
     {
+        base.DisposeCore(disposing);
         if (disposing)
         {
             DisposeHelper.SwapDispose(ref _layout);

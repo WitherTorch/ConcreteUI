@@ -209,6 +209,7 @@ public sealed partial class ContextMenu : PopupElementBase, ICheckableDisposable
 
     protected override void DisposeCore(bool disposing)
     {
+        base.DisposeCore(disposing);
         DWriteTextLayout[]? layouts = InterlockedHelper.Read(ref _layouts);
         if (disposing)
         {

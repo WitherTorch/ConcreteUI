@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Theme;
+using ConcreteUI.Utils;
 using ConcreteUI.Windows;
 
 using WitherTorch.Common;
@@ -42,7 +43,7 @@ public sealed partial class PopupPanel : PopupElementBase, IElementContainer, IC
             collection.Value = null;
     }
 
-    protected override void ApplyThemeCore(IThemeResourceProvider provider) => _collection.Value?.ApplyTheme(provider);
+    protected override void ApplyThemeCore(IThemeResourceProvider provider) => UIElementHelper.ApplyTheme(provider, _collection.Value);
 
     protected override bool RenderCore(in RegionalRenderingContext context) => true;
 
@@ -60,6 +61,7 @@ public sealed partial class PopupPanel : PopupElementBase, IElementContainer, IC
 
     protected override void DisposeCore(bool disposing)
     {
+        base.DisposeCore(disposing);
         if (disposing)
             _collection.Dispose();
     }

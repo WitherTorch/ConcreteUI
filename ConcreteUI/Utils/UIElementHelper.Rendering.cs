@@ -186,7 +186,7 @@ partial class UIElementHelper
     {
         if (element is null)
             return true;
-        if (element.CheckLayoutTimestampOutdated())
+        if (element.CheckLayoutOutdated())
             return false;
         if (ignoreNeedRefresh || context.IsForceRendering || element.NeedRefresh())
         {

@@ -35,8 +35,7 @@ public sealed partial class PopupContainer : PopupElementBase, IElementContainer
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
     {
         UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
-        foreach (UIElement child in _children)
-            child.ApplyTheme(provider);
+        UIElementHelper.ApplyTheme(provider, _children);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -80,6 +79,7 @@ public sealed partial class PopupContainer : PopupElementBase, IElementContainer
 
     protected override void DisposeCore(bool disposing)
     {
+        base.DisposeCore(disposing);
         if (disposing)
             DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
         SequenceHelper.Clear(_brushes);

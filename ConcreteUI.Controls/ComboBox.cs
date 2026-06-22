@@ -259,6 +259,7 @@ public sealed partial class ComboBox : UIElement, IMouseInteractHandler, IMouseM
 
     protected override void DisposeCore(bool disposing)
     {
+        base.DisposeCore(disposing);
         if (disposing)
         {
             DisposeHelper.SwapDisposeInterlocked(ref _layout);

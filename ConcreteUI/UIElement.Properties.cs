@@ -242,14 +242,18 @@ partial class UIElement
     public IThemeContext? CurrentTheme
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _themeContext;
+        get => InterlockedHelper.Read(ref _themeContext);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set
         {
-            if (ReferenceEquals(_themeContext, value))
+            if (ReferenceEquals(InterlockedHelper.Exchange(ref _themeContext, value), value))
                 return;
-            _themeContext = value;
-            ApplyThemeContext(value);
+            lock (_themeAccessLock)
+            {
+                if (!ReferenceEquals(InterlockedHelper.Read(ref _themeContext), value))
+                    return;
+                ApplyThemeContext(value);
+            }
         }
     }
 

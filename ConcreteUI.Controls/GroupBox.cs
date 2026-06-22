@@ -111,8 +111,7 @@ public sealed partial class GroupBox : UIElement, IElementContainer
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
     {
         UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
-        foreach (UIElement child in _children)
-            child.ApplyTheme(provider);
+        UIElementHelper.ApplyTheme(provider, _children);
         string fontName = provider.FontName;
         _fontName = fontName;
         using DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(fontName, UIConstants.DefaultFontSize);
@@ -306,6 +305,7 @@ public sealed partial class GroupBox : UIElement, IElementContainer
 
     protected override void DisposeCore(bool disposing)
     {
+        base.DisposeCore(disposing);
         if (disposing)
         {
             DisposeHelper.SwapDisposeInterlocked(ref _titleLayout);

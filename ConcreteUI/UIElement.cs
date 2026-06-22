@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 using ConcreteUI.Graphics;
@@ -27,7 +28,7 @@ public abstract partial class UIElement : ICheckableDisposable
 
     private readonly LayoutNode?[] _layoutDefinitions = new LayoutNode?[(int)LayoutProperty._Last];
     private readonly LayoutNode?[] _layoutExpressions = new LayoutNode?[(int)LayoutProperty._Last];
-    private readonly Lock _syncLock;
+    private readonly Lock _syncLock = new Lock(), _themeAccessLock = new Lock();
     private readonly int _identifier;
 
     private WeakReference<UIElement>? _reference;
@@ -35,6 +36,7 @@ public abstract partial class UIElement : ICheckableDisposable
     private IThemeContext? _themeContext;
     private string _themePrefix;
     private object? _tag;
+    private GCHandle _themeResourceProviderReference;
     private ulong _location, _size, _lastLayoutTimestamp;
     private nuint _requestRedraw, _shouldUpdateWhenUnfreeze, _freezeCount,
         _parentVersion, _boundsVersion, _tagVersion,
@@ -46,7 +48,7 @@ public abstract partial class UIElement : ICheckableDisposable
         _identifier = InterlockedHelper.GetAndIncrement(ref _identifierGenerator);
         _themePrefix = themePrefix;
         _requestRedraw = UnsafeHelper.GetMaxValue<nuint>();
-        _syncLock = new Lock(); // 物件重用
+        _themeResourceProviderReference = GCHandle.Alloc(null, GCHandleType.Weak);
     }
 
     [Inline(InlineBehavior.Remove)]
@@ -107,13 +109,39 @@ public abstract partial class UIElement : ICheckableDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void EnsureThemeIsApplied()
+    {
+        if (InterlockedHelper.Read(ref _themeContext) is not null)
+            return;
+        IThemeResourceProvider? provider = Window.GetThemeResourceProvider();
+        if (provider is null)
+            return;
+        lock (_themeAccessLock)
+        {
+            if (ReferenceEquals(_themeResourceProviderReference.Target, provider))
+                return;
+            _themeResourceProviderReference.Target = provider;
+            lock (_syncLock)
+                ApplyThemeCore(provider);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void ResetLastLayoutTimestamp() => InterlockedHelper.Write(ref _lastLayoutTimestamp, 0);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetLastLayoutTimestampUnsafe(ulong timestamp) => InterlockedHelper.Write(ref _lastLayoutTimestamp, timestamp);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal bool CheckLayoutTimestampOutdated() => Window.CheckLayoutTimestampOutdated(InterlockedHelper.Read(ref _lastLayoutTimestamp));
+    internal bool CheckLayoutOutdated()
+    {
+        CoreWindow window = Window;
+        if (window.CheckLayoutTimestampOutdated(InterlockedHelper.Read(ref _lastLayoutTimestamp)))
+            return true;
+        IThemeResourceProvider? provider = window.GetThemeResourceProvider();
+        lock (_themeAccessLock)
+            return !ReferenceEquals(_themeResourceProviderReference.Target, provider);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected Lock.Scope EnterSyncScope() => _syncLock.EnterScope();
@@ -227,40 +255,45 @@ public abstract partial class UIElement : ICheckableDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ApplyTheme(IThemeResourceProvider provider)
     {
-        if (_themeContext is not null)
+        if (InterlockedHelper.Read(ref _themeContext) is not null)
             return;
-        lock (_syncLock)
-            ApplyThemeCore(provider);
+
+        lock (_themeAccessLock)
+        {
+            _themeResourceProviderReference.Target = provider;
+            lock (_syncLock)
+                ApplyThemeCore(provider);
+        }
         Update();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ApplyThemeContext(IThemeContext? value)
     {
-        if (value is not null)
-        {
-            ApplyThemeContextCore(value);
-            return;
-        }
-        IThemeResourceProvider? provider = Parent.GetRenderer().GetThemeResourceProvider();
-        if (provider is not null)
-            ApplyThemeCore(provider);
-        Update();
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ApplyThemeContextCore(IThemeContext themeContext)
-    {
         IElementContainer parent = Parent;
-        IRenderer renderer = parent.GetRenderer();
         CoreWindow window = parent.GetWindow();
-        lock (_syncLock)
+
+        if (value is null)
         {
+            IThemeResourceProvider? provider = window.GetThemeResourceProvider();
+            _themeResourceProviderReference.Target = provider;
+            if (provider is not null)
+            {
+                lock (_syncLock)
+                    ApplyThemeCore(provider);
+            }
+        }
+        else
+        {
+            _themeResourceProviderReference.Target = null;
+
+            IRenderer renderer = parent.GetRenderer();
             IThemeResourceProvider provider = ThemeResourceProvider.CreateResourceProvider(
-                renderer.GetDeviceContext(), themeContext, window.ActualWindowMaterial);
+                renderer.GetDeviceContext(), value, window.ActualWindowMaterial);
             try
             {
-                ApplyThemeCore(provider);
+                lock (_syncLock)
+                    ApplyThemeCore(provider);
             }
             finally
             {
@@ -359,11 +392,16 @@ public abstract partial class UIElement : ICheckableDisposable
 
     public override bool Equals(object? obj) => ReferenceEquals(obj, this);
 
-    protected virtual void DisposeCore(bool disposing) { }
+    protected virtual void DisposeCore(bool disposing)
+    {
+        lock (_themeAccessLock)
+            _themeResourceProviderReference.Free();
+    }
 
     public void Dispose()
     {
-        Dispose(disposing: true);
+        lock (_syncLock)
+            Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }
 

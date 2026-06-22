@@ -597,6 +597,7 @@ public abstract partial class ScrollableElementBase : UIElement,
 
     protected override void DisposeCore(bool disposing)
     {
+        base.DisposeCore(disposing);
         if (disposing)
             DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
         _repeatingTimer.Dispose();

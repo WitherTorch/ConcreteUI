@@ -37,7 +37,7 @@ public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGloba
 
     private DWriteTextLayout[]? _layouts;
     private float _itemHeight;
-    private int _selectedIndex, _maxViewCount;
+    private int _selectedIndex, _maxViewCount, _maxViewHeight;
     private bool _isClicking, _isClickingClient, _isFirstTimeClick, _prepareToClose;
 
     public ComboBoxDropdownList(IElementContainer parent, ComboBox owner) : base(parent, "app.comboBox")
@@ -49,6 +49,7 @@ public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGloba
         LeftExpression = owner.LeftDefinition;
         RightExpression = owner.RightDefinition;
         TopExpression = new DefaultTopNode(this);
+        HeightExpression = new DefaultHeightNode(this);
     }
 
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
@@ -57,7 +58,7 @@ public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGloba
         UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
         ComboBox parent = _owner;
         using DWriteTextFormat format = TextFormatHelper.CreateTextFormat(TextAlignment.MiddleLeft, provider.FontName, parent.FontSize);
-        Prepare(format);
+        Prepare(parent, format);
     }
 
     protected override D2D1Brush GetBackBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush);
@@ -68,9 +69,8 @@ public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGloba
 
     public void Close() => Window.CloseOverlayElement(this);
 
-    public void Prepare(DWriteTextFormat format)
+    private void Prepare(ComboBox parent, DWriteTextFormat format)
     {
-        ComboBox parent = _owner;
         DWriteFactory factory = SharedResources.DWriteFactory;
 
         float itemHeight = 0f;
@@ -97,10 +97,11 @@ public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGloba
         _selectedIndex = -1;
         _maxViewCount = maxViewCount;
         SurfaceSize = new Size(0, MathI.Ceiling(itemHeight * count));
-        float elementHeight = maxViewCount * itemHeight;
-        HeightExpression = MathI.Ceiling(elementHeight);
+
+        float maxViewHeight = maxViewCount * itemHeight;
+        InterlockedHelper.Write(ref _maxViewHeight, MathI.Ceiling(maxViewHeight));
         if (lastIndex > maxViewCount / 2)
-            ScrollingTo(MathI.Ceiling(lastIndex * itemHeight + itemHeight / 2 - elementHeight / 2));
+            ScrollingTo(MathI.Ceiling(lastIndex * itemHeight + itemHeight / 2 - maxViewHeight / 2));
     }
 
     protected override bool RenderContent(in RegionalRenderingContext context, D2D1Brush backBrush)

@@ -226,8 +226,9 @@ public sealed class LayoutEngine : ILayoutEngine
     private void QueueElement(UIElement element, ulong timestamp)
     {
         Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict = _elementDict;
-
-        ArraySegment<LayoutNode?> segment = default;
+        ArraySegment<LayoutNode?> segment = default; 
+        
+        element.EnsureThemeIsApplied();
 
         for (LayoutProperty prop = LayoutProperty.Left; prop < LayoutProperty._Last; prop++)
         {

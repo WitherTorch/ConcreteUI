@@ -53,6 +53,7 @@ public sealed partial class ProgressBar : UIElement
 
     protected override void DisposeCore(bool disposing)
     {
+        base.DisposeCore(disposing);
         if (disposing)
             DisposeHelper.DisposeAllUnsafe(in UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush._Last);
         SequenceHelper.Clear(_brushes);
