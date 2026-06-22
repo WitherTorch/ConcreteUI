@@ -35,8 +35,10 @@ public abstract partial class UIElement : ICheckableDisposable
     private IThemeContext? _themeContext;
     private string _themePrefix;
     private object? _tag;
-    private ulong _location, _size;
-    private nuint _requestRedraw, _shouldUpdateWhenUnfreeze, _freezeCount, _parentVersion, _boundsVersion, _tagVersion, _disposed;
+    private ulong _location, _size, _lastLayoutTimestamp;
+    private nuint _requestRedraw, _shouldUpdateWhenUnfreeze, _freezeCount,
+        _parentVersion, _boundsVersion, _tagVersion,
+        _disposed;
 
     public UIElement(IElementContainer parent, string themePrefix)
     {
@@ -95,17 +97,29 @@ public abstract partial class UIElement : ICheckableDisposable
 
     [Inline(InlineBehavior.Remove)]
     private LayoutNode? GetLayoutExpressionCore(nuint property)
-        => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutExpressions), property);
+        => InterlockedHelper.Read(ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutExpressions), property));
 
     [Inline(InlineBehavior.Remove)]
     private void SetLayoutExpressionCore(nuint property, LayoutNode? variable)
-        => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutExpressions), property) = variable;
+    {
+        InterlockedHelper.Write(ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutExpressions), property), variable);
+        ResetLastLayoutTimestamp();
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool IsBackgroundOpaque() => IsBackgroundOpaqueCore() || _parent.IsBackgroundOpaque(this);
+    protected void ResetLastLayoutTimestamp() => InterlockedHelper.Write(ref _lastLayoutTimestamp, 0);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetLastLayoutTimestampUnsafe(ulong timestamp) => InterlockedHelper.Write(ref _lastLayoutTimestamp, timestamp);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal bool CheckLayoutTimestampOutdated() => Window.CheckLayoutTimestampOutdated(InterlockedHelper.Read(ref _lastLayoutTimestamp));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected Lock.Scope EnterSyncScope() => _syncLock.EnterScope();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool IsBackgroundOpaque() => IsBackgroundOpaqueCore() || Parent.IsBackgroundOpaque(this);
 
     protected virtual bool IsBackgroundOpaqueCore() => false;
 
@@ -259,7 +273,11 @@ public abstract partial class UIElement : ICheckableDisposable
     protected abstract void ApplyThemeCore(IThemeResourceProvider provider);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal void SetBoundsInternal(in Rectangle bounds) => SetBoundsCore_Pure(bounds);
+    internal void SetBoundsInternal(in Rectangle bounds, ulong timestamp)
+    {
+        SetBoundsCore_Pure(bounds);
+        SetLastLayoutTimestampUnsafe(timestamp);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Point LocalToPage(Point point) => GraphicsUtils.PointToPage(GetLocationCore(), point);

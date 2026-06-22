@@ -1,11 +1,9 @@
 #if NET472_OR_GREATER
-using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
 using InlineMethod;
 
-using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 

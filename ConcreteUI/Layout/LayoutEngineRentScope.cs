@@ -25,12 +25,12 @@ public ref struct LayoutEngineRentScope : ILayoutEngine, IDisposable
     public static LayoutEngineRentScope Rent(Pool<LayoutEngine> pool) => new LayoutEngineRentScope(pool, pool.Rent());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly void RecalculateLayout(Size pageSize, UIElement? element)
-        => _engine!.RecalculateLayout(pageSize, element); // 如果 engine 等於 null 則正常擲出 NRE
+    public readonly void RecalculateLayout(Size pageSize, UIElement? element, ulong timestamp)
+        => _engine!.RecalculateLayout(pageSize, element, timestamp); // 如果 engine 等於 null 則正常擲出 NRE
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements) where TEnumerable : IEnumerable<UIElement?>
-        => _engine!.RecalculateLayout(pageSize, elements); // 如果 engine 等於 null 則正常擲出 NRE
+    public readonly void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements, ulong timestamp) where TEnumerable : IEnumerable<UIElement?>
+        => _engine!.RecalculateLayout(pageSize, elements, timestamp); // 如果 engine 等於 null 則正常擲出 NRE
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Dispose()

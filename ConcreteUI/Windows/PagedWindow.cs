@@ -5,21 +5,16 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
 using ConcreteUI.Layout;
-using ConcreteUI.Theme;
-using ConcreteUI.Utils;
 
 using WitherTorch.Common.Extensions;
-using WitherTorch.Common.Structures;
 
 namespace ConcreteUI.Windows;
 
 public abstract class PagedWindow : CoreWindow
 {
     #region Fields
-    private BitVector64 _recalcState;
     private uint _pageIndex;
     private bool _isPageChanged;
     #endregion
@@ -102,77 +97,22 @@ public abstract class PagedWindow : CoreWindow
         return elements;
     }
 
-    protected override void RecalculatePageLayout(Size pageSize)
-    {
-        uint pageIndex = _pageIndex;
-        RecalculatePageLayout(pageSize, pageIndex);
-        _recalcState.InterlockedExchange(1UL << (int)pageIndex);
-    }
-
-    protected override void RenderPage(in RegionalRenderingContext context, in WindowRenderingData data)
-    {
-        if (RecalculatePageLayoutIfPageChanged(data.PageBounds.Size))
-            context.UsePresentAllModeOnce();
-        RenderPageCore(context, in data);
-    }
-
-    protected virtual void RenderPageCore(in RegionalRenderingContext context, in WindowRenderingData data)
-        => base.RenderPage(context, in data);
-
-    protected override void ApplyThemeCore(IThemeResourceProvider provider)
-    {
-        base.ApplyThemeCore(provider);
-        _recalcState.InterlockedExchange(0);
-    }
+    protected override void RecalculatePageLayout(Size pageSize, ulong timestamp) 
+        => RecalculatePageLayout(pageSize, _pageIndex, timestamp);
 
     #endregion
 
     #region Virtual Methods
-    protected virtual void RecalculatePageLayout(Size pageSize, uint pageIndex)
+    protected virtual void RecalculatePageLayout(Size pageSize, uint pageIndex, ulong timestamp)
     {
         using LayoutEngineRentScope engine = LayoutEngine.Rent();
-        engine.RecalculateLayout(pageSize, GetActiveElements(pageIndex));
-        engine.RecalculateLayout(pageSize, GetOverlayElement());
+        engine.RecalculateLayout(pageSize, GetActiveElements(pageIndex), timestamp);
+        engine.RecalculateLayout(pageSize, GetOverlayElement(), timestamp);
         Thread.MemoryBarrier();
-    }
-
-    protected virtual IEnumerable<UIElement?> EnumerateActiveElementsInAllPages()
-    {
-        uint pageCount = PageCount;
-        for (uint i = 0; i < pageCount; i++)
-        {
-            foreach (UIElement? element in GetActiveElements(i))
-                yield return element;
-        }
     }
     #endregion
 
     #region Abstract Methods
     protected abstract IEnumerable<UIElement?> GetActiveElements(uint pageIndex);
-    #endregion
-
-    #region Normal Methods
-    protected bool RecalculatePageLayoutIfPageChanged(Size pageSize)
-    {
-        if (_isPageChanged)
-        {
-            _isPageChanged = false;
-            uint pageIndex = _pageIndex;
-            if (!_recalcState.InterlockedSet(pageIndex, true))
-            {
-                RecalculatePageLayout(pageSize, pageIndex);
-                Thread.MemoryBarrier();
-            }
-            return true;
-        }
-        return false;
-    }
-
-    protected void UpdateAndResize(uint pageIndex)
-    {
-        _recalcState.InterlockedSet(pageIndex, false);
-        _isPageChanged = true;
-        Update();
-    }
     #endregion
 }

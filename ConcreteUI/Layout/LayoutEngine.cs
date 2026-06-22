@@ -33,26 +33,26 @@ public sealed class LayoutEngine : ILayoutEngine
     public static LayoutEngineRentScope Rent() => LayoutEngineRentScope.Rent(_pool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RecalculateLayout(Size pageSize, UIElement? element)
+    public void RecalculateLayout(Size pageSize, UIElement? element, ulong timestamp)
     {
         if (element is null || pageSize.Width < 0 || pageSize.Height < 0)
             return;
-        QueueElement(element);
-        RecalculateLayoutCore(pageSize);
+        QueueElement(element, timestamp);
+        RecalculateLayoutCore(pageSize, timestamp);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements) where TEnumerable : IEnumerable<UIElement?>
+    public void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements, ulong timestamp) where TEnumerable : IEnumerable<UIElement?>
     {
         if (pageSize.Width < 0 || pageSize.Height < 0)
             return;
-        QueueElements(elements);
+        QueueElements(elements, timestamp);
         if (_elementDict.Count <= 0)
             return;
-        RecalculateLayoutCore(pageSize);
+        RecalculateLayoutCore(pageSize, timestamp);
     }
 
-    private void QueueElements<TEnumerable>(TEnumerable elements) where TEnumerable : IEnumerable<UIElement?>
+    private void QueueElements<TEnumerable>(TEnumerable elements, ulong timestamp) where TEnumerable : IEnumerable<UIElement?>
     {
         UIElement?[] array;
         int length;
@@ -114,7 +114,7 @@ public sealed class LayoutEngine : ILayoutEngine
             try
             {
                 Array.Copy(array, buffer, length);
-                QueueElementsCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length);
+                QueueElementsCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, timestamp);
             }
             finally
             {
@@ -133,7 +133,7 @@ public sealed class LayoutEngine : ILayoutEngine
             try
             {
                 list.CopyTo(buffer, 0);
-                QueueElementsCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length);
+                QueueElementsCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, timestamp);
             }
             finally
             {
@@ -154,7 +154,7 @@ public sealed class LayoutEngine : ILayoutEngine
             {
                 for (int i = 0; i < length; i++)
                     UnsafeHelper.AddTypedOffset(ref bufferRef, i) = readOnlyList[i];
-                QueueElementsCore(ref bufferRef, (nuint)length);
+                QueueElementsCore(ref bufferRef, (nuint)length, timestamp);
             }
             finally
             {
@@ -176,7 +176,7 @@ public sealed class LayoutEngine : ILayoutEngine
             (UIElement?[] buffer, length) = bufferList;
             try
             {
-                QueueElementsCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length);
+                QueueElementsCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, timestamp);
             }
             finally
             {
@@ -186,44 +186,44 @@ public sealed class LayoutEngine : ILayoutEngine
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void QueueElementsCore(ref readonly UIElement? elementArrayRef, nuint length)
+    private void QueueElementsCore(ref readonly UIElement? elementArrayRef, nuint length, ulong timestamp)
     {
         DebugHelper.ThrowIf(length < 1);
         for (; length >= 4; length -= 4)
         {
-            QueueElementCore(in elementArrayRef, length - 1);
-            QueueElementCore(in elementArrayRef, length - 2);
-            QueueElementCore(in elementArrayRef, length - 3);
-            QueueElementCore(in elementArrayRef, length - 4);
+            QueueElementCore(in elementArrayRef, length - 1, timestamp);
+            QueueElementCore(in elementArrayRef, length - 2, timestamp);
+            QueueElementCore(in elementArrayRef, length - 3, timestamp);
+            QueueElementCore(in elementArrayRef, length - 4, timestamp);
         }
         switch (length)
         {
             case 3:
-                QueueElementCore(in elementArrayRef, length - 1);
-                QueueElementCore(in elementArrayRef, length - 2);
-                QueueElementCore(in elementArrayRef, length - 3);
+                QueueElementCore(in elementArrayRef, length - 1, timestamp);
+                QueueElementCore(in elementArrayRef, length - 2, timestamp);
+                QueueElementCore(in elementArrayRef, length - 3, timestamp);
                 break;
             case 2:
-                QueueElementCore(in elementArrayRef, length - 1);
-                QueueElementCore(in elementArrayRef, length - 2);
+                QueueElementCore(in elementArrayRef, length - 1, timestamp);
+                QueueElementCore(in elementArrayRef, length - 2, timestamp);
                 break;
             case 1:
-                QueueElementCore(in elementArrayRef, length - 1);
+                QueueElementCore(in elementArrayRef, length - 1, timestamp);
                 break;
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void QueueElementCore(ref readonly UIElement? elementArrayRef, nuint i)
+    private void QueueElementCore(ref readonly UIElement? elementArrayRef, nuint i, ulong timestamp)
     {
         UIElement? element = UnsafeHelper.AddTypedOffset(in elementArrayRef, i);
         if (element is null)
             return;
-        QueueElement(element);
+        QueueElement(element, timestamp);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private void QueueElement(UIElement element)
+    private void QueueElement(UIElement element, ulong timestamp)
     {
         Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict = _elementDict;
 
@@ -242,14 +242,16 @@ public sealed class LayoutEngine : ILayoutEngine
             }
             UnsafeHelper.AddTypedOffset(in UnsafeHelper.GetArrayDataReference(array!), segment.Offset + (int)prop) = expression;
         }
-        if (segment.Array is not null)
-            _elementDict[element] = segment;
+        if (segment.Array is null)
+            element.SetLastLayoutTimestampUnsafe(timestamp);
+        else
+            elementDict[element] = segment;
         if (element is IElementContainer container)
-            QueueElements(container.GetElements());
+            QueueElements(container.GetElements(), timestamp);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private unsafe void RecalculateLayoutCore(Size pageSize)
+    private unsafe void RecalculateLayoutCore(Size pageSize, ulong timestamp)
     {
         Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict = _elementDict;
         Dictionary<LayoutNode, int> computeDict = _computeDict;
@@ -341,7 +343,7 @@ public sealed class LayoutEngine : ILayoutEngine
                             values[i - 2] = nodeManager.GetComputedValue(leftExpression) - nodeManager.GetComputedValue(rightExpression);
                         }
                     }
-                    element.SetBoundsInternal(bounds);
+                    element.SetBoundsInternal(bounds, timestamp);
                     continue;
 
                 Failed:

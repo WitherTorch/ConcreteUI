@@ -62,6 +62,7 @@ partial class UIElement
             if (ReferenceEquals(InterlockedHelper.Exchange(ref _parent, value), value))
                 return;
             OptimisticLock.Increase(ref versionRef);
+            ResetLastLayoutTimestamp();
             Update();
         }
     }

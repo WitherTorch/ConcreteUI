@@ -5,7 +5,7 @@ namespace ConcreteUI.Layout;
 
 public interface ILayoutEngine
 {
-    void RecalculateLayout(Size pageSize, UIElement? element);
+    void RecalculateLayout(Size pageSize, UIElement? element, ulong timestamp);
 
-    void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements) where TEnumerable : IEnumerable<UIElement?>;
+    void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements, ulong timestamp) where TEnumerable : IEnumerable<UIElement?>;
 }

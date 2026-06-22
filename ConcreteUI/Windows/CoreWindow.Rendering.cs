@@ -43,6 +43,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     {
         public Rectangle MinimizeButtonBounds, MaximizeButtonBounds, CloseButtonBounds, PageBounds, TitleBarBounds;
         public Point DrawingOffset;
+        public ulong ResizeTimestamp;
         public int ActiveBorderWidth;
     }
 
@@ -98,7 +99,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     private DWriteTextLayout? _titleLayout;
     private D2D1ColorF _clearDCColor, _windowBaseColor;
     private Point _drawingOffset;
-    private ulong
+    private ulong _resizeTimestamp, _elementLastLayoutTimestamp,
         _minimizeButtonLocation, _minimizeButtonSize,
         _maximizeButtonLocation, _maximizeButtonSize,
         _closeButtonLocation, _closeButtonSize,
@@ -962,11 +963,11 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         data.PageBounds = pageBounds;
     }
 
-    protected virtual void RecalculatePageLayout(Size pageSize)
+    protected virtual void RecalculatePageLayout(Size pageSize, ulong timestamp)
     {
         using LayoutEngineRentScope engine = LayoutEngine.Rent();
-        engine.RecalculateLayout(pageSize, GetActiveElements());
-        engine.RecalculateLayout(pageSize, GetOverlayElement());
+        engine.RecalculateLayout(pageSize, GetActiveElements(), timestamp);
+        engine.RecalculateLayout(pageSize, GetOverlayElement(), timestamp);
         Thread.MemoryBarrier();
     }
     #endregion
@@ -994,6 +995,16 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)brush);
     }
 
+    internal bool CheckLayoutTimestampOutdated(ulong childTimestamp)
+    {
+        ref ulong timestampRef = ref _elementLastLayoutTimestamp;
+        ulong timestamp = InterlockedHelper.Read(ref timestampRef);
+        if (timestamp == childTimestamp)
+            return false;
+        InterlockedHelper.CompareExchange(ref timestampRef, 0, timestamp);
+        return true;
+    }
+
     [Inline]
     private bool RenderCore(RenderingController controller, RenderingFlags flags)
     {
@@ -1011,41 +1022,45 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             CloseButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_closeButtonLocation, _closeButtonSize),
             PageBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_pageLocation, _pageSize),
             TitleBarBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_titleBarLocation, _titleBarSize),
+            ResizeTimestamp = _resizeTimestamp,
             DrawingOffset = _drawingOffset,
             ActiveBorderWidth = _activeBorderWidth
         };
-        bool redrawAll = flags.HasFlagFast(RenderingFlags.RedrawAll);
+        bool renderAll = flags.HasFlagFast(RenderingFlags.RedrawAll);
         if (flags.HasFlagFast(RenderingFlags.Resize))
         {
             bool resizeTemporarily = flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag);
-            Size size = RawClientSize;
-            if (size.Width <= 0 || size.Height <= 0)
+            Size clirentSizeInPixel = RawClientSize;
+            if (clirentSizeInPixel.Width <= 0 || clirentSizeInPixel.Height <= 0)
                 return false;
             if (resizeTemporarily)
-                redrawAll |= host.ResizeTemporarily(size);
+                renderAll |= host.ResizeTemporarily(clirentSizeInPixel);
             else
-                redrawAll |= host.Resize(size);
+                renderAll |= host.Resize(clirentSizeInPixel);
             Thread.MemoryBarrier();
-            if (redrawAll)
+            if (renderAll)
             {
+                ulong timestamp = NativeMethods.GetTicksForSystem();
+                data.ResizeTimestamp = timestamp;
                 RecalculateLayout(
                     data: ref data,
-                    windowSize: GraphicsUtils.ScalingSizeAndConvert(size, _pointsPerPixel));
+                    windowSize: GraphicsUtils.ScalingSizeAndConvert(clirentSizeInPixel, _pointsPerPixel));
                 BoundsHelper.SaveBoundsToUInt64Fields(data.MinimizeButtonBounds, ref _minimizeButtonLocation, ref _minimizeButtonSize);
                 BoundsHelper.SaveBoundsToUInt64Fields(data.MaximizeButtonBounds, ref _maximizeButtonLocation, ref _maximizeButtonSize);
                 BoundsHelper.SaveBoundsToUInt64Fields(data.CloseButtonBounds, ref _closeButtonLocation, ref _closeButtonSize);
                 BoundsHelper.SaveBoundsToUInt64Fields(data.PageBounds, ref _pageLocation, ref _pageSize);
                 BoundsHelper.SaveBoundsToUInt64Fields(data.TitleBarBounds, ref _titleBarLocation, ref _titleBarSize);
+                _resizeTimestamp = timestamp = data.ResizeTimestamp;
                 _drawingOffset = data.DrawingOffset;
                 _activeBorderWidth = data.ActiveBorderWidth;
                 InterlockedHelper.Increment(ref _recalculateLayoutVersion);
 
                 Size pageSize = data.PageBounds.Size;
                 if (pageSize.IsValid())
-                    RecalculatePageLayout(pageSize);
+                    RecalculatePageLayout(pageSize, timestamp);
             }
             flags = controller.GetAndResetRenderingFlags();
-            redrawAll |= flags.HasFlagFast(RenderingFlags.RedrawAll);
+            renderAll |= flags.HasFlagFast(RenderingFlags.RedrawAll);
             if (resizeTemporarily || flags.HasFlagFast(RenderingFlags.Resize))
                 controller.RequestUpdateAndResize(flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag), redrawAll: false);
         }
@@ -1053,45 +1068,82 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         if (deviceContext is null || deviceContext.IsDisposed)
             return true;
 
+        (bool Presented, bool LayoutOutdated) result;
         ClearTypeSwitcher.SetClearType(deviceContext, false);
-
-        if (redrawAll)
-            return RenderCore_RedrawAll(host, deviceContext, in data);
+        if (renderAll)
+            result = Render_All(host, deviceContext, in data);
         else
-            return RenderCore_Normal(host, deviceContext, collector, in data);
-    }
+            result = Render_Incremental(host, deviceContext, collector, in data);
 
-    private bool RenderCore_RedrawAll(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, in WindowRenderingData data)
-    {
-        DirtyAreaCollector collector = DirtyAreaCollector.Empty;
-        RenderTitle(deviceContext, collector, force: true, in data);
-        Rectangle pageBounds = data.PageBounds;
-        if (pageBounds.IsValid())
+        if (result.LayoutOutdated) // De-sync case: some elements haven't recalculate layout
         {
-            using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, _pixelsPerPoint,
-                pageBounds, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
-            RenderPage(context, in data);
+            Size pageSize = data.PageBounds.Size;
+            if (!pageSize.IsValid())
+                return false;
+
+            do
+            {
+                RecalculatePageLayout(pageSize, data.ResizeTimestamp);
+
+                deviceContext = host.BeginDraw();
+                if (deviceContext is null || deviceContext.IsDisposed)
+                    return true;
+
+                deviceContext.Clear();
+            } while ((result = Render_All(host, deviceContext, in data)).LayoutOutdated); // Always redraw everything here!
         }
-        host.EndDraw();
 
-        return host.TryPresent();
-    }
+        return result.Presented;
 
-    private bool RenderCore_Normal(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in WindowRenderingData data)
-    {
-        Vector2 pixelsPerPoint = _pixelsPerPoint;
-
-        RenderTitle(deviceContext, collector, force: false, in data);
-        Rectangle pageBounds = data.PageBounds;
-        if (pageBounds.IsValid())
+        (bool Presented, bool LayoutOutdated) Render_All(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, in WindowRenderingData data)
         {
-            using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, pixelsPerPoint,
-                pageBounds, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
-            RenderPage(context, in data);
-        }
-        host.EndDraw();
+            ref ulong elementLastLayoutTimestampRef = ref _elementLastLayoutTimestamp;
+            ulong currentResizeTimestamp = data.ResizeTimestamp;
+            InterlockedHelper.Write(ref elementLastLayoutTimestampRef, currentResizeTimestamp);
 
-        return collector.TryPresent(pixelsPerPoint);
+            DirtyAreaCollector collector = DirtyAreaCollector.Empty;
+            RenderTitle(deviceContext, collector, force: true, in data);
+            Rectangle pageBounds = data.PageBounds;
+            if (pageBounds.IsValid())
+            {
+                using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, _pixelsPerPoint,
+                    pageBounds, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
+                RenderPage(context, in data);
+            }
+            host.EndDraw();
+
+            if (InterlockedHelper.Read(ref elementLastLayoutTimestampRef) != currentResizeTimestamp)
+                return (Presented: false, LayoutOutdated: true);
+
+            return (Presented: host.TryPresent(), LayoutOutdated: false);
+        }
+
+        (bool Presented, bool LayoutOutdated) Render_Incremental(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in WindowRenderingData data)
+        {
+            ref ulong elementLastLayoutTimestampRef = ref _elementLastLayoutTimestamp;
+            ulong currentResizeTimestamp = data.ResizeTimestamp;
+            InterlockedHelper.Write(ref elementLastLayoutTimestampRef, currentResizeTimestamp);
+
+            Vector2 pixelsPerPoint = _pixelsPerPoint;
+
+            RenderTitle(deviceContext, collector, force: false, in data);
+            Rectangle pageBounds = data.PageBounds;
+            if (pageBounds.IsValid())
+            {
+                using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, pixelsPerPoint,
+                    pageBounds, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
+                RenderPage(context, in data);
+            }
+            host.EndDraw();
+
+            if (InterlockedHelper.Read(ref elementLastLayoutTimestampRef) != currentResizeTimestamp)
+            {
+                collector.Clear();
+                return (Presented: false, LayoutOutdated: true);
+            }
+
+            return (Presented: collector.TryPresent(pixelsPerPoint), LayoutOutdated: false);
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1104,7 +1156,8 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         bool force = context.IsForceRendering;
         if (force)
             RenderPageBackground(context, in data);
-        UIElementHelper.RenderElements(context, GetActiveElements(), ignoreNeedRefresh: force);
+        if (!UIElementHelper.RenderElements(context, GetActiveElements(), ignoreNeedRefresh: force))
+            return;
         UIElementHelper.RenderElement(context, _overlayElement, ignoreNeedRefresh: force || context.HasAnyDirtyArea());
     }
 

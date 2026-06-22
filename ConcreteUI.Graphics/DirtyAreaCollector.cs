@@ -53,6 +53,9 @@ public sealed partial class DirtyAreaCollector
     public void MarkAsDirty(in RectF rect) => _list?.Add(rect);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Clear() => _list?.Clear();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void UsePresentAllModeOnce() => _presentAllMode = true;
 
     public unsafe void Present(Vector2 pointsPerPixel)
