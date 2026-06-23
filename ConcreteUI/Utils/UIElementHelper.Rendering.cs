@@ -29,10 +29,8 @@ partial class UIElementHelper
             goto UnwrappableList;
         if (typeof(TEnumerable) == typeof(ObservableList<UIElement?>))
             goto ObservableList;
-        if (typeof(TEnumerable) == typeof(IList<UIElement?>))
-            goto List;
-        if (typeof(TEnumerable) == typeof(IReadOnlyList<UIElement?>))
-            goto ReadOnlyList;
+        if (typeof(TEnumerable) == typeof(ICollection<UIElement?>))
+            goto Collection;
 
         switch (elements)
         {
@@ -42,10 +40,8 @@ partial class UIElementHelper
                 goto UnwrappableList;
             case ObservableList<UIElement?>:
                 goto ObservableList;
-            case IList<UIElement?>:
-                goto List;
-            case IReadOnlyList<UIElement?>:
-                goto ReadOnlyList;
+            case ICollection<UIElement?>:
+                goto Collection;
             default:
                 goto Fallback;
         }
@@ -70,7 +66,7 @@ partial class UIElementHelper
             goto UnwrappableList;
         if (underlyingList is ObservableList<UIElement?>)
             goto ObservableList;
-        goto List;
+        goto Collection;
 
     ArrayLike:
         if (length > 0)
@@ -88,37 +84,17 @@ partial class UIElementHelper
             }
         }
 
-    List:
-        IList<UIElement?> list = UnsafeHelper.As<TEnumerable, IList<UIElement?>>(elements);
-        length = list.Count;
+    Collection:
+        ICollection<UIElement?> collection = UnsafeHelper.As<TEnumerable, ICollection<UIElement?>>(elements);
+        length = collection.Count;
         if (length > 0)
         {
             ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
             UIElement?[] buffer = pool.Rent(length);
             try
             {
-                list.CopyTo(buffer, 0);
+                collection.CopyTo(buffer, 0);
                 return RenderElementsCore(context, in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ignoreNeedRefresh);
-            }
-            finally
-            {
-                pool.Return(buffer);
-            }
-        }
-
-    ReadOnlyList:
-        IReadOnlyList<UIElement?> readOnlyList = UnsafeHelper.As<TEnumerable, IReadOnlyList<UIElement?>>(elements);
-        length = readOnlyList.Count;
-        if (length > 0)
-        {
-            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
-            UIElement?[] buffer = pool.Rent(length);
-            ref UIElement? bufferRef = ref UnsafeHelper.GetArrayDataReference(buffer);
-            try
-            {
-                for (int i = 0; i < length; i++)
-                    UnsafeHelper.AddTypedOffset(ref bufferRef, i) = readOnlyList[i];
-                return RenderElementsCore(context, ref bufferRef, (nuint)length, ignoreNeedRefresh);
             }
             finally
             {
