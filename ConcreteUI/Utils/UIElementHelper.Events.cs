@@ -873,7 +873,7 @@ partial class UIElementHelper
         static void CallEventHandler(ref readonly UIElement? elementArrayRef, nuint i,
             delegate* managed<UIElement, void> eventHandler)
         {
-            UIElement? element = UnsafeHelper.AddTypedOffset(in elementArrayRef, i);
+            UIElement? element = UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i);
             if (element is null)
                 return;
             eventHandler(element);
@@ -910,7 +910,7 @@ partial class UIElementHelper
         static void CallEventHandler(ref readonly UIElement? elementArrayRef, nuint i,
             ref TEventArgs args, delegate* managed<UIElement, ref TEventArgs, void> eventHandler)
         {
-            UIElement? element = UnsafeHelper.AddTypedOffset(in elementArrayRef, i);
+            UIElement? element = UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i);
             if (element is null)
                 return;
             eventHandler(element, ref args);
@@ -947,7 +947,7 @@ partial class UIElementHelper
         static void CallEventHandler(ref readonly UIElement? elementArrayRef, nuint i,
             ref TEventArgs args, ref TData data, delegate* managed<UIElement, ref TEventArgs, ref TData, void> eventHandler)
         {
-            UIElement? element = UnsafeHelper.AddTypedOffset(in elementArrayRef, i);
+            UIElement? element = UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i);
             if (element is null)
                 return;
             eventHandler(element, ref args, ref data);
@@ -991,7 +991,7 @@ partial class UIElementHelper
         static bool CallEventHandler(ref readonly UIElement? elementArrayRef, nuint i,
             ref TEventArgs args, delegate* managed<UIElement, ref TEventArgs, void> eventHandler)
         {
-            UIElement? element = UnsafeHelper.AddTypedOffset(in elementArrayRef, i);
+            UIElement? element = UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i);
             if (element is null)
                 return false;
             eventHandler(element, ref args);
@@ -1036,7 +1036,7 @@ partial class UIElementHelper
         static bool CallEventHandler(ref readonly UIElement? elementArrayRef, nuint i,
             ref TEventArgs args, ref TData data, delegate* managed<UIElement, ref TEventArgs, ref TData, void> eventHandler)
         {
-            UIElement? element = UnsafeHelper.AddTypedOffset(in elementArrayRef, i);
+            UIElement? element = UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i);
             if (element is null)
                 return false;
             eventHandler(element, ref args, ref data);
@@ -1086,7 +1086,7 @@ partial class UIElementHelper
         static void CallEventHandler(ref readonly UIElement? elementArrayRef, nuint i, Rect* boundsBuffer,
             ref TEventArgs args, delegate* managed<UIElement, ref TEventArgs, bool, void> eventHandler)
         {
-            UIElement? element = UnsafeHelper.AddTypedOffset(in elementArrayRef, i);
+            UIElement? element = UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i);
             if (element is null)
                 return;
             eventHandler(element, ref args, UnsafeHelper.ReadUnaligned<bool>(boundsBuffer + i));
@@ -1135,7 +1135,7 @@ partial class UIElementHelper
         static void CallEventHandler(ref readonly UIElement? elementArrayRef, nuint i, Rect* boundsBuffer,
             ref TEventArgs args, ref TData data, delegate* managed<UIElement, ref TEventArgs, ref TData, bool, void> eventHandler)
         {
-            UIElement? element = UnsafeHelper.AddTypedOffset(in elementArrayRef, i);
+            UIElement? element = UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i);
             if (element is null)
                 return;
             eventHandler(element, ref args, ref data, UnsafeHelper.ReadUnaligned<bool>(boundsBuffer + i));

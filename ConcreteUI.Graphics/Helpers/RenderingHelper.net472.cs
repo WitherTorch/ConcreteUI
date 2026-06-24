@@ -28,7 +28,7 @@ namespace ConcreteUI.Graphics.Helpers
                     RoundingMethod.Floor => FloorInPixelCore_Vectorized(valueInPoints, pixelsPerPoint),
                     RoundingMethod.Ceiling => CeilingInPixelCore_Vectorized(valueInPoints, pixelsPerPoint),
                     RoundingMethod.Round => RoundInPixelCore_Vectorized(valueInPoints, pixelsPerPoint),
-                    _ => throw new ArgumentOutOfRangeException(nameof(method))
+                    _ => ArgumentOutOfRangeException.Throw<RectF>(nameof(method))
                 };
             }
             else
@@ -38,7 +38,7 @@ namespace ConcreteUI.Graphics.Helpers
                     RoundingMethod.Floor => FloorInPixelCore_Scalarized(valueInPoints, pixelsPerPoint),
                     RoundingMethod.Ceiling => CeilingInPixelCore_Scalarized(valueInPoints, pixelsPerPoint),
                     RoundingMethod.Round => RoundInPixelCore_Scalarized(valueInPoints, pixelsPerPoint),
-                    _ => throw new ArgumentOutOfRangeException(nameof(method))
+                    _ => ArgumentOutOfRangeException.Throw<RectF>(nameof(method))
                 };
             }
         }
@@ -270,7 +270,7 @@ namespace ConcreteUI.Graphics.Helpers
                 RoundingMethod.Floor => FloorInPixelCore_Dispatch(valueVector, scaleVector),
                 RoundingMethod.Ceiling => CeilingInPixelCore_Dispatch(valueVector, scaleVector),
                 RoundingMethod.Round => RoundInPixelCore_Dispatch(valueVector, scaleVector),
-                _ => throw new ArgumentOutOfRangeException(nameof(method))
+                _ => ArgumentOutOfRangeException.Throw<Vector<float>>(nameof(method))
             };
 
         [Inline(InlineBehavior.Remove)]

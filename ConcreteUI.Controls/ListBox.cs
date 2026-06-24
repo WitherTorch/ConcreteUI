@@ -91,7 +91,7 @@ public sealed partial class ListBox : ScrollableElementBase
     public void CopySelectedItemsToBuffer(string[] destination, int startIndex, out int itemCopied)
     {
         if (startIndex < 0)
-            throw new ArgumentOutOfRangeException(nameof(startIndex));
+            ArgumentOutOfRangeException.Throw(nameof(startIndex));
         ObservableList<string> items = _items;
         int count = items.Count;
         if (count <= 0)

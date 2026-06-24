@@ -44,7 +44,7 @@ public unsafe class DWriteFontList : ComObject, IReadOnlyList<DWriteFont>
     {
         [LocalsInit(false)]
         get => index < 0 ?
-            throw new ArgumentOutOfRangeException(nameof(index)) :
+            ArgumentOutOfRangeException.Throw<DWriteFont>(nameof(index)) :
             GetFont(unchecked((uint)index));
     }
 

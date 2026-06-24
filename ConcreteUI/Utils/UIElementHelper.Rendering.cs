@@ -132,27 +132,27 @@ partial class UIElementHelper
         int i;
         for (i = 0; length >= 4; length -= 4, i += 4)
         {
-            if (!RenderElement(context, UnsafeHelper.AddTypedOffset(in elementArrayRef, i), ignoreNeedRefresh))
+            if (!RenderElement(context, UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i), ignoreNeedRefresh))
                 return false;
-            if (!RenderElement(context, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 1), ignoreNeedRefresh))
+            if (!RenderElement(context, UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i + 1), ignoreNeedRefresh))
                 return false;
-            if (!RenderElement(context, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 2), ignoreNeedRefresh))
+            if (!RenderElement(context, UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i + 2), ignoreNeedRefresh))
                 return false;
-            if (!RenderElement(context, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 3), ignoreNeedRefresh))
+            if (!RenderElement(context, UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i + 3), ignoreNeedRefresh))
                 return false;
         }
         switch (length)
         {
             case 3:
-                if (!RenderElement(context, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 2), ignoreNeedRefresh))
+                if (!RenderElement(context, UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i + 2), ignoreNeedRefresh))
                     return false;
                 goto case 2;
             case 2:
-                if (!RenderElement(context, UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 1), ignoreNeedRefresh))
+                if (!RenderElement(context, UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i + 1), ignoreNeedRefresh))
                     return false;
                 goto case 1;
             case 1:
-                return RenderElement(context, UnsafeHelper.AddTypedOffset(in elementArrayRef, i), ignoreNeedRefresh);
+                return RenderElement(context, UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i), ignoreNeedRefresh);
         }
         return true;
     }

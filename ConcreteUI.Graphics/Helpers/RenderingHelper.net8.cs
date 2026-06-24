@@ -88,7 +88,7 @@ unsafe static partial class RenderingHelper
             RoundingMethod.Floor => FloorInPixelCore_Dispatch(valueVector, scaleVector),
             RoundingMethod.Ceiling => CeilingInPixelCore_Dispatch(valueVector, scaleVector),
             RoundingMethod.Round => RoundInPixelCore_Dispatch(valueVector, scaleVector),
-            _ => throw new ArgumentOutOfRangeException(nameof(method))
+            _ => ArgumentOutOfRangeException.Throw<Vector128<float>>(nameof(method))
         };
 
     [Inline(InlineBehavior.Remove)]

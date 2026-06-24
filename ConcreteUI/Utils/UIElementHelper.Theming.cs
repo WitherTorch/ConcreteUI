@@ -40,7 +40,7 @@ partial class UIElementHelper
         ref D2D1Brush? brushesRef = ref UnsafeHelper.GetArrayDataReference(brushes);
         ref readonly string nodesRef = ref UnsafeHelper.GetArrayDataReference(nodes);
         for (nuint i = 0; i < length; i++)
-            ApplyTheme(provider, ref UnsafeHelper.AddTypedOffset(ref brushesRef, i), UnsafeHelper.AddTypedOffset(in nodesRef, i));
+            ApplyTheme(provider, ref UnsafeHelper.AddTypedOffset(ref brushesRef, i), UnsafeHelper.AddTypedOffsetAsReadOnly(in nodesRef, i));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -49,7 +49,7 @@ partial class UIElementHelper
         ref D2D1Brush? brushesRef = ref UnsafeHelper.GetArrayDataReference(brushes);
         ref readonly string nodesRef = ref UnsafeHelper.GetArrayDataReference(nodes);
         for (nuint i = 0; i < length; i++)
-            ApplyTheme(provider, ref UnsafeHelper.AddTypedOffset(ref brushesRef, i), nodePrefix + "." + UnsafeHelper.AddTypedOffset(in nodesRef, i));
+            ApplyTheme(provider, ref UnsafeHelper.AddTypedOffset(ref brushesRef, i), nodePrefix + "." + UnsafeHelper.AddTypedOffsetAsReadOnly(in nodesRef, i));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -176,21 +176,21 @@ partial class UIElementHelper
         int i;
         for (i = 0; length >= 4; length -= 4, i += 4)
         {
-            UnsafeHelper.AddTypedOffset(in elementArrayRef, i)?.ApplyTheme(provider);
-            UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 1)?.ApplyTheme(provider);
-            UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 2)?.ApplyTheme(provider);
-            UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 3)?.ApplyTheme(provider);
+            UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i)?.ApplyTheme(provider);
+            UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i + 1)?.ApplyTheme(provider);
+            UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i + 2)?.ApplyTheme(provider);
+            UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i + 3)?.ApplyTheme(provider);
         }
         switch (length)
         {
             case 3:
-                UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 2)?.ApplyTheme(provider);
+                UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i + 2)?.ApplyTheme(provider);
                 goto case 2;
             case 2:
-                UnsafeHelper.AddTypedOffset(in elementArrayRef, i + 1)?.ApplyTheme(provider);
+                UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i + 1)?.ApplyTheme(provider);
                 goto case 1;
             case 1:
-                UnsafeHelper.AddTypedOffset(in elementArrayRef, i)?.ApplyTheme(provider);
+                UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i)?.ApplyTheme(provider);
                 break;
         }
     }

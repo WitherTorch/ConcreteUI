@@ -58,22 +58,16 @@ public abstract partial class UIElement : ICheckableDisposable
     public LayoutNode GetLayoutDefinition(LayoutProperty property)
     {
         if (property >= LayoutProperty._Last)
-            return Throw();
+            return ArgumentOutOfRangeException.Throw<LayoutNode>(nameof(property));
         return GetLayoutDefinitionCore((nuint)property);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static LayoutNode Throw() => throw new ArgumentOutOfRangeException(nameof(property));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public LayoutNode? GetLayoutExpression(LayoutProperty property)
     {
         if (property >= LayoutProperty._Last)
-            return Throw();
-        return GetLayoutExpressionCore((nuint)property);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static LayoutNode Throw() => throw new ArgumentOutOfRangeException(nameof(property));
+			return ArgumentOutOfRangeException.Throw<LayoutNode>(nameof(property));
+		return GetLayoutExpressionCore((nuint)property);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -87,7 +81,7 @@ public abstract partial class UIElement : ICheckableDisposable
         SetLayoutExpressionCore((nuint)property, variable);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static void Throw() => throw new ArgumentOutOfRangeException(nameof(property));
+        static void Throw() => ArgumentOutOfRangeException.Throw(nameof(property));
     }
 
     [Inline(InlineBehavior.Remove)]

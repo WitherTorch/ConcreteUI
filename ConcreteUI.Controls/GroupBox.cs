@@ -58,7 +58,7 @@ public sealed partial class GroupBox : UIElement, IElementContainer
     public LayoutNode GetContentLayoutDefinition(LayoutProperty property)
     {
         if (property >= LayoutProperty._Last)
-            throw new ArgumentOutOfRangeException(nameof(property));
+            ArgumentOutOfRangeException.Throw(nameof(property));
         return GetContentLayoutDefinitionCore((nuint)property);
     }
 
@@ -84,7 +84,7 @@ public sealed partial class GroupBox : UIElement, IElementContainer
                 (nuint)LayoutProperty.Bottom => new ContentBottomNode(reference),
                 (nuint)LayoutProperty.Width => new ContentWidthNode(reference),
                 (nuint)LayoutProperty.Height => new ContentHeightNode(reference),
-                _ => throw new ArgumentOutOfRangeException(nameof(property))
+                _ => ArgumentOutOfRangeException.Throw<LayoutNode>(nameof(property))
             };
         }
         return variable;

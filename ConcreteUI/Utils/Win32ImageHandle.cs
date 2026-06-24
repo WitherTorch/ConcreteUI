@@ -17,7 +17,7 @@ public sealed class Win32ImageHandle : CriticalFinalizerObject, IDisposable
         if (ownsHandle && handle != IntPtr.Zero)
         {
             if (type >= Win32ImageType.EmhMetafile)
-                throw new ArgumentOutOfRangeException(nameof(type));
+                ArgumentOutOfRangeException.Throw(nameof(type));
             _handle = handle;
             _type = type;
             return;

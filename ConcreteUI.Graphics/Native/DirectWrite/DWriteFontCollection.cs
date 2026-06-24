@@ -46,7 +46,7 @@ public unsafe sealed class DWriteFontCollection : ComObject, IReadOnlyCollection
     {
         [LocalsInit(false)]
         get => index < 0 ?
-            throw new ArgumentOutOfRangeException(nameof(index)) :
+            ArgumentOutOfRangeException.Throw<DWriteFontFamily>(nameof(index)) :
             GetFontFamily(unchecked((uint)index));
     }
 

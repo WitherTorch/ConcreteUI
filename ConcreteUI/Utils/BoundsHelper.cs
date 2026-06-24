@@ -38,7 +38,7 @@ public static unsafe partial class BoundsHelper
 
         static void DoSingleOperation(Rect* ptr, ref readonly UIElement? elementRef, nuint offset)
         {
-            UIElement? element = UnsafeHelper.AddTypedOffset(in elementRef, offset);
+            UIElement? element = UnsafeHelper.AddTypedOffsetAsReadOnly(in elementRef, offset);
             *ptr = element is null ? Rect.Empty : FastGetBounds(element);
         }
     }

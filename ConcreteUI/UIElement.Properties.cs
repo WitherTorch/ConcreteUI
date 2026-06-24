@@ -297,7 +297,7 @@ partial class UIElement
             LayoutProperty.Bottom => Bottom,
             LayoutProperty.Height => Height,
             LayoutProperty.Width => Width,
-            _ => throw new ArgumentOutOfRangeException(nameof(property)),
+            _ => ArgumentOutOfRangeException.Throw<int>(nameof(property)),
         };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -324,7 +324,8 @@ partial class UIElement
                 Width = value;
                 break;
             default:
-                throw new ArgumentOutOfRangeException(nameof(property));
+                ArgumentOutOfRangeException.Throw(nameof(property));
+                break;
         }
     }
 }

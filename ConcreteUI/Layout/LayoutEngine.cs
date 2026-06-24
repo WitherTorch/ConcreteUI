@@ -191,7 +191,7 @@ public sealed class LayoutEngine : ILayoutEngine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void QueueElementCore(ref readonly UIElement? elementArrayRef, nuint i, ulong timestamp)
     {
-        UIElement? element = UnsafeHelper.AddTypedOffset(in elementArrayRef, i);
+        UIElement? element = UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i);
         if (element is null)
             return;
         QueueElement(element, timestamp);
@@ -216,7 +216,7 @@ public sealed class LayoutEngine : ILayoutEngine
                 segment = AllocSegment();
                 array = segment.Array;
             }
-            UnsafeHelper.AddTypedOffset(in UnsafeHelper.GetArrayDataReference(array!), segment.Offset + (int)prop) = expression;
+            UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(array!), segment.Offset + (int)prop) = expression;
         }
         if (segment.Array is null)
             element.SetLastLayoutTimestampUnsafe(timestamp);
@@ -246,7 +246,7 @@ public sealed class LayoutEngine : ILayoutEngine
                     Rectangle bounds = default;
                     int* values = (int*)&bounds;
 
-                    ref LayoutNode? expressionArrayRef = ref UnsafeHelper.AddTypedOffset(in UnsafeHelper.GetArrayDataReference(expressions.Array!), expressions.Offset);
+                    ref LayoutNode? expressionArrayRef = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(expressions.Array!), expressions.Offset);
 
                     bool hasNull = false;
                     for (nuint i = (nuint)LayoutProperty.Left; i <= (nuint)LayoutProperty.Top; i++)

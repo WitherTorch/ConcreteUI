@@ -46,7 +46,7 @@ public unsafe sealed class D2D1GradientStopCollection : D2D1Resource, IReadOnlyC
     int IReadOnlyCollection<D2D1GradientStop>.Count => MathHelper.MakeSigned(GetGradientStopCount());
 
     public D2D1GradientStop this[int index] => index < 0 ?
-        throw new ArgumentOutOfRangeException(nameof(index)) :
+        ArgumentOutOfRangeException.Throw<D2D1GradientStop>(nameof(index)) :
         _arrayLazy.Value[index];
 
     public D2D1GradientStop this[uint index] => _arrayLazy.Value[index];

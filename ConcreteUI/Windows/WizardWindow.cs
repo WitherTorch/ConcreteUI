@@ -263,7 +263,7 @@ public abstract class WizardWindow : PagedWindow
     protected D2D1Brush GetBrush(Brush brush)
     {
         if (brush >= Brush._Last)
-            throw new ArgumentOutOfRangeException(nameof(brush));
+            ArgumentOutOfRangeException.Throw(nameof(brush));
         return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)brush);
     }
 

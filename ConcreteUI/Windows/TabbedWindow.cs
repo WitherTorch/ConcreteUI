@@ -66,9 +66,9 @@ public abstract class TabbedWindow : PagedWindow
     {
         int pageCount = menuTitles.Length;
         if (pageCount < 0)
-            throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be negative.");
+            ArgumentOutOfRangeException.Throw(nameof(menuTitles), "Menu titles count cannot be negative.");
         if (pageCount > 64)
-            throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
+            ArgumentOutOfRangeException.Throw(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
         _pageCount = (uint)pageCount;
         _menuTitles = menuTitles;
     }
@@ -77,9 +77,9 @@ public abstract class TabbedWindow : PagedWindow
     {
         int pageCount = menuTitles.Length;
         if (pageCount < 0)
-            throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be negative.");
+            ArgumentOutOfRangeException.Throw(nameof(menuTitles), "Menu titles count cannot be negative.");
         if (pageCount > 64)
-            throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
+            ArgumentOutOfRangeException.Throw(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
         _pageCount = (uint)pageCount;
         _menuTitles = menuTitles;
     }
@@ -88,9 +88,9 @@ public abstract class TabbedWindow : PagedWindow
     {
         int pageCount = menuTitles.Length;
         if (pageCount < 0)
-            throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be negative.");
+            ArgumentOutOfRangeException.Throw(nameof(menuTitles), "Menu titles count cannot be negative.");
         if (pageCount > 64)
-            throw new ArgumentOutOfRangeException(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
+            ArgumentOutOfRangeException.Throw(nameof(menuTitles), "Menu titles count cannot be greater than 64.");
         _pageCount = (uint)pageCount;
         _menuTitles = menuTitles;
     }
@@ -365,7 +365,7 @@ public abstract class TabbedWindow : PagedWindow
     protected D2D1Brush GetBrush(Brush brush)
     {
         if (brush >= Brush._Last)
-            throw new ArgumentOutOfRangeException(nameof(brush));
+            ArgumentOutOfRangeException.Throw(nameof(brush));
         return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)brush);
     }
 

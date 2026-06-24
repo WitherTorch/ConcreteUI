@@ -153,6 +153,6 @@ public static partial class RenderingHelper
             RoundingMethod.Floor => MathF.Floor(valueInPoints * pixelsPerPoint) / pixelsPerPoint,
             RoundingMethod.Ceiling => MathF.Ceiling(valueInPoints * pixelsPerPoint) / pixelsPerPoint,
             RoundingMethod.Round => MathF.Round(valueInPoints * pixelsPerPoint, MidpointRounding.AwayFromZero) / pixelsPerPoint,
-            _ => throw new ArgumentOutOfRangeException(nameof(method))
+            _ => ArgumentOutOfRangeException.Throw<float>(nameof(method))
         };
 }

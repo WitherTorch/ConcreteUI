@@ -10,7 +10,7 @@ internal sealed class UIElementLayoutNode : LayoutNode
     public UIElementLayoutNode(UIElement element, LayoutProperty property)
     {
         if (property < LayoutProperty.Left || property >= LayoutProperty._Last)
-            throw new ArgumentOutOfRangeException(nameof(property));
+            ArgumentOutOfRangeException.Throw(nameof(property));
         _property = property;
         _reference = new WeakReference<UIElement>(element);
     }
@@ -18,7 +18,7 @@ internal sealed class UIElementLayoutNode : LayoutNode
     public UIElementLayoutNode(WeakReference<UIElement> reference, LayoutProperty property)
     {
         if (property < LayoutProperty.Left || property >= LayoutProperty._Last)
-            throw new ArgumentOutOfRangeException(nameof(property));
+            ArgumentOutOfRangeException.Throw(nameof(property));
         _property = property;
         _reference = reference;
     }

@@ -64,7 +64,7 @@ partial class ThemedBrushFactory
         public Builder WithVariant(WindowMaterial material, Func<D2D1DeviceContext, D2D1Brush> brushFactory)
         {
             if (material < WindowMaterial.None || material >= WindowMaterial._Last)
-                throw new ArgumentOutOfRangeException(nameof(material));
+                ArgumentOutOfRangeException.Throw(nameof(material));
             UnwrappableList<byte> variantKeyList = _variantKeyList;
             UnwrappableList<Func<D2D1DeviceContext, D2D1Brush>> variantBrushFactoryList = _variantBrushFactoryList;
             byte key = (byte)material;

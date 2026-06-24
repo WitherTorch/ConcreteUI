@@ -20,7 +20,7 @@ partial class NativeWindow
             WindowState.Normal => ShowWindowCommands.ShowNormal,
             WindowState.Minimized => ShowWindowCommands.ShowMinimized,
             WindowState.Maximized => ShowWindowCommands.ShowMaximized,
-            _ => throw new ArgumentOutOfRangeException(nameof(showState))
+            _ => ArgumentOutOfRangeException.Throw<ShowWindowCommands>(nameof(showState))
         });
 
     private unsafe IntPtr CreateWindowHandle(IntPtr parent)

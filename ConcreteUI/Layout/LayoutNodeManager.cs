@@ -38,15 +38,12 @@ public readonly ref struct LayoutNodeManager
     public readonly LayoutNode? GetLayoutNodeOrNull(UIElement element, LayoutProperty property)
     {
         if (property >= LayoutProperty._Last)
-            return Throw();
+            return ArgumentOutOfRangeException.Throw<LayoutNode>(nameof(property));
 
         if (!_elementDict.TryGetValue(element, out ArraySegment<LayoutNode?> segment))
             return null;
 
-        return UnsafeHelper.AddTypedOffset(in UnsafeHelper.GetArrayDataReference(segment.Array!), segment.Offset + (int)property);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static LayoutNode? Throw() => throw new ArgumentOutOfRangeException(nameof(property));
+        return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(segment.Array!), segment.Offset + (int)property);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -58,23 +55,23 @@ public readonly ref struct LayoutNodeManager
         if (!_elementDict.TryGetValue(element, out ArraySegment<LayoutNode?> segment))
         {
             Rect bounds = element.Bounds;
-            UnsafeHelper.AddTypedOffset(in resultRef, (nuint)LayoutProperty.Left) = bounds.Left;
-            UnsafeHelper.AddTypedOffset(in resultRef, (nuint)LayoutProperty.Top) = bounds.Top;
-            UnsafeHelper.AddTypedOffset(in resultRef, (nuint)LayoutProperty.Right) = bounds.Right;
-            UnsafeHelper.AddTypedOffset(in resultRef, (nuint)LayoutProperty.Bottom) = bounds.Bottom;
-            UnsafeHelper.AddTypedOffset(in resultRef, (nuint)LayoutProperty.Width) = bounds.Width;
-            UnsafeHelper.AddTypedOffset(in resultRef, (nuint)LayoutProperty.Height) = bounds.Height;
+            UnsafeHelper.AddTypedOffset(ref resultRef, (nuint)LayoutProperty.Left) = bounds.Left;
+            UnsafeHelper.AddTypedOffset(ref resultRef, (nuint)LayoutProperty.Top) = bounds.Top;
+            UnsafeHelper.AddTypedOffset(ref resultRef, (nuint)LayoutProperty.Right) = bounds.Right;
+            UnsafeHelper.AddTypedOffset(ref resultRef, (nuint)LayoutProperty.Bottom) = bounds.Bottom;
+            UnsafeHelper.AddTypedOffset(ref resultRef, (nuint)LayoutProperty.Width) = bounds.Width;
+            UnsafeHelper.AddTypedOffset(ref resultRef, (nuint)LayoutProperty.Height) = bounds.Height;
             return result;
         }
 
-        ref LayoutNode? nodeRef = ref UnsafeHelper.AddTypedOffset(in UnsafeHelper.GetArrayDataReference(segment.Array!), segment.Offset);
+        ref LayoutNode? nodeRef = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(segment.Array!), segment.Offset);
 
         for (nuint property = (nuint)LayoutProperty.Left; property < (nuint)LayoutProperty._Last; property++)
         {
-            LayoutNode? node = UnsafeHelper.AddTypedOffset(in nodeRef, property);
+            LayoutNode? node = UnsafeHelper.AddTypedOffset(ref nodeRef, property);
             if (node is null)
                 continue;
-            UnsafeHelper.AddTypedOffset(in resultRef, property) = GetComputedValue(node);
+            UnsafeHelper.AddTypedOffset(ref resultRef, property) = GetComputedValue(node);
         }
         return result;
     }
@@ -83,7 +80,7 @@ public readonly ref struct LayoutNodeManager
     public readonly int GetComputedValue(UIElement element, LayoutProperty property)
     {
         if (property >= LayoutProperty._Last)
-            return Throw();
+            return ArgumentOutOfRangeException.Throw<int>(nameof(property));
 
         if (!_elementDict.TryGetValue(element, out ArraySegment<LayoutNode?> segment))
         {
@@ -95,34 +92,31 @@ public readonly ref struct LayoutNodeManager
                 LayoutProperty.Bottom => element.Bottom,
                 LayoutProperty.Width => element.Width,
                 LayoutProperty.Height => element.Height,
-                _ => Throw()
+                _ => ArgumentOutOfRangeException.Throw<int>(nameof(property))
             };
         }
 
-        ref LayoutNode? nodeRef = ref UnsafeHelper.AddTypedOffset(in UnsafeHelper.GetArrayDataReference(segment.Array!), segment.Offset);
-        LayoutNode? node = UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)property);
+        ref readonly LayoutNode? nodeRef = ref UnsafeHelper.AddTypedOffsetAsReadOnly(ref UnsafeHelper.GetArrayDataReference(segment.Array!), segment.Offset);
+        LayoutNode? node = UnsafeHelper.AddTypedOffsetAsReadOnly(in nodeRef, (nuint)property);
         if (node is not null)
             return GetComputedValue(node);
 
         return property switch
         {
-            LayoutProperty.Left => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Right)) -
-                GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Width)),
-            LayoutProperty.Top => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Bottom)) -
-                GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Height)),
-            LayoutProperty.Right => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Left)) +
-                GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Width)),
-            LayoutProperty.Bottom => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Top)) +
-                GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Height)),
-            LayoutProperty.Width => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Right)) -
-                GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Left)),
-            LayoutProperty.Height => GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Bottom)) -
-                GetComputedValueOrZero(UnsafeHelper.AddTypedOffset(in nodeRef, (nuint)LayoutProperty.Top)),
-            _ => Throw()
+            LayoutProperty.Left => GetComputedValueOrZero(UnsafeHelper.AddTypedOffsetAsReadOnly(in nodeRef, (nuint)LayoutProperty.Right)) -
+                GetComputedValueOrZero(UnsafeHelper.AddTypedOffsetAsReadOnly(in nodeRef, (nuint)LayoutProperty.Width)),
+            LayoutProperty.Top => GetComputedValueOrZero(UnsafeHelper.AddTypedOffsetAsReadOnly(in nodeRef, (nuint)LayoutProperty.Bottom)) -
+                GetComputedValueOrZero(UnsafeHelper.AddTypedOffsetAsReadOnly(in nodeRef, (nuint)LayoutProperty.Height)),
+            LayoutProperty.Right => GetComputedValueOrZero(UnsafeHelper.AddTypedOffsetAsReadOnly(in nodeRef, (nuint)LayoutProperty.Left)) +
+                GetComputedValueOrZero(UnsafeHelper.AddTypedOffsetAsReadOnly(in nodeRef, (nuint)LayoutProperty.Width)),
+            LayoutProperty.Bottom => GetComputedValueOrZero(UnsafeHelper.AddTypedOffsetAsReadOnly(in nodeRef, (nuint)LayoutProperty.Top)) +
+                GetComputedValueOrZero(UnsafeHelper.AddTypedOffsetAsReadOnly(in nodeRef, (nuint)LayoutProperty.Height)),
+            LayoutProperty.Width => GetComputedValueOrZero(UnsafeHelper.AddTypedOffsetAsReadOnly(in nodeRef, (nuint)LayoutProperty.Right)) -
+                GetComputedValueOrZero(UnsafeHelper.AddTypedOffsetAsReadOnly(in nodeRef, (nuint)LayoutProperty.Left)),
+            LayoutProperty.Height => GetComputedValueOrZero(UnsafeHelper.AddTypedOffsetAsReadOnly(in nodeRef, (nuint)LayoutProperty.Bottom)) -
+                GetComputedValueOrZero(UnsafeHelper.AddTypedOffsetAsReadOnly(in nodeRef, (nuint)LayoutProperty.Top)),
+            _ => ArgumentOutOfRangeException.Throw<int>(nameof(property))
         };
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static int Throw() => throw new ArgumentOutOfRangeException(nameof(property));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
