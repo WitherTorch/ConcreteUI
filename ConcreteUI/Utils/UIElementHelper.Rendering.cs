@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -7,7 +6,7 @@ using ConcreteUI.Graphics.Native.Direct2D;
 using ConcreteUI.Internals;
 
 using WitherTorch.Common.Buffers;
-using WitherTorch.Common.Collections;
+using WitherTorch.Common.Extensions;
 using WitherTorch.Common.Helpers;
 using WitherTorch.Common.Structures;
 
@@ -20,110 +19,12 @@ partial class UIElementHelper
 
     public static bool RenderElements<TEnumerable>(in RegionalRenderingContext context, TEnumerable elements, bool ignoreNeedRefresh) where TEnumerable : IEnumerable<UIElement?>
     {
-        UIElement?[] array;
-        int length;
+        using ArrayPool<UIElement?>.RentScope scope = ArrayPool<UIElement?>.Shared.EnterRentScopeAndCapture(elements);
 
-        if (typeof(TEnumerable) == typeof(UIElement?[]))
-            goto Array;
-        if (typeof(TEnumerable) == typeof(UnwrappableList<UIElement?>))
-            goto UnwrappableList;
-        if (typeof(TEnumerable) == typeof(ObservableList<UIElement?>))
-            goto ObservableList;
-        if (typeof(TEnumerable) == typeof(ICollection<UIElement?>))
-            goto Collection;
-
-        switch (elements)
-        {
-            case UIElement?[]:
-                goto Array;
-            case UnwrappableList<UIElement?>:
-                goto UnwrappableList;
-            case ObservableList<UIElement?>:
-                goto ObservableList;
-            case ICollection<UIElement?>:
-                goto Collection;
-            default:
-                goto Fallback;
-        }
-
-    Array:
-        array = UnsafeHelper.As<TEnumerable, UIElement?[]>(elements);
-        length = array.Length;
-        goto ArrayLike;
-
-    UnwrappableList:
-        UnwrappableList<UIElement?> unwrappableList = UnsafeHelper.As<TEnumerable, UnwrappableList<UIElement?>>(elements);
-        array = unwrappableList.Unwrap();
-        length = unwrappableList.Count;
-        goto ArrayLike;
-
-    ObservableList:
-        IList<UIElement?> underlyingList = UnsafeHelper.As<TEnumerable, ObservableList<UIElement?>>(elements).GetUnderlyingList();
-        elements = UnsafeHelper.As<IList<UIElement?>, TEnumerable>(underlyingList);
-        if (underlyingList is UIElement?[])
-            goto Array;
-        if (underlyingList is UnwrappableList<UIElement?>)
-            goto UnwrappableList;
-        if (underlyingList is ObservableList<UIElement?>)
-            goto ObservableList;
-        goto Collection;
-
-    ArrayLike:
-        if (length > 0)
-        {
-            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
-            UIElement?[] buffer = pool.Rent(length);
-            try
-            {
-                Array.Copy(array, buffer, length);
-                return RenderElementsCore(context, in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ignoreNeedRefresh);
-            }
-            finally
-            {
-                pool.Return(buffer);
-            }
-        }
-
-    Collection:
-        ICollection<UIElement?> collection = UnsafeHelper.As<TEnumerable, ICollection<UIElement?>>(elements);
-        length = collection.Count;
-        if (length > 0)
-        {
-            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
-            UIElement?[] buffer = pool.Rent(length);
-            try
-            {
-                collection.CopyTo(buffer, 0);
-                return RenderElementsCore(context, in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ignoreNeedRefresh);
-            }
-            finally
-            {
-                pool.Return(buffer);
-            }
-        }
-
-    Fallback:
-        using IEnumerator<UIElement?> enumerator = elements.GetEnumerator();
-        if (enumerator.MoveNext())
-        {
-            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
-            using PooledList<UIElement?> bufferList = new PooledList<UIElement?>(pool, capacity: 16);
-            do
-            {
-                bufferList.Add(enumerator.Current);
-            } while (enumerator.MoveNext());
-            (UIElement?[] buffer, length) = bufferList;
-            try
-            {
-                return RenderElementsCore(context, in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, ignoreNeedRefresh);
-            }
-            finally
-            {
-                pool.Return(buffer);
-            }
-        }
-
-        return true;
+        int count = scope.Count;
+        if (count <= 0)
+            return true;
+        return RenderElementsCore(context, in scope.GetReferenceOfFirstElement(), (nuint)count, ignoreNeedRefresh);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
