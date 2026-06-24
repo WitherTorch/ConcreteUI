@@ -64,11 +64,7 @@ partial class UIElementHelper
         where TEnumerable : IEnumerable<UIElement?>
     {
         using ArrayPool<UIElement?>.RentScope scope = ArrayPool<UIElement?>.Shared.EnterRentScopeAndCapture(elements);
-
-        int count = scope.Count;
-        if (count <= 0)
-            return;
-        ApplyThemeCore(provider, in scope.GetReferenceOfFirstElement(), (nuint)count);
+        ApplyThemeCore(provider, in scope.GetReferenceOfFirstElement(), MathHelper.MakeUnsigned(scope.Count));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

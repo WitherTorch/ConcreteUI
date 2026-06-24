@@ -20,11 +20,7 @@ partial class UIElementHelper
     public static bool RenderElements<TEnumerable>(in RegionalRenderingContext context, TEnumerable elements, bool ignoreNeedRefresh) where TEnumerable : IEnumerable<UIElement?>
     {
         using ArrayPool<UIElement?>.RentScope scope = ArrayPool<UIElement?>.Shared.EnterRentScopeAndCapture(elements);
-
-        int count = scope.Count;
-        if (count <= 0)
-            return true;
-        return RenderElementsCore(context, in scope.GetReferenceOfFirstElement(), (nuint)count, ignoreNeedRefresh);
+        return RenderElementsCore(context, in scope.GetReferenceOfFirstElement(), MathHelper.MakeUnsigned(scope.Count), ignoreNeedRefresh);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

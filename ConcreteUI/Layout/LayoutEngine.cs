@@ -4,14 +4,8 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 
 using WitherTorch.Common.Buffers;
-using WitherTorch.Common.Collections;
-using WitherTorch.Common.Helpers;
-
-
-
-#if !NET8_0_OR_GREATER
 using WitherTorch.Common.Extensions;
-#endif
+using WitherTorch.Common.Helpers;
 
 namespace ConcreteUI.Layout;
 
@@ -54,110 +48,8 @@ public sealed class LayoutEngine : ILayoutEngine
 
     private void QueueElements<TEnumerable>(TEnumerable elements, ulong timestamp) where TEnumerable : IEnumerable<UIElement?>
     {
-        UIElement?[] array;
-        int length;
-
-        if (typeof(TEnumerable) == typeof(UIElement?[]))
-            goto Array;
-        if (typeof(TEnumerable) == typeof(UnwrappableList<UIElement?>))
-            goto UnwrappableList;
-        if (typeof(TEnumerable) == typeof(ObservableList<UIElement?>))
-            goto ObservableList;
-        if (typeof(TEnumerable) == typeof(ICollection<UIElement?>))
-            goto Collection;
-
-        switch (elements)
-        {
-            case UIElement?[]:
-                goto Array;
-            case UnwrappableList<UIElement?>:
-                goto UnwrappableList;
-            case ObservableList<UIElement?>:
-                goto ObservableList;
-            case ICollection<UIElement?>:
-                goto Collection;
-            default:
-                goto Fallback;
-        }
-
-    Array:
-        array = UnsafeHelper.As<TEnumerable, UIElement?[]>(elements);
-        length = array.Length;
-        goto ArrayLike;
-
-    UnwrappableList:
-        UnwrappableList<UIElement?> unwrappableList = UnsafeHelper.As<TEnumerable, UnwrappableList<UIElement?>>(elements);
-        array = unwrappableList.Unwrap();
-        length = unwrappableList.Count;
-        goto ArrayLike;
-
-    ObservableList:
-        IList<UIElement?> underlyingList = UnsafeHelper.As<TEnumerable, ObservableList<UIElement?>>(elements).GetUnderlyingList();
-        elements = UnsafeHelper.As<IList<UIElement?>, TEnumerable>(underlyingList);
-        if (underlyingList is UIElement?[])
-            goto Array;
-        if (underlyingList is UnwrappableList<UIElement?>)
-            goto UnwrappableList;
-        if (underlyingList is ObservableList<UIElement?>)
-            goto ObservableList;
-        goto Collection;
-
-    ArrayLike:
-        if (length > 0)
-        {
-            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
-            UIElement?[] buffer = pool.Rent(length);
-            try
-            {
-                Array.Copy(array, buffer, length);
-                QueueElementsCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, timestamp);
-            }
-            finally
-            {
-                pool.Return(buffer);
-            }
-        }
-        return;
-
-    Collection:
-        ICollection<UIElement?> collection = UnsafeHelper.As<TEnumerable, ICollection<UIElement?>>(elements);
-        length = collection.Count;
-        if (length > 0)
-        {
-            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
-            UIElement?[] buffer = pool.Rent(length);
-            try
-            {
-                collection.CopyTo(buffer, 0);
-                QueueElementsCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, timestamp);
-            }
-            finally
-            {
-                pool.Return(buffer);
-            }
-        }
-        return;
-
-    Fallback:
-        using IEnumerator<UIElement?> enumerator = elements.GetEnumerator();
-        if (enumerator.MoveNext())
-        {
-            ArrayPool<UIElement?> pool = ArrayPool<UIElement?>.Shared;
-            using PooledList<UIElement?> bufferList = new(pool);
-            do
-            {
-                bufferList.Add(enumerator.Current);
-            } while (enumerator.MoveNext());
-            (UIElement?[] buffer, length) = bufferList;
-            try
-            {
-                QueueElementsCore(in UnsafeHelper.GetArrayDataReference(buffer), (nuint)length, timestamp);
-            }
-            finally
-            {
-                pool.Return(buffer);
-            }
-        }
+        using ArrayPool<UIElement?>.RentScope scope = ArrayPool<UIElement?>.Shared.EnterRentScopeAndCapture(elements);
+        QueueElementsCore(in scope.GetReferenceOfFirstElement(), MathHelper.MakeUnsigned(scope.Count), timestamp);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
