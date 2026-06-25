@@ -1,15 +1,22 @@
 using System.Threading;
 
 using ConcreteUI.Graphics;
+using ConcreteUI.Utils;
 
 namespace ConcreteUI.Test;
 
 partial class MainWindow
 {
-    protected override void RenderPage(in RegionalRenderingContext context, in WindowRenderingData data)
+    protected override RenderResult RenderPage(in RegionalRenderingContext context, in WindowRenderingData data)
     {
-        base.RenderPage(context, data);
-        if (Volatile.Read(ref _isAnimating))
-            UpdateAndResize();
+        try
+        {
+            return base.RenderPage(context, data);
+        }
+        finally
+        {
+            if (Volatile.Read(ref _isAnimating))
+                UpdateAndResize();
+        }
     }
 }

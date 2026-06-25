@@ -39,12 +39,20 @@ partial class CoreWindow
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BatchUpdateScope(RenderingController controller)
         {
-            _controller = controller;
             controller.Lock();
+            _controller = controller;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Dispose() => ReferenceHelper.Exchange(ref _controller, null)?.Unlock();
+        public void Dispose()
+        {
+            RenderingController? controller = _controller;
+            if (controller is null)
+                return;
+            _controller = null;
+            controller.RequestUpdate(false);
+            controller.Unlock();
+        }
     }
 
     [StructLayout(LayoutKind.Auto)]
@@ -55,12 +63,20 @@ partial class CoreWindow
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CriticalUpdateScope(RenderingController controller)
         {
-            _controller = controller;
             controller.Lock();
             controller.WaitForRendering();
+            _controller = controller;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Dispose() => ReferenceHelper.Exchange(ref _controller, null)?.Unlock();
+        public void Dispose()
+        {
+            RenderingController? controller = _controller;
+            if (controller is null)
+                return;
+            _controller = null;
+            controller.RequestUpdate(false);
+            controller.Unlock();
+        }
     }
 }

@@ -138,15 +138,7 @@ partial class MainWindow
             MultiLine = true
         };
         textbox.HeightExpression = LayoutNode.Min(textbox.AutoHeightDefinition, PageHeightDefinition / 2 - textbox.TopDefinition);
-        textbox.TextChanging += (_, ref _) => GetRenderingController()?.Lock(); // 避免閃爍
-        textbox.TextChanged += (_, _) =>
-        {
-            RenderingController? controller = GetRenderingController();
-            if (controller is null)
-                return;
-            controller.RequestUpdateAndResize(temporarily: false);
-            controller.Unlock();
-        };
+        textbox.TextChanging += (object sender, ref TextChangingEventArgs _) => (sender as UIElement)?.ResetLayoutTimestamp(); // 強制讓元件下次渲染時重算布局
 
         Label label = new Label(this)
         {

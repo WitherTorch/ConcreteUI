@@ -38,7 +38,6 @@ public abstract class PagedWindow : CoreWindow
             _pageIndex = value;
             _isPageChanged = true;
             OnCurrentPageChanged();
-            Refresh();
         }
     }
     #endregion

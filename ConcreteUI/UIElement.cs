@@ -121,7 +121,7 @@ public abstract partial class UIElement : ICheckableDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected void ResetLayoutTimestamp() => InterlockedHelper.Write(ref _layoutTimestamp, 0);
+    public void ResetLayoutTimestamp() => InterlockedHelper.Write(ref _layoutTimestamp, 0);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void UpdateLayoutTimestamp(ulong timestamp) => InterlockedHelper.Write(ref _layoutTimestamp, timestamp);
