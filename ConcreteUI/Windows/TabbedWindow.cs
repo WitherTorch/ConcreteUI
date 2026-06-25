@@ -113,7 +113,7 @@ public abstract class TabbedWindow : PagedWindow
         return HitTestForMenuBar(clientPoint, false);
     }
 
-    protected override void RecalculateLayout(ref WindowRenderingData data, Size windowSize)
+    protected override void RecalculateLayout(ref WindowLayoutData data, Size windowSize)
     {
         base.RecalculateLayout(ref data, windowSize);
         uint pageCount = PageCount;

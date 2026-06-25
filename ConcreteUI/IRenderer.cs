@@ -6,7 +6,7 @@ using ConcreteUI.Theme;
 
 namespace ConcreteUI;
 
-public interface IRenderer : IRenderingControl
+public interface IRenderer : IRenderable
 {
     Vector2 GetPixelsPerPoint();
 

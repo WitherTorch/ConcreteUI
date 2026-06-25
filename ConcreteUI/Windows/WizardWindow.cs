@@ -5,7 +5,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -164,7 +163,7 @@ public abstract class WizardWindow : PagedWindow
         if (ActualWindowMaterial == WindowMaterial.Integrated)
             rect = new Rect(0, 0, ClientSize.Width, rect.Top);
         else
-            rect = new Rect(rect.Left, data.TitleBarBounds.Bottom, rect.Right, rect.Top);
+            rect = new Rect(rect.Left, data.Layout.TitleBarBounds.Bottom, rect.Right, rect.Top);
         Vector2 pixelsPerPoint = PixelsPerPoint;
         using (RenderingClipScope scope = RenderingClipScope.Enter(deviceContext, RenderingHelper.RoundInPixel(rect, pixelsPerPoint)))
         {
@@ -191,7 +190,7 @@ public abstract class WizardWindow : PagedWindow
         }
     }
 
-    protected override void RecalculateLayout(ref WindowRenderingData data, Size windowSize)
+    protected override void RecalculateLayout(ref WindowLayoutData data, Size windowSize)
     {
         base.RecalculateLayout(ref data, windowSize);
         Rectangle pageBounds = data.PageBounds;

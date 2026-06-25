@@ -89,7 +89,6 @@ partial class UIElementHelper
     private static unsafe void DispatchEventCore(ref readonly UIElement? elementArrayRef, nuint length,
         delegate* managed<UIElement, void> eventHandler)
     {
-        DebugHelper.ThrowIf(length < 1);
         for (; length >= 4; length -= 4)
         {
             CallEventHandler(in elementArrayRef, length - 1, eventHandler);
@@ -126,7 +125,6 @@ partial class UIElementHelper
     private static unsafe void DispatchEventCore<TEventArgs>(ref readonly UIElement? elementArrayRef, nuint length,
         ref TEventArgs args, delegate* managed<UIElement, ref TEventArgs, void> eventHandler) where TEventArgs : struct
     {
-        DebugHelper.ThrowIf(length < 1);
         for (; length >= 4; length -= 4)
         {
             CallEventHandler(in elementArrayRef, length - 1, ref args, eventHandler);
@@ -163,7 +161,6 @@ partial class UIElementHelper
     private static unsafe void DispatchEventCore<TEventArgs, TData>(ref readonly UIElement? elementArrayRef, nuint length,
         ref TEventArgs args, ref TData data, delegate* managed<UIElement, ref TEventArgs, ref TData, void> eventHandler) where TEventArgs : struct
     {
-        DebugHelper.ThrowIf(length < 1);
         for (; length >= 4; length -= 4)
         {
             CallEventHandler(in elementArrayRef, length - 1, ref args, ref data, eventHandler);
@@ -200,7 +197,6 @@ partial class UIElementHelper
     private static unsafe void DispatchHandleableEventCore<TEventArgs>(ref readonly UIElement? elementArrayRef, nuint length,
         ref TEventArgs args, delegate* managed<UIElement, ref TEventArgs, void> eventHandler) where TEventArgs : struct, IHandleableEventArgs
     {
-        DebugHelper.ThrowIf(length < 1);
         for (; length >= 4; length -= 4)
         {
             if (CallEventHandler(in elementArrayRef, length - 1, ref args, eventHandler))
@@ -245,7 +241,6 @@ partial class UIElementHelper
     private static unsafe void DispatchEventCore<TEventArgs>(ref readonly UIElement? elementArrayRef, nuint length,
         ref TEventArgs args, PointF focusPoint, delegate* managed<UIElement, ref TEventArgs, bool, void> eventHandler) where TEventArgs : struct
     {
-        DebugHelper.ThrowIf(length < 1);
         NativeMemoryPool pool = NativeMemoryPool.Shared;
         TypedNativeMemoryBlock<Rect> buffer = pool.Rent<Rect>(length);
         Rect* ptr = buffer.NativePointer;
@@ -294,7 +289,6 @@ partial class UIElementHelper
     private static unsafe void DispatchEventCore<TEventArgs, TData>(ref readonly UIElement? elementArrayRef, nuint length,
         ref TEventArgs args, ref TData data, PointF focusPoint, delegate* managed<UIElement, ref TEventArgs, ref TData, bool, void> eventHandler) where TEventArgs : struct
     {
-        DebugHelper.ThrowIf(length < 1);
         NativeMemoryPool pool = NativeMemoryPool.Shared;
         TypedNativeMemoryBlock<Rect> buffer = pool.Rent<Rect>(length);
         Rect* ptr = buffer.NativePointer;

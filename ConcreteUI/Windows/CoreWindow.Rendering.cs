@@ -9,6 +9,7 @@ using System.Threading;
 
 using ConcreteUI.Controls;
 using ConcreteUI.Graphics;
+using ConcreteUI.Graphics.Extensions;
 using ConcreteUI.Graphics.Helpers;
 using ConcreteUI.Graphics.Hosts;
 using ConcreteUI.Graphics.Native.Direct2D;
@@ -38,15 +39,6 @@ namespace ConcreteUI.Windows;
 
 public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordinateTranslator
 {
-    [StructLayout(LayoutKind.Auto)]
-    protected ref struct WindowRenderingData
-    {
-        public Rectangle MinimizeButtonBounds, MaximizeButtonBounds, CloseButtonBounds, PageBounds, TitleBarBounds;
-        public Point DrawingOffset;
-        public ulong ResizeTimestamp;
-        public int ActiveBorderWidth;
-    }
-
     #region Enums
     [Flags]
     private enum UpdateFlags : long
@@ -99,7 +91,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     private DWriteTextLayout? _titleLayout;
     private D2D1ColorF _clearDCColor, _windowBaseColor;
     private Point _drawingOffset;
-    private ulong _resizeTimestamp, _elementLastLayoutTimestamp,
+    private ulong _resizeTimestamp, _renderTimestamp,
         _minimizeButtonLocation, _minimizeButtonSize,
         _maximizeButtonLocation, _maximizeButtonSize,
         _closeButtonLocation, _closeButtonSize,
@@ -396,8 +388,8 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         bool useFlipModel = ExtendedStyles.HasFlagFast(WindowExtendedStyles.NoRedirectionBitmap);
         bool useDComp = useFlipModel && provider.IsSupportDComp && provider.IsSupportSwapChain1;
         host = GraphicsHostHelper.CreateSwapChainGraphicsHost(handle, provider, useFlipModel, useDComp, IsBackgroundOpaque());
-        _host = host;
-        _collector = new DirtyAreaCollector(host);
+        InterlockedHelper.Write(ref _host, host);
+        InterlockedHelper.Write(ref _collector, new DirtyAreaCollector(host));
         if (parent is null)
             host.DeviceRemoved += GraphicsHost_DeviceRemoved;
         deviceContext = host.GetDeviceContext();
@@ -411,7 +403,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
 
     private void GraphicsHost_DeviceRemoved(object? sender, EventArgs e)
     {
-        if (sender is not SimpleGraphicsHost host || !ReferenceEquals(host, _host))
+        if (sender is not SimpleGraphicsHost host || !ReferenceEquals(host, InterlockedHelper.Read(ref _host)))
             return;
         WindowMessageLoop.InvokeAsync((Action<CoreWindow>)(static window => window.OnDeviveRemoved()), this);
     }
@@ -442,7 +434,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     {
         DebugHelper.WriteLine("GDR event triggered. Stopping all rendering...");
 
-        RenderingController? controller = _controller;
+        RenderingController? controller = GetRenderingController();
         if (controller is null)
             return;
         controller.Lock();
@@ -506,7 +498,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
                 DebugHelper.WriteLine("Failed to recreate device context in GDR event.");
                 return;
             }
-            RenderingController? controller = _controller;
+            RenderingController? controller = GetRenderingController();
             DebugHelper.ThrowIf(controller is null);
             _deviceContext = deviceContext;
 
@@ -608,20 +600,22 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public DXGISwapChain GetSwapChain() => _host!.GetSwapChain();
+    public DXGISwapChain GetSwapChain() => InterlockedHelper.Read(ref _host)!.GetSwapChain();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public D2D1DeviceContext GetDeviceContext() => NullSafetyHelper.ThrowIfNull(_deviceContext);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public RenderingController? GetRenderingController() => _controller;
+    public RenderingController? GetRenderingController() => InterlockedHelper.Read(ref _controller);
 
     public virtual void RenderBackground(UIElement element, in RegionalRenderingContext context)
         => context.Clear(_windowBaseColor);
 
-    void IRenderingControl.Render(RenderingController controller)
+    void IRenderable.Render(RenderingController controller)
     {
         RenderingFlags flags = controller.GetAndResetRenderingFlags();
+        if (!flags.HasRenderRequest())
+            return;
         if (!RenderCore(controller, flags))
             controller.RequestUpdateUnsafe(flags);
     }
@@ -909,7 +903,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         }
     }
 
-    protected unsafe virtual void RecalculateLayout(ref WindowRenderingData data, Size windowSize)
+    protected unsafe virtual void RecalculateLayout(ref WindowLayoutData data, Size windowSize)
     {
         Rectangle pageBounds;
         Size pageSize;
@@ -995,39 +989,35 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)brush);
     }
 
-    internal bool CheckLayoutTimestampOutdated(ulong childTimestamp)
-    {
-        ref ulong timestampRef = ref _elementLastLayoutTimestamp;
-        ulong timestamp = InterlockedHelper.Read(ref timestampRef);
-        if (timestamp == childTimestamp)
-            return false;
-        InterlockedHelper.CompareExchange(ref timestampRef, 0, timestamp);
-        return true;
-    }
-
     [Inline]
     private bool RenderCore(RenderingController controller, RenderingFlags flags)
     {
-        SimpleGraphicsHost? host = _host;
+        SimpleGraphicsHost? host = InterlockedHelper.Read(ref _host);
         if (host is null || host.IsDisposed)
             return false;
-        DirtyAreaCollector? collector = _collector;
+        DirtyAreaCollector? collector = InterlockedHelper.Read(ref _collector);
         if (collector is null)
             return false;
 
-        WindowRenderingData data = new WindowRenderingData()
+        ulong renderTimestamp = NativeMethods.GetTicksForSystem();
+        WindowRenderingData data = new()
         {
-            MinimizeButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_minimizeButtonLocation, _minimizeButtonSize),
-            MaximizeButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_maximizeButtonLocation, _maximizeButtonSize),
-            CloseButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_closeButtonLocation, _closeButtonSize),
-            PageBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_pageLocation, _pageSize),
-            TitleBarBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_titleBarLocation, _titleBarSize),
+            Layout = new()
+            {
+                MinimizeButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_minimizeButtonLocation, _minimizeButtonSize),
+                MaximizeButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_maximizeButtonLocation, _maximizeButtonSize),
+                CloseButtonBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_closeButtonLocation, _closeButtonSize),
+                PageBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_pageLocation, _pageSize),
+                TitleBarBounds = BoundsHelper.ConvertUInt64SlotsToBounds(_titleBarLocation, _titleBarSize),
+                DrawingOffset = _drawingOffset,
+                ActiveBorderWidth = _activeBorderWidth
+            },
             ResizeTimestamp = _resizeTimestamp,
-            DrawingOffset = _drawingOffset,
-            ActiveBorderWidth = _activeBorderWidth
+            LastRenderTimestamp = ReferenceHelper.Exchange(ref _renderTimestamp, renderTimestamp),
+            CurrentRenderTimestamp = renderTimestamp
         };
-        bool renderAll = flags.HasFlagFast(RenderingFlags.RedrawAll);
-        if (flags.HasFlagFast(RenderingFlags.Resize))
+        bool renderAll = flags.HasRedrawAll();
+        if (flags.HasResize())
         {
             if (!TryResize(host, controller, ref data, flags, renderAll))
                 return false;
@@ -1036,45 +1026,50 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         if (deviceContext is null || deviceContext.IsDisposed)
             return true;
 
-        (bool Presented, bool LayoutOutdated) result;
+        (bool Presented, RenderResult ResultFlags) result;
         ClearTypeSwitcher.SetClearType(deviceContext, false);
         if (renderAll)
             result = Render_All(host, deviceContext, in data);
         else
             result = Render_Incremental(host, deviceContext, collector, in data);
 
-        if (result.LayoutOutdated) // De-sync case: some elements haven't recalculate layout
+        RenderResult resultFlags = result.ResultFlags;
+        if (!resultFlags.IsSuccessed())
         {
-            Size pageSize = data.PageBounds.Size;
+            Size pageSize = data.Layout.PageBounds.Size;
             if (!pageSize.IsValid())
                 return false;
 
             do
             {
-                flags = controller.GetAndResetRenderingFlags(); // 反正都要二次重繪，那就在拉取一次最新的渲染旗標並重置，以減少過度渲染的機會
-                if (flags.HasFlagFast(RenderingFlags.Resize))
+                if (resultFlags >= RenderResult.LayoutDesync)
                 {
-                    if (!TryResize(host, controller, ref data, flags, renderAll))
-                        return false;
+                    flags = controller.GetAndResetRenderingFlags(); // 反正都要二次重繪，那就在拉取一次最新的渲染旗標並重置，以減少過度渲染的機會
+                    if (flags.HasResize())
+                    {
+                        if (!TryResize(host, controller, ref data, flags, renderAll) || !(pageSize = data.Layout.PageBounds.Size).IsValid())
+                            return false;
+                    }
+                    else
+                    {
+                        RecalculatePageLayout(pageSize, data.ResizeTimestamp);
+                    }
                 }
-                else
-                {
-                    RecalculatePageLayout(pageSize, data.ResizeTimestamp);
-                }
-
                 deviceContext = host.BeginDraw();
                 if (deviceContext is null || deviceContext.IsDisposed)
                     return true;
 
-                deviceContext.Clear();
-            } while ((result = Render_All(host, deviceContext, in data)).LayoutOutdated); // Always redraw everything here!
+                ClearTypeSwitcher.SetClearType(deviceContext, false);
+                result = Render_All(host, deviceContext, in data);
+                resultFlags = result.ResultFlags;
+            } while (!resultFlags.IsSuccessed());
         }
 
         return result.Presented;
 
         bool TryResize(SimpleGraphicsHost host, RenderingController controller, ref WindowRenderingData data, RenderingFlags flags, bool renderAll)
         {
-            bool resizeTemporarily = flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag);
+            bool resizeTemporarily = flags.HasResizeTemporarily();
             Size clirentSizeInPixel = RawClientSize;
             if (clirentSizeInPixel.Width <= 0 || clirentSizeInPixel.Height <= 0)
                 return false;
@@ -1085,80 +1080,83 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             Thread.MemoryBarrier();
             if (renderAll)
             {
-                ulong timestamp = NativeMethods.GetTicksForSystem();
-                data.ResizeTimestamp = timestamp;
+                data.ResizeTimestamp = data.CurrentRenderTimestamp;
+
+                ref WindowLayoutData layoutData = ref data.Layout;
                 RecalculateLayout(
-                    data: ref data,
+                    data: ref layoutData,
                     windowSize: GraphicsUtils.ScalingSizeAndConvert(clirentSizeInPixel, _pointsPerPixel));
-                BoundsHelper.SaveBoundsToUInt64Fields(data.MinimizeButtonBounds, ref _minimizeButtonLocation, ref _minimizeButtonSize);
-                BoundsHelper.SaveBoundsToUInt64Fields(data.MaximizeButtonBounds, ref _maximizeButtonLocation, ref _maximizeButtonSize);
-                BoundsHelper.SaveBoundsToUInt64Fields(data.CloseButtonBounds, ref _closeButtonLocation, ref _closeButtonSize);
-                BoundsHelper.SaveBoundsToUInt64Fields(data.PageBounds, ref _pageLocation, ref _pageSize);
-                BoundsHelper.SaveBoundsToUInt64Fields(data.TitleBarBounds, ref _titleBarLocation, ref _titleBarSize);
-                _resizeTimestamp = timestamp = data.ResizeTimestamp;
-                _drawingOffset = data.DrawingOffset;
-                _activeBorderWidth = data.ActiveBorderWidth;
+                BoundsHelper.SaveBoundsToUInt64Fields(layoutData.MinimizeButtonBounds, ref _minimizeButtonLocation, ref _minimizeButtonSize);
+                BoundsHelper.SaveBoundsToUInt64Fields(layoutData.MaximizeButtonBounds, ref _maximizeButtonLocation, ref _maximizeButtonSize);
+                BoundsHelper.SaveBoundsToUInt64Fields(layoutData.CloseButtonBounds, ref _closeButtonLocation, ref _closeButtonSize);
+                BoundsHelper.SaveBoundsToUInt64Fields(layoutData.PageBounds, ref _pageLocation, ref _pageSize);
+                BoundsHelper.SaveBoundsToUInt64Fields(layoutData.TitleBarBounds, ref _titleBarLocation, ref _titleBarSize);
+
+                ulong timestamp = data.ResizeTimestamp;
+                _resizeTimestamp = timestamp;
+                _drawingOffset = layoutData.DrawingOffset;
+                _activeBorderWidth = layoutData.ActiveBorderWidth;
                 InterlockedHelper.Increment(ref _recalculateLayoutVersion);
 
-                Size pageSize = data.PageBounds.Size;
+                Size pageSize = layoutData.PageBounds.Size;
                 if (pageSize.IsValid())
                     RecalculatePageLayout(pageSize, timestamp);
             }
             flags = controller.GetAndResetRenderingFlags();
-            renderAll |= flags.HasFlagFast(RenderingFlags.RedrawAll);
-            if (resizeTemporarily || flags.HasFlagFast(RenderingFlags.Resize))
-                controller.RequestUpdateAndResize(flags.HasFlagFast(RenderingFlags._ResizeTemporarilyFlag), redrawAll: false);
+            renderAll |= flags.HasRedrawAll();
+            if (resizeTemporarily || flags.HasResize())
+                controller.RequestUpdateAndResize(flags.HasResizeTemporarily(), redrawAll: false);
             return true;
         }
 
-        (bool Presented, bool LayoutOutdated) Render_All(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, in WindowRenderingData data)
+        (bool Presented, RenderResult ResultFlags) Render_All(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, in WindowRenderingData data)
         {
-            ref ulong elementLastLayoutTimestampRef = ref _elementLastLayoutTimestamp;
-            ulong currentResizeTimestamp = data.ResizeTimestamp;
-            InterlockedHelper.Write(ref elementLastLayoutTimestampRef, currentResizeTimestamp);
-
-            DirtyAreaCollector collector = DirtyAreaCollector.Empty;
-            RenderTitle(deviceContext, collector, force: true, in data);
-            Rectangle pageBounds = data.PageBounds;
-            if (pageBounds.IsValid())
+            RenderResult result = RenderResult.Successed;
+            try
             {
-                using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, _pixelsPerPoint,
-                    pageBounds, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
-                RenderPage(context, in data);
+                DirtyAreaCollector collector = DirtyAreaCollector.Empty;
+                RenderTitle(deviceContext, collector, force: true, in data);
+                Rectangle pageBounds = data.Layout.PageBounds;
+                if (pageBounds.IsValid())
+                {
+                    using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, _pixelsPerPoint,
+                        pageBounds, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
+                    result = RenderPage(context, in data);
+                }
             }
-            host.EndDraw();
+            finally
+            {
+                host.EndDraw();
+            }
 
-            if (InterlockedHelper.Read(ref elementLastLayoutTimestampRef) != currentResizeTimestamp)
-                return (Presented: false, LayoutOutdated: true);
-
-            return (Presented: host.TryPresent(), LayoutOutdated: false);
+            return (Presented: result.IsSuccessed() && host.TryPresent(), ResultFlags: result);
         }
 
-        (bool Presented, bool LayoutOutdated) Render_Incremental(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in WindowRenderingData data)
+        (bool Presented, RenderResult ResultFlags) Render_Incremental(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in WindowRenderingData data)
         {
-            ref ulong elementLastLayoutTimestampRef = ref _elementLastLayoutTimestamp;
-            ulong currentResizeTimestamp = data.ResizeTimestamp;
-            InterlockedHelper.Write(ref elementLastLayoutTimestampRef, currentResizeTimestamp);
-
             Vector2 pixelsPerPoint = _pixelsPerPoint;
-
-            RenderTitle(deviceContext, collector, force: false, in data);
-            Rectangle pageBounds = data.PageBounds;
-            if (pageBounds.IsValid())
+            RenderResult result = RenderResult.Successed;
+            try
             {
-                using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, pixelsPerPoint,
-                    pageBounds, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
-                RenderPage(context, in data);
+                RenderTitle(deviceContext, collector, force: false, in data);
+                Rectangle pageBounds = data.Layout.PageBounds;
+                if (pageBounds.IsValid())
+                {
+                    using RegionalRenderingContext context = RegionalRenderingContext.Create(deviceContext, collector, pixelsPerPoint,
+                        pageBounds, D2D1AntialiasMode.Aliased, IsBackgroundOpaque(), out _);
+                    result = RenderPage(context, in data);
+                }
             }
-            host.EndDraw();
-
-            if (InterlockedHelper.Read(ref elementLastLayoutTimestampRef) != currentResizeTimestamp)
+            finally
             {
-                collector.Clear();
-                return (Presented: false, LayoutOutdated: true);
+                host.EndDraw();
             }
 
-            return (Presented: collector.TryPresent(pixelsPerPoint), LayoutOutdated: false);
+            if (result.IsSuccessed())
+                return (Presented: collector.TryPresent(pixelsPerPoint), ResultFlags: RenderResult.Successed);
+
+            collector.Clear();
+            return (Presented: false, ResultFlags: result);
         }
     }
 
@@ -1167,14 +1165,16 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         => context.Clear(_windowBaseColor);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected virtual void RenderPage(in RegionalRenderingContext context, in WindowRenderingData data)
+    protected virtual RenderResult RenderPage(in RegionalRenderingContext context, in WindowRenderingData data)
     {
         bool force = context.IsForceRendering;
         if (force)
             RenderPageBackground(context, in data);
-        if (!UIElementHelper.RenderElements(context, GetActiveElements(), ignoreNeedRefresh: force))
-            return;
-        UIElementHelper.RenderElement(context, _overlayElement, ignoreNeedRefresh: force || context.HasAnyDirtyArea());
+
+        RenderResult result = UIElementHelper.RenderElements(context, GetActiveElements(), data.CreateRenderInformation(force));
+        if (result.ShouldImmediatelyReturn())
+            return result;
+        return result | UIElementHelper.RenderElement(context, _overlayElement, data.CreateRenderInformation(ignoreNeedRefresh: force || context.HasAnyDirtyArea()));
     }
 
     protected virtual void ClearDCForTitle(D2D1DeviceContext deviceContext)
@@ -1217,7 +1217,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             if (titleBarStates[0])
             {
                 Point drawingOffset = _drawingOffset;
-                RectF titleBarRect = RenderingHelper.RoundInPixel(data.TitleBarBounds, pixelsPerPoint);
+                RectF titleBarRect = RenderingHelper.RoundInPixel(data.Layout.TitleBarBounds, pixelsPerPoint);
                 deviceContext.PushAxisAlignedClip(titleBarRect, D2D1AntialiasMode.Aliased);
                 deviceContext.DrawTextLayout(new PointF(drawingOffset.X + 7.5f, drawingOffset.Y + 1.5f),
                     titleLayout, UnsafeHelper.AddTypedOffset(ref brushesRef, (nuint)Brush.TitleForeBrush));
@@ -1231,7 +1231,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         {
             if (titleBarStates[1] && (TitleBarButtonChangedStatus[0] || force))
             {
-                RectF minRect = RenderingHelper.RoundInPixel(data.MinimizeButtonBounds, pixelsPerPoint);
+                RectF minRect = RenderingHelper.RoundInPixel(data.Layout.MinimizeButtonBounds, pixelsPerPoint);
                 deviceContext.PushAxisAlignedClip(minRect, D2D1AntialiasMode.Aliased);
                 if (!force)
                     ClearDCForTitle(deviceContext);
@@ -1243,7 +1243,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             }
             if (titleBarStates[2] && (TitleBarButtonChangedStatus[1] || force))
             {
-                RectF maxRect = RenderingHelper.RoundInPixel(data.MaximizeButtonBounds, pixelsPerPoint);
+                RectF maxRect = RenderingHelper.RoundInPixel(data.Layout.MaximizeButtonBounds, pixelsPerPoint);
                 deviceContext.PushAxisAlignedClip(maxRect, D2D1AntialiasMode.Aliased);
                 if (!force)
                 {
@@ -1261,7 +1261,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         }
         if (TitleBarButtonChangedStatus[2] || force)
         {
-            RectF closeRect = RenderingHelper.RoundInPixel(data.CloseButtonBounds, pixelsPerPoint);
+            RectF closeRect = RenderingHelper.RoundInPixel(data.Layout.CloseButtonBounds, pixelsPerPoint);
             deviceContext.PushAxisAlignedClip(closeRect, D2D1AntialiasMode.Aliased);
             if (!force)
             {
@@ -1279,11 +1279,11 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
 
     #region Event Handlers
     private void SystemEvents_DisplaySettingsChanging(object? sender, EventArgs e)
-        => _controller?.Lock();
+        => GetRenderingController()?.Lock();
 
     private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e)
     {
-        RenderingController? controller = _controller;
+        RenderingController? controller = GetRenderingController();
         if (controller is null)
             return;
         UpdateAndResizeCoreUnchecked(controller, ref _sizeModeState);
@@ -1295,11 +1295,11 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         switch (e.Reason)
         {
             case SessionSwitchReason.SessionLock:
-                _controller?.Lock();
+                GetRenderingController()?.Lock();
                 break;
             case SessionSwitchReason.SessionUnlock:
                 {
-                    RenderingController? controller = _controller;
+                    RenderingController? controller = GetRenderingController();
                     if (controller is not null)
                     {
                         UpdateAndResizeCoreUnchecked(controller, ref _sizeModeState);
@@ -1315,11 +1315,11 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         switch (e.Mode)
         {
             case PowerModes.Suspend:
-                _controller?.Lock();
+                GetRenderingController()?.Lock();
                 break;
             case PowerModes.Resume:
                 {
-                    RenderingController? controller = _controller;
+                    RenderingController? controller = GetRenderingController();
                     if (controller is not null)
                     {
                         UpdateAndResizeCoreUnchecked(controller, ref _sizeModeState);
@@ -1349,7 +1349,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         RenderingController controller = new RenderingController(this, GetWindowFps(Handle));
         if (_isSystemPrepareBoosting)
             controller.SetSystemBoosting(true);
-        _controller = controller;
+        InterlockedHelper.Write(ref _controller, controller);
         UpdateCoreUnchecked(controller);
     }
 
@@ -1388,12 +1388,28 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     }
 
     [Inline(InlineBehavior.Remove)]
+    private static BatchUpdateScope EnterBatchUpdateScopeCore(RenderingController? controller)
+    {
+        if (controller is null)
+            return default;
+        return new BatchUpdateScope(controller);
+    }
+
+    [Inline(InlineBehavior.Remove)]
+    private static CriticalUpdateScope EnterCriticalUpdateScopeCore(RenderingController? controller)
+    {
+        if (controller is null)
+            return default;
+        return new CriticalUpdateScope(controller);
+    }
+
+    [Inline(InlineBehavior.Remove)]
     private void ChangeDpi_RenderingPart(PointU dpi, Vector2 pointsPerPixel, Vector2 pixelsPerPoint)
     {
-        SimpleGraphicsHost? host = _host;
+        SimpleGraphicsHost? host = InterlockedHelper.Read(ref _host);
         if (host is null || host.IsDisposed)
             return;
-        RenderingController? controller = _controller;
+        RenderingController? controller = GetRenderingController();
         if (controller is null)
             return;
         controller.Lock();
@@ -1416,7 +1432,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     [Inline(InlineBehavior.Remove)]
     private void OnWindowStateChangedRenderingPart(in WindowStateChangedEventArgs args)
     {
-        RenderingController? controller = _controller;
+        RenderingController? controller = GetRenderingController();
         if (controller is null)
             return;
         switch (args.NewState)
@@ -1445,68 +1461,42 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
     #endregion
 
     #region Normal Methods
-    protected void UpdateAndResize() => UpdateAndResizeCore(_controller, ref _sizeModeState);
+    public BatchUpdateScope EnterBatchUpdateScope() => EnterBatchUpdateScopeCore(GetRenderingController());
 
-    protected void Update() => UpdateCore(_controller);
+    public CriticalUpdateScope EnterCriticalUpdateScope() => EnterCriticalUpdateScopeCore(GetRenderingController());
 
-    protected void Refresh() => RefreshCore(_controller);
+    public void UpdateAndResize() => UpdateAndResizeCore(GetRenderingController(), ref _sizeModeState);
+
+    public void Update() => UpdateCore(GetRenderingController());
+
+    public void Refresh() => RefreshCore(GetRenderingController());
 
     public UIElement? ChangeOverlayElement(UIElement? element)
     {
-        RenderingController? controller = _controller;
-        if (controller is not null)
+        using BatchUpdateScope scope = EnterBatchUpdateScope();
+        UIElement? oldElement;
+        lock (_syncLock)
         {
-            controller.Lock();
-            controller.WaitForRendering();
-        }
-        try
-        {
-            UIElement? oldElement;
-            lock (_syncLock)
-            {
-                oldElement = ReferenceHelper.Exchange(ref _overlayElement, element);
+            oldElement = ReferenceHelper.Exchange(ref _overlayElement, element);
 
-                OnOverlayLayerChanged(element, oldElement);
-            }
-            return oldElement;
+            OnOverlayLayerChanged(element, oldElement);
         }
-        finally
-        {
-            if (controller is not null)
-            {
-                UpdateAndResizeCoreUnchecked(controller, ref _sizeModeState);
-                controller.Unlock();
-            }
-        }
+        UpdateAndResize();
+        return oldElement;
     }
 
     public void ChangeOverlayElement(UIElement? element, UIElement? oldElement)
     {
-        RenderingController? controller = _controller;
-        if (controller is not null)
+        using BatchUpdateScope scope = EnterBatchUpdateScope();
+        lock (_syncLock)
         {
-            controller.Lock();
-            controller.WaitForRendering();
-        }
-        try
-        {
-            lock (_syncLock)
-            {
-                if (!ReferenceEquals(_overlayElement, oldElement))
-                    return;
-                _overlayElement = element;
+            if (!ReferenceEquals(_overlayElement, oldElement))
+                return;
+            _overlayElement = element;
 
-                OnOverlayLayerChanged(element, oldElement);
-            }
+            OnOverlayLayerChanged(element, oldElement);
         }
-        finally
-        {
-            if (controller is not null)
-            {
-                UpdateAndResizeCoreUnchecked(controller, ref _sizeModeState);
-                controller.Unlock();
-            }
-        }
+        UpdateAndResize();
     }
 
     private void OnOverlayLayerChanged(UIElement? element, UIElement? oldElement)
@@ -1540,7 +1530,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
 
     protected unsafe void ApplyTheme(IThemeResourceProvider provider)
     {
-        RenderingController? controller = _controller;
+        RenderingController? controller = GetRenderingController();
         if (controller is not null)
         {
             controller.Lock();
@@ -1550,7 +1540,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         {
             lock (_syncLock)
             {
-                SimpleGraphicsHost? host = _host;
+                SimpleGraphicsHost? host = InterlockedHelper.Read(ref _host);
                 if (host is null || host.IsDisposed)
                     return;
                 DisposeHelper.SwapDisposeInterlockedWeak(ref _resourceProvider, provider);

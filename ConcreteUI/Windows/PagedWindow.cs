@@ -32,24 +32,13 @@ public abstract class PagedWindow : CoreWindow
         {
             if (_pageIndex == value)
                 return;
-            RenderingController? controller = GetRenderingController();
-            controller?.Lock();
-            try
-            {
-                OnCurrentPageChanging();
-                ClearFocusElement();
-                _pageIndex = value;
-                _isPageChanged = true;
-                OnCurrentPageChanged();
-            }
-            finally
-            {
-                if (controller is not null)
-                {
-                    controller.RequestUpdate(force: true);
-                    controller.Unlock();
-                }
-            }
+            using BatchUpdateScope scope = EnterBatchUpdateScope();
+            OnCurrentPageChanging();
+            ClearFocusElement();
+            _pageIndex = value;
+            _isPageChanged = true;
+            OnCurrentPageChanged();
+            Refresh();
         }
     }
     #endregion
@@ -97,7 +86,7 @@ public abstract class PagedWindow : CoreWindow
         return elements;
     }
 
-    protected override void RecalculatePageLayout(Size pageSize, ulong timestamp) 
+    protected override void RecalculatePageLayout(Size pageSize, ulong timestamp)
         => RecalculatePageLayout(pageSize, _pageIndex, timestamp);
 
     #endregion

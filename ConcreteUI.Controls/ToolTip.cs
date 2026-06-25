@@ -94,8 +94,6 @@ public sealed class ToolTip : UIElement, IMouseMoveHandler
         }
     }
 
-    public override void Render(in RegionalRenderingContext context) => ResetNeedRefreshFlag();
-
     protected override bool RenderCore(in RegionalRenderingContext context) => true;
 
     PointF lastPoint;

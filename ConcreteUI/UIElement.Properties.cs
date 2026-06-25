@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using ConcreteUI.Layout;
 using ConcreteUI.Theme;
@@ -37,6 +38,14 @@ partial class UIElement
         get => Parent.GetRenderer();
     }
 
+    protected bool EnablePartialRendering
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Volatile.Read(ref _enablePartialRendering);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set => Volatile.Write(ref _enablePartialRendering, value);
+    }
+
     public bool IsRenderedOnce
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -62,7 +71,8 @@ partial class UIElement
             if (ReferenceEquals(InterlockedHelper.Exchange(ref _parent, value), value))
                 return;
             OptimisticLock.Increase(ref versionRef);
-            ResetLastLayoutTimestamp();
+            ResetLayoutTimestamp();
+            ResetRenderCheckTimestamp();
             Update();
         }
     }

@@ -52,6 +52,8 @@ public sealed partial class GroupBox : UIElement, IElementContainer
         _text = string.Empty;
         _redrawTypeRaw = (long)RedrawType.RedrawAllContent;
         _rawUpdateFlags = (long)RenderObjectUpdateFlags.FlagsAllTrue;
+
+        EnablePartialRendering = true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -211,8 +213,6 @@ public sealed partial class GroupBox : UIElement, IElementContainer
         UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush));
 
     bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
-
-    public override void Render(in RegionalRenderingContext context) => Render(context, markDirty: false);
 
     protected override bool RenderCore(in RegionalRenderingContext context)
     {

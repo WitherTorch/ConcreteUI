@@ -55,6 +55,8 @@ public sealed partial class CheckBox : UIElement, IMouseInteractHandler, IMouseM
         _fontSize = UIConstants.DefaultFontSize;
         _checkState = false;
         _text = string.Empty;
+
+        EnablePartialRendering = true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -148,8 +150,6 @@ public sealed partial class CheckBox : UIElement, IMouseInteractHandler, IMouseM
         }
         return false;
     }
-
-    public override void Render(in RegionalRenderingContext context) => Render(in context, markDirty: false);
 
     protected override bool RenderCore(in RegionalRenderingContext context)
     {

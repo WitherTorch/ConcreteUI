@@ -13,7 +13,7 @@ namespace ConcreteUI.Graphics;
 
 public sealed partial class RenderingController : CriticalFinalizerObject, IDisposable
 {
-    private readonly IRenderingControl _control;
+    private readonly IRenderable _target;
     private readonly IFrameWaiter _frameWaiter;
     private readonly RenderingThread _thread;
     private readonly IntPtr _waitForRenderingTrigger;
@@ -24,19 +24,19 @@ public sealed partial class RenderingController : CriticalFinalizerObject, IDisp
 
     public bool NeedUpdateFps => _needUpdateFps;
 
-    public RenderingController(IRenderingControl control, Rational framesPerSecond)
+    public RenderingController(IRenderable target, Rational framesPerSecond)
     {
-        _control = control;
+        _target = target;
         _state = (ulong)RenderingFlags._FlagAllTrue;
-        _frameWaiter = CreateFrameWaiter(control, framesPerSecond, out _needUpdateFps);
+        _frameWaiter = CreateFrameWaiter(target, framesPerSecond, out _needUpdateFps);
         _thread = new RenderingThread(this, _frameWaiter);
         _waitForRenderingTrigger = NativeMethods.CreateWaitingHandle(autoReset: false);
         _isSystemBoosting = 0;
     }
 
-    private static IFrameWaiter CreateFrameWaiter(IRenderingControl control, Rational framesPerSecond, out bool needUpdateFps)
+    private static IFrameWaiter CreateFrameWaiter(IRenderable target, Rational framesPerSecond, out bool needUpdateFps)
     {
-        DXGISwapChain swapChain = control.GetSwapChain();
+        DXGISwapChain swapChain = target.GetSwapChain();
         if (!swapChain.TryQueryInterface(DXGISwapChain2.IID_IDXGISwapChain2, out DXGISwapChain2? swapChain2))
             goto Fallback;
         try
@@ -59,9 +59,8 @@ public sealed partial class RenderingController : CriticalFinalizerObject, IDisp
 
     public void RequestUpdate(bool force)
     {
-        if (force)
-            InterlockedHelper.Or(ref _state, (ulong)RenderingFlags.RedrawAll);
-
+        InterlockedHelper.Or(ref _state, (ulong)RenderingFlags.BaseFlag | 
+            ((ulong)RenderingFlags.RedrawAllFlag & UnsafeHelper.Negate(MathHelper.BooleanToUInt64(force))));
         if (InterlockedHelper.Read(ref _lockedCount) != 0UL)
             return;
         _thread.DoRender();
@@ -76,30 +75,32 @@ public sealed partial class RenderingController : CriticalFinalizerObject, IDisp
         _thread.DoRender();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void RequestUpdateAndResize()
+    {
+        InterlockedHelper.Or(ref _state, (ulong)RenderingFlags.ResizeAndRedrawAll);
+        if (InterlockedHelper.Read(ref _lockedCount) != 0UL)
+            return;
+        _thread.DoRender();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void RequestUpdateAndResize(bool temporarily)
     {
-        ulong state;
-#if NET8_0_OR_GREATER
-        state = temporarily ? (ulong)RenderingFlags.ResizeTemporarilyAndRedrawAll : (ulong)RenderingFlags.ResizeAndRedrawAll;
-#else
-        state = (ulong)RenderingFlags.ResizeAndRedrawAll | ((ulong)RenderingFlags._ResizeTemporarilyFlag & UnsafeHelper.Negate(MathHelper.BooleanToUInt64(temporarily)));
-#endif
+        ulong state = (ulong)RenderingFlags.ResizeAndRedrawAll | 
+            ((ulong)RenderingFlags._ResizeTemporarilyFlag_Standalone & UnsafeHelper.Negate(MathHelper.BooleanToUInt64(temporarily)));
         InterlockedHelper.Or(ref _state, state);
         if (InterlockedHelper.Read(ref _lockedCount) != 0UL)
             return;
         _thread.DoRender();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void RequestUpdateAndResize(bool temporarily, bool redrawAll)
     {
-        ulong state;
-#if NET8_0_OR_GREATER
-        state = (temporarily ? (ulong)RenderingFlags.ResizeTemporarily : (ulong)RenderingFlags.Resize) | (redrawAll ? (ulong)RenderingFlags.RedrawAll : default);
-#else
-        state = (ulong)RenderingFlags.Resize |
-            ((ulong)RenderingFlags._ResizeTemporarilyFlag & UnsafeHelper.Negate(MathHelper.BooleanToUInt64(temporarily))) |
+        ulong state = (ulong)RenderingFlags.Resize |
+            ((ulong)RenderingFlags._ResizeTemporarilyFlag_Standalone & UnsafeHelper.Negate(MathHelper.BooleanToUInt64(temporarily))) |
             ((ulong)RenderingFlags.RedrawAll & UnsafeHelper.Negate(MathHelper.BooleanToUInt64(redrawAll)));
-#endif
         InterlockedHelper.Or(ref _state, state);
         if (InterlockedHelper.Read(ref _lockedCount) != 0UL)
             return;
@@ -115,7 +116,7 @@ public sealed partial class RenderingController : CriticalFinalizerObject, IDisp
         NativeMethods.ResetWaitingHandle(trigger);
         try
         {
-            _control.Render(this);
+            _target.Render(this);
         }
         finally
         {

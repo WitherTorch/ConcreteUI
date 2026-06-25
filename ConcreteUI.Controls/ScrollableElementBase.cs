@@ -63,6 +63,8 @@ public abstract partial class ScrollableElementBase : UIElement,
         _oldSurfaceSize = Size.Empty;
         _repeatingTimer = new Timer(RepeatingTimer_Tick, null, Timeout.Infinite, Timeout.Infinite);
         _scrollBarThemePrefix = scrollBarThemePrefix;
+
+        EnablePartialRendering = true;
     }
 
     protected abstract D2D1Brush GetBackBrush();
@@ -126,8 +128,6 @@ public abstract partial class ScrollableElementBase : UIElement,
             return result;
         return GraphicsUtils.CheckBrushIsSolid(UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.ScrollBarBackBrush));
     }
-
-    public override void Render(in RegionalRenderingContext context) => Render(context, markDirty: false);
 
     protected override bool RenderCore(in RegionalRenderingContext context)
     {

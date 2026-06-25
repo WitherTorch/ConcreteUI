@@ -101,7 +101,7 @@ public unsafe partial class CoreWindow
     #region WndProcs
     private void OnActivate(IntPtr hwnd, nint wParam)
     {
-        RenderingController? controller = _controller;
+        RenderingController? controller = GetRenderingController();
         if (controller is null)
             _isSystemPrepareBoosting = wParam != 0;
         else
@@ -584,7 +584,7 @@ public unsafe partial class CoreWindow
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void UpdateWindowFps(IntPtr handle)
     {
-        RenderingController? controller = _controller;
+        RenderingController? controller = GetRenderingController();
         if (controller is not null && controller.NeedUpdateFps)
             controller.SetFramesPerSecond(GetWindowFps(handle));
     }

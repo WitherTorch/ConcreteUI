@@ -55,7 +55,6 @@ public sealed class LayoutEngine : ILayoutEngine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void QueueElementsCore(ref readonly UIElement? elementArrayRef, nuint length, ulong timestamp)
     {
-        DebugHelper.ThrowIf(length < 1);
         for (; length >= 4; length -= 4)
         {
             QueueElementCore(in elementArrayRef, length - 1, timestamp);
@@ -111,7 +110,7 @@ public sealed class LayoutEngine : ILayoutEngine
             UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(array!), segment.Offset + (int)prop) = expression;
         }
         if (segment.Array is null)
-            element.SetLastLayoutTimestampUnsafe(timestamp);
+            element.UpdateLayoutTimestamp(timestamp);
         else
             elementDict[element] = segment;
         if (element is IElementContainer container)

@@ -6,7 +6,6 @@ using System.Threading;
 
 using ConcreteUI.Graphics;
 using ConcreteUI.Graphics.Native.Direct2D.Brushes;
-using ConcreteUI.Internals;
 using ConcreteUI.Layout;
 using ConcreteUI.Layout.Internals;
 using ConcreteUI.Theme;
@@ -37,10 +36,11 @@ public abstract partial class UIElement : ICheckableDisposable
     private string _themePrefix;
     private object? _tag;
     private GCHandle _themeResourceProviderReference;
-    private ulong _location, _size, _lastLayoutTimestamp;
+    private ulong _location, _size, _layoutTimestamp, _renderCheckTimestamp;
     private nuint _requestRedraw, _shouldUpdateWhenUnfreeze, _freezeCount,
         _parentVersion, _boundsVersion, _tagVersion,
         _disposed;
+    private bool _enablePartialRendering;
 
     public UIElement(IElementContainer parent, string themePrefix)
     {
@@ -66,8 +66,8 @@ public abstract partial class UIElement : ICheckableDisposable
     public LayoutNode? GetLayoutExpression(LayoutProperty property)
     {
         if (property >= LayoutProperty._Last)
-			return ArgumentOutOfRangeException.Throw<LayoutNode>(nameof(property));
-		return GetLayoutExpressionCore((nuint)property);
+            return ArgumentOutOfRangeException.Throw<LayoutNode>(nameof(property));
+        return GetLayoutExpressionCore((nuint)property);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -99,7 +99,7 @@ public abstract partial class UIElement : ICheckableDisposable
     private void SetLayoutExpressionCore(nuint property, LayoutNode? variable)
     {
         InterlockedHelper.Write(ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_layoutExpressions), property), variable);
-        ResetLastLayoutTimestamp();
+        ResetLayoutTimestamp();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -121,23 +121,35 @@ public abstract partial class UIElement : ICheckableDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected void ResetLastLayoutTimestamp() => InterlockedHelper.Write(ref _lastLayoutTimestamp, 0);
+    protected void ResetLayoutTimestamp() => InterlockedHelper.Write(ref _layoutTimestamp, 0);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetLastLayoutTimestampUnsafe(ulong timestamp) => InterlockedHelper.Write(ref _lastLayoutTimestamp, timestamp);
+    public void UpdateLayoutTimestamp(ulong timestamp) => InterlockedHelper.Write(ref _layoutTimestamp, timestamp);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal bool CheckLayoutOutdated()
+    internal bool CheckLayoutOutdated(ulong timestamp)
     {
-        CoreWindow window = Window;
-        if (window.CheckLayoutTimestampOutdated(InterlockedHelper.Read(ref _lastLayoutTimestamp)) || InterlockedHelper.Read(ref _themeContext) is not null)
+        if (InterlockedHelper.Read(ref _layoutTimestamp) != timestamp || InterlockedHelper.Read(ref _themeContext) is not null)
             return true;
-        IThemeResourceProvider? provider = window.GetThemeResourceProvider();
+
+        IThemeResourceProvider? provider = Window.GetThemeResourceProvider();
         if (provider is null)
             return false;
         lock (_themeAccessLock)
             return !ReferenceEquals(_themeResourceProviderReference.Target, provider);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void ResetRenderCheckTimestamp()
+        => InterlockedHelper.Write(ref _renderCheckTimestamp, 0);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void SyncRenderCheckTimestamp(ulong timestamp)
+        => InterlockedHelper.Write(ref _renderCheckTimestamp, timestamp);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal bool TrySyncRenderCheckTimestamp(ulong oldTimestamp, ulong newTimestamp)
+        => InterlockedHelper.CompareExchange(ref _renderCheckTimestamp, newTimestamp, oldTimestamp) == oldTimestamp;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected Lock.Scope EnterSyncScope() => _syncLock.EnterScope();
@@ -183,12 +195,11 @@ public abstract partial class UIElement : ICheckableDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void UpdateCore() => Renderer.Refresh();
 
-    public virtual void Render(in RegionalRenderingContext context) => Render(in context, markDirty: true);
-
-    public void Render(in RegionalRenderingContext context, bool markDirty)
+    public void Render(in RegionalRenderingContext context, ulong timestamp)
     {
         lock (_syncLock)
         {
+            bool enablePartialRendering = Volatile.Read(ref _enablePartialRendering);
             try
             {
                 ResetNeedRefreshFlag();
@@ -197,7 +208,8 @@ public abstract partial class UIElement : ICheckableDisposable
             }
             finally
             {
-                if (markDirty)
+                SyncRenderCheckTimestamp(timestamp);
+                if (!enablePartialRendering)
                     context.MarkAsDirty();
             }
         }
@@ -305,7 +317,7 @@ public abstract partial class UIElement : ICheckableDisposable
     internal void SetBoundsInternal(in Rectangle bounds, ulong timestamp)
     {
         SetBoundsCore_Pure(bounds);
-        SetLastLayoutTimestampUnsafe(timestamp);
+        UpdateLayoutTimestamp(timestamp);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -428,7 +440,8 @@ public abstract partial class UIElement : ICheckableDisposable
             return;
         OnLocationChanged();
         OptimisticLock.Increase(ref _boundsVersion);
-        Renderer.Update();
+        ResetRenderCheckTimestamp();
+        Update();
     }
 
     [Inline(InlineBehavior.Remove)]
@@ -455,7 +468,8 @@ public abstract partial class UIElement : ICheckableDisposable
             return;
         OnSizeChanged();
         OptimisticLock.Increase(ref _boundsVersion);
-        Renderer.Update();
+        ResetRenderCheckTimestamp();
+        Update();
     }
 
     [Inline(InlineBehavior.Remove)]
@@ -470,7 +484,8 @@ public abstract partial class UIElement : ICheckableDisposable
     {
         if (!SetBoundsCore_Pure(value))
             return;
-        Renderer.Update();
+        ResetRenderCheckTimestamp();
+        Update();
     }
 
     [Inline(InlineBehavior.Remove)]

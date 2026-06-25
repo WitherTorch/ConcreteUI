@@ -3,7 +3,7 @@ using ConcreteUI.Graphics.Native.DXGI;
 
 namespace ConcreteUI.Graphics;
 
-public interface IRenderingControl
+public interface IRenderable
 {
     DXGISwapChain GetSwapChain();
 
