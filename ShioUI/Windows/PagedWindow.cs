@@ -16,12 +16,9 @@ public abstract class PagedWindow : CoreWindow
 {
     #region Fields
     private uint _pageIndex;
-    private bool _isPageChanged;
     #endregion
 
     #region Properties
-    protected bool IsPageChanged => _isPageChanged;
-
     public abstract uint PageCount { get; }
 
     public uint CurrentPage
@@ -36,7 +33,6 @@ public abstract class PagedWindow : CoreWindow
             OnCurrentPageChanging();
             ClearFocusElement();
             _pageIndex = value;
-            _isPageChanged = true;
             OnCurrentPageChanged();
         }
     }
