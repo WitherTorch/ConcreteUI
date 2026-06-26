@@ -1,0 +1,33 @@
+using RiceTea.Core.Helpers;
+using RiceTea.Core.Native;
+
+namespace ShioUI.Graphics.Native.Direct2D.Geometry;
+
+/// <summary>
+/// Represents a set of vertices that form a list of triangles.
+/// </summary>
+public sealed unsafe class D2D1Mesh : D2D1Resource
+{
+    private new enum MethodTable
+    {
+        _Start = D2D1Resource.MethodTable._End,
+        Open = _Start,
+        _End
+    }
+
+    public D2D1Mesh() : base() { }
+
+    public D2D1Mesh(void* nativePointer, ReferenceType referenceType) : base(nativePointer, referenceType) { }
+
+    /// <summary>
+    /// Opens the mesh for population.
+    /// </summary>
+    public D2D1TessellationSink Open()
+    {
+        void* nativePointer = NativePointer;
+        void* functionPointer = GetFunctionPointerOrThrow(nativePointer, (int)MethodTable.Open);
+        int hr = ((delegate* unmanaged[Stdcall]<void*, void**, int>)functionPointer)(nativePointer, &nativePointer);
+        ThrowHelper.ThrowExceptionForHR(hr, nativePointer);
+        return new D2D1TessellationSink(nativePointer, ReferenceType.Owned);
+    }
+}

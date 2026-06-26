@@ -1,9 +1,0 @@
-{
-  "profiles": {
-    "ConcreteUI.Test": {
-      "commandName": "Project",
-      "hotReloadEnabled": true,
-      "debugEngines": "managed,native"
-    }
-  }
-}

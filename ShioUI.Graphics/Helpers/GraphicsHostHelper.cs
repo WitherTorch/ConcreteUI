@@ -1,0 +1,60 @@
+using System;
+using System.Collections.Generic;
+
+using ShioUI.Graphics.Hosts;
+using ShioUI.Graphics.Native.Direct2D;
+using ShioUI.Graphics.Native.DXGI;
+
+namespace ShioUI.Graphics.Helpers;
+
+public static class GraphicsHostHelper
+{
+    public static SimpleGraphicsHost CreateSwapChainGraphicsHost(IntPtr handle, GraphicsDeviceProvider provider, bool useFlipModel, bool useDComp, bool isOpaque)
+    {
+        if (useDComp && useFlipModel)
+            return new CompositionGraphicsHost(provider, handle, D2D1TextAntialiasMode.Grayscale, isOpaque); // 無法回退 (因為視窗的性質不一樣)
+
+        if (provider.IsSupportSwapChain1) // 支援 DXGI 1.1
+        {
+            try
+            {
+                return new OptimizedGraphicsHost(provider, handle,
+                    D2D1TextAntialiasMode.Grayscale,
+                    useFlipModel, isOpaque);
+            }
+            catch (Exception)
+            {
+            }
+        }
+        return new SimpleGraphicsHost(provider, handle,
+            D2D1TextAntialiasMode.Grayscale,
+            useFlipModel, isOpaque);
+    }
+
+    public static SimpleGraphicsHost FromAnotherSwapChainGraphicsHost(SimpleGraphicsHost another, IntPtr handle, bool isOpaque)
+        => another switch
+        {
+            CompositionGraphicsHost typedAnother => new CompositionGraphicsHost(typedAnother, handle, isOpaque),
+            OptimizedGraphicsHost typedAnother => new OptimizedGraphicsHost(typedAnother, handle, isOpaque),
+            _ => new SimpleGraphicsHost(another, handle, isOpaque)
+        };
+
+    public static string[] EnumAdapters(GraphicsDeviceProvider provider)
+    {
+        DXGIFactory factory = provider.DXGIFactory;
+        if (factory is null)
+            return Array.Empty<string>();
+        List<string> result = new List<string>();
+        for (uint i = 0; i < Constants.AdapterEnumerationLimit; i++)
+        {
+            DXGIAdapter? adapter = factory.EnumAdapters(i, throwException: false);
+            if (adapter is null)
+                break;
+            DXGIAdapterDescription description = adapter.Description;
+            if (description.VendorId != 5140) // Is not "Microsoft Basic Render Driver"
+                result.Add(description.Description.ToString());
+            adapter.Dispose();
+        }
+        return result.ToArray();
+    }
+}

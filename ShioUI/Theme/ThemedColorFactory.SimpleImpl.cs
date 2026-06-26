@@ -1,0 +1,25 @@
+using System.Collections.Generic;
+using System.Linq;
+
+using ShioUI.Graphics.Native.Direct2D;
+
+namespace ShioUI.Theme;
+
+
+partial class ThemedColorFactory
+{
+    private sealed class SimpleImpl : IThemedColorFactory
+    {
+        private readonly D2D1ColorF _color;
+
+        public SimpleImpl(in D2D1ColorF color) => _color = color;
+
+        public D2D1ColorF CreateColorByMaterial(WindowMaterial material) => _color;
+
+        public D2D1ColorF CreateDefaultColor() => _color;
+
+        public IEnumerable<WindowMaterial> GetVariants() => Enumerable.Empty<WindowMaterial>();
+
+        internal D2D1ColorF Destruct() => _color;
+    }
+}

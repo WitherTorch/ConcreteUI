@@ -1,0 +1,31 @@
+using System.Diagnostics.CodeAnalysis;
+
+using ShioUI.Graphics.Native.Direct2D;
+using ShioUI.Graphics.Native.Direct2D.Brushes;
+
+namespace ShioUI.Theme;
+
+partial class ThemeResourceProvider
+{
+    private sealed class ReferenceImpl : IThemeResourceProvider
+    {
+        private readonly IThemeResourceProvider _provider;
+
+        public ReferenceImpl(IThemeResourceProvider provider)
+        {
+            _provider = provider;
+        }
+
+        public string FontName => _provider.FontName;
+
+        public IThemeContext ThemeContext => _provider.ThemeContext;
+
+        public IThemeResourceProvider Clone() => this;
+
+        public bool TryGetBrush(string node, [NotNullWhen(true)] out D2D1Brush? brush)
+            => _provider.TryGetBrush(node, out brush);
+
+        public bool TryGetColor(string node, out D2D1ColorF color)
+            => _provider.TryGetColor(node, out color);
+    }
+}
