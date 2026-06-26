@@ -164,9 +164,8 @@ public abstract class TabbedWindow : PagedWindow
     }
 
     protected virtual void RenderTitle(D2D1DeviceContext deviceContext, DirtyAreaCollector collector, bool force, in WindowRenderingData data,
-        BitVector64 buttonStatus, BitVector64 changedStatus)
+        BitVector64 buttonStatus, BitVector64 changedStatus) //繪製主選單
     {
-        #region 繪製主選單
         uint pageCount = PageCount;
         if (pageCount <= 0)
             return;
@@ -210,7 +209,6 @@ public abstract class TabbedWindow : PagedWindow
             }
             deviceContext.PopAxisAlignedClip();
         }
-        bool menuRedraw = IsPageChanged || force;
         for (uint i = 0, currentPageIndex = CurrentPage; i < pageCount; i++)
         {
             RectF rect = RenderingHelper.RoundInPixel(
@@ -229,7 +227,7 @@ public abstract class TabbedWindow : PagedWindow
                 deviceContext.PopAxisAlignedClip();
                 collector.MarkAsDirty(rect);
             }
-            else if (changedStatus[i] || menuRedraw)
+            else if (force || changedStatus[i])
             {
                 deviceContext.PushAxisAlignedClip(rect, D2D1AntialiasMode.Aliased);
                 if (!force)
@@ -250,7 +248,6 @@ public abstract class TabbedWindow : PagedWindow
             }
         }
         DisposeHelper.NullSwapOrDispose(ref _menuBarButtonLayouts, menuBarButtonLayouts);
-        #endregion
     }
 
     protected override void OnMouseDown(ref HandleableMouseEventArgs args)
