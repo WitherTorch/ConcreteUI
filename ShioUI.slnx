@@ -7,6 +7,7 @@
   <Folder Name="/方案項目/">
     <File Path=".editorconfig" />
     <File Path="GlobalAssemblyInfo.cs" />
+    <File Path="LICENSE" />
     <File Path="README.md" />
   </Folder>
   <Project Path="ShioUI.Controls/ShioUI.Controls.csproj">
