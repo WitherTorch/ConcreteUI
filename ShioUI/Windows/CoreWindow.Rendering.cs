@@ -34,6 +34,7 @@ using RiceTea.Core.Helpers;
 using RiceTea.Core.Native;
 using RiceTea.Core.Structures;
 using RiceTea.Core.Threading;
+using System.Diagnostics;
 
 namespace ShioUI.Windows;
 
@@ -1019,8 +1020,10 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
         bool renderAll = flags.HasRedrawAll();
         if (flags.HasResize())
         {
-            if (!TryResize(host, controller, ref data, flags, renderAll))
+            if (!TryResize(host, controller, ref data, flags, ref renderAll))
                 return false;
+            if (host is OptimizedGraphicsHost optimizedHost)
+                renderAll |= optimizedHost.ForcePresentAll;
         }
         D2D1DeviceContext? deviceContext = host.BeginDraw();
         if (deviceContext is null || deviceContext.IsDisposed)
@@ -1040,14 +1043,27 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
             if (!pageSize.IsValid())
                 return false;
 
+            bool debugMode = ShioSettings.UseDebugMode && Debugger.IsAttached;
+            nuint renderDesyncTimes = 0, layoutDesyncTimes = 0, retryTimes = 0;
             do
             {
                 if (resultFlags >= RenderResult.LayoutDesync)
                 {
+                    if (debugMode)
+                    {
+                        renderDesyncTimes = 0;
+                        if (++layoutDesyncTimes > 3)
+                        {
+                            layoutDesyncTimes = 3;
+                            Debugger.Log(level: 1, "UI Rendering warning",
+                                $"Thread {NativeMethods.GetCurrentThreadId()}(Name = {Thread.CurrentThread.Name}) is re-rendering in LayoutDesync state for this frame over 3 times! (Timestamp = ${data.CurrentRenderTimestamp})");
+                        }
+                    }
+
                     flags = controller.GetAndResetRenderingFlags(); // 反正都要二次重繪，那就在拉取一次最新的渲染旗標並重置，以減少過度渲染的機會
                     if (flags.HasResize())
                     {
-                        if (!TryResize(host, controller, ref data, flags, renderAll) || !(pageSize = data.Layout.PageBounds.Size).IsValid())
+                        if (!TryResize(host, controller, ref data, flags, ref renderAll) || !(pageSize = data.Layout.PageBounds.Size).IsValid())
                             return false;
                     }
                     else
@@ -1055,6 +1071,27 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
                         RecalculatePageLayout(pageSize, data.ResizeTimestamp);
                     }
                 }
+                else
+                {
+                    DebugHelper.ThrowIf(resultFlags != RenderResult.RenderDesync);
+                    if (debugMode)
+                    {
+                        layoutDesyncTimes = 0;
+                        if (++renderDesyncTimes > 3)
+                        {
+                            renderDesyncTimes = 3;
+                            Debugger.Log(level: 1, "UI Rendering warning",
+                                $"Thread {NativeMethods.GetCurrentThreadId()}(Name = {Thread.CurrentThread.Name}) is re-rendering in RenderDesync state for this frame over 3 times! (Timestamp = ${data.CurrentRenderTimestamp})");
+                        }
+                    }
+                }
+                if (debugMode && ++retryTimes > 3 && layoutDesyncTimes <= 1 && renderDesyncTimes <= 1)
+                {
+                    retryTimes = 3;
+                    Debugger.Log(level: 1, "UI Rendering warning",
+                        $"Thread {NativeMethods.GetCurrentThreadId()}(Name = {Thread.CurrentThread.Name}) is re-rendering for this frame over 3 times! (Timestamp = ${data.CurrentRenderTimestamp})");
+                }
+
                 deviceContext = host.BeginDraw();
                 if (deviceContext is null || deviceContext.IsDisposed)
                     return true;
@@ -1067,7 +1104,7 @@ public abstract partial class CoreWindow : IRenderer, IElementContainer, ICoordi
 
         return result.Presented;
 
-        bool TryResize(SimpleGraphicsHost host, RenderingController controller, ref WindowRenderingData data, RenderingFlags flags, bool renderAll)
+        bool TryResize(SimpleGraphicsHost host, RenderingController controller, ref WindowRenderingData data, RenderingFlags flags, ref bool renderAll)
         {
             bool resizeTemporarily = flags.HasResizeTemporarily();
             Size clirentSizeInPixel = RawClientSize;

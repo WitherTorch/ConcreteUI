@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 
 using ShioUI.Graphics.Native.Direct2D;
@@ -10,6 +11,8 @@ public class OptimizedGraphicsHost : SimpleGraphicsHost
 {
     private bool _forcePresentAll = false;
     private bool _switchToNormalSwapChain = false;
+
+    public bool ForcePresentAll => _forcePresentAll;
 
     public OptimizedGraphicsHost(GraphicsDeviceProvider deviceProvider, IntPtr handle,
         D2D1TextAntialiasMode textAntialiasMode, bool isFlipModel, bool isOpaque) : base(deviceProvider, handle, textAntialiasMode, isFlipModel, isOpaque) { }
@@ -58,6 +61,12 @@ public class OptimizedGraphicsHost : SimpleGraphicsHost
         swapChainDesc.Height = 1;
         DXGISwapChain1 swapChain = factory.CreateSwapChainForHwnd(provider.D3DDevice, AssociatedWindowHandle, swapChainDesc);
         return swapChain;
+    }
+
+    protected override void ResizeSwapChain(DXGISwapChain swapChain, Size size)
+    {
+        base.ResizeSwapChain(swapChain, size);
+        _forcePresentAll = true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
