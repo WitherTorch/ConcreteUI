@@ -159,7 +159,7 @@ public readonly ref struct LayoutNodeManager
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void RemoveNode(LayoutNode node) => _walkedNodes?.Remove(node);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ThrowCyclicDependencyException(Dictionary<LayoutNode, int> nodes)
         => throw new CyclicDependencyException(
             nodes.OrderBy(static pair => pair.Value)
