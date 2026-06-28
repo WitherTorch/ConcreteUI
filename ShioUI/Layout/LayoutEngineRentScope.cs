@@ -6,6 +6,8 @@ using System.Runtime.InteropServices;
 
 using RiceTea.Core.Buffers;
 
+using ShioUI.Utils;
+
 namespace ShioUI.Layout;
 
 [StructLayout(LayoutKind.Auto)]
@@ -25,12 +27,12 @@ public ref struct LayoutEngineRentScope : ILayoutEngine, IDisposable
     public static LayoutEngineRentScope Rent(Pool<LayoutEngine> pool) => new LayoutEngineRentScope(pool, pool.Rent());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly void RecalculateLayout(Size pageSize, UIElement? element, ulong timestamp, bool clearCache)
-        => _engine!.RecalculateLayout(pageSize, element, timestamp, clearCache); // 如果 engine 等於 null 則正常擲出 NRE
+    public readonly void RecalculateLayout(Size pageSize, UIElement? element, in RecalculateLayoutInformation information)
+        => _engine!.RecalculateLayout(pageSize, element, information); // 如果 engine 等於 null 則正常擲出 NRE
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements, ulong timestamp, bool clearCache) where TEnumerable : IEnumerable<UIElement?>
-        => _engine!.RecalculateLayout(pageSize, elements, timestamp, clearCache); // 如果 engine 等於 null 則正常擲出 NRE
+    public readonly void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements, in RecalculateLayoutInformation information) where TEnumerable : IEnumerable<UIElement?>
+        => _engine!.RecalculateLayout(pageSize, elements, information); // 如果 engine 等於 null 則正常擲出 NRE
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Dispose()

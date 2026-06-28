@@ -9,6 +9,7 @@ using ShioUI.Graphics;
 using ShioUI.Layout;
 
 using RiceTea.Core.Extensions;
+using ShioUI.Utils;
 
 namespace ShioUI.Windows;
 
@@ -81,17 +82,17 @@ public abstract class PagedWindow : CoreWindow
         return elements;
     }
 
-    protected override void RecalculatePageLayout(Size pageSize, ulong timestamp, bool clearCache)
-        => RecalculatePageLayout(pageSize, _pageIndex, timestamp, clearCache);
+    protected override void RecalculatePageLayout(Size pageSize, in RecalculateLayoutInformation information)
+        => RecalculatePageLayout(pageSize, _pageIndex, information);
 
     #endregion
 
     #region Virtual Methods
-    protected virtual void RecalculatePageLayout(Size pageSize, uint pageIndex, ulong timestamp, bool clearCache)
+    protected virtual void RecalculatePageLayout(Size pageSize, uint pageIndex, in RecalculateLayoutInformation information)
     {
         using LayoutEngineRentScope engine = LayoutEngine.Rent();
-        engine.RecalculateLayout(pageSize, GetActiveElements(pageIndex), timestamp, clearCache);
-        engine.RecalculateLayout(pageSize, GetOverlayElement(), timestamp, clearCache);
+        engine.RecalculateLayout(pageSize, GetActiveElements(pageIndex), information);
+        engine.RecalculateLayout(pageSize, GetOverlayElement(), information);
         Thread.MemoryBarrier();
     }
     #endregion

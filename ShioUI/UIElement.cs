@@ -126,6 +126,13 @@ public abstract partial class UIElement : ICheckableDisposable
     public void UpdateLayoutTimestamp(ulong timestamp) => InterlockedHelper.Write(ref _layoutTimestamp, timestamp);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void UpdateLayoutTimestamp(in Rectangle bounds, ulong timestamp)
+    {
+        SetBoundsCore_Pure(bounds);
+        UpdateLayoutTimestamp(timestamp);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal bool CheckLayoutOutdated(ulong timestamp)
     {
         if (InterlockedHelper.Read(ref _layoutTimestamp) != timestamp || InterlockedHelper.Read(ref _themeContext) is not null)
@@ -309,13 +316,6 @@ public abstract partial class UIElement : ICheckableDisposable
     }
 
     protected abstract void ApplyThemeCore(IThemeResourceProvider provider);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal void SetBoundsInternal(in Rectangle bounds, ulong timestamp)
-    {
-        SetBoundsCore_Pure(bounds);
-        UpdateLayoutTimestamp(timestamp);
-    }
 
     public override int GetHashCode() => _identifier;
 

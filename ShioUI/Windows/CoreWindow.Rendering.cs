@@ -882,11 +882,11 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
         data.PageBounds = pageBounds;
     }
 
-    protected virtual void RecalculatePageLayout(Size pageSize, ulong timestamp, bool clearCache)
+    protected virtual void RecalculatePageLayout(Size pageSize, in RecalculateLayoutInformation information)
     {
         using LayoutEngineRentScope engine = LayoutEngine.Rent();
-        engine.RecalculateLayout(pageSize, GetActiveElements(), timestamp, clearCache);
-        engine.RecalculateLayout(pageSize, GetOverlayElement(), timestamp, clearCache);
+        engine.RecalculateLayout(pageSize, GetActiveElements(), information);
+        engine.RecalculateLayout(pageSize, GetOverlayElement(), information);
         Thread.MemoryBarrier();
     }
     #endregion
@@ -997,7 +997,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
                     }
                     else
                     {
-                        RecalculatePageLayout(pageSize, data.ResizeTimestamp, clearCache: true);
+                        RecalculatePageLayout(pageSize, new (data.ResizeTimestamp, clearCache: true));
                     }
                 }
                 else
@@ -1066,7 +1066,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
 
                 Size pageSize = layoutData.PageBounds.Size;
                 if (pageSize.IsValid())
-                    RecalculatePageLayout(pageSize, timestamp, clearCache);
+                    RecalculatePageLayout(pageSize, new(data.ResizeTimestamp, clearCache: clearCache));
             }
             flags = controller.GetAndResetRenderingFlags();
             renderAll |= flags.HasRedrawAll();

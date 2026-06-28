@@ -9,6 +9,7 @@ using RiceTea.Core.Extensions;
 using RiceTea.Core.Helpers;
 
 using ShioUI.Internals;
+using ShioUI.Utils;
 
 namespace ShioUI.Layout;
 
@@ -32,129 +33,130 @@ public sealed class LayoutEngine : ILayoutEngine
     public static LayoutEngineRentScope Rent() => LayoutEngineRentScope.Rent(_pool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RecalculateLayout(Size pageSize, UIElement? element, ulong timestamp, bool clearCache)
+    public void RecalculateLayout(Size pageSize, UIElement? element, in RecalculateLayoutInformation information)
     {
         if (element is null || pageSize.Width < 0 || pageSize.Height < 0)
             return;
-        QueueElement(element, timestamp, clearCache);
-        RecalculateLayoutInternal(pageSize, timestamp);
+        QueueElement(element, information);
+        RecalculateLayoutInternal(pageSize, information.LayoutTimestamp);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements, ulong timestamp, bool clearCache) where TEnumerable : IEnumerable<UIElement?>
+    public void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements, in RecalculateLayoutInformation information) where TEnumerable : IEnumerable<UIElement?>
     {
         if (pageSize.Width < 0 || pageSize.Height < 0)
             return;
-        QueueElements(elements, timestamp, clearCache);
+        QueueElements(elements, information);
         if (_elementDict.Count <= 0)
             return;
-        RecalculateLayoutInternal(pageSize, timestamp);
+        RecalculateLayoutInternal(pageSize, information.LayoutTimestamp);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void QueueElements<TEnumerable>(TEnumerable elements, ulong timestamp, bool clearCache) where TEnumerable : IEnumerable<UIElement?>
+    private void QueueElements<TEnumerable>(TEnumerable elements, in RecalculateLayoutInformation information) where TEnumerable : IEnumerable<UIElement?>
     {
         using ArrayPool<UIElement?>.RentScope scope = ArrayPool<UIElement?>.Shared.EnterRentScopeAndCapture(elements);
-        DispatchArray(in scope.GetReferenceOfFirstElement(), MathHelper.MakeUnsigned(scope.Count), timestamp, clearCache);
+        DispatchArray(in scope.GetReferenceOfFirstElement(), MathHelper.MakeUnsigned(scope.Count), information);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void DispatchArray(ref readonly UIElement? elementArrayRef, nuint length, ulong timestamp, bool clearCache)
+        void DispatchArray(ref readonly UIElement? elementArrayRef, nuint length, in RecalculateLayoutInformation information)
         {
             for (; length >= 4; length -= 4)
             {
-                Dispatch(in elementArrayRef, length - 1, timestamp, clearCache);
-                Dispatch(in elementArrayRef, length - 2, timestamp, clearCache);
-                Dispatch(in elementArrayRef, length - 3, timestamp, clearCache);
-                Dispatch(in elementArrayRef, length - 4, timestamp, clearCache);
+                Dispatch(in elementArrayRef, length - 1, information);
+                Dispatch(in elementArrayRef, length - 2, information);
+                Dispatch(in elementArrayRef, length - 3, information);
+                Dispatch(in elementArrayRef, length - 4, information);
             }
             switch (length)
             {
                 case 3:
-                    Dispatch(in elementArrayRef, length - 1, timestamp, clearCache);
-                    Dispatch(in elementArrayRef, length - 2, timestamp, clearCache);
-                    Dispatch(in elementArrayRef, length - 3, timestamp, clearCache);
+                    Dispatch(in elementArrayRef, length - 1, information);
+                    Dispatch(in elementArrayRef, length - 2, information);
+                    Dispatch(in elementArrayRef, length - 3, information);
                     break;
                 case 2:
-                    Dispatch(in elementArrayRef, length - 1, timestamp, clearCache);
-                    Dispatch(in elementArrayRef, length - 2, timestamp, clearCache);
+                    Dispatch(in elementArrayRef, length - 1, information);
+                    Dispatch(in elementArrayRef, length - 2, information);
                     break;
                 case 1:
-                    Dispatch(in elementArrayRef, length - 1, timestamp, clearCache);
+                    Dispatch(in elementArrayRef, length - 1, information);
                     break;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Dispatch(ref readonly UIElement? elementArrayRef, nuint i, ulong timestamp, bool clearCache)
+        void Dispatch(ref readonly UIElement? elementArrayRef, nuint i, in RecalculateLayoutInformation information)
         {
             UIElement? element = UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i);
             if (element is null)
                 return;
-            QueueElement(element, timestamp, clearCache);
+            QueueElement(element, information);
         }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private void QueueElements<TEnumerable>(UIElement parent, TEnumerable elements, ulong timestamp, bool clearCache) where TEnumerable : IEnumerable<UIElement?>
+    private void QueueElements<TEnumerable>(UIElement parent, TEnumerable elements, in RecalculateLayoutInformation information) where TEnumerable : IEnumerable<UIElement?>
     {
         using ArrayPool<UIElement?>.RentScope scope = ArrayPool<UIElement?>.Shared.EnterRentScopeAndCapture(elements);
         int count = scope.Count;
         if (count <= 0)
             return;
         using PooledList<UIElement> list = new PooledList<UIElement>(_childrenArrayPool, capacity: count);
-        DispatchArray(parent, list, in scope.GetReferenceOfFirstElement(), MathHelper.MakeUnsigned(scope.Count), timestamp, clearCache);
+        DispatchArray(parent, list, in scope.GetReferenceOfFirstElement(), MathHelper.MakeUnsigned(scope.Count), information);
         (UIElement[] buffer, count) = list;
         if (count <= 0)
             return;
         _childrenDict[parent] = new ArraySegment<UIElement>(buffer, 0, count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void DispatchArray(UIElement parent, PooledList<UIElement> list, ref readonly UIElement? elementArrayRef, nuint length, ulong timestamp, bool clearCache)
+        void DispatchArray(UIElement parent, PooledList<UIElement> list, ref readonly UIElement? elementArrayRef, nuint length, in RecalculateLayoutInformation information)
         {
             for (; length >= 4; length -= 4)
             {
-                Dispatch(parent, list, in elementArrayRef, length - 1, timestamp, clearCache);
-                Dispatch(parent, list, in elementArrayRef, length - 2, timestamp, clearCache);
-                Dispatch(parent, list, in elementArrayRef, length - 3, timestamp, clearCache);
-                Dispatch(parent, list, in elementArrayRef, length - 4, timestamp, clearCache);
+                Dispatch(parent, list, in elementArrayRef, length - 1, information);
+                Dispatch(parent, list, in elementArrayRef, length - 2, information);
+                Dispatch(parent, list, in elementArrayRef, length - 3, information);
+                Dispatch(parent, list, in elementArrayRef, length - 4, information);
             }
             switch (length)
             {
                 case 3:
-                    Dispatch(parent, list, in elementArrayRef, length - 1, timestamp, clearCache);
-                    Dispatch(parent, list, in elementArrayRef, length - 2, timestamp, clearCache);
-                    Dispatch(parent, list, in elementArrayRef, length - 3, timestamp, clearCache);
+                    Dispatch(parent, list, in elementArrayRef, length - 1, information);
+                    Dispatch(parent, list, in elementArrayRef, length - 2, information);
+                    Dispatch(parent, list, in elementArrayRef, length - 3, information);
                     break;
                 case 2:
-                    Dispatch(parent, list, in elementArrayRef, length - 1, timestamp, clearCache);
-                    Dispatch(parent, list, in elementArrayRef, length - 2, timestamp, clearCache);
+                    Dispatch(parent, list, in elementArrayRef, length - 1, information);
+                    Dispatch(parent, list, in elementArrayRef, length - 2, information);
                     break;
                 case 1:
-                    Dispatch(parent, list, in elementArrayRef, length - 1, timestamp, clearCache);
+                    Dispatch(parent, list, in elementArrayRef, length - 1, information);
                     break;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Dispatch(UIElement parent, PooledList<UIElement> list, ref readonly UIElement? elementArrayRef, nuint i, ulong timestamp, bool clearCache)
+        void Dispatch(UIElement parent, PooledList<UIElement> list, ref readonly UIElement? elementArrayRef, nuint i, in RecalculateLayoutInformation information)
         {
             UIElement? element = UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i);
             if (element is null)
                 return;
             list.Add(element);
             _parentDict[element] = parent;
-            QueueElement(element, timestamp, clearCache);
+            QueueElement(element, information);
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void QueueElement(UIElement element, ulong timestamp, bool clearCache)
+    private void QueueElement(UIElement element, in RecalculateLayoutInformation information)
     {
         Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict = _elementDict;
         ArraySegment<LayoutNode?> segment = default;
 
         element.EnsureThemeIsApplied();
 
+        bool clearCache = information.ClearCache;
         for (LayoutProperty prop = LayoutProperty.Left; prop < LayoutProperty._Last; prop++)
         {
             LayoutNode? expression = element.GetLayoutExpression(prop);
@@ -171,11 +173,11 @@ public sealed class LayoutEngine : ILayoutEngine
                 expression.ClearCache();
         }
         if (segment.Array is null)
-            element.UpdateLayoutTimestamp(timestamp);
+            element.UpdateLayoutTimestamp(information.LayoutTimestamp);
         else
             elementDict[element] = segment;
         if (element is IElementContainer container)
-            QueueElements(element, container.GetElements(), timestamp, clearCache);
+            QueueElements(element, container.GetElements(), information);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -296,7 +298,7 @@ public sealed class LayoutEngine : ILayoutEngine
                     values[i - 2] = nodeManager.GetComputedValue(leftExpression) - nodeManager.GetComputedValue(rightExpression);
                 }
             }
-            element.SetBoundsInternal(bounds, timestamp);
+            element.UpdateLayoutTimestamp(bounds, timestamp);
             continue;
 
         Failed:
