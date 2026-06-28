@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -17,6 +18,7 @@ public readonly ref struct LayoutNodeManager
 {
     private readonly Dictionary<UIElement, ArraySegment<LayoutNode?>> _elementDict;
     private readonly Dictionary<UIElement, ArraySegment<UIElement>> _childrenDict;
+    private readonly Dictionary<UIElement, UIElement> _parentDict;
     private readonly Dictionary<LayoutNode, int> _computeDict;
     private readonly Dictionary<LayoutNode, int>? _walkedNodes;
     private readonly Size _pageSize;
@@ -24,11 +26,13 @@ public readonly ref struct LayoutNodeManager
     public LayoutNodeManager(
         Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict,
         Dictionary<UIElement, ArraySegment<UIElement>> childrenDict,
+        Dictionary<UIElement, UIElement> parentDict,
         Dictionary<LayoutNode, int> computeDict,
         Size pageSize)
     {
         _elementDict = elementDict;
         _childrenDict = childrenDict;
+        _parentDict = parentDict;
         _computeDict = computeDict;
         _pageSize = pageSize;
         if (ShioSettings.UseDebugMode)
@@ -51,6 +55,10 @@ public readonly ref struct LayoutNodeManager
             return default;
         return new ChildrenEnumerator(array, offset, count);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly bool TryGetParentElement(UIElement element, [NotNullWhen(true)] out UIElement? parent)
+        => _parentDict.TryGetValue(element, out parent);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly LayoutNode? GetLayoutNodeOrNull(UIElement element, LayoutProperty property)
