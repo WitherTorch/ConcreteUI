@@ -166,7 +166,9 @@ public sealed class LayoutEngine : ILayoutEngine
                 segment = AllocSegment();
                 array = segment.Array;
             }
-            UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(array!), segment.Offset + (int)prop) = expression;
+            array!.AsUnsafeRef()[segment.Offset + (int)prop] = expression;
+            if (clearCache)
+                expression.ClearCache();
         }
         if (segment.Array is null)
             element.UpdateLayoutTimestamp(timestamp);
