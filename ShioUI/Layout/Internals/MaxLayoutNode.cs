@@ -12,7 +12,7 @@ internal sealed class MaxLayoutNode : LayoutNode
         _rightVariable = right;
     }
 
-    public override int Compute(in LayoutNodeManager manager)
+    protected override int ComputeCore(in LayoutNodeManager manager)
         => MathHelper.Max(manager.GetComputedValue(_leftVariable), manager.GetComputedValue(_rightVariable));
 
     public override bool Equals(object? obj) => obj is MaxLayoutNode another &&

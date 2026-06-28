@@ -9,7 +9,7 @@ internal sealed class CustomLayoutNode : LayoutNode
         _func = func;
     }
 
-    public override int Compute(in LayoutNodeManager manager) => _func.Invoke(in manager);
+    protected override int ComputeCore(in LayoutNodeManager manager) => _func.Invoke(in manager);
 
     public override bool Equals(object? obj) => obj is CustomLayoutNode another && _func == another._func;
 

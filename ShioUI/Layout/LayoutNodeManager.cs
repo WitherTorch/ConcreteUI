@@ -5,38 +5,41 @@ using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using RiceTea.Core.Extensions;
 using RiceTea.Core.Helpers;
 using RiceTea.Core.Structures;
 
+using ShioUI.Internals;
 using ShioUI.Layout.Internals;
 
 namespace ShioUI.Layout;
 
+[StructLayout(LayoutKind.Auto)]
 public readonly ref struct LayoutNodeManager
 {
     private readonly Dictionary<UIElement, ArraySegment<LayoutNode?>> _elementDict;
     private readonly Dictionary<UIElement, ArraySegment<UIElement>> _childrenDict;
     private readonly Dictionary<UIElement, UIElement> _parentDict;
-    private readonly Dictionary<LayoutNode, int> _computeDict;
     private readonly Dictionary<LayoutNode, int>? _walkedNodes;
     private readonly Size _pageSize;
+    private readonly ulong _timestamp;
 
     public LayoutNodeManager(
         Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict,
         Dictionary<UIElement, ArraySegment<UIElement>> childrenDict,
         Dictionary<UIElement, UIElement> parentDict,
-        Dictionary<LayoutNode, int> computeDict,
-        Size pageSize)
+        Size pageSize,
+        ulong timestamp)
     {
         _elementDict = elementDict;
         _childrenDict = childrenDict;
         _parentDict = parentDict;
-        _computeDict = computeDict;
         _pageSize = pageSize;
+        _timestamp = timestamp;
         if (ShioSettings.UseDebugMode)
-            _walkedNodes = new Dictionary<LayoutNode, int>();
+            _walkedNodes = new Dictionary<LayoutNode, int>(LayoutNodeEqualityComparer.Instance);
         else
             _walkedNodes = null;
     }
@@ -154,20 +157,15 @@ public readonly ref struct LayoutNodeManager
         if (node is FixedValueLayoutNode fixedValueNode)
             return fixedValueNode.Value;
 
-        Dictionary<LayoutNode, int> computeDict = _computeDict;
-        if (computeDict.TryGetValue(node, out int result))
-            return result;
         AddNodeOrThrow(node);
         try
         {
-            result = node.Compute(this);
+            return node.Compute(this, _timestamp);
         }
         finally
         {
             RemoveNode(node);
         }
-        computeDict.Add(node, result);
-        return result;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -8,7 +8,7 @@ public abstract class UIElementReferencedNode<T> : LayoutNode where T : UIElemen
 
     protected UIElementReferencedNode(WeakReference<T> reference) => _reference = reference;
 
-    public override int Compute(in LayoutNodeManager manager)
+    protected override int ComputeCore(in LayoutNodeManager manager)
     {
         if (!_reference.TryGetTarget(out T? element))
             return 0;

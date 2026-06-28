@@ -6,7 +6,7 @@ internal sealed class PageWidthNode : LayoutNode
 
     private PageWidthNode() { }
 
-    public override int Compute(in LayoutNodeManager manager) => manager.GetPageSize().Width;
+    protected override int ComputeCore(in LayoutNodeManager manager) => manager.GetPageSize().Width;
 
     public override bool Equals(object? obj) => obj is PageWidthNode;
 
@@ -19,7 +19,7 @@ internal sealed class PageHeightNode : LayoutNode
 
     private PageHeightNode() { }
 
-    public override int Compute(in LayoutNodeManager manager) => manager.GetPageSize().Height;
+    protected override int ComputeCore(in LayoutNodeManager manager) => manager.GetPageSize().Height;
 
     public override bool Equals(object? obj) => obj is PageHeightNode;
 

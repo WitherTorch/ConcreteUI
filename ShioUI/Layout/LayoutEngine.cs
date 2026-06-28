@@ -8,6 +8,8 @@ using RiceTea.Core.Buffers;
 using RiceTea.Core.Extensions;
 using RiceTea.Core.Helpers;
 
+using ShioUI.Internals;
+
 namespace ShioUI.Layout;
 
 public sealed class LayoutEngine : ILayoutEngine
@@ -20,7 +22,6 @@ public sealed class LayoutEngine : ILayoutEngine
     private readonly Dictionary<UIElement, ArraySegment<LayoutNode?>> _elementDict = new(UIElementEqualityComparer.Instance);
     private readonly Dictionary<UIElement, ArraySegment<UIElement>> _childrenDict = new(UIElementEqualityComparer.Instance);
     private readonly Dictionary<UIElement, UIElement> _parentDict = new(UIElementEqualityComparer.Instance);
-    private readonly Dictionary<LayoutNode, int> _computeDict = new(LayoutNodeEqualityComparer.Instance);
     private readonly ArrayPool<UIElement> _childrenArrayPool = ArrayPool<UIElement>.Shared;
     private readonly ArrayPool<LayoutNode?> _nodeArrayPool = ArrayPool<LayoutNode?>.Shared;
 
@@ -31,123 +32,123 @@ public sealed class LayoutEngine : ILayoutEngine
     public static LayoutEngineRentScope Rent() => LayoutEngineRentScope.Rent(_pool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RecalculateLayout(Size pageSize, UIElement? element, ulong timestamp)
+    public void RecalculateLayout(Size pageSize, UIElement? element, ulong timestamp, bool clearCache)
     {
         if (element is null || pageSize.Width < 0 || pageSize.Height < 0)
             return;
-        QueueElement(element, timestamp);
+        QueueElement(element, timestamp, clearCache);
         RecalculateLayoutInternal(pageSize, timestamp);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements, ulong timestamp) where TEnumerable : IEnumerable<UIElement?>
+    public void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements, ulong timestamp, bool clearCache) where TEnumerable : IEnumerable<UIElement?>
     {
         if (pageSize.Width < 0 || pageSize.Height < 0)
             return;
-        QueueElements(elements, timestamp);
+        QueueElements(elements, timestamp, clearCache);
         if (_elementDict.Count <= 0)
             return;
         RecalculateLayoutInternal(pageSize, timestamp);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void QueueElements<TEnumerable>(TEnumerable elements, ulong timestamp) where TEnumerable : IEnumerable<UIElement?>
+    private void QueueElements<TEnumerable>(TEnumerable elements, ulong timestamp, bool clearCache) where TEnumerable : IEnumerable<UIElement?>
     {
         using ArrayPool<UIElement?>.RentScope scope = ArrayPool<UIElement?>.Shared.EnterRentScopeAndCapture(elements);
-        DispatchArray(in scope.GetReferenceOfFirstElement(), MathHelper.MakeUnsigned(scope.Count), timestamp);
+        DispatchArray(in scope.GetReferenceOfFirstElement(), MathHelper.MakeUnsigned(scope.Count), timestamp, clearCache);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void DispatchArray(ref readonly UIElement? elementArrayRef, nuint length, ulong timestamp)
+        void DispatchArray(ref readonly UIElement? elementArrayRef, nuint length, ulong timestamp, bool clearCache)
         {
             for (; length >= 4; length -= 4)
             {
-                Dispatch(in elementArrayRef, length - 1, timestamp);
-                Dispatch(in elementArrayRef, length - 2, timestamp);
-                Dispatch(in elementArrayRef, length - 3, timestamp);
-                Dispatch(in elementArrayRef, length - 4, timestamp);
+                Dispatch(in elementArrayRef, length - 1, timestamp, clearCache);
+                Dispatch(in elementArrayRef, length - 2, timestamp, clearCache);
+                Dispatch(in elementArrayRef, length - 3, timestamp, clearCache);
+                Dispatch(in elementArrayRef, length - 4, timestamp, clearCache);
             }
             switch (length)
             {
                 case 3:
-                    Dispatch(in elementArrayRef, length - 1, timestamp);
-                    Dispatch(in elementArrayRef, length - 2, timestamp);
-                    Dispatch(in elementArrayRef, length - 3, timestamp);
+                    Dispatch(in elementArrayRef, length - 1, timestamp, clearCache);
+                    Dispatch(in elementArrayRef, length - 2, timestamp, clearCache);
+                    Dispatch(in elementArrayRef, length - 3, timestamp, clearCache);
                     break;
                 case 2:
-                    Dispatch(in elementArrayRef, length - 1, timestamp);
-                    Dispatch(in elementArrayRef, length - 2, timestamp);
+                    Dispatch(in elementArrayRef, length - 1, timestamp, clearCache);
+                    Dispatch(in elementArrayRef, length - 2, timestamp, clearCache);
                     break;
                 case 1:
-                    Dispatch(in elementArrayRef, length - 1, timestamp);
+                    Dispatch(in elementArrayRef, length - 1, timestamp, clearCache);
                     break;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Dispatch(ref readonly UIElement? elementArrayRef, nuint i, ulong timestamp)
+        void Dispatch(ref readonly UIElement? elementArrayRef, nuint i, ulong timestamp, bool clearCache)
         {
             UIElement? element = UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i);
             if (element is null)
                 return;
-            QueueElement(element, timestamp);
+            QueueElement(element, timestamp, clearCache);
         }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private void QueueElements<TEnumerable>(UIElement parent, TEnumerable elements, ulong timestamp) where TEnumerable : IEnumerable<UIElement?>
+    private void QueueElements<TEnumerable>(UIElement parent, TEnumerable elements, ulong timestamp, bool clearCache) where TEnumerable : IEnumerable<UIElement?>
     {
         using ArrayPool<UIElement?>.RentScope scope = ArrayPool<UIElement?>.Shared.EnterRentScopeAndCapture(elements);
         int count = scope.Count;
         if (count <= 0)
             return;
         using PooledList<UIElement> list = new PooledList<UIElement>(_childrenArrayPool, capacity: count);
-        DispatchArray(parent, list, in scope.GetReferenceOfFirstElement(), MathHelper.MakeUnsigned(scope.Count), timestamp);
+        DispatchArray(parent, list, in scope.GetReferenceOfFirstElement(), MathHelper.MakeUnsigned(scope.Count), timestamp, clearCache);
         (UIElement[] buffer, count) = list;
         if (count <= 0)
             return;
         _childrenDict[parent] = new ArraySegment<UIElement>(buffer, 0, count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void DispatchArray(UIElement parent, PooledList<UIElement> list, ref readonly UIElement? elementArrayRef, nuint length, ulong timestamp)
+        void DispatchArray(UIElement parent, PooledList<UIElement> list, ref readonly UIElement? elementArrayRef, nuint length, ulong timestamp, bool clearCache)
         {
             for (; length >= 4; length -= 4)
             {
-                Dispatch(parent, list, in elementArrayRef, length - 1, timestamp);
-                Dispatch(parent, list, in elementArrayRef, length - 2, timestamp);
-                Dispatch(parent, list, in elementArrayRef, length - 3, timestamp);
-                Dispatch(parent, list, in elementArrayRef, length - 4, timestamp);
+                Dispatch(parent, list, in elementArrayRef, length - 1, timestamp, clearCache);
+                Dispatch(parent, list, in elementArrayRef, length - 2, timestamp, clearCache);
+                Dispatch(parent, list, in elementArrayRef, length - 3, timestamp, clearCache);
+                Dispatch(parent, list, in elementArrayRef, length - 4, timestamp, clearCache);
             }
             switch (length)
             {
                 case 3:
-                    Dispatch(parent, list, in elementArrayRef, length - 1, timestamp);
-                    Dispatch(parent, list, in elementArrayRef, length - 2, timestamp);
-                    Dispatch(parent, list, in elementArrayRef, length - 3, timestamp);
+                    Dispatch(parent, list, in elementArrayRef, length - 1, timestamp, clearCache);
+                    Dispatch(parent, list, in elementArrayRef, length - 2, timestamp, clearCache);
+                    Dispatch(parent, list, in elementArrayRef, length - 3, timestamp, clearCache);
                     break;
                 case 2:
-                    Dispatch(parent, list, in elementArrayRef, length - 1, timestamp);
-                    Dispatch(parent, list, in elementArrayRef, length - 2, timestamp);
+                    Dispatch(parent, list, in elementArrayRef, length - 1, timestamp, clearCache);
+                    Dispatch(parent, list, in elementArrayRef, length - 2, timestamp, clearCache);
                     break;
                 case 1:
-                    Dispatch(parent, list, in elementArrayRef, length - 1, timestamp);
+                    Dispatch(parent, list, in elementArrayRef, length - 1, timestamp, clearCache);
                     break;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Dispatch(UIElement parent, PooledList<UIElement> list, ref readonly UIElement? elementArrayRef, nuint i, ulong timestamp)
+        void Dispatch(UIElement parent, PooledList<UIElement> list, ref readonly UIElement? elementArrayRef, nuint i, ulong timestamp, bool clearCache)
         {
             UIElement? element = UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i);
             if (element is null)
                 return;
             list.Add(element);
             _parentDict[element] = parent;
-            QueueElement(element, timestamp);
+            QueueElement(element, timestamp, clearCache);
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void QueueElement(UIElement element, ulong timestamp)
+    private void QueueElement(UIElement element, ulong timestamp, bool clearCache)
     {
         Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict = _elementDict;
         ArraySegment<LayoutNode?> segment = default;
@@ -172,13 +173,12 @@ public sealed class LayoutEngine : ILayoutEngine
         else
             elementDict[element] = segment;
         if (element is IElementContainer container)
-            QueueElements(element, container.GetElements(), timestamp);
+            QueueElements(element, container.GetElements(), timestamp, clearCache);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void RecalculateLayoutInternal(Size pageSize, ulong timestamp)
     {
-
         try
         {
             RecalculateLayoutCore(pageSize, timestamp);
@@ -188,10 +188,9 @@ public sealed class LayoutEngine : ILayoutEngine
             Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict = _elementDict;
             Dictionary<UIElement, ArraySegment<UIElement>> childrenDict = _childrenDict;
             Dictionary<UIElement, UIElement> parentDict = _parentDict;
-            Dictionary<LayoutNode, int> computeDict = _computeDict;
             ArrayPool<UIElement> childrenArrayPool = _childrenArrayPool;
 
-            computeDict.Clear();
+            parentDict.Clear();
 
             foreach (ArraySegment<LayoutNode?> segment in elementDict.Values)
                 FreeSegment(segment);
@@ -212,7 +211,7 @@ public sealed class LayoutEngine : ILayoutEngine
     private unsafe void RecalculateLayoutCore(Size pageSize, ulong timestamp)
     {
         Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict = _elementDict;
-        LayoutNodeManager nodeManager = new LayoutNodeManager(elementDict, _childrenDict, _parentDict, _computeDict, pageSize);
+        LayoutNodeManager nodeManager = new LayoutNodeManager(elementDict, _childrenDict, _parentDict, pageSize, timestamp);
         using Dictionary<UIElement, ArraySegment<LayoutNode?>>.Enumerator enumerator = elementDict.GetEnumerator();
         while (enumerator.MoveNext())
         {
@@ -336,27 +335,5 @@ public sealed class LayoutEngine : ILayoutEngine
         if (segment.Offset < Capacity - SegmentLength * 2)
             return;
         _nodeArrayPool.Return(segment.Array!);
-    }
-
-    private sealed class UIElementEqualityComparer : IEqualityComparer<UIElement>
-    {
-        public static readonly UIElementEqualityComparer Instance = new UIElementEqualityComparer();
-
-        private UIElementEqualityComparer() { }
-
-        public bool Equals(UIElement? x, UIElement? y) => ReferenceEquals(x, y);
-
-        public int GetHashCode([DisallowNull] UIElement obj) => obj.ElementId;
-    }
-
-    private sealed class LayoutNodeEqualityComparer : IEqualityComparer<LayoutNode>
-    {
-        public static readonly LayoutNodeEqualityComparer Instance = new LayoutNodeEqualityComparer();
-
-        private LayoutNodeEqualityComparer() { }
-
-        public bool Equals(LayoutNode? x, LayoutNode? y) => ReferenceEquals(x, y);
-
-        public int GetHashCode([DisallowNull] LayoutNode obj) => obj.NodeId;
     }
 }

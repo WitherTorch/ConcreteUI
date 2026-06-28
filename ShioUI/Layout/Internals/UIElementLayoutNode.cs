@@ -23,7 +23,7 @@ internal sealed class UIElementLayoutNode : LayoutNode
         _reference = reference;
     }
 
-    public override int Compute(in LayoutNodeManager manager)
+    protected override int ComputeCore(in LayoutNodeManager manager)
     {
         if (!_reference.TryGetTarget(out UIElement? element))
             return 0;

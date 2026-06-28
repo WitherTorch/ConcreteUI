@@ -81,17 +81,17 @@ public abstract class PagedWindow : CoreWindow
         return elements;
     }
 
-    protected override void RecalculatePageLayout(Size pageSize, ulong timestamp)
-        => RecalculatePageLayout(pageSize, _pageIndex, timestamp);
+    protected override void RecalculatePageLayout(Size pageSize, ulong timestamp, bool clearCache)
+        => RecalculatePageLayout(pageSize, _pageIndex, timestamp, clearCache);
 
     #endregion
 
     #region Virtual Methods
-    protected virtual void RecalculatePageLayout(Size pageSize, uint pageIndex, ulong timestamp)
+    protected virtual void RecalculatePageLayout(Size pageSize, uint pageIndex, ulong timestamp, bool clearCache)
     {
         using LayoutEngineRentScope engine = LayoutEngine.Rent();
-        engine.RecalculateLayout(pageSize, GetActiveElements(pageIndex), timestamp);
-        engine.RecalculateLayout(pageSize, GetOverlayElement(), timestamp);
+        engine.RecalculateLayout(pageSize, GetActiveElements(pageIndex), timestamp, clearCache);
+        engine.RecalculateLayout(pageSize, GetOverlayElement(), timestamp, clearCache);
         Thread.MemoryBarrier();
     }
     #endregion

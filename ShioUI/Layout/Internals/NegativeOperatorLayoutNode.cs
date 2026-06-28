@@ -9,7 +9,7 @@ internal sealed class NegativeOperatorLayoutNode : LayoutNode
         _variable = variable;
     }
 
-    public override int Compute(in LayoutNodeManager manager)
+    protected override int ComputeCore(in LayoutNodeManager manager)
         => -manager.GetComputedValue(_variable);
 
     public override bool Equals(object? obj) => obj is NegativeOperatorLayoutNode another && _variable.Equals(another._variable);

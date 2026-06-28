@@ -17,7 +17,7 @@ internal sealed class FixedValueLayoutNode : LayoutNode
         get => _value;
     }
 
-    public override int Compute(in LayoutNodeManager manager) => _value;
+    protected override int ComputeCore(in LayoutNodeManager manager) => _value;
 
     public override bool Equals(object? obj) => obj is FixedValueLayoutNode fixedVariable && fixedVariable._value == _value;
 

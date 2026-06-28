@@ -5,7 +5,7 @@ namespace ShioUI.Layout;
 
 public interface ILayoutEngine
 {
-    void RecalculateLayout(Size pageSize, UIElement? element, ulong timestamp);
+    void RecalculateLayout(Size pageSize, UIElement? element, ulong timestamp, bool clearCache);
 
-    void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements, ulong timestamp) where TEnumerable : IEnumerable<UIElement?>;
+    void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements, ulong timestamp, bool clearCache) where TEnumerable : IEnumerable<UIElement?>;
 }

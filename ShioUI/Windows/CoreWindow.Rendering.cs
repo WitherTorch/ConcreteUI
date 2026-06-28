@@ -882,11 +882,11 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
         data.PageBounds = pageBounds;
     }
 
-    protected virtual void RecalculatePageLayout(Size pageSize, ulong timestamp)
+    protected virtual void RecalculatePageLayout(Size pageSize, ulong timestamp, bool clearCache)
     {
         using LayoutEngineRentScope engine = LayoutEngine.Rent();
-        engine.RecalculateLayout(pageSize, GetActiveElements(), timestamp);
-        engine.RecalculateLayout(pageSize, GetOverlayElement(), timestamp);
+        engine.RecalculateLayout(pageSize, GetActiveElements(), timestamp, clearCache);
+        engine.RecalculateLayout(pageSize, GetOverlayElement(), timestamp, clearCache);
         Thread.MemoryBarrier();
     }
     #endregion
@@ -949,7 +949,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
         bool renderAll = flags.HasRedrawAll();
         if (flags.HasResize())
         {
-            if (!TryResize(host, controller, ref data, flags, ref renderAll))
+            if (!TryResize(host, controller, ref data, flags, clearCache: false, ref renderAll))
                 return false;
             if (host is OptimizedGraphicsHost optimizedHost)
                 renderAll |= optimizedHost.ForcePresentAll;
@@ -992,12 +992,12 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
                     flags = controller.GetAndResetRenderingFlags(); // 反正都要二次重繪，那就在拉取一次最新的渲染旗標並重置，以減少過度渲染的機會
                     if (flags.HasResize())
                     {
-                        if (!TryResize(host, controller, ref data, flags, ref renderAll) || !(pageSize = data.Layout.PageBounds.Size).IsValid())
+                        if (!TryResize(host, controller, ref data, flags, clearCache: true, ref renderAll) || !(pageSize = data.Layout.PageBounds.Size).IsValid())
                             return false;
                     }
                     else
                     {
-                        RecalculatePageLayout(pageSize, data.ResizeTimestamp);
+                        RecalculatePageLayout(pageSize, data.ResizeTimestamp, clearCache: true);
                     }
                 }
                 else
@@ -1033,7 +1033,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
 
         return result.Presented;
 
-        bool TryResize(SimpleGraphicsHost host, RenderingController controller, ref WindowRenderingData data, RenderingFlags flags, ref bool renderAll)
+        bool TryResize(SimpleGraphicsHost host, RenderingController controller, ref WindowRenderingData data, RenderingFlags flags, bool clearCache, ref bool renderAll)
         {
             bool resizeTemporarily = flags.HasResizeTemporarily();
             Size clirentSizeInPixel = RawClientSize;
@@ -1066,7 +1066,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
 
                 Size pageSize = layoutData.PageBounds.Size;
                 if (pageSize.IsValid())
-                    RecalculatePageLayout(pageSize, timestamp);
+                    RecalculatePageLayout(pageSize, timestamp, clearCache);
             }
             flags = controller.GetAndResetRenderingFlags();
             renderAll |= flags.HasRedrawAll();

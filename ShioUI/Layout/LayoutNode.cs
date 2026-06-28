@@ -13,6 +13,8 @@ public abstract partial class LayoutNode
     private static int _identifierCounter = 0;
 
     private readonly int _identifier;
+    private ulong _layoutTimestamp;
+    private int _cachedResult;
 
     public int NodeId => _identifier;
 
@@ -20,7 +22,20 @@ public abstract partial class LayoutNode
 
     protected LayoutNode() => _identifier = InterlockedHelper.Increment(ref _identifierCounter);
 
-    public abstract int Compute(in LayoutNodeManager manager);
+    public int Compute(in LayoutNodeManager manager, ulong timestamp)
+    {
+        if (_layoutTimestamp == timestamp)
+            return _cachedResult;
+        int result = ComputeCore(manager);
+        _layoutTimestamp = timestamp;
+        _cachedResult = result;
+        return result;
+    }
+
+    protected abstract int ComputeCore(in LayoutNodeManager manager);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void ClearCache() => _layoutTimestamp = 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public LayoutNode Negative() => -this;

@@ -39,7 +39,7 @@ public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGloba
     private DWriteTextLayout[]? _layouts;
     private float _itemHeight;
     private int _selectedIndex, _maxViewCount, _maxViewHeight;
-    private bool _isClicking, _isClickingClient, _isFirstTimeClick, _prepareToClose;
+    private bool _isClicking, _isClickingClient, _isFirstTimeClick;
 
     public ComboBoxDropdownList(IElementContainer parent, ComboBox owner) : base(parent, "app.comboBox")
     {
@@ -194,7 +194,6 @@ public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGloba
             int selectedIndex = _selectedIndex;
             if (selectedIndex >= 0)
             {
-                _prepareToClose = true;
                 ItemClicked?.Invoke(this, selectedIndex);
                 Close();
                 return;
@@ -202,7 +201,6 @@ public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGloba
         }
         else if (!bounds.Contains(args.X, args.Y))
         {
-            _prepareToClose = true;
             Close();
             return;
         }
