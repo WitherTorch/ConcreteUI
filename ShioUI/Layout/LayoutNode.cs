@@ -32,6 +32,20 @@ public abstract partial class LayoutNode
         return result;
     }
 
+    public int Compute(in LayoutNodeManager manager, ulong timestamp, out bool cached)
+    {
+        if (_layoutTimestamp == timestamp)
+        {
+            cached = true;
+            return _cachedResult;
+        }
+        int result = ComputeCore(manager);
+        _layoutTimestamp = timestamp;
+        _cachedResult = result;
+        cached = false;
+        return result;
+    }
+
     protected abstract int ComputeCore(in LayoutNodeManager manager);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

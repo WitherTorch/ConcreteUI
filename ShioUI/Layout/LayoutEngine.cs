@@ -16,6 +16,8 @@ namespace ShioUI.Layout;
 public sealed class LayoutEngine : ILayoutEngine
 {
     private static readonly Pool<LayoutEngine> _pool = new Pool<LayoutEngine>(1);
+    private static readonly ArrayPool<UIElement> _childrenArrayPool = ArrayPool<UIElement>.Shared;
+    private static readonly ArrayPool<LayoutNode?> _nodeArrayPool = ArrayPool<LayoutNode?>.Shared;
 
     private const int Capacity = 1 << 9; // 512
     private const int SegmentLength = (int)LayoutProperty._Last;
@@ -23,8 +25,6 @@ public sealed class LayoutEngine : ILayoutEngine
     private readonly Dictionary<UIElement, ArraySegment<LayoutNode?>> _elementDict = new(UIElementEqualityComparer.Instance);
     private readonly Dictionary<UIElement, ArraySegment<UIElement>> _childrenDict = new(UIElementEqualityComparer.Instance);
     private readonly Dictionary<UIElement, UIElement> _parentDict = new(UIElementEqualityComparer.Instance);
-    private readonly ArrayPool<UIElement> _childrenArrayPool = ArrayPool<UIElement>.Shared;
-    private readonly ArrayPool<LayoutNode?> _nodeArrayPool = ArrayPool<LayoutNode?>.Shared;
 
     private LayoutNode?[]? _currentNodeBuffer;
     private int _currentAvailableIndex;
