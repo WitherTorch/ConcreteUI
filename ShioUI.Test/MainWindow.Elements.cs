@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 
 using ShioUI.Controls;
+using ShioUI.Controls.Extensions;
 using ShioUI.Layout;
 using ShioUI.Input;
 
@@ -68,61 +69,71 @@ partial class MainWindow
             BottomExpression = PageHeightDefinition - UIConstants.ElementMargin,
             Title = "群組容器",
         };
+        InitializeGroupBox(groupBox);
         elementList.Add(groupBox);
-
-        groupBox.AddChild(new CheckBox(this)
-        {
-            LeftExpression = groupBox.ContentLeftDefinition,
-            TopExpression = groupBox.ContentTopDefinition,
-            Text = "可以勾選的方塊"
-        }.WithAutoWidth().WithAutoHeight());
-
-        ComboBox comboBox = new ComboBox(this)
-        {
-            LeftExpression = groupBox.ContentLeftDefinition,
-            TopExpression = groupBox.FirstChild!.BottomDefinition + UIConstants.ElementMargin,
-            WidthExpression = 200
-        }.WithAutoHeight();
-        comboBox.RequestDropdownListOpening += ComboBox_RequestDropdownListOpening;
-        items = comboBox.Items;
-        for (int i = 1; i <= 200; i++)
-            items.Add("選項 " + i.ToString());
-        groupBox.AddChild(comboBox);
-        Label label = new Label(this)
-        {
-            LeftExpression = groupBox.ContentLeftDefinition,
-            TopExpression = comboBox.BottomDefinition + UIConstants.ElementMargin,
-            RightExpression = groupBox.ContentRightDefinition,
-            Text = "底下是進度條測試",
-            Alignment = TextAlignment.MiddleCenter
-        }.WithAutoHeight();
-        Button leftButton = new Button(this)
-        {
-            LeftExpression = label.LeftDefinition,
-            TopExpression = label.BottomDefinition + UIConstants.ElementMargin,
-            Text = "-"
-        }.WithAutoWidth().WithAutoHeight();
-        Button rightButton = new Button(this)
-        {
-            TopExpression = label.BottomDefinition + UIConstants.ElementMargin,
-            RightExpression = label.RightDefinition,
-            Text = "+"
-        }.WithAutoWidth().WithAutoHeight();
-        ProgressBar progressBar = new ProgressBar(this)
-        {
-            LeftExpression = leftButton.RightDefinition + UIConstants.ElementMargin,
-            TopExpression = label.BottomDefinition + UIConstants.ElementMargin,
-            RightExpression = rightButton.LeftDefinition - UIConstants.ElementMargin,
-            HeightExpression = leftButton.HeightDefinition,
-            Maximium = 100.0f,
-            Value = 50.0f
-        };
-        leftButton.Click += LeftButton_Click;
-        rightButton.Click += RightButton_Click;
-        groupBox.AddChildren(label, leftButton, rightButton, progressBar);
-        _progressBar = progressBar;
-
         _elementLists[0] = elementList;
+
+        void InitializeGroupBox(GroupBox groupBox)
+        {
+            groupBox.AddChild(new CheckBox(this)
+            {
+                LeftExpression = groupBox.ContentLeftDefinition,
+                TopExpression = groupBox.ContentTopDefinition,
+                Text = "可以勾選的方塊"
+            }.WithAutoWidth().WithAutoHeight());
+
+            ComboBox comboBox = new ComboBox(this)
+            {
+                LeftExpression = groupBox.ContentLeftDefinition,
+                TopExpression = groupBox.FirstChild!.BottomDefinition + UIConstants.ElementMargin,
+                WidthExpression = 200
+            }.WithAutoHeight();
+            Label label = new Label(this)
+            {
+                LeftExpression = groupBox.ContentLeftDefinition,
+                TopExpression = comboBox.BottomDefinition + UIConstants.ElementMargin,
+                RightExpression = groupBox.ContentRightDefinition,
+                Text = "底下是進度條測試",
+                Alignment = TextAlignment.MiddleCenter
+            }.WithAutoHeight();
+            Button leftButton = new Button(this)
+            {
+                LeftExpression = label.LeftDefinition,
+                TopExpression = label.BottomDefinition + UIConstants.ElementMargin,
+                Text = "-"
+            }.WithAutoWidth().WithAutoHeight();
+            Button rightButton = new Button(this)
+            {
+                TopExpression = label.BottomDefinition + UIConstants.ElementMargin,
+                RightExpression = label.RightDefinition,
+                Text = "+"
+            }.WithAutoWidth().WithAutoHeight();
+            ProgressBar progressBar = new ProgressBar(this)
+            {
+                LeftExpression = leftButton.RightDefinition + UIConstants.ElementMargin,
+                TopExpression = label.BottomDefinition + UIConstants.ElementMargin,
+                RightExpression = rightButton.LeftDefinition - UIConstants.ElementMargin,
+                HeightExpression = leftButton.HeightDefinition,
+                Maximium = 100.0f,
+                Value = 50.0f
+            };
+            TextBox textBox2 = new TextBox(this, _ime)
+            {
+                LeftExpression = groupBox.ContentLeftDefinition,
+                TopExpression = progressBar.BottomDefinition + UIConstants.ElementMargin,
+                RightExpression = groupBox.ContentRightDefinition,
+                Watermark = "這裡也可以輸入文字喔!"
+            }.WithAutoHeight();
+            groupBox.AddChildren(comboBox, label, leftButton, rightButton, progressBar, textBox2);
+
+            _progressBar = progressBar;
+            comboBox.RequestDropdownListOpening += ComboBox_RequestDropdownListOpening;
+            items = comboBox.Items;
+            for (int i = 1; i <= 200; i++)
+                items.Add("選項 " + i.ToString());
+            leftButton.Click += LeftButton_Click;
+            rightButton.Click += RightButton_Click;
+        }
     }
 
     private void InitializeSecondPageElements()

@@ -71,10 +71,6 @@ public sealed partial class PopupContainer : PopupElementBase, IElementContainer
         return true;
     }
 
-    IRenderer IElementContainer.GetRenderer() => Renderer;
-
-    CoreWindow IElementContainer.GetWindow() => Window;
-
     protected override void DisposeCore(bool disposing)
     {
         base.DisposeCore(disposing);

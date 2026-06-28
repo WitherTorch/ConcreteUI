@@ -16,6 +16,7 @@ using RiceTea.Core.Collections;
 using RiceTea.Core.Helpers;
 using RiceTea.Core.Structures;
 using RiceTea.Core.Threading;
+using RiceTea.Core.Buffers;
 
 namespace ShioUI.Windows;
 
@@ -51,28 +52,56 @@ public abstract partial class CoreWindow : NativeWindow
 
     protected virtual void OnMouseDown(ref HandleableMouseEventArgs args)
     {
-        if (args.Handled)
-            return;
+        HitTestData data = default;
         HandleableMouseEventArgs relativeArgs = new HandleableMouseEventArgs(WindowToPage(args.Location), args.Buttons, args.Delta);
-        OnMouseDownForElements(ref relativeArgs);
-        if (relativeArgs.Handled)
-            args.Handle();
+        try
+        {
+            OnMouseDownForElements(ref relativeArgs, ref data);
+            if (relativeArgs.Handled)
+                args.Handle();
+        }
+        finally
+        {
+            ChangeLastMouseDownHitElement(data.LastHitElement, args.Buttons);
+            ChangeFocusElement(data.LastHitElement);
+        }
     }
 
     protected virtual void OnMouseUp(in MouseEventArgs args)
-        => OnMouseUpForElements(new MouseEventArgs(WindowToPage(args.Location), args.Buttons, args.Delta));
+    {
+        using PooledList<UIElement> list = new(capacity: 0);
+        GetAndClearLastMouseDownHitElements(list, args.Buttons);
+        MouseUpData data = new MouseUpData(list);
+        OnMouseUpForElements(new MouseEventArgs(WindowToPage(args.Location), args.Buttons, args.Delta), ref data);
+    }
 
     protected virtual void OnMouseMove(in MouseEventArgs args)
-        => OnMouseMoveForElements(new MouseEventArgs(WindowToPage(args.Location), args.Buttons, args.Delta));
+    {
+        MouseMoveData data = default;
+        try
+        {
+            OnMouseMoveForElements(new MouseEventArgs(WindowToPage(args.Location), args.Buttons, args.Delta), ref data);
+        }
+        finally
+        {
+            Cursor = SystemCursors.GetSystemCursor(data.CursorType ?? SystemCursorType.Default);
+            ChangeLastMouseMoveHitElement(data.LastHitElement, args);
+        }
+    }
 
     protected virtual void OnMouseScroll(ref HandleableMouseEventArgs args)
     {
-        if (args.Handled)
-            return;
+        HitTestData data = default;
         HandleableMouseEventArgs relativeArgs = new HandleableMouseEventArgs(WindowToPage(args.Location), args.Buttons, args.Delta);
-        OnMouseScrollForElements(ref relativeArgs);
-        if (relativeArgs.Handled)
-            args.Handle();
+        try
+        {
+            OnMouseScrollForElements(ref relativeArgs, ref data);
+        }
+        finally
+        {
+            if (relativeArgs.Handled)
+                args.Handle();
+        }
     }
 
     protected virtual void OnKeyDown(ref KeyEventArgs args)
@@ -269,9 +298,6 @@ public abstract partial class CoreWindow : NativeWindow
     {
         _parent = null;
         Func<WeakReference> weakReferenceFactory = _weakReferenceFactory;
-        _focusElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.PublicationOnly);
-        _recordedLastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.PublicationOnly);
-        _lastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.None);
         _graphicsDeviceProvider = deviceProvider;
         _windowMaterial = ShioSettings.WindowMaterial;
         UnwrappableList<GCHandle> windowList = _rootWindowList;
@@ -284,9 +310,6 @@ public abstract partial class CoreWindow : NativeWindow
     {
         _parent = parent;
         Func<WeakReference> weakReferenceFactory = _weakReferenceFactory;
-        _focusElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.PublicationOnly);
-        _recordedLastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.PublicationOnly);
-        _lastHitElementRefLazy = new LazyTiny<WeakReference>(weakReferenceFactory, LazyThreadSafetyMode.None);
         UnwrappableList<GCHandle> windowList;
         if (parent is null)
         {
@@ -330,8 +353,4 @@ public abstract partial class CoreWindow : NativeWindow
             return;
         User32.PostMessageW(handle, CustomWindowMessages.ShioUpdateRefreshRate, 0, 0);
     }
-
-    #region Overrides Methods
-    PointF IRenderer.GetMousePosition() => PointToClient(MouseHelper.GetMousePosition());
-    #endregion
 }

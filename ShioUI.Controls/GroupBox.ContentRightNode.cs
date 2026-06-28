@@ -16,7 +16,7 @@ partial class GroupBox
         {
             if (!_reference.TryGetTarget(out GroupBox? element))
                 return 0;
-            return GetContentRightCore(manager.GetComputedValue(element, LayoutProperty.Right));
+            return GetContentRightCore(manager.GetComputedValue(element, LayoutProperty.Width));
         }
     }
 }

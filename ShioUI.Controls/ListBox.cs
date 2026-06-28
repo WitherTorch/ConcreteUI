@@ -74,20 +74,6 @@ public sealed partial class ListBox : ScrollableElementBase
         _checkBoxThemePrefix = "app.checkBox";
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ListBox WithAutoWidth()
-    {
-        WidthExpression = AutoWidthDefinition;
-        return this;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ListBox WithAutoHeight()
-    {
-        HeightExpression = AutoHeightDefinition;
-        return this;
-    }
-
     public void CopySelectedItemsToBuffer(string[] destination, int startIndex, out int itemCopied)
     {
         if (startIndex < 0)
@@ -187,7 +173,7 @@ public sealed partial class ListBox : ScrollableElementBase
             format = BuildTextFormat();
         SizeF renderSize = context.Size;
         ListBoxMode mode = Mode;
-        float itemHeight = RenderingHelper.RoundInPixel(_itemHeight, Renderer.GetPixelsPerPoint().Y);
+        float itemHeight = RenderingHelper.RoundInPixel(_itemHeight, Window.GetPixelsPerPoint().Y);
         int currentTop = ViewportPoint.Y;
         int startIndex = (int)(currentTop / itemHeight);
         int endIndex = MathI.Ceiling((currentTop + renderSize.Height) / itemHeight);

@@ -1,19 +1,20 @@
 using System.Collections.Generic;
-using System.Drawing;
 using System.Runtime.CompilerServices;
-using ShioUI.Windows;
 
 using InlineMethod;
 
 using ShioUI.Graphics;
+using ShioUI.Windows;
 
 namespace ShioUI;
 
 public interface IElementContainer
 {
-    IRenderer GetRenderer();
+    IElementContainer Parent { get; }
 
-    CoreWindow GetWindow();
+    IRenderWindow Window { get; }
+
+    CoreWindow RootWindow { get; }
 
     bool IsBackgroundOpaque(UIElement element);
 
@@ -27,17 +28,6 @@ public interface IElementContainer
 #endif
 
     void RenderBackground(UIElement element, in RegionalRenderingContext context);
-}
-
-public interface ICoordinateTranslator
-{
-    Point PageToWindow(UIElement element, Point point);
-
-    PointF PageToWindow(UIElement element, PointF point);
-
-    Point WindowToPage(UIElement element, Point point);
-
-    PointF WindowToPage(UIElement element, PointF point);
 }
 
 public static class ElementContainerDefaults

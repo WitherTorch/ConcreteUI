@@ -5,20 +5,9 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using ShioUI.Graphics.Helpers;
-using ShioUI.Layout;
-using ShioUI.Utils;
-
 using InlineMethod;
 
 using LocalsInit;
-using ShioUI.Controls.Internals;
-using ShioUI.Graphics;
-using ShioUI.Graphics.Native.Direct2D;
-using ShioUI.Graphics.Native.Direct2D.Brushes;
-using ShioUI.Graphics.Native.DirectWrite;
-using ShioUI.Input;
-using ShioUI.Theme;
 
 using RiceTea.Core;
 using RiceTea.Core.Extensions;
@@ -28,10 +17,22 @@ using RiceTea.Core.Structures;
 using RiceTea.Core.Text;
 using RiceTea.Core.Threading;
 
+using ShioUI.Controls.Internals;
+using ShioUI.Extensions;
+using ShioUI.Graphics;
+using ShioUI.Graphics.Helpers;
+using ShioUI.Graphics.Native.Direct2D;
+using ShioUI.Graphics.Native.Direct2D.Brushes;
+using ShioUI.Graphics.Native.DirectWrite;
+using ShioUI.Input;
+using ShioUI.Layout;
+using ShioUI.Theme;
+using ShioUI.Utils;
+
 namespace ShioUI.Controls;
 
 public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler, ICharacterInputHandler,
-    IGlobalMouseInteractHandler, IKeyboardInteractHandler,
+    IKeyboardInteractHandler,
     ICursorStateHandler, IFocusChangedHandler
 {
     private static readonly LazyTiny<GraphemeInfo> EmptyGraphemeInfoLazy =
@@ -92,13 +93,6 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
     {
         _ime = ime;
         _imeEnabled = ime is not null;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public TextBox WithAutoHeight()
-    {
-        HeightExpression = AutoHeightDefinition;
-        return this;
     }
 
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
@@ -279,7 +273,7 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
     }
 
     private void SetRenderingProperties(DWriteTextLayout layout)
-        => SetRenderingProperties(layout, ContentSize, Renderer.GetPixelsPerPoint(), _multiLine);
+        => SetRenderingProperties(layout, ContentSize, Window.GetPixelsPerPoint(), _multiLine);
 
     [Inline(InlineBehavior.Remove)]
     private void SetRenderingProperties(DWriteTextLayout layout, SizeF size, Vector2 pointsPerPixel, bool multiLine)
@@ -411,7 +405,7 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
             int length = metricsArray is null ? 0 : metricsArray.Length;
             if (length > 0)
             {
-                Vector2 pixelsPerPoint = Renderer.GetPixelsPerPoint();
+                Vector2 pixelsPerPoint = Window.GetPixelsPerPoint();
                 for (int i = 0; i < length; i++)
                 {
                     DWriteHitTestMetrics rangeMetrics = metricsArray![i];
@@ -462,7 +456,7 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
             return;
         if (returnCount < 1)
             return;
-        Vector2 pixelsPerPoint = Renderer.GetPixelsPerPoint();
+        Vector2 pixelsPerPoint = Window.GetPixelsPerPoint();
         RectF selectionBounds = RenderingHelper.RoundInPixel(RectF.FromXYWH(
             layoutPoint.X + rangeMetrics.Left, layoutPoint.Y + rangeMetrics.Top, 1.0f, rangeMetrics.Height),
             pixelsPerPoint);
@@ -726,13 +720,13 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
 
     private (PointF caretPoint, Vector2 pointsPerPixel) UpdateIMECaret(InputMethodContext context, int caretIndex)
     {
-        Vector2 pixelsPerPoint = Renderer.GetPixelsPerPoint();
+        Vector2 pixelsPerPoint = Window.GetPixelsPerPoint();
 
         PointF caretPoint = GetPointFromCaretIndex(caretIndex - 1, isTrailingHit: false, out DWriteHitTestMetrics metrics);
         PointF bottomRightPoint = new PointF(caretPoint.X + metrics.Width, caretPoint.Y + metrics.Height);
 
-        caretPoint = GraphicsUtils.ScalingPoint(PageToWindow(caretPoint), pixelsPerPoint);
-        bottomRightPoint = GraphicsUtils.ScalingPoint(PageToWindow(bottomRightPoint), pixelsPerPoint);
+        caretPoint = GraphicsUtils.ScalingPoint(this.PageToWindow(caretPoint), pixelsPerPoint);
+        bottomRightPoint = GraphicsUtils.ScalingPoint(this.PageToWindow(bottomRightPoint), pixelsPerPoint);
 
         context.SetCandidateWindow(new IMECandidateForm()
         {
@@ -1219,15 +1213,6 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
     }
 
     #region Mouse Events Handling
-    void IGlobalMouseInteractHandler.OnMouseDownGlobally(in MouseEventArgs args)
-    {
-        if (args.Buttons.HasFlagFast(MouseButtons.LeftButton) && ContentBounds.Contains(args.Location))
-            return;
-        Window.ClearFocusElement(this);
-    }
-
-    void IGlobalMouseInteractHandler.OnMouseUpGlobally(in MouseEventArgs args) { }
-
     protected override void OnMouseDown(ref HandleableMouseEventArgs args)
     {
         base.OnMouseDown(ref args);
@@ -1243,7 +1228,7 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
             }
             return;
         }
-        PointF location = LocalToPage(args.Location);
+        PointF location = this.LocalToPage(args.Location);
         if (!ContentBounds.Contains(location))
         {
             _drag = false;

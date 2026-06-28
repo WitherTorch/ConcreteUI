@@ -5,7 +5,7 @@ using ShioUI.Layout;
 
 namespace ShioUI.Controls;
 
-partial class CheckBox
+partial class CheckBox : IAutoWidthElement, IAutoHeightElement
 {
     public event EventHandler? CheckedChanged;
 

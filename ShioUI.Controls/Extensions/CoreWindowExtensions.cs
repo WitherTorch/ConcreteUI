@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using ShioUI.Windows;
 
 using RiceTea.Core.Extensions;
+using ShioUI.Extensions;
 
 namespace ShioUI.Controls.Extensions;
 
@@ -15,7 +16,7 @@ public static class CoreWindowExtensions
         if (!items.HasAnyItem())
             return;
 
-        OpenContextMenuCore(_this, items, elementRelativeTo.LocalToPage(location));
+        OpenContextMenuCore(_this, items, elementRelativeTo.LocalPageToGlobalPage(elementRelativeTo.LocalToPage(location)));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

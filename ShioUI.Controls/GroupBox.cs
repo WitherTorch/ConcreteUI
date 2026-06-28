@@ -5,26 +5,30 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using ShioUI.Controls.Internals;
-using ShioUI.Layout;
-using ShioUI.Utils;
-using ShioUI.Windows;
-
 using InlineMethod;
-using ShioUI.Graphics;
-using ShioUI.Graphics.Native.Direct2D;
-using ShioUI.Graphics.Native.Direct2D.Brushes;
-using ShioUI.Graphics.Native.DirectWrite;
-using ShioUI.Theme;
 
 using RiceTea.Core.Collections;
 using RiceTea.Core.Helpers;
 using RiceTea.Core.Structures;
 
+using ShioUI.Controls.Internals;
+using ShioUI.Graphics;
+using ShioUI.Graphics.Native.Direct2D;
+using ShioUI.Graphics.Native.Direct2D.Brushes;
+using ShioUI.Graphics.Native.DirectWrite;
+using ShioUI.Layout;
+using ShioUI.Theme;
+using ShioUI.Utils;
+
 namespace ShioUI.Controls;
 
 public sealed partial class GroupBox : UIElement, IElementContainer
 {
+    private const int ContentLeftPadding = UIConstants.ElementMarginDouble;
+    private const int ContentTopExtraPadding = UIConstants.ElementMargin;
+    private const int ContentRightPadding = UIConstants.ElementMarginDouble;
+    private const int ContentBottomPadding = UIConstants.ElementMarginDouble;
+
     private static readonly string[] _brushNames = new string[(int)Brush._Last]
     {
         "back",
@@ -80,7 +84,7 @@ public sealed partial class GroupBox : UIElement, IElementContainer
             }
             variable = property switch
             {
-                (nuint)LayoutProperty.Left => new ContentLeftNode(reference),
+                (nuint)LayoutProperty.Left => LayoutNode.Fixed(ContentLeftPadding),
                 (nuint)LayoutProperty.Top => new ContentTopNode(reference),
                 (nuint)LayoutProperty.Right => new ContentRightNode(reference),
                 (nuint)LayoutProperty.Bottom => new ContentBottomNode(reference),
@@ -285,23 +289,24 @@ public sealed partial class GroupBox : UIElement, IElementContainer
     }
 
     [Inline(InlineBehavior.Remove)]
-    private static int GetContentLeftCore(int x) => x + UIConstants.ElementMarginDouble;
+    private static int GetContentLeftCore() => ContentLeftPadding;
 
     [Inline(InlineBehavior.Remove)]
-    private int GetContentTopCore(int y) => GetTextTopCore(y) + UIConstants.ElementMargin;
+    private int GetContentTopCore() => GetTextTopCore() + ContentTopExtraPadding;
 
     [Inline(InlineBehavior.Remove)]
-    private static int GetContentRightCore(int right) => right - UIConstants.ElementMarginDouble;
+    private static int GetContentRightCore(int width) => width - ContentRightPadding;
 
     [Inline(InlineBehavior.Remove)]
-    private static int GetContentBottomCore(int bottom) => bottom - UIConstants.ElementMarginDouble;
+    private static int GetContentBottomCore(int height) => height - ContentBottomPadding;
+
+    private static int GetContentWidthCore(int width) => width - (ContentLeftPadding + ContentRightPadding);
 
     [Inline(InlineBehavior.Remove)]
-    private int GetTextTopCore(int y) => y + InterlockedHelper.Read(ref _titleHeight);
+    private int GetContentHeightCore(int height) => height - (ContentBottomPadding + ContentTopExtraPadding) - GetTextTopCore();
 
-    IRenderer IElementContainer.GetRenderer() => Renderer;
-
-    CoreWindow IElementContainer.GetWindow() => Window;
+    [Inline(InlineBehavior.Remove)]
+    private int GetTextTopCore() => InterlockedHelper.Read(ref _titleHeight);
 
     protected override void DisposeCore(bool disposing)
     {

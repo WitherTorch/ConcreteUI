@@ -26,7 +26,7 @@ partial class TextBox
             {
                 using DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(element._text, fontName, element._alignment, fontSize);
                 element.SetRenderingPropertiesForMultiLine(layout, manager.GetComputedValue(element, LayoutProperty.Width) - UIConstants.ElementMargin,
-                    element.Renderer.GetPixelsPerPoint());
+                    element.Window.GetPixelsPerPoint());
                 return layout.GetMetrics().Height;
             }
             return FontHeightHelper.GetFontHeight(fontName, fontSize);

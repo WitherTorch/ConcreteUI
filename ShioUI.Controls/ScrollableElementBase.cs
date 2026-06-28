@@ -19,6 +19,7 @@ using RiceTea.Core.Extensions;
 using RiceTea.Core.Helpers;
 using RiceTea.Core.Structures;
 using RiceTea.Core.Threading;
+using ShioUI.Extensions;
 
 namespace ShioUI.Controls;
 
@@ -591,7 +592,7 @@ public abstract partial class ScrollableElementBase : UIElement,
 
     protected virtual void CallMouseMove(in MouseEventArgs args)
     {
-        OnMouseMoveGlobally(new MouseEventArgs(LocalToPage(args.Location), args.Buttons, args.Delta));
+        OnMouseMoveGlobally(new MouseEventArgs(this.LocalToPage(args.Location), args.Buttons, args.Delta));
         OnMouseMove(in args);
     }
 

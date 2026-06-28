@@ -10,7 +10,7 @@ using RiceTea.Core.Threading;
 
 namespace ShioUI.Controls;
 
-partial class ScrollableElementBase
+partial class ScrollableElementBase : IAutoHeightElement
 {
     public LayoutNode AutoHeightDefinition
     {

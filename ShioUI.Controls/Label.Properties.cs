@@ -7,7 +7,7 @@ using RiceTea.Core.Helpers;
 
 namespace ShioUI.Controls;
 
-partial class Label
+partial class Label : IAutoWidthElement, IAutoHeightElement
 {
     public TextAlignment Alignment
     {

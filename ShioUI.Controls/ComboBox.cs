@@ -60,13 +60,6 @@ public sealed partial class ComboBox : UIElement, IMouseInteractHandler, IMouseM
         _rawUpdateFlags = -1L;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ComboBox WithAutoHeight()
-    {
-        HeightExpression = AutoHeightDefinition;
-        return this;
-    }
-
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
     {
         UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);

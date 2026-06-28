@@ -16,7 +16,7 @@ partial class GroupBox
         {
             if (!_reference.TryGetTarget(out GroupBox? element))
                 return 0;
-            return element.GetTextTopCore(manager.GetComputedValue(element, LayoutProperty.Top));
+            return element.GetTextTopCore();
         }
     }
 }

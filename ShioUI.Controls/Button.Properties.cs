@@ -6,7 +6,7 @@ using RiceTea.Core.Helpers;
 
 namespace ShioUI.Controls;
 
-partial class Button
+partial class Button : IAutoWidthElement, IAutoHeightElement
 {
     public float FontSize
     {

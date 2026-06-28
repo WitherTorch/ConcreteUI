@@ -50,7 +50,7 @@ public sealed partial class ContextMenu : PopupElementBase, ICheckableDisposable
 
         ContextMenuItem[] items = MenuItems;
         float itemHeight = 0f, itemWidth = 0f;
-        Vector2 pixelsPerPoint = Renderer.GetPixelsPerPoint();
+        Vector2 pixelsPerPoint = Window.GetPixelsPerPoint();
         int count = items.Length;
         DWriteTextLayout[] layouts = new DWriteTextLayout[count];
         using (DWriteTextFormat format = factory.CreateTextFormat(provider.FontName, UIConstants.BoxFontSize))

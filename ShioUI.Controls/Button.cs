@@ -48,20 +48,6 @@ public sealed partial class Button : ButtonBase
         _text = string.Empty;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Button WithAutoWidth()
-    {
-        WidthExpression = AutoWidthDefinition;
-        return this;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Button WithAutoHeight()
-    {
-        HeightExpression = AutoHeightDefinition;
-        return this;
-    }
-
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
     {
         UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);

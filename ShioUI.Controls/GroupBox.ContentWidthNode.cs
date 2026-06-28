@@ -16,9 +16,7 @@ partial class GroupBox
         {
             if (!_reference.TryGetTarget(out GroupBox? element))
                 return 0;
-            int left = GetContentLeftCore(manager.GetComputedValue(element, LayoutProperty.Left));
-            int right = GetContentRightCore(manager.GetComputedValue(element, LayoutProperty.Right));
-            return right - left;
+            return GetContentWidthCore(manager.GetComputedValue(element, LayoutProperty.Width));
         }
     }
 }

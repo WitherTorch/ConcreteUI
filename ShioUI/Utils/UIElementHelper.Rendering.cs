@@ -84,13 +84,15 @@ partial class UIElementHelper
         {
             bool isOpaque = element.IsBackgroundOpaque();
             ClearTypeSwitcher.SetClearType(context.DeviceContext, isOpaque);
-            using (RegionalRenderingContext elementContext = context.WithPixelAlignedClip(
-                (RectF)element.Bounds, D2D1AntialiasMode.Aliased, isOpaque, out _))
-            {
-                element.Render(elementContext, information.CurrentRenderTimestamp);
-            }
+            using RegionalRenderingContext elementContext = context.WithPixelAlignedClip((RectF)element.Bounds, D2D1AntialiasMode.Aliased, isOpaque, out _);
+            element.Render(elementContext, information.CurrentRenderTimestamp);
             if (element is IElementContainer container)
-                return RenderElements(context.WithEmptyDirtyCollector(), container.GetActiveElements(), information with { IgnoreNeedRefresh = true });
+            {
+                if (element is IRenderWindow window)
+                    return window.RenderPage(elementContext.WithEmptyDirtyCollector(), information with { IgnoreNeedRefresh = true });
+                else
+                    return RenderElements(elementContext.WithEmptyDirtyCollector(), container.GetActiveElements(), information with { IgnoreNeedRefresh = true });
+            }
         }
         else
         {
@@ -98,9 +100,17 @@ partial class UIElementHelper
                 (RenderResult)(MathHelper.BooleanToUInt32(element.TrySyncRenderCheckTimestamp(information.LastRenderTimestamp, information.CurrentRenderTimestamp)) - 1U);
 
             if (element is IElementContainer container)
-                return result | RenderElements(context, container.GetActiveElements(), information);
-            else
-                return result;
+            {
+                bool isOpaque = element.IsBackgroundOpaque();
+                ClearTypeSwitcher.SetClearType(context.DeviceContext, isOpaque);
+
+                using RegionalRenderingContext elementContext = context.WithPixelAlignedClip((RectF)element.Bounds, D2D1AntialiasMode.Aliased, isOpaque, out _);
+                if (element is IRenderWindow window)
+                    result |= window.RenderPage(elementContext, information);
+                else
+                    result |= RenderElements(elementContext, container.GetActiveElements(), information);
+            }
+            return result;
         }
 
     Tail:

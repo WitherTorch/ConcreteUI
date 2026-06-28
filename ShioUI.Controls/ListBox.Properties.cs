@@ -13,7 +13,7 @@ using RiceTea.Core.Native;
 
 namespace ShioUI.Controls;
 
-partial class ListBox
+partial class ListBox : IAutoWidthElement, IAutoHeightElement
 {
     public event EventHandler? SelectedIndicesChanged;
 

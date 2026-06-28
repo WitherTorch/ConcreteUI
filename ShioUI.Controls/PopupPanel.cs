@@ -53,10 +53,6 @@ public sealed partial class PopupPanel : PopupElementBase, IElementContainer, IC
 
     IEnumerable<UIElement> IElementContainer.GetActiveElements() => _collection;
 
-    IRenderer IElementContainer.GetRenderer() => Renderer;
-
-    CoreWindow IElementContainer.GetWindow() => Window;
-
     bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
 
     protected override void DisposeCore(bool disposing)

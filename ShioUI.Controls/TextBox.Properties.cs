@@ -10,7 +10,7 @@ using RiceTea.Core.Helpers;
 
 namespace ShioUI.Controls;
 
-partial class TextBox
+partial class TextBox : IAutoHeightElement
 {
     #region Events
     public event MouseNotifyEventHandler? RequestContextMenu;

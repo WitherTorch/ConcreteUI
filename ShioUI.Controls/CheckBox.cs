@@ -59,20 +59,6 @@ public sealed partial class CheckBox : UIElement, IMouseInteractHandler, IMouseM
         EnablePartialRendering = true;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public CheckBox WithAutoWidth()
-    {
-        WidthExpression = AutoWidthDefinition;
-        return this;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public CheckBox WithAutoHeight()
-    {
-        HeightExpression = AutoHeightDefinition;
-        return this;
-    }
-
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
     {
         UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);

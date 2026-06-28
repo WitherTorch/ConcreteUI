@@ -6,7 +6,7 @@ public abstract class PopupElementBase : UIElement, IGlobalMouseInteractHandler
 {
     protected PopupElementBase(IElementContainer parent, string themePrefix) : base(parent, themePrefix) { }
 
-    public void Close() => Window.CloseOverlayElement(this);
+    public void Close() => RootWindow.CloseOverlayElement(this);
 
     protected virtual void OnMouseDownGlobally(in MouseEventArgs args) { }
 

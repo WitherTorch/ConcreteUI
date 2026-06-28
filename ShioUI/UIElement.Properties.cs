@@ -26,16 +26,20 @@ partial class UIElement
         get => _identifier;
     }
 
-    public CoreWindow Window
+    public IRenderWindow Window
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => Parent.GetWindow();
+        get
+        {
+            IElementContainer parent = Parent;
+            return parent is IRenderWindow window ? window : parent.Window;
+        }
     }
 
-    protected IRenderer Renderer
+    public CoreWindow RootWindow
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => Parent.GetRenderer();
+        get => Parent.RootWindow;
     }
 
     protected bool EnablePartialRendering

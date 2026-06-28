@@ -52,7 +52,7 @@ partial class GroupBox
     public int ContentLeft
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => GetContentLeftCore(Left);
+        get => GetContentLeftCore();
     }
 
     public LayoutNode ContentLeftDefinition
@@ -64,7 +64,7 @@ partial class GroupBox
     public int ContentTop
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => GetContentTopCore(Top);
+        get => GetContentTopCore();
     }
 
     public LayoutNode ContentTopDefinition
@@ -76,7 +76,7 @@ partial class GroupBox
     public int ContentRight
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => GetContentRightCore(Right);
+        get => GetContentRightCore(Width);
     }
 
     public LayoutNode ContentRightDefinition
@@ -88,7 +88,7 @@ partial class GroupBox
     public int ContentBottom
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => GetContentBottomCore(Bottom);
+        get => GetContentBottomCore(Height);
     }
 
     public LayoutNode ContentBottomDefinition
@@ -100,13 +100,7 @@ partial class GroupBox
     public int ContentWidth
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get
-        {
-            Rectangle bounds = Bounds;
-            int left = GetContentLeftCore(bounds.Left);
-            int right = GetContentRightCore(bounds.Right);
-            return right - left;
-        }
+        get => Width - (ContentLeftPadding + ContentRightPadding);
     }
 
     public LayoutNode ContentWidthDefinition
@@ -118,13 +112,7 @@ partial class GroupBox
     public int ContentHeight
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get
-        {
-            Rectangle bounds = Bounds;
-            int top = GetContentTopCore(bounds.Top);
-            int bottom = GetContentBottomCore(bounds.Bottom);
-            return bottom - top;
-        }
+        get => GetContentHeightCore(Height);
     }
 
     public LayoutNode ContentHeightDefinition
@@ -136,7 +124,7 @@ partial class GroupBox
     public int TextTop
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => GetTextTopCore(Location.Y);
+        get => GetTextTopCore();
     }
 
     public LayoutNode TextTopDefinition
@@ -164,20 +152,12 @@ partial class GroupBox
     public Point ContentLocation
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get
-        {
-            Point location = Location;
-            return new Point(GetContentLeftCore(location.X), GetContentTopCore(location.Y));
-        }
+        get => new Point(GetContentLeftCore(), GetContentTopCore());
     }
 
     public Point TextLocation
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get
-        {
-            Point location = Location;
-            return new Point(GetContentLeftCore(location.X), GetTextTopCore(location.Y));
-        }
+        get => new Point(GetContentLeftCore(), GetTextTopCore());
     }
 }

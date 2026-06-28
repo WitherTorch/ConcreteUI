@@ -9,12 +9,11 @@ partial class ComboBoxDropdownList
 {
     private sealed class DefaultTopNode : UIElementDependedNode<ComboBoxDropdownList>
     {
-        public DefaultTopNode(ComboBoxDropdownList element) : base(element) { }
+        private readonly int _baseY;
 
-        protected override int Compute(ComboBoxDropdownList element, in LayoutNodeManager manager)
-        {
-            int val = manager.GetComputedValue(element._owner, LayoutProperty.Bottom);
-            return val - MathI.Ceiling(RenderingHelper.GetDefaultBorderWidth(element.Window.PixelsPerPoint.Y));
-        }
+        public DefaultTopNode(ComboBoxDropdownList element, int baseY) : base(element) => _baseY = baseY;
+
+        protected override int Compute(ComboBoxDropdownList element, in LayoutNodeManager manager) 
+            => _baseY - MathI.Ceiling(RenderingHelper.GetDefaultBorderWidth(element.Window.GetPixelsPerPoint().Y));
     }
 }

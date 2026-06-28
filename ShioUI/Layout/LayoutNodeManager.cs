@@ -1,29 +1,34 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-using ShioUI.Layout.Internals;
-
+using RiceTea.Core.Extensions;
 using RiceTea.Core.Helpers;
 using RiceTea.Core.Structures;
+
+using ShioUI.Layout.Internals;
 
 namespace ShioUI.Layout;
 
 public readonly ref struct LayoutNodeManager
 {
     private readonly Dictionary<UIElement, ArraySegment<LayoutNode?>> _elementDict;
+    private readonly Dictionary<UIElement, ArraySegment<UIElement>> _childrenDict;
     private readonly Dictionary<LayoutNode, int> _computeDict;
     private readonly Dictionary<LayoutNode, int>? _walkedNodes;
     private readonly Size _pageSize;
 
     public LayoutNodeManager(
         Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict,
+        Dictionary<UIElement, ArraySegment<UIElement>> childrenDict,
         Dictionary<LayoutNode, int> computeDict,
         Size pageSize)
     {
         _elementDict = elementDict;
+        _childrenDict = childrenDict;
         _computeDict = computeDict;
         _pageSize = pageSize;
         if (ShioSettings.UseDebugMode)
@@ -33,6 +38,19 @@ public readonly ref struct LayoutNodeManager
     }
 
     public readonly Size GetPageSize() => _pageSize;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly ChildrenEnumerator GetChildrenEnumerator(UIElement element)
+    {
+        if (!_childrenDict.TryGetValue(element, out ArraySegment<UIElement> segment))
+            return default;
+        UIElement[]? array = segment.Array;
+        int offset = segment.Offset;
+        int count = segment.Count;
+        if (array is null || offset < 0 || count <= 0)
+            return default;
+        return new ChildrenEnumerator(array, offset, count);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly LayoutNode? GetLayoutNodeOrNull(UIElement element, LayoutProperty property)
@@ -166,4 +184,53 @@ public readonly ref struct LayoutNodeManager
             .Select(static pair => pair.Key)
             .ToArray()
             );
+
+    public ref struct ChildrenEnumerator : IEnumerator<UIElement>
+    {
+        private readonly UIElement[] _array;
+        private readonly int _offset;
+        private readonly int _count;
+
+        private int _index;
+
+        public ChildrenEnumerator(UIElement[] array, int offset, int count)
+        {
+            _array = array;
+            _offset = offset;
+            _count = count;
+            _index = -1;
+        }
+
+        public readonly UIElement Current
+        {
+            get
+            {
+                int index = _index;
+                if (index < 0 || index >= _count)
+                    return InvalidOperationException.Throw<UIElement>();
+                return _array.AsUnsafeRef()[_offset + index];
+            }
+        }
+
+        readonly object? IEnumerator.Current => Current;
+
+        public readonly void Dispose() { }
+
+        public bool MoveNext()
+        {
+            int index = _index + 1;
+            int count = _count;
+            if (index < count)
+            {
+                _index = index;
+                return index >= 0;
+            }
+            return false;
+        }
+
+        public void Reset()
+        {
+            _index = 0;
+        }
+    }
 }

@@ -16,6 +16,7 @@ using ShioUI.Theme;
 using RiceTea.Core.Extensions;
 using RiceTea.Core.Helpers;
 using RiceTea.Core.Structures;
+using ShioUI.Extensions;
 
 namespace ShioUI.Controls;
 
@@ -46,9 +47,14 @@ public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGloba
         _owner = owner;
         _isFirstTimeClick = true;
         _selectedIndex = -1;
-        LeftExpression = owner.LeftDefinition;
-        RightExpression = owner.RightDefinition;
-        TopExpression = new DefaultTopNode(this);
+
+        Rectangle ownerBounds = owner.Bounds;
+        Point ownerLocation = owner.LocalPageToGlobalPage(ownerBounds.Location);
+        Size ownerSize = ownerBounds.Size;
+
+        LeftExpression = ownerLocation.X;
+        RightExpression = ownerLocation.X + ownerSize.Width;
+        TopExpression = new DefaultTopNode(this, ownerLocation.Y + ownerSize.Height);
         HeightExpression = new DefaultHeightNode(this);
     }
 
@@ -67,7 +73,7 @@ public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGloba
 
     protected override D2D1Brush GetBorderBrush() => UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BorderBrush);
 
-    public void Close() => Window.CloseOverlayElement(this);
+    public void Close() => RootWindow.CloseOverlayElement(this);
 
     private void Prepare(ComboBox parent, DWriteTextFormat format)
     {
@@ -87,7 +93,7 @@ public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGloba
         }
         DisposeHelper.SwapDispose(ref _layouts, layouts);
 
-        Vector2 pixelsPerPoint = Window.PixelsPerPoint;
+        Vector2 pixelsPerPoint = Window.GetPixelsPerPoint();
         float borderWidth = RenderingHelper.GetDefaultBorderWidth(pixelsPerPoint.X);
         itemHeight = RenderingHelper.CeilingInPixel(itemHeight, pixelsPerPoint.Y) + borderWidth * 2;
         _itemHeight = itemHeight;
@@ -190,12 +196,14 @@ public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGloba
             {
                 _prepareToClose = true;
                 ItemClicked?.Invoke(this, selectedIndex);
+                Close();
                 return;
             }
         }
         else if (!bounds.Contains(args.X, args.Y))
         {
             _prepareToClose = true;
+            Close();
             return;
         }
         Update();
@@ -209,13 +217,6 @@ public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGloba
         args.Handle();
         _isClicking = true;
         _isClickingClient = args.IsInSpecificSize(ContentSize);
-    }
-
-    protected override void OnMouseUp(in MouseEventArgs args)
-    {
-        base.OnMouseUp(args);
-        if (_prepareToClose)
-            Close();
     }
 
     protected override void OnMouseMove(in MouseEventArgs args)

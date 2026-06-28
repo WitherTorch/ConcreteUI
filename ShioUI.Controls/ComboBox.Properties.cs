@@ -8,7 +8,7 @@ using RiceTea.Core.Helpers;
 
 namespace ShioUI.Controls;
 
-partial class ComboBox
+partial class ComboBox : IAutoHeightElement
 {
     public event EventHandler? ItemClicked;
     public event EventHandler<DropdownListEventArgs>? RequestDropdownListOpening;
