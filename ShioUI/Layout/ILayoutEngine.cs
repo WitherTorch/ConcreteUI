@@ -5,6 +5,7 @@ using ShioUI.Utils;
 
 namespace ShioUI.Layout;
 
+// Just a specification for LayoutEngine and LayoutEngineRentScope, don't implement it manually!
 public interface ILayoutEngine
 {
     void RecalculateLayout(Size pageSize, UIElement? element, in RecalculateLayoutInformation information);

@@ -39,7 +39,7 @@ public abstract partial class LayoutNode
     internal int ComputeInternal(in LayoutContext context)
     {
         ulong timestamp = context.Timestamp;
-        if (_layoutTimestamp == timestamp)
+        if (timestamp != 0 && _layoutTimestamp == timestamp)
             return _cachedResult;
         int result = ComputeCore(context);
         _layoutTimestamp = timestamp;
@@ -51,7 +51,7 @@ public abstract partial class LayoutNode
     internal (int Result, bool Cached) ComputeInternalWithCached(in LayoutContext context)
     {
         ulong timestamp = context.Timestamp;
-        if (_layoutTimestamp == timestamp)
+        if (timestamp != 0 && _layoutTimestamp == timestamp)
             return (Result: _cachedResult, Cached: true);
         int result = ComputeCore(context);
         _layoutTimestamp = timestamp;
@@ -84,8 +84,6 @@ public abstract partial class LayoutNode
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public LayoutNode Min(LayoutNode variable) => Min(this, variable);
-
-    public override bool Equals(object? obj) => ReferenceEquals(this, obj);
 
     public override int GetHashCode() => _identifier;
 }

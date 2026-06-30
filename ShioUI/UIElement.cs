@@ -319,8 +319,6 @@ public abstract partial class UIElement : ICheckableDisposable
 
     public override int GetHashCode() => _identifier;
 
-    public override bool Equals(object? obj) => ReferenceEquals(obj, this);
-
     protected virtual void DisposeCore(bool disposing)
     {
         lock (_themeAccessLock)

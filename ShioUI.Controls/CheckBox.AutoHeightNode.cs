@@ -11,7 +11,7 @@ partial class CheckBox
     {
         public AutoHeightNode(CheckBox element) : base(element) { }
 
-        protected override int ComputeCore(CheckBox element, in LayoutContext context)
+        protected override int ComputeCOre(CheckBox element, in LayoutContext context)
         {
             string? fontName = element._fontName;
             if (fontName is null)

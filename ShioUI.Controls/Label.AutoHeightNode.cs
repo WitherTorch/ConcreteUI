@@ -15,7 +15,7 @@ partial class Label
     {
         public AutoHeightNode(Label element) : base(element) { }
 
-        protected override int ComputeCore(Label element, in LayoutContext context)
+        protected override int ComputeCOre(Label element, in LayoutContext context)
         {
             string? fontName = element._fontName;
             if (fontName is null)

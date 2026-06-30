@@ -11,7 +11,7 @@ partial class Button
     {
         public AutoHeightNode(Button element) : base(element) { }
 
-        protected override int ComputeCore(Button element, in LayoutContext context)
+        protected override int ComputeCOre(Button element, in LayoutContext context)
         {
             string? fontName = element._fontName;
             if (fontName is null)

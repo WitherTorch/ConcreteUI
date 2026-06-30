@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using RiceTea.Core.Buffers;
 using RiceTea.Core.Extensions;
 using RiceTea.Core.Helpers;
 using RiceTea.Core.Structures;
@@ -17,14 +18,21 @@ using ShioUI.Layout.Internals;
 namespace ShioUI.Layout;
 
 [StructLayout(LayoutKind.Auto)]
-public readonly ref struct LayoutContext
+public unsafe readonly ref struct LayoutContext : ILayoutContext
 {
-    private readonly Dictionary<UIElement, ArraySegment<LayoutNode?>> _elementDict;
-    private readonly Dictionary<UIElement, ArraySegment<UIElement>> _childrenDict;
-    private readonly Dictionary<UIElement, UIElement> _parentDict;
+    internal readonly Dictionary<UIElement, ArraySegment<LayoutNode?>> _elementDict;
+    internal readonly Dictionary<UIElement, ArraySegment<UIElement>> _childrenDict;
+    internal readonly Dictionary<UIElement, UIElement> _parentDict;
+
     private readonly Dictionary<LayoutNode, int>? _walkedNodes;
     private readonly Size _pageSize;
     private readonly ulong _timestamp;
+
+    // For virtual context
+    private readonly PooledList<LayoutNode>? _walkedNonCachedNodeList;
+    private readonly LayoutNode[]? _fakeLayoutNodeKeys;
+    private readonly int* _fakeLayoutNodeValues;
+    private readonly int _fakeLayoutNodeCount;
 
     public ulong Timestamp
     {
@@ -38,6 +46,7 @@ public readonly ref struct LayoutContext
         get => _pageSize;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public LayoutContext(
         Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict,
         Dictionary<UIElement, ArraySegment<UIElement>> childrenDict,
@@ -55,6 +64,27 @@ public readonly ref struct LayoutContext
         else
             _walkedNodes = null;
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal LayoutContext(
+        Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict,
+        Dictionary<UIElement, ArraySegment<UIElement>> childrenDict,
+        Dictionary<UIElement, UIElement> parentDict,
+        PooledList<LayoutNode> walkedNonCachedNodeList,
+        LayoutNode[]? fakeLayoutNodeKeys,
+        int* fakeLayoutNodeValues,
+        int fakeLayoutNodeCount,
+        Size pageSize,
+        ulong timestamp) : this(elementDict, childrenDict, parentDict, pageSize, timestamp)
+    {
+        _walkedNonCachedNodeList = walkedNonCachedNodeList;
+        _fakeLayoutNodeKeys = fakeLayoutNodeKeys;
+        _fakeLayoutNodeValues = fakeLayoutNodeValues;
+        _fakeLayoutNodeCount = fakeLayoutNodeCount;
+    }
+
+    public readonly VirtualLayoutContext.Builder CreateVirtualContextBuilder()
+        => new VirtualLayoutContext.Builder(in this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly ChildrenEnumerator GetChildrenEnumerator(UIElement element)
@@ -162,15 +192,49 @@ public readonly ref struct LayoutContext
     private readonly int GetComputedValueOrZero(LayoutNode? variable)
         => variable is null ? 0 : GetComputedValue(variable);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly int GetComputedValue(LayoutNode node)
     {
         if (node is FixedValueLayoutNode fixedValueNode)
             return fixedValueNode.Value;
 
+        LayoutNode[]? fakeLayoutNodeKeys = _fakeLayoutNodeKeys;
+        if (fakeLayoutNodeKeys is not null)
+        {
+            int indexOf = Array.IndexOf(fakeLayoutNodeKeys, node);
+            if (indexOf >= 0 || indexOf < _fakeLayoutNodeCount)
+                return _fakeLayoutNodeValues[indexOf];
+        }
+
+        PooledList<LayoutNode>? nodeList = _walkedNonCachedNodeList;
+        if (nodeList is null)
+            return GetComputedValue_SlowRoute(node);
+        else
+            return GetComputedValue_SlowRouteAndCheckCached(nodeList, node);
+    }
+
+    private readonly int GetComputedValue_SlowRoute(LayoutNode node)
+    {
         AddNodeOrThrow(node);
         try
         {
             return node.ComputeInternal(this);
+        }
+        finally
+        {
+            RemoveNode(node);
+        }
+    }
+
+    private readonly int GetComputedValue_SlowRouteAndCheckCached(PooledList<LayoutNode> list, LayoutNode node)
+    {
+        AddNodeOrThrow(node);
+        try
+        {
+            (int result, bool cached) = node.ComputeInternalWithCached(this);
+            if (!cached)
+                list.Add(node);
+            return result;
         }
         finally
         {

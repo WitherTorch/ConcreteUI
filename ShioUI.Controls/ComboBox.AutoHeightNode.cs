@@ -11,7 +11,7 @@ partial class ComboBox
     {
         public AutoHeightNode(ComboBox element) : base(element) { }
 
-        protected override int ComputeCore(ComboBox element, in LayoutContext context)
+        protected override int ComputeCOre(ComboBox element, in LayoutContext context)
         {
             string? fontName = element._fontName;
             if (fontName is null)
