@@ -14,13 +14,12 @@ namespace ShioUI.Internals;
 
 internal sealed unsafe class WindowClassImpl
 {
-    public static readonly WindowClassImpl Instance = new WindowClassImpl();
+    public static readonly WindowClassImpl Instance;
 
-    private static readonly delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint> _wndProcFunc;
 #if NET472_OR_GREATER
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     private delegate nint WndProcDelegate(IntPtr hwnd, uint message, nint lParam, nint wParam);
-    private static readonly WndProcDelegate _wndProcDelegate;
+    private static readonly WndProcDelegate? _wndProcDelegate;
 #endif
 
     private readonly Dictionary<IntPtr, GCHandle> _hwndOwnerDict = new();
@@ -30,6 +29,8 @@ internal sealed unsafe class WindowClassImpl
 
     static WindowClassImpl()
     {
+        void* wndProcFunc;
+
 #if NET8_0_OR_GREATER
         goto Direct;
 #else
@@ -49,21 +50,25 @@ internal sealed unsafe class WindowClassImpl
 
     Direct:
 #if NET8_0_OR_GREATER
-        _wndProcFunc = &ProcessWindowMessage;
+        wndProcFunc = (delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint>)&ProcessWindowMessage;
 #else
-        delegate* managed<IntPtr, uint, nint, nint, nint> wndProcFunc = &ProcessWindowMessage;
-        _wndProcFunc = (delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint>)wndProcFunc;
+        wndProcFunc = (delegate* managed<IntPtr, uint, nint, nint, nint>)&ProcessWindowMessage;
 #endif
+        goto Tail;
 
 #if !NET8_0_OR_GREATER
     Indirect:
         WndProcDelegate wndProcDelegate = ProcessWindowMessage;
         _wndProcDelegate = wndProcDelegate;
-        _wndProcFunc = (delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint>)Marshal.GetFunctionPointerForDelegate(wndProcDelegate);
+        wndProcFunc = (delegate* unmanaged[Stdcall]<IntPtr, uint, nint, nint, nint>)Marshal.GetFunctionPointerForDelegate(wndProcDelegate);
+        goto Tail;
 #endif
+
+    Tail:
+        Instance = new WindowClassImpl(wndProcFunc);
     }
 
-    private WindowClassImpl()
+    private WindowClassImpl(void* wndProcFunc)
     {
         ushort atom;
         IntPtr hInstance = Kernel32.GetModuleHandleW(null);
@@ -74,7 +79,7 @@ internal sealed unsafe class WindowClassImpl
                 cbSize = UnsafeHelper.SizeOf<WindowClassEx>(),
                 style = ClassStyles.OwnDC,
                 hInstance = hInstance,
-                lpfnWndProc = _wndProcFunc,
+                lpfnWndProc = wndProcFunc,
                 lpszClassName = className,
                 hbrBackground = Gdi32.CreateSolidBrush(0x00000000)
             };
@@ -126,7 +131,10 @@ internal sealed unsafe class WindowClassImpl
         lock (_hwndOwnerDictLock)
         {
             if (!dict.TryGetValue(handle, out GCHandle weakRef))
+            {
                 dict.Add(handle, GCHandle.Alloc(owner, GCHandleType.Weak));
+                return true;
+            }
             object? target = weakRef.Target;
             if (ReferenceEquals(target, owner))
                 return true;
@@ -156,10 +164,14 @@ internal sealed unsafe class WindowClassImpl
             if (ReferenceEquals(target, owner))
             {
                 dict.Remove(handle);
+                weakRef.Free();
                 return true;
             }
             if (target is null || (target is IHwndOwner otherOwner && otherOwner.Handle == owner.Handle))
+            {
                 dict.Remove(handle);
+                weakRef.Free();
+            }
             return false;
         }
     }
