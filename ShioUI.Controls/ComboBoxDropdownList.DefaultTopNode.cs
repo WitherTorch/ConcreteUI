@@ -13,7 +13,7 @@ partial class ComboBoxDropdownList
 
         public DefaultTopNode(ComboBoxDropdownList element, int baseY) : base(element) => _baseY = baseY;
 
-        protected override int ComputeCOre(ComboBoxDropdownList element, in LayoutContext context) 
+        protected override int ComputeCore(ComboBoxDropdownList element, in LayoutContext context) 
             => _baseY - MathI.Ceiling(RenderingHelper.GetDefaultBorderWidth(element.Window.GetPixelsPerPoint().Y));
     }
 }

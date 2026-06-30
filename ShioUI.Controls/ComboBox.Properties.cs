@@ -95,6 +95,6 @@ partial class ComboBox : IAutoHeightElement
     public LayoutNode AutoHeightDefinition
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _autoLayoutDefinitionCache[0] ??= new AutoHeightNode(this);
+        get => _autoLayoutDefinitions[0] ??= new AutoHeightNode(this);
     }
 }

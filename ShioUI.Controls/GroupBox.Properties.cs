@@ -1,15 +1,13 @@
-using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
-using ShioUI.Layout;
-
 using RiceTea.Core.Extensions;
-using RiceTea.Core.Helpers;
+
+using ShioUI.Layout;
 
 namespace ShioUI.Controls;
 
-partial class GroupBox
+partial class GroupBox : IAutoWidthElement, IAutoHeightElement
 {
     public string Title
     {
@@ -130,23 +128,7 @@ partial class GroupBox
     public LayoutNode TextTopDefinition
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get
-        {
-            TextTopNode? result = _textTopReference;
-            if (result is null)
-            {
-                WeakReference<GroupBox>? reference = InterlockedHelper.Read(ref _reference);
-                if (reference is null)
-                {
-                    reference = new WeakReference<GroupBox>(this);
-                    WeakReference<GroupBox>? oldReference = InterlockedHelper.CompareExchange(ref _reference, reference, null);
-                    if (oldReference is not null)
-                        reference = oldReference;
-                }
-                _textTopReference = result = new TextTopNode(reference);
-            }
-            return result;
-        }
+        get => _textTopReference ??= new TextTopNode(GetWeakReference());
     }
 
     public Point ContentLocation
@@ -159,5 +141,17 @@ partial class GroupBox
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => new Point(GetContentLeftCore(), GetTextTopCore());
+    }
+
+    public LayoutNode AutoWidthDefinition
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _autoLayoutDefinitions.AsUnsafeRef()[0] ??= new AutoWidthNode(GetWeakReference());
+    }
+
+    public LayoutNode AutoHeightDefinition
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _autoLayoutDefinitions.AsUnsafeRef()[1] ??= new AutoHeightNode(GetWeakReference());
     }
 }

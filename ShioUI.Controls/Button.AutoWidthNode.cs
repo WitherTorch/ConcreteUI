@@ -1,3 +1,5 @@
+using System;
+
 using ShioUI.Graphics.Native.DirectWrite;
 using ShioUI.Layout;
 using ShioUI.Utils;
@@ -6,11 +8,11 @@ namespace ShioUI.Controls;
 
 partial class Button
 {
-    private sealed class AutoWidthNode : UIElementDependedNode<Button>
+    private sealed class AutoWidthNode : UIElementReferencedNode<Button>
     {
-        public AutoWidthNode(Button element) : base(element) { }
+        public AutoWidthNode(WeakReference<Button> reference) : base(reference) { }
 
-        protected override int ComputeCOre(Button element, in LayoutContext context)
+        protected override int ComputeCore(Button element, in LayoutContext context)
         {
             string? fontName = element._fontName;
             if (fontName is null)

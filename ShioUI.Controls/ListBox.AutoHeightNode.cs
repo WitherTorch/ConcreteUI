@@ -8,6 +8,6 @@ partial class ListBox
     {
         public AutoHeightNode(ListBox element) : base(element) { }
 
-        protected override int ComputeCOre(ListBox element, in LayoutContext context) => element.GetPredictedHeight();
+        protected override int ComputeCore(ListBox element, in LayoutContext context) => element.GetPredictedHeight();
     }
 }

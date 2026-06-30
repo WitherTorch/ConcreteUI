@@ -1,3 +1,5 @@
+using System;
+
 using ShioUI.Graphics.Native.DirectWrite;
 using ShioUI.Layout;
 using ShioUI.Utils;
@@ -6,11 +8,11 @@ namespace ShioUI.Controls;
 
 partial class CheckBox
 {
-    private sealed class AutoWidthNode : UIElementDependedNode<CheckBox>
-    {
-        public AutoWidthNode(CheckBox element) : base(element) { }
+	private sealed class AutoWidthNode : UIElementReferencedNode<CheckBox>
+	{
+		public AutoWidthNode(WeakReference<CheckBox> reference) : base(reference) { }
 
-        protected override int ComputeCore(CheckBox element, in LayoutContext context)
+		protected override int ComputeCore(CheckBox element, in LayoutContext context)
         {
             string? fontName = element._fontName;
             if (fontName is null)

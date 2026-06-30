@@ -201,8 +201,9 @@ public unsafe readonly ref struct LayoutContext : ILayoutContext
         LayoutNode[]? fakeLayoutNodeKeys = _fakeLayoutNodeKeys;
         if (fakeLayoutNodeKeys is not null)
         {
-            int indexOf = Array.IndexOf(fakeLayoutNodeKeys, node);
-            if (indexOf >= 0 || indexOf < _fakeLayoutNodeCount)
+            int count = _fakeLayoutNodeCount;
+            int indexOf = Array.IndexOf(fakeLayoutNodeKeys, node, 0, count);
+            if (indexOf >= 0 && indexOf < count)
                 return _fakeLayoutNodeValues[indexOf];
         }
 
@@ -256,6 +257,22 @@ public unsafe readonly ref struct LayoutContext : ILayoutContext
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void RemoveNode(LayoutNode node) => _walkedNodes?.Remove(node);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void ThrowCyclicDependencyException(LayoutNode node)
+    {
+        Dictionary<LayoutNode, int>? walkedNodes = _walkedNodes;
+        if (walkedNodes is null)
+            ThrowWithNoArgs(node);
+        else
+        {
+            walkedNodes.TryAdd(node, walkedNodes.Count);
+            ThrowCyclicDependencyException(walkedNodes);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void ThrowWithNoArgs(LayoutNode node) => throw new CyclicDependencyException([node]);
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ThrowCyclicDependencyException(Dictionary<LayoutNode, int> nodes)

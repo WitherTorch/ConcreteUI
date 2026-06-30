@@ -7,11 +7,11 @@ namespace ShioUI.Controls;
 
 partial class Button
 {
-    private sealed class AutoHeightNode : UIElementDependedNode<Button>
+    private sealed class AutoHeightNode : UIElementReferencedNode<Button>
     {
-        public AutoHeightNode(Button element) : base(element) { }
+        public AutoHeightNode(WeakReference<Button> reference) : base(reference) { }
 
-        protected override int ComputeCOre(Button element, in LayoutContext context)
+        protected override int ComputeCore(Button element, in LayoutContext context)
         {
             string? fontName = element._fontName;
             if (fontName is null)

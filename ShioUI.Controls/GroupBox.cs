@@ -37,7 +37,8 @@ public sealed partial class GroupBox : UIElement, IElementContainer
     };
 
     private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-    private readonly LayoutNode?[] _contentLayoutDefinitions = new LayoutNode?[(int)LayoutProperty._Last];
+    private readonly LayoutNode?[] _contentLayoutDefinitions = new LayoutNode?[(int)LayoutProperty._Last]; 
+    private readonly LayoutNode?[] _autoLayoutDefinitions = new LayoutNode?[2];
     private readonly ObservableList<UIElement> _children;
 
     private WeakReference<GroupBox>? _reference;
@@ -74,14 +75,7 @@ public sealed partial class GroupBox : UIElement, IElementContainer
         ref LayoutNode? variable = ref UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_contentLayoutDefinitions), property);
         if (variable is null)
         {
-            WeakReference<GroupBox>? reference = InterlockedHelper.Read(ref _reference);
-            if (reference is null)
-            {
-                reference = new WeakReference<GroupBox>(this);
-                WeakReference<GroupBox>? oldReference = InterlockedHelper.CompareExchange(ref _reference, reference, null);
-                if (oldReference is not null)
-                    reference = oldReference;
-            }
+            WeakReference<GroupBox> reference = GetWeakReference();
             variable = property switch
             {
                 (nuint)LayoutProperty.Left => LayoutNode.Fixed(ContentLeftPadding),
@@ -94,6 +88,20 @@ public sealed partial class GroupBox : UIElement, IElementContainer
             };
         }
         return variable;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private WeakReference<GroupBox> GetWeakReference()
+    {
+        WeakReference<GroupBox>? reference = InterlockedHelper.Read(ref _reference);
+        if (reference is null)
+        {
+            reference = new WeakReference<GroupBox>(this);
+            WeakReference<GroupBox>? oldReference = InterlockedHelper.CompareExchange(ref _reference, reference, null);
+            if (oldReference is not null)
+                reference = oldReference;
+        }
+        return reference;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

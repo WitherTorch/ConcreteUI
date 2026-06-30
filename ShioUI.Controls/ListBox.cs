@@ -48,7 +48,7 @@ public sealed partial class ListBox : ScrollableElementBase
 
     private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
     private readonly D2D1Brush?[] _checkBoxBrushes = new D2D1Brush[(int)CheckBoxBrush._Last];
-    private readonly LayoutNode?[] _autoLayoutDefinitionCache = new LayoutNode?[2];
+    private readonly LayoutNode?[] _autoLayoutDefinitions = new LayoutNode?[2];
     private readonly BitList _stateVectorList;
     private readonly ObservableList<string> _items;
 

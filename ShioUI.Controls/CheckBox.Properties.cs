@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System;
 using RiceTea.Core.Helpers;
 using ShioUI.Layout;
+using RiceTea.Core.Extensions;
 
 namespace ShioUI.Controls;
 
@@ -56,12 +57,12 @@ partial class CheckBox : IAutoWidthElement, IAutoHeightElement
     public LayoutNode AutoWidthDefinition
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _autoLayoutDefinitionCache[0] ??= new AutoWidthNode(this);
+        get => _autoLayoutDefinitions.AsUnsafeRef()[0] ??= new AutoWidthNode(GetWeakReference());
     }
 
     public LayoutNode AutoHeightDefinition
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _autoLayoutDefinitionCache[1] ??= new AutoHeightNode(this);
+        get => _autoLayoutDefinitions.AsUnsafeRef()[1] ??= new AutoHeightNode(GetWeakReference());
     }
 }

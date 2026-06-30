@@ -7,11 +7,11 @@ namespace ShioUI.Controls;
 
 partial class CheckBox
 {
-    private sealed class AutoHeightNode : UIElementDependedNode<CheckBox>
+    private sealed class AutoHeightNode : UIElementReferencedNode<CheckBox>
     {
-        public AutoHeightNode(CheckBox element) : base(element) { }
+        public AutoHeightNode(WeakReference<CheckBox> reference) : base(reference) { }
 
-        protected override int ComputeCOre(CheckBox element, in LayoutContext context)
+        protected override int ComputeCore(CheckBox element, in LayoutContext context)
         {
             string? fontName = element._fontName;
             if (fontName is null)

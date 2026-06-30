@@ -1,24 +1,25 @@
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using ShioUI.Graphics.Helpers;
-using ShioUI.Layout;
-using ShioUI.Utils;
-
 using InlineMethod;
-using ShioUI.Controls.Internals;
-using ShioUI.Graphics;
-using ShioUI.Graphics.Native.Direct2D;
-using ShioUI.Graphics.Native.Direct2D.Brushes;
-using ShioUI.Graphics.Native.DirectWrite;
-using ShioUI.Theme;
 
 using RiceTea.Core.Extensions;
 using RiceTea.Core.Helpers;
 using RiceTea.Core.Structures;
+
+using ShioUI.Controls.Internals;
+using ShioUI.Graphics;
+using ShioUI.Graphics.Helpers;
+using ShioUI.Graphics.Native.Direct2D;
+using ShioUI.Graphics.Native.Direct2D.Brushes;
+using ShioUI.Graphics.Native.DirectWrite;
+using ShioUI.Layout;
+using ShioUI.Theme;
+using ShioUI.Utils;
 
 namespace ShioUI.Controls;
 
@@ -37,11 +38,12 @@ public sealed partial class CheckBox : UIElement, IMouseInteractHandler, IMouseM
     };
 
     private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-    private readonly LayoutNode?[] _autoLayoutDefinitionCache = new LayoutNode?[2];
+    private readonly LayoutNode?[] _autoLayoutDefinitions = new LayoutNode?[2];
 
     private string? _fontName;
     private string _text;
     private DWriteTextLayout? _layout;
+    private WeakReference<CheckBox>? _reference;
 
     private ButtonTriState _buttonState;
     private long _redrawTypeRaw, _rawUpdateFlags;
@@ -57,6 +59,20 @@ public sealed partial class CheckBox : UIElement, IMouseInteractHandler, IMouseM
         _text = string.Empty;
 
         EnablePartialRendering = true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private WeakReference<CheckBox> GetWeakReference()
+    {
+        WeakReference<CheckBox>? reference = InterlockedHelper.Read(ref _reference);
+        if (reference is null)
+        {
+            reference = new WeakReference<CheckBox>(this);
+            WeakReference<CheckBox>? oldReference = InterlockedHelper.CompareExchange(ref _reference, reference, null);
+            if (oldReference is not null)
+                reference = oldReference;
+        }
+        return reference;
     }
 
     protected override void ApplyThemeCore(IThemeResourceProvider provider)

@@ -50,7 +50,7 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
     };
 
     private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-    private readonly LayoutNode?[] _autoLayoutDefinitionCache = new LayoutNode?[1];
+    private readonly LayoutNode?[] _autoLayoutDefinitions = new LayoutNode?[1];
     private readonly InputMethod? _ime;
     private readonly Timer _caretTimer;
 

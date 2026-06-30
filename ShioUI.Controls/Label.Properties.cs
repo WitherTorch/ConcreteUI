@@ -100,12 +100,12 @@ partial class Label : IAutoWidthElement, IAutoHeightElement
     public LayoutNode AutoWidthDefinition
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _autoLayoutDefinitionCache[0] ??= new AutoWidthNode(this);
+        get => _autoLayoutDefinitions[0] ??= new AutoWidthNode(this);
     }
 
     public LayoutNode AutoHeightDefinition
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _autoLayoutDefinitionCache[1] ??= new AutoHeightNode(this);
+        get => _autoLayoutDefinitions[1] ??= new AutoHeightNode(this);
     }
 }

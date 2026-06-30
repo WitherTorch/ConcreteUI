@@ -66,11 +66,20 @@ partial class MainWindow
             LeftExpression = listBox.RightDefinition + UIConstants.ElementMargin,
             TopExpression = textBox.BottomDefinition + UIConstants.ElementMargin,
             RightExpression = PageWidthDefinition - UIConstants.ElementMargin,
-            BottomExpression = PageHeightDefinition - UIConstants.ElementMargin,
             Title = "群組容器",
-        };
+        }.WithAutoHeight();
+        GroupBox groupBox2 = new GroupBox(this)
+        {
+            LeftExpression = listBox.RightDefinition + UIConstants.ElementMargin,
+            BottomExpression = PageHeightDefinition - UIConstants.ElementMargin,
+            RightExpression = PageWidthDefinition - UIConstants.ElementMargin,
+            Title = "群組容器(倒轉)",
+        }.WithAutoHeight();
+
         InitializeGroupBox(groupBox);
+        InitializeGroupBox2(groupBox2);
         elementList.Add(groupBox);
+        elementList.Add(groupBox2);
         _elementLists[0] = elementList;
 
         void InitializeGroupBox(GroupBox groupBox)
@@ -133,6 +142,29 @@ partial class MainWindow
                 items.Add("選項 " + i.ToString());
             leftButton.Click += LeftButton_Click;
             rightButton.Click += RightButton_Click;
+        }
+
+        void InitializeGroupBox2(GroupBox groupBox)
+        {
+            CheckBox a, b, c;
+            groupBox.AddChild(a = new CheckBox(this)
+            {
+                LeftExpression = groupBox.ContentLeftDefinition,
+                BottomExpression = groupBox.ContentBottomDefinition,
+                Text = "可以勾選的方塊 A"
+            }.WithAutoWidth().WithAutoHeight());
+            groupBox.AddChild(b = new CheckBox(this)
+            {
+                LeftExpression = groupBox.ContentLeftDefinition,
+                BottomExpression = a.TopDefinition - UIConstants.ElementMarginDefinition,
+                Text = "可以勾選的方塊 B"
+            }.WithAutoWidth().WithAutoHeight());
+            groupBox.AddChild(c = new CheckBox(this)
+            {
+                LeftExpression = groupBox.ContentLeftDefinition,
+                BottomExpression = b.TopDefinition - UIConstants.ElementMarginDefinition,
+                Text = "可以勾選的方塊 C"
+            }.WithAutoWidth().WithAutoHeight());
         }
     }
 

@@ -165,7 +165,7 @@ partial class TextBox : IAutoHeightElement
     public new LayoutNode AutoHeightDefinition
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _autoLayoutDefinitionCache[0] ??= new AutoHeightNode(this);
+        get => _autoLayoutDefinitions[0] ??= new AutoHeightNode(this);
     }
     #endregion
 }

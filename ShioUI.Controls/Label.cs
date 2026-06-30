@@ -26,7 +26,7 @@ public sealed partial class Label : UIElement
     };
 
     private readonly D2D1Brush[] _brushes = new D2D1Brush[(int)Brush._Last];
-    private readonly LayoutNode?[] _autoLayoutDefinitionCache = new LayoutNode?[2];
+    private readonly LayoutNode?[] _autoLayoutDefinitions = new LayoutNode?[2];
 
     private DWriteTextLayout? _layout;
     private string? _fontName;
