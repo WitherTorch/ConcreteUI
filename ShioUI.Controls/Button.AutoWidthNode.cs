@@ -10,7 +10,7 @@ partial class Button
     {
         public AutoWidthNode(Button element) : base(element) { }
 
-        protected override int Compute(Button element, in LayoutNodeManager manager)
+        protected override int ComputeCore(Button element, in LayoutContext context)
         {
             string? fontName = element._fontName;
             if (fontName is null)

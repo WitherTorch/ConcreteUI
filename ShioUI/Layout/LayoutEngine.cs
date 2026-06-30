@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
@@ -183,13 +182,14 @@ public sealed class LayoutEngine : ILayoutEngine
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void RecalculateLayoutInternal(Size pageSize, ulong timestamp)
     {
+        Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict = _elementDict;
+        LayoutContext context = new LayoutContext(elementDict, _childrenDict, _parentDict, pageSize, timestamp);
         try
         {
-            RecalculateLayoutCore(pageSize, timestamp);
+            RecalculateLayoutCore(context, timestamp);
         }
         finally
         {
-            Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict = _elementDict;
             Dictionary<UIElement, ArraySegment<UIElement>> childrenDict = _childrenDict;
             Dictionary<UIElement, UIElement> parentDict = _parentDict;
             ArrayPool<UIElement> childrenArrayPool = _childrenArrayPool;
@@ -212,11 +212,9 @@ public sealed class LayoutEngine : ILayoutEngine
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private unsafe void RecalculateLayoutCore(Size pageSize, ulong timestamp)
+    private unsafe void RecalculateLayoutCore(in LayoutContext context, ulong timestamp)
     {
-        Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict = _elementDict;
-        LayoutNodeManager nodeManager = new LayoutNodeManager(elementDict, _childrenDict, _parentDict, pageSize, timestamp);
-        using Dictionary<UIElement, ArraySegment<LayoutNode?>>.Enumerator enumerator = elementDict.GetEnumerator();
+        using Dictionary<UIElement, ArraySegment<LayoutNode?>>.Enumerator enumerator = _elementDict.GetEnumerator();
         while (enumerator.MoveNext())
         {
             (UIElement element, ArraySegment<LayoutNode?> expressions) = enumerator.Current;
@@ -238,7 +236,7 @@ public sealed class LayoutEngine : ILayoutEngine
                 }
                 try
                 {
-                    values[i] = nodeManager.GetComputedValue(expression);
+                    values[i] = context.GetComputedValue(expression);
                 }
                 catch (CyclicDependencyException)
                 {
@@ -260,7 +258,7 @@ public sealed class LayoutEngine : ILayoutEngine
                 }
                 try
                 {
-                    values[i - 2] = nodeManager.GetComputedValue(expression);
+                    values[i - 2] = context.GetComputedValue(expression);
                 }
                 catch (CyclicDependencyException)
                 {
@@ -284,7 +282,7 @@ public sealed class LayoutEngine : ILayoutEngine
                     LayoutNode? rightExpression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i + 4);
                     if (leftExpression is null || rightExpression is null)
                         goto Failed;
-                    values[i] = nodeManager.GetComputedValue(leftExpression) - nodeManager.GetComputedValue(rightExpression);
+                    values[i] = context.GetComputedValue(leftExpression) - context.GetComputedValue(rightExpression);
                 }
                 for (nuint i = (nuint)LayoutProperty.Width; i <= (nuint)LayoutProperty.Height; i++)
                 {
@@ -295,7 +293,7 @@ public sealed class LayoutEngine : ILayoutEngine
                     LayoutNode? rightExpression = UnsafeHelper.AddTypedOffset(ref expressionArrayRef, i - 4);
                     if (leftExpression is null || rightExpression is null)
                         goto Failed;
-                    values[i - 2] = nodeManager.GetComputedValue(leftExpression) - nodeManager.GetComputedValue(rightExpression);
+                    values[i - 2] = context.GetComputedValue(leftExpression) - context.GetComputedValue(rightExpression);
                 }
             }
             element.UpdateLayoutTimestamp(bounds, timestamp);

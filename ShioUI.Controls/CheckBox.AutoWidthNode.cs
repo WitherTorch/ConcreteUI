@@ -10,13 +10,13 @@ partial class CheckBox
     {
         public AutoWidthNode(CheckBox element) : base(element) { }
 
-        protected override int Compute(CheckBox element, in LayoutNodeManager manager)
+        protected override int ComputeCore(CheckBox element, in LayoutContext context)
         {
             string? fontName = element._fontName;
             if (fontName is null)
                 return 0;
             using DWriteTextFormat format = SharedResources.DWriteFactory.CreateTextFormat(fontName, element._fontSize);
-            return GraphicsUtils.MeasureTextWidthAsInt(element._text, format) + manager.GetComputedValue(element, LayoutProperty.Height) + UIConstants.ElementMargin;
+            return GraphicsUtils.MeasureTextWidthAsInt(element._text, format) + context.GetComputedValue(element, LayoutProperty.Height) + UIConstants.ElementMargin;
         }
     }
 }

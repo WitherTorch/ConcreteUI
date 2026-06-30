@@ -8,14 +8,14 @@ public abstract class UIElementDependedNode<T> : LayoutNode where T : UIElement
 
     protected UIElementDependedNode(T element) => _handle = GCHandle.Alloc(element, GCHandleType.Weak);
 
-    protected override int ComputeCore(in LayoutNodeManager manager)
+    protected override int ComputeCore(in LayoutContext context)
     {
         if (_handle.Target is not T element)
             return 0;
-        return Compute(element, manager);
+        return ComputeCore(element, context);
     }
 
-    protected abstract int Compute(T element, in LayoutNodeManager manager);
+    protected abstract int ComputeCore(T element, in LayoutContext context);
 
     ~UIElementDependedNode() => _handle.Free();
 }

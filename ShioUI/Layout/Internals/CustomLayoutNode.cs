@@ -1,17 +1,13 @@
+using System.Runtime.CompilerServices;
+
 namespace ShioUI.Layout.Internals;
 
 internal sealed class CustomLayoutNode : LayoutNode
 {
     private readonly CustomComputeDelegate _func;
 
-    public CustomLayoutNode(CustomComputeDelegate func)
-    {
-        _func = func;
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public CustomLayoutNode(CustomComputeDelegate func) => _func = func;
 
-    protected override int ComputeCore(in LayoutNodeManager manager) => _func.Invoke(in manager);
-
-    public override bool Equals(object? obj) => obj is CustomLayoutNode another && _func == another._func;
-
-    public override int GetHashCode() => _func.GetHashCode();
+    protected override int ComputeCore(in LayoutContext context) => _func.Invoke(in context);
 }

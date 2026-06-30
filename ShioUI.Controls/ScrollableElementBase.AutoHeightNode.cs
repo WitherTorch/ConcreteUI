@@ -10,7 +10,7 @@ partial class ScrollableElementBase
     {
         public AutoHeightNode(ScrollableElementBase element) : base(element) { }
 
-        protected override int Compute(ScrollableElementBase element, in LayoutNodeManager manager)
+        protected override int ComputeCore(ScrollableElementBase element, in LayoutContext context)
             => MathHelper.Max(element.SurfaceSize.Height, 1);
     }
 }

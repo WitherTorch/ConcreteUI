@@ -17,7 +17,7 @@ using ShioUI.Layout.Internals;
 namespace ShioUI.Layout;
 
 [StructLayout(LayoutKind.Auto)]
-public readonly ref struct LayoutNodeManager
+public readonly ref struct LayoutContext
 {
     private readonly Dictionary<UIElement, ArraySegment<LayoutNode?>> _elementDict;
     private readonly Dictionary<UIElement, ArraySegment<UIElement>> _childrenDict;
@@ -26,7 +26,19 @@ public readonly ref struct LayoutNodeManager
     private readonly Size _pageSize;
     private readonly ulong _timestamp;
 
-    public LayoutNodeManager(
+    public ulong Timestamp
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _timestamp;
+    }
+
+    public readonly Size PageSize
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _pageSize;
+    }
+
+    public LayoutContext(
         Dictionary<UIElement, ArraySegment<LayoutNode?>> elementDict,
         Dictionary<UIElement, ArraySegment<UIElement>> childrenDict,
         Dictionary<UIElement, UIElement> parentDict,
@@ -43,8 +55,6 @@ public readonly ref struct LayoutNodeManager
         else
             _walkedNodes = null;
     }
-
-    public readonly Size GetPageSize() => _pageSize;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly ChildrenEnumerator GetChildrenEnumerator(UIElement element)
@@ -160,7 +170,7 @@ public readonly ref struct LayoutNodeManager
         AddNodeOrThrow(node);
         try
         {
-            return node.Compute(this, _timestamp);
+            return node.ComputeInternal(this);
         }
         finally
         {
@@ -194,12 +204,10 @@ public readonly ref struct LayoutNodeManager
     public ref struct ChildrenEnumerator : IEnumerator<UIElement>
     {
         private readonly UIElement[] _array;
-        private readonly int _offset;
-        private readonly int _count;
+        private int _offset, _count, _index;
 
-        private int _index;
-
-        public ChildrenEnumerator(UIElement[] array, int offset, int count)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ChildrenEnumerator(UIElement[] array, int offset, int count)
         {
             _array = array;
             _offset = offset;
@@ -209,6 +217,7 @@ public readonly ref struct LayoutNodeManager
 
         public readonly UIElement Current
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 int index = _index;
@@ -220,8 +229,15 @@ public readonly ref struct LayoutNodeManager
 
         readonly object? IEnumerator.Current => Current;
 
-        public readonly void Dispose() { }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose()
+        {
+            _offset = 0;
+            _index = -1;
+            _count = 0;
+        }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool MoveNext()
         {
             int index = _index + 1;
@@ -234,9 +250,7 @@ public readonly ref struct LayoutNodeManager
             return false;
         }
 
-        public void Reset()
-        {
-            _index = 0;
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Reset() => _index = -1;
     }
 }

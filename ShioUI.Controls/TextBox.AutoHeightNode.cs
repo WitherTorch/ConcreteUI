@@ -13,23 +13,22 @@ partial class TextBox
     {
         public AutoHeightNode(TextBox element) : base(element) { }
 
-        protected override int Compute(TextBox element, in LayoutNodeManager manager) 
-            => MathI.Ceiling(ComputeCore(element, manager)) + UIConstants.ElementMargin;
-
-        private static float ComputeCore(TextBox element, in LayoutNodeManager manager)
+        protected override int ComputeCore(TextBox element, in LayoutContext context)
         {
             string? fontName = element._fontName;
             if (fontName is null)
-                return 0;
-            float fontSize = element._fontSize;
+                return UIConstants.ElementMargin;
+            float result, fontSize = element._fontSize;
             if (element._multiLine)
             {
                 using DWriteTextLayout layout = TextFormatHelper.CreateTextLayout(element._text, fontName, element._alignment, fontSize);
-                element.SetRenderingPropertiesForMultiLine(layout, manager.GetComputedValue(element, LayoutProperty.Width) - UIConstants.ElementMargin,
+                element.SetRenderingPropertiesForMultiLine(layout, context.GetComputedValue(element, LayoutProperty.Width) - UIConstants.ElementMargin,
                     element.Window.GetPixelsPerPoint());
-                return layout.GetMetrics().Height;
+                result = layout.GetMetrics().Height;
             }
-            return FontHeightHelper.GetFontHeight(fontName, fontSize);
+            else
+                result = FontHeightHelper.GetFontHeight(fontName, fontSize);
+            return MathI.Ceiling(result) + UIConstants.ElementMargin;
         }
     }
 }

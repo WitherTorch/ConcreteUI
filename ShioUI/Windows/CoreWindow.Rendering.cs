@@ -110,13 +110,13 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
     public static LayoutNode PageWidthDefinition
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => PageWidthNode.Instance;
+        get => PageWidthLayoutNode.Instance;
     }
 
     public static LayoutNode PageHeightDefinition
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => PageHeightNode.Instance;
+        get => PageHeightLayoutNode.Instance;
     }
     #endregion
 

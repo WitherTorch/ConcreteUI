@@ -12,11 +12,11 @@ partial class GroupBox
 
         public ContentWidthNode(WeakReference<GroupBox> reference) => _reference = reference;
 
-        protected override int ComputeCore(in LayoutNodeManager manager)
+        protected override int ComputeCore(in LayoutContext context)
         {
             if (!_reference.TryGetTarget(out GroupBox? element))
                 return 0;
-            return GetContentWidthCore(manager.GetComputedValue(element, LayoutProperty.Width));
+            return GetContentWidthCore(context.GetComputedValue(element, LayoutProperty.Width));
         }
     }
 }

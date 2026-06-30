@@ -5,15 +5,15 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-using ShioUI.Graphics;
-using ShioUI.Layout;
-using ShioUI.Windows;
-using ShioUI.Controls;
-using ShioUI.Theme;
-using ShioUI.Utils;
-
 using RiceTea.Core.Helpers;
 using RiceTea.Core.Native;
+
+using ShioUI.Controls;
+using ShioUI.Graphics;
+using ShioUI.Layout;
+using ShioUI.Theme;
+using ShioUI.Utils;
+using ShioUI.Windows;
 
 namespace ShioUI.Test;
 
@@ -132,20 +132,20 @@ internal sealed partial class MainWindow : TabbedWindow
         UpdateAndResize();
         controller.Unlock();
 
-        int SharedFunc(in LayoutNodeManager manager) => (int)((NativeMethods.GetTicksForSystem() - _startingTime) / (TimeSpan.TicksPerSecond / 60));
+        int SharedFunc(in LayoutContext context) => (int)((NativeMethods.GetTicksForSystem() - _startingTime) / (TimeSpan.TicksPerSecond / 60));
 
-        int CustomXFunc(in LayoutNodeManager manager)
+        int CustomXFunc(in LayoutContext context)
         {
-            int stateDiff = manager.GetComputedValue(sharedNode);
+            int stateDiff = context.GetComputedValue(sharedNode);
             double rotateRange = MinimumRotatingRange + ((stateDiff % 60) * 1.0 / 60) * (MaximumRotatingRange - MinimumRotatingRange);
-            return manager.GetPageSize().Width / 2 - MathI.Round(Math.Cos(stateDiff * (Math.PI / 180.0)) * rotateRange);
+            return context.PageSize.Width / 2 - MathI.Round(Math.Cos(stateDiff * (Math.PI / 180.0)) * rotateRange);
         }
 
-        int CustomYFunc(in LayoutNodeManager manager)
+        int CustomYFunc(in LayoutContext context)
         {
-            int stateDiff = manager.GetComputedValue(sharedNode);
+            int stateDiff = context.GetComputedValue(sharedNode);
             double rotateRange = MinimumRotatingRange + ((stateDiff % 60) * 1.0 / 60) * (MaximumRotatingRange - MinimumRotatingRange);
-            return manager.GetPageSize().Height / 2 - MathI.Round(Math.Sin(stateDiff * (Math.PI / 180.0)) * rotateRange);
+            return context.PageSize.Height / 2 - MathI.Round(Math.Sin(stateDiff * (Math.PI / 180.0)) * rotateRange);
         }
     }
 

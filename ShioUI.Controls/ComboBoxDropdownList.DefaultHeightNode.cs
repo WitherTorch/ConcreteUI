@@ -10,7 +10,7 @@ partial class ComboBoxDropdownList
     {
         public DefaultHeightNode(ComboBoxDropdownList element) : base(element) { }
 
-        protected override int Compute(ComboBoxDropdownList element, in LayoutNodeManager manager)
+        protected override int ComputeCore(ComboBoxDropdownList element, in LayoutContext context)
             => InterlockedHelper.Read(ref element._maxViewHeight);
     }
 }

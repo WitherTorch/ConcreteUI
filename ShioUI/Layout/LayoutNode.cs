@@ -16,37 +16,50 @@ public abstract partial class LayoutNode
     private ulong _layoutTimestamp;
     private int _cachedResult;
 
-    public int NodeId => _identifier;
+    public int NodeId
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _identifier;
+    }
 
-    public bool IsEmpty => ReferenceEquals(this, Empty) || (this is FixedValueLayoutNode fixedVariable && fixedVariable.Value == 0);
+    public bool IsEmpty
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ReferenceEquals(this, Empty);
+    }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected LayoutNode() => _identifier = InterlockedHelper.Increment(ref _identifierCounter);
 
-    public int Compute(in LayoutNodeManager manager, ulong timestamp)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int Compute(in LayoutContext context)
+        => context.GetComputedValue(this);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal int ComputeInternal(in LayoutContext context)
     {
+        ulong timestamp = context.Timestamp;
         if (_layoutTimestamp == timestamp)
             return _cachedResult;
-        int result = ComputeCore(manager);
+        int result = ComputeCore(context);
         _layoutTimestamp = timestamp;
         _cachedResult = result;
         return result;
     }
 
-    public int Compute(in LayoutNodeManager manager, ulong timestamp, out bool cached)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal (int Result, bool Cached) ComputeInternalWithCached(in LayoutContext context)
     {
+        ulong timestamp = context.Timestamp;
         if (_layoutTimestamp == timestamp)
-        {
-            cached = true;
-            return _cachedResult;
-        }
-        int result = ComputeCore(manager);
+            return (Result: _cachedResult, Cached: true);
+        int result = ComputeCore(context);
         _layoutTimestamp = timestamp;
         _cachedResult = result;
-        cached = false;
-        return result;
+        return (Result: result, Cached: false);
     }
 
-    protected abstract int ComputeCore(in LayoutNodeManager manager);
+    protected abstract int ComputeCore(in LayoutContext context);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ClearCache() => _layoutTimestamp = 0;

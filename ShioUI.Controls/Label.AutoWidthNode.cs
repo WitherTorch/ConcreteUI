@@ -12,7 +12,7 @@ partial class Label
     {
         public AutoWidthNode(Label element) : base(element) { }
 
-        protected override int Compute(Label element, in LayoutNodeManager manager)
+        protected override int ComputeCore(Label element, in LayoutContext context)
         {
             string? fontName = element._fontName;
             if (fontName is null)

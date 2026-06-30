@@ -8,7 +8,7 @@ partial class ListBox
     {
         public AutoWidthNode(ListBox element) : base(element) { }
 
-        protected override int Compute(ListBox element, in LayoutNodeManager manager)
+        protected override int ComputeCore(ListBox element, in LayoutContext context)
         {
             int result = element.GetPredictedWidth();
             if (element.Mode == ListBoxMode.None)

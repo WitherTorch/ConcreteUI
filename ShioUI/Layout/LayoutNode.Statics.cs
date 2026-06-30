@@ -1,19 +1,21 @@
+using System;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+
+using RiceTea.Core.Extensions;
+using RiceTea.Core.Helpers;
 
 using ShioUI.Layout.Internals;
 
-using RiceTea.Core.Helpers;
-
-#pragma warning disable CS8500
-
 namespace ShioUI.Layout;
 
-public delegate int CustomComputeDelegate(in LayoutNodeManager manager);
+public delegate int CustomComputeDelegate(in LayoutContext context);
 
 partial class LayoutNode
 {
     private const int FixedValueCacheLimit = 256;
 
+    private static readonly ConcurrentDictionary<int, LayoutNode> _fixedValueNodeDict = new ConcurrentDictionary<int, LayoutNode>();
     private static readonly FixedValueLayoutNode[] _smallValuePositiveNodes = CreateSmallValueNodes_Positive();
     private static readonly FixedValueLayoutNode[] _smallValueNegativeNodes = CreateSmallValueNodes_Negative();
 
@@ -42,21 +44,23 @@ partial class LayoutNode
             return Empty;
         if (value < 0)
         {
-            int absValue = -value;
-            if (absValue < FixedValueCacheLimit)
-                return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_smallValueNegativeNodes), (nuint)absValue);
+            if (value > -FixedValueCacheLimit)
+                return _smallValueNegativeNodes.AsUnsafeRef()[-value];
         }
         else
         {
             if (value < FixedValueCacheLimit)
-                return UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_smallValuePositiveNodes), (nuint)value);
+                return _smallValuePositiveNodes.AsUnsafeRef()[value];
         }
-        return new FixedValueLayoutNode(value);
+        return _fixedValueNodeDict.GetOrAdd(value, static key => new FixedValueLayoutNode(key));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static LayoutNode Element(UIElement element, LayoutProperty property)
         => element.GetLayoutDefinition(property);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static LayoutNode Custom(Func<int> computeFunc) => new SimpleCustomLayoutNode(computeFunc);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static LayoutNode Custom(CustomComputeDelegate computeFunc) => new CustomLayoutNode(computeFunc);

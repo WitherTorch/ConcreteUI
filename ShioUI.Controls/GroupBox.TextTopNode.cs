@@ -12,7 +12,7 @@ partial class GroupBox
 
         public TextTopNode(WeakReference<GroupBox> reference) => _reference = reference;
 
-        protected override int ComputeCore(in LayoutNodeManager manager)
+        protected override int ComputeCore(in LayoutContext context)
         {
             if (!_reference.TryGetTarget(out GroupBox? element))
                 return 0;

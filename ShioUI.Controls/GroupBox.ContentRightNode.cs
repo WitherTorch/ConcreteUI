@@ -6,17 +6,11 @@ namespace ShioUI.Controls;
 
 partial class GroupBox
 {
-    private sealed class ContentRightNode : LayoutNode
+    private sealed class ContentRightNode : UIElementReferencedNode<GroupBox>
     {
-        private readonly WeakReference<GroupBox> _reference;
+        public ContentRightNode(WeakReference<GroupBox> reference) : base(reference) { }
 
-        public ContentRightNode(WeakReference<GroupBox> reference) => _reference = reference;
-
-        protected override int ComputeCore(in LayoutNodeManager manager)
-        {
-            if (!_reference.TryGetTarget(out GroupBox? element))
-                return 0;
-            return GetContentRightCore(manager.GetComputedValue(element, LayoutProperty.Width));
-        }
+        protected override int ComputeCore(GroupBox element, in LayoutContext context) 
+            => GetContentRightCore(context.GetComputedValue(element, LayoutProperty.Width));
     }
 }

@@ -8,12 +8,12 @@ public abstract class UIElementReferencedNode<T> : LayoutNode where T : UIElemen
 
     protected UIElementReferencedNode(WeakReference<T> reference) => _reference = reference;
 
-    protected override int ComputeCore(in LayoutNodeManager manager)
+    protected override int ComputeCore(in LayoutContext context)
     {
         if (!_reference.TryGetTarget(out T? element))
             return 0;
-        return Compute(element, manager);
+        return ComputeCore(element, context);
     }
 
-    protected abstract int Compute(T element, in LayoutNodeManager manager);
+    protected abstract int ComputeCore(T element, in LayoutContext context);
 }
