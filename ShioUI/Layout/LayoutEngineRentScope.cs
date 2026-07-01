@@ -34,8 +34,8 @@ public ref struct LayoutEngineRentScope : ILayoutEngine, IDisposable
     public readonly void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements, in RecalculateLayoutInformation information) where TEnumerable : IEnumerable<UIElement?>
         => _engine!.RecalculateLayout(pageSize, elements, information); // 如果 engine 等於 null 則正常擲出 NRE
 
-    public void RecalculateLayoutUnsafe(Size pageSize, UIElement?[] elements, int count, in RecalculateLayoutInformation information)
-        => _engine!.RecalculateLayoutUnsafe(pageSize, elements, count, information);
+    public void RecalculateLayoutUnsafe(Size pageSize, ref readonly UIElement? elementsRef,int count, in RecalculateLayoutInformation information)
+        => _engine!.RecalculateLayoutUnsafe(pageSize, in elementsRef, count, information);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Dispose()

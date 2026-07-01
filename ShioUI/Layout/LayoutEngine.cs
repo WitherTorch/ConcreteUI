@@ -51,11 +51,11 @@ public sealed class LayoutEngine : ILayoutEngine
         RecalculateLayoutInternal(pageSize, information.LayoutTimestamp);
     }
 
-    public void RecalculateLayoutUnsafe(Size pageSize, UIElement?[] elements, int count, in RecalculateLayoutInformation information)
+    public void RecalculateLayoutUnsafe(Size pageSize, ref readonly UIElement? elementsRef, int count, in RecalculateLayoutInformation information)
     {
         if (pageSize.Width < 0 || pageSize.Height < 0)
             return;
-        QueueElementsUnsafe(elements, count, information);
+        QueueElementsUnsafe(in elementsRef, count, information);
         if (_elementDict.Count <= 0)
             return;
         RecalculateLayoutInternal(pageSize, information.LayoutTimestamp);
@@ -105,9 +105,9 @@ public sealed class LayoutEngine : ILayoutEngine
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void QueueElementsUnsafe(UIElement?[] elements, int count, in RecalculateLayoutInformation information)
+    private void QueueElementsUnsafe(ref readonly UIElement? elementsRef, int count, in RecalculateLayoutInformation information)
     {
-        DispatchArray(in UnsafeHelper.GetArrayDataReference(elements), MathHelper.MakeUnsigned(count), information);
+        DispatchArray(in elementsRef, MathHelper.MakeUnsigned(count), information);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void DispatchArray(ref readonly UIElement? elementArrayRef, nuint length, in RecalculateLayoutInformation information)

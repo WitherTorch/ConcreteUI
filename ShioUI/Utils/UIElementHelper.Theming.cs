@@ -104,8 +104,8 @@ partial class UIElementHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ApplyThemeForElementsUnsafe(IThemeResourceProvider provider, UIElement?[] elements, int count)
-        => ApplyThemeForElementsCore(provider, in UnsafeHelper.GetArrayDataReference(elements), MathHelper.MakeUnsigned(count));
+    public static void ApplyThemeForElementsUnsafe(IThemeResourceProvider provider, ref readonly UIElement? elementsRef,int count)
+        => ApplyThemeForElementsCore(provider, in elementsRef, MathHelper.MakeUnsigned(count));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void ApplyThemeForElementsCore(IThemeResourceProvider provider, ref readonly UIElement? elementArrayRef, nuint length)

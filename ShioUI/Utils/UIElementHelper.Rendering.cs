@@ -32,8 +32,8 @@ partial class UIElementHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static RenderResult RenderElementsUnsafe(in RegionalRenderingContext context, UIElement?[] elements, int count, in RenderInformation information) 
-        => RenderElementsCore(context, in UnsafeHelper.GetArrayDataReference(elements), MathHelper.MakeUnsigned(count), information);
+    public static RenderResult RenderElementsUnsafe(in RegionalRenderingContext context, ref readonly UIElement? elementsRef, int count, in RenderInformation information)
+        => RenderElementsCore(context, in elementsRef, MathHelper.MakeUnsigned(count), information);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static RenderResult RenderElementsCore(in RegionalRenderingContext context, ref readonly UIElement? elementArrayRef, nuint length, in RenderInformation information)

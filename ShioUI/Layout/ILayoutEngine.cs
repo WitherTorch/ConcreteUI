@@ -12,5 +12,5 @@ public interface ILayoutEngine
 
     void RecalculateLayout<TEnumerable>(Size pageSize, TEnumerable elements, in RecalculateLayoutInformation information) where TEnumerable : IEnumerable<UIElement?>;
 
-    void RecalculateLayoutUnsafe(Size pageSize, UIElement?[] elements, int count, in RecalculateLayoutInformation information);
+    void RecalculateLayoutUnsafe(Size pageSize, ref readonly UIElement? elementsRef, int count, in RecalculateLayoutInformation information);
 }
