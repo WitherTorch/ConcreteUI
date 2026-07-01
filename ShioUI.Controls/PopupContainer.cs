@@ -32,8 +32,8 @@ public sealed partial class PopupContainer : PopupElementBase, IElementContainer
 
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
     {
-        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
-        UIElementHelper.ApplyTheme(provider, _children);
+        UIElementHelper.ApplyThemeBrushesUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
+        UIElementHelper.ApplyThemeForElements(provider, _children);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

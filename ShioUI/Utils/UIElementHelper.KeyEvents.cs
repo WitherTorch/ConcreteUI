@@ -7,9 +7,14 @@ namespace ShioUI.Utils;
 
 partial class UIElementHelper
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void OnKeyDownForElements<TEnumerable>(TEnumerable elements, ref KeyEventArgs args)
         where TEnumerable : IEnumerable<UIElement?>
         => DispatchHandleableEvent(elements, ref args, &OnKeyDownForElement);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void OnKeyDownForElementsUnsafe(UIElement?[] elements, int count, ref KeyEventArgs args)
+        => DispatchHandleableEventUnsafe(elements, count, ref args, &OnKeyDownForElement);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void OnKeyDownForElement(UIElement? element, ref KeyEventArgs args)
@@ -24,9 +29,14 @@ partial class UIElementHelper
             keyEvents.OnKeyDown(ref args);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void OnKeyUpForElements<TEnumerable>(TEnumerable elements, ref KeyEventArgs args)
         where TEnumerable : IEnumerable<UIElement?>
         => DispatchHandleableEvent(elements, ref args, &OnKeyUpForElement);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void OnKeyUpForElementsUnsafe(UIElement?[] elements, int count, ref KeyEventArgs args)
+        => DispatchHandleableEventUnsafe(elements, count, ref args, &OnKeyUpForElement);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void OnKeyUpForElement(UIElement? element, ref KeyEventArgs args)
@@ -41,9 +51,14 @@ partial class UIElementHelper
             keyEvents.OnKeyUp(ref args);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void OnCharacterInputForElements<TEnumerable>(TEnumerable elements, ref CharacterEventArgs args)
         where TEnumerable : IEnumerable<UIElement?>
         => DispatchHandleableEvent(elements, ref args, &OnCharacterInputForElement);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void OnCharacterInputForElementsUnsafe(UIElement?[] elements, int count, ref CharacterEventArgs args)
+        => DispatchHandleableEventUnsafe(elements, count, ref args, &OnCharacterInputForElement);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void OnCharacterInputForElement(UIElement? element, ref CharacterEventArgs args)

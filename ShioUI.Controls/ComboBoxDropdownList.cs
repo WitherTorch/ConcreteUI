@@ -61,7 +61,7 @@ public sealed partial class ComboBoxDropdownList : ScrollableElementBase, IGloba
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
     {
         base.ApplyThemeCore(provider);
-        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
+        UIElementHelper.ApplyThemeBrushesUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
         ComboBox parent = _owner;
         using DWriteTextFormat format = TextFormatHelper.CreateTextFormat(TextAlignment.MiddleLeft, provider.FontName, parent.FontSize);
         Prepare(parent, format);

@@ -31,7 +31,7 @@ public sealed partial class ProgressBar : UIElement
     }
 
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
-        => UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
+        => UIElementHelper.ApplyThemeBrushesUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
 
     protected override bool IsBackgroundOpaqueCore() => GraphicsUtils.CheckBrushIsSolid(
         UnsafeHelper.AddTypedOffset(ref UnsafeHelper.GetArrayDataReference(_brushes), (nuint)Brush.BackBrush));

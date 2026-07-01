@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 
 using ShioUI.Controls;
 using ShioUI.Extensions;
@@ -8,9 +9,14 @@ namespace ShioUI.Utils;
 
 partial class UIElementHelper
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void OnGlobalMouseDownForElements<TEnumerable>(TEnumerable elements, in MouseEventArgs args)
         where TEnumerable : IEnumerable<UIElement?>
         => DispatchReadOnlyEvent(elements, in args, &OnGlobalMouseDownForElement);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void OnGlobalMouseDownForElementsUnsafe(UIElement?[] elements, int count, in MouseEventArgs args)
+        => DispatchReadOnlyEventUnsafe(elements, count, in args, &OnGlobalMouseDownForElement);
 
     public static unsafe void OnGlobalMouseDownForElement(UIElement element, in MouseEventArgs args)
     {
@@ -28,10 +34,16 @@ partial class UIElementHelper
             globalHandler.OnMouseDownGlobally(in args);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void OnGlobalMouseUpForElements<TEnumerable>(TEnumerable elements, in MouseEventArgs args)
         where TEnumerable : IEnumerable<UIElement?>
         => DispatchReadOnlyEvent(elements, in args, &OnGlobalMouseUpForElement);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void OnGlobalMouseUpForElementsUnsafe(UIElement?[] elements, int count, in MouseEventArgs args)
+        => DispatchReadOnlyEventUnsafe(elements, count, in args, &OnGlobalMouseUpForElement);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void OnGlobalMouseUpForElement(UIElement element, in MouseEventArgs args)
     {
         if (element is IElementContainer container)
@@ -48,10 +60,16 @@ partial class UIElementHelper
             globalHandler.OnMouseUpGlobally(in args);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void OnGlobalMouseMoveForElements<TEnumerable>(TEnumerable elements, in MouseEventArgs args)
         where TEnumerable : IEnumerable<UIElement?>
         => DispatchReadOnlyEvent(elements, in args, &OnGlobalMouseMoveForElement);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void OnGlobalMouseMoveForElementsUnsafe(UIElement?[] elements, int count, in MouseEventArgs args)
+        => DispatchReadOnlyEventUnsafe(elements, count, in args, &OnGlobalMouseMoveForElement);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void OnGlobalMouseMoveForElement(UIElement element, in MouseEventArgs args)
     {
         if (element is IElementContainer container)
@@ -68,10 +86,16 @@ partial class UIElementHelper
             globalHandler.OnMouseMoveGlobally(in args);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void OnGlobalMouseScrollForElements<TEnumerable>(TEnumerable elements, in MouseEventArgs args)
         where TEnumerable : IEnumerable<UIElement?>
         => DispatchReadOnlyEvent(elements, in args, &OnGlobalMouseScrollForElement);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void OnGlobalMouseScrollForElementsUnsafe(UIElement?[] elements, int count, in MouseEventArgs args)
+        => DispatchReadOnlyEventUnsafe(elements, count, in args, &OnGlobalMouseScrollForElement);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void OnGlobalMouseScrollForElement(UIElement element, in MouseEventArgs args)
     {
         if (element is IElementContainer container)

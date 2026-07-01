@@ -13,7 +13,7 @@ partial class MainWindow
     private InputMethod? _ime;
     private ProgressBar? _progressBar;
 
-    protected override IEnumerable<UIElement?> GetActiveElements(uint pageIndex)
+    protected override IEnumerable<UIElement?> EnumerateActiveElements(uint pageIndex)
         => _elementLists[pageIndex];
 
     protected override void InitializeElements()

@@ -77,7 +77,7 @@ public sealed partial class CheckBox : UIElement, IMouseInteractHandler, IMouseM
 
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
     {
-        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
+        UIElementHelper.ApplyThemeBrushesUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
         _fontName = provider.FontName;
         _rawUpdateFlags = -1L;
         _fontSize = UIConstants.DefaultFontSize;

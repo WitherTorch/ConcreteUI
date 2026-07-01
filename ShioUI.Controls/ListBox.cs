@@ -121,8 +121,8 @@ public sealed partial class ListBox : ScrollableElementBase
         base.ApplyThemeCore(provider);
         string fontName = provider.FontName;
         _fontName = fontName;
-        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
-        UIElementHelper.ApplyThemeUnsafe(provider, _checkBoxBrushes, _checkBoxBrushNames, _checkBoxThemePrefix, (nuint)CheckBoxBrush._Last);
+        UIElementHelper.ApplyThemeBrushesUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
+        UIElementHelper.ApplyThemeBrushesUnsafe(provider, _checkBoxBrushes, _checkBoxBrushNames, _checkBoxThemePrefix, (nuint)CheckBoxBrush._Last);
         DisposeHelper.SwapDisposeInterlocked(ref _format);
         InterlockedHelper.Write(ref _recalcFormat, Booleans.TrueLong);
         InterlockedHelper.Write(ref _itemHeight, MathI.Ceiling(FontHeightHelper.GetFontHeight(fontName, _fontSize)) + 2);

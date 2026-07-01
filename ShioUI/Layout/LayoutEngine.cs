@@ -51,11 +51,63 @@ public sealed class LayoutEngine : ILayoutEngine
         RecalculateLayoutInternal(pageSize, information.LayoutTimestamp);
     }
 
+    public void RecalculateLayoutUnsafe(Size pageSize, UIElement?[] elements, int count, in RecalculateLayoutInformation information)
+    {
+        if (pageSize.Width < 0 || pageSize.Height < 0)
+            return;
+        QueueElementsUnsafe(elements, count, information);
+        if (_elementDict.Count <= 0)
+            return;
+        RecalculateLayoutInternal(pageSize, information.LayoutTimestamp);
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void QueueElements<TEnumerable>(TEnumerable elements, in RecalculateLayoutInformation information) where TEnumerable : IEnumerable<UIElement?>
     {
         using ArrayPool<UIElement?>.RentScope scope = ArrayPool<UIElement?>.Shared.EnterRentScopeAndCapture(elements);
         DispatchArray(in scope.GetReferenceOfFirstElement(), MathHelper.MakeUnsigned(scope.Count), information);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void DispatchArray(ref readonly UIElement? elementArrayRef, nuint length, in RecalculateLayoutInformation information)
+        {
+            for (; length >= 4; length -= 4)
+            {
+                Dispatch(in elementArrayRef, length - 1, information);
+                Dispatch(in elementArrayRef, length - 2, information);
+                Dispatch(in elementArrayRef, length - 3, information);
+                Dispatch(in elementArrayRef, length - 4, information);
+            }
+            switch (length)
+            {
+                case 3:
+                    Dispatch(in elementArrayRef, length - 1, information);
+                    Dispatch(in elementArrayRef, length - 2, information);
+                    Dispatch(in elementArrayRef, length - 3, information);
+                    break;
+                case 2:
+                    Dispatch(in elementArrayRef, length - 1, information);
+                    Dispatch(in elementArrayRef, length - 2, information);
+                    break;
+                case 1:
+                    Dispatch(in elementArrayRef, length - 1, information);
+                    break;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void Dispatch(ref readonly UIElement? elementArrayRef, nuint i, in RecalculateLayoutInformation information)
+        {
+            UIElement? element = UnsafeHelper.AddTypedOffsetAsReadOnly(in elementArrayRef, i);
+            if (element is null)
+                return;
+            QueueElement(element, information);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void QueueElementsUnsafe(UIElement?[] elements, int count, in RecalculateLayoutInformation information)
+    {
+        DispatchArray(in UnsafeHelper.GetArrayDataReference(elements), MathHelper.MakeUnsigned(count), information);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void DispatchArray(ref readonly UIElement? elementArrayRef, nuint length, in RecalculateLayoutInformation information)

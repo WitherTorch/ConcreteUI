@@ -65,20 +65,20 @@ public abstract class PagedWindow : CoreWindow
     #endregion
 
     #region Override Methods
-    protected override IEnumerable<UIElement?> GetActiveElements()
+    protected override IEnumerable<UIElement?> EnumerateActiveElements()
     {
         uint pageIndex = _pageIndex;
-        return GetActiveElements(pageIndex);
+        return EnumerateActiveElements(pageIndex);
     }
 
-    public override IEnumerable<UIElement?> GetElements()
+    protected override IEnumerable<UIElement?> EnumerateElements()
     {
         uint pageCount = PageCount;
         if (pageCount <= 0)
             return Enumerable.Empty<UIElement?>();
-        IEnumerable<UIElement?> elements = GetActiveElements(0);
+        IEnumerable<UIElement?> elements = EnumerateActiveElements(0);
         for (uint i = 1; i < pageCount; i++)
-            elements = elements.ConcatOptimized(GetActiveElements(i));
+            elements = elements.ConcatOptimized(EnumerateActiveElements(i));
         return elements;
     }
 
@@ -89,15 +89,10 @@ public abstract class PagedWindow : CoreWindow
 
     #region Virtual Methods
     protected virtual void RecalculatePageLayout(Size pageSize, uint pageIndex, in RecalculateLayoutInformation information)
-    {
-        using LayoutEngineRentScope engine = LayoutEngine.Rent();
-        engine.RecalculateLayout(pageSize, GetActiveElements(pageIndex), information);
-        engine.RecalculateLayout(pageSize, GetOverlayElement(), information);
-        Thread.MemoryBarrier();
-    }
+        => base.RecalculatePageLayout(pageSize, information);
     #endregion
 
     #region Abstract Methods
-    protected abstract IEnumerable<UIElement?> GetActiveElements(uint pageIndex);
+    protected abstract IEnumerable<UIElement?> EnumerateActiveElements(uint pageIndex);
     #endregion
 }

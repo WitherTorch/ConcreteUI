@@ -45,7 +45,7 @@ public sealed partial class ContextMenu : PopupElementBase, ICheckableDisposable
 
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
     {
-        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
+        UIElementHelper.ApplyThemeBrushesUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
         DWriteFactory factory = SharedResources.DWriteFactory;
 
         ContextMenuItem[] items = MenuItems;

@@ -107,7 +107,7 @@ public abstract class WizardWindow : PagedWindow
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
     {
         base.ApplyThemeCore(provider);
-        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
+        UIElementHelper.ApplyThemeBrushesUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
         _wizardBaseColor = provider.TryGetColor(ThemeConstants.WizardWindowBaseColor, out D2D1ColorF color) ? color : default;
         DisposeHelper.SwapDisposeInterlocked(ref _titleLayout, null);
         DisposeHelper.SwapDisposeInterlocked(ref _titleDescriptionLayout, null);

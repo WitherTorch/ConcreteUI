@@ -24,11 +24,16 @@ public enum RenderResult : uint
 
 partial class UIElementHelper
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static RenderResult RenderElements<TEnumerable>(in RegionalRenderingContext context, TEnumerable elements, in RenderInformation information) where TEnumerable : IEnumerable<UIElement?>
     {
         using ArrayPool<UIElement?>.RentScope scope = ArrayPool<UIElement?>.Shared.EnterRentScopeAndCapture(elements);
         return RenderElementsCore(context, in scope.GetReferenceOfFirstElement(), MathHelper.MakeUnsigned(scope.Count), information);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static RenderResult RenderElementsUnsafe(in RegionalRenderingContext context, UIElement?[] elements, int count, in RenderInformation information) 
+        => RenderElementsCore(context, in UnsafeHelper.GetArrayDataReference(elements), MathHelper.MakeUnsigned(count), information);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static RenderResult RenderElementsCore(in RegionalRenderingContext context, ref readonly UIElement? elementArrayRef, nuint length, in RenderInformation information)

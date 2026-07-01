@@ -43,7 +43,7 @@ public sealed partial class PopupPanel : PopupElementBase, IElementContainer, IC
             collection.Value = null;
     }
 
-    protected override void ApplyThemeCore(IThemeResourceProvider provider) => UIElementHelper.ApplyTheme(provider, _collection.Value);
+    protected override void ApplyThemeCore(IThemeResourceProvider provider) => UIElementHelper.ApplyThemeForElement(provider, _collection.Value);
 
     protected override bool RenderCore(in RegionalRenderingContext context) => true;
 

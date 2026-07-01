@@ -11,6 +11,9 @@ partial class UIElementHelper
         where TEnumerable : IEnumerable<UIElement?>
         => DispatchReadOnlyEvent(elements, in args, &OnDpiChangedForElement);
 
+    public static unsafe void OnDpiChangedForElementsUnsafe(UIElement?[] elements, int count, in DpiChangedEventArgs args)
+        => DispatchReadOnlyEventUnsafe(elements, count, in args, &OnDpiChangedForElement);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void OnDpiChangedForElement(UIElement? element, in DpiChangedEventArgs args)
     {
@@ -23,6 +26,9 @@ partial class UIElementHelper
     public static unsafe void DisposeForElements<TEnumerable>(TEnumerable elements)
         where TEnumerable : IEnumerable<UIElement?>
         => DispatchReadOnlyEvent(elements, &DisposeForElement);
+
+    public static unsafe void DisposeForElementsUnsafe(UIElement?[] elements, int count)
+        => DispatchReadOnlyEventUnsafe(elements, count, &DisposeForElement);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void DisposeForElement(UIElement? element) => element?.Dispose(); // 無需替 IElementContainer 清理其子項，因為元件自己有自己的清理規則

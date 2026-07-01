@@ -75,7 +75,7 @@ public abstract partial class ScrollableElementBase : UIElement,
     protected virtual D2D1Brush? GetBorderBrush() => null;
 
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
-        => UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, _scrollBarThemePrefix, (nuint)Brush._Last);
+        => UIElementHelper.ApplyThemeBrushesUnsafe(provider, _brushes, _brushNames, _scrollBarThemePrefix, (nuint)Brush._Last);
 
     protected override void Update() => Update(ScrollableElementUpdateFlags.Content);
 

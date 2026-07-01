@@ -98,7 +98,7 @@ public sealed partial class TextBox : ScrollableElementBase, IInputMethodHandler
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
     {
         base.ApplyThemeCore(provider);
-        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
+        UIElementHelper.ApplyThemeBrushesUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
         _fontName = provider.FontName;
         DisposeHelper.SwapDispose(ref _layout);
         DisposeHelper.SwapDispose(ref _watermarkLayout);

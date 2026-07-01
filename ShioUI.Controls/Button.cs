@@ -66,7 +66,7 @@ public sealed partial class Button : ButtonBase
 
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
     {
-        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
+        UIElementHelper.ApplyThemeBrushesUnsafe(provider, _brushes, _brushNames, ThemePrefix, (nuint)Brush._Last);
         _fontName = provider.FontName;
         DisposeHelper.SwapDisposeInterlocked(ref _layout);
         Update(RenderObjectUpdateFlags.Format);

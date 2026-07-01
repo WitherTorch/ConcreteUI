@@ -61,6 +61,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
     #endregion
 
     #region Static Fields
+    private static readonly ArrayPool<UIElement?> _elementArrayPool = ArrayPool<UIElement?>.Shared;
     private static readonly string[] _brushNames = new string[(int)Brush._Last]
     {
         "back",
@@ -84,6 +85,15 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
     private WindowMaterial _actualWindowMaterial;
     private GCHandle _lastMouseMoveHitElementRef, _recordedLastMouseMoveHitElementRef, _focusElementRef;
     private long _updateFlags = Booleans.TrueLong;
+
+    private LimitedImmutableArrayView<UIElement?>
+        _activeElementsCacheView = LimitedImmutableArrayView<UIElement?>.Empty,
+        _elementsCacheView = LimitedImmutableArrayView<UIElement?>.Empty;
+    private UIElement?[]
+        _activeElementsCache = Array.Empty<UIElement?>(),
+        _elementsCache = Array.Empty<UIElement?>();
+    private int _activeElementsCacheCount, _elementsCacheCount;
+    private ulong _activeElementsCacheTimestamp, _elementsCacheTimestamp;
     #endregion
 
     #region Rendering Fields
@@ -124,6 +134,8 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
     public WindowMaterial WindowMaterial => _windowMaterial;
 
     public WindowMaterial ActualWindowMaterial => _actualWindowMaterial;
+
+    protected ulong RenderTimestamp => InterlockedHelper.Read(ref _renderTimestamp);
 
     public D2D1ColorF ClearDCColor => _clearDCColor;
 
@@ -611,6 +623,108 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public RenderingController? GetRenderingController() => InterlockedHelper.Read(ref _controller);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public LimitedImmutableArrayView<UIElement?> GetActiveElements()
+        => GetActiveElements(InterlockedHelper.Read(ref _renderTimestamp));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private LimitedImmutableArrayView<UIElement?> GetActiveElements(ulong timestamp)
+    {
+        if (InterlockedHelper.Read(ref _activeElementsCacheTimestamp) == timestamp)
+            return _activeElementsCacheView;
+        LimitedImmutableArrayView<UIElement?> result = new(GetActiveElementsUnsafe_SlowRoute(timestamp, out int count), count);
+        InterlockedHelper.Write(ref _activeElementsCacheView, result);
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private UIElement?[] GetActiveElementsUnsafe(out int count)
+        => GetActiveElementsUnsafe(InterlockedHelper.Read(ref _renderTimestamp), out count);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private UIElement?[] GetActiveElementsUnsafe(ulong timestamp, out int count)
+    {
+        if (InterlockedHelper.Read(ref _activeElementsCacheTimestamp) == timestamp)
+        {
+            count = _activeElementsCacheCount;
+            return _activeElementsCache;
+        }
+        return GetActiveElementsUnsafe_SlowRoute(timestamp, out count);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private UIElement?[] GetActiveElementsUnsafe_SlowRoute(ulong timestamp, out int count)
+    {
+        lock (_syncLock)
+        {
+            if (InterlockedHelper.Read(ref _activeElementsCacheTimestamp) == timestamp)
+            {
+                count = _activeElementsCacheCount;
+                return _activeElementsCache;
+            }
+            ArrayPool<UIElement?> pool = _elementArrayPool;
+            UIElement?[]? oldCache = _activeElementsCache;
+            if (oldCache is not null)
+                pool.Return(oldCache);
+            (UIElement?[] elements, count) = pool.EnterRentScopeAndCapture(EnumerateActiveElements());
+            _activeElementsCache = elements;
+            _activeElementsCacheCount = count;
+            _activeElementsCacheTimestamp = timestamp;
+            return elements;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public LimitedImmutableArrayView<UIElement?> GetElements()
+        => GetElements(InterlockedHelper.Read(ref _renderTimestamp));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private LimitedImmutableArrayView<UIElement?> GetElements(ulong timestamp)
+    {
+        if (InterlockedHelper.Read(ref _elementsCacheTimestamp) == timestamp)
+            return _elementsCacheView;
+        LimitedImmutableArrayView<UIElement?> result = new(GetElementsUnsafe_SlowRoute(timestamp, out int count), count);
+        InterlockedHelper.Write(ref _elementsCacheView, result);
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private UIElement?[] GetElementsUnsafe(out int count)
+        => GetElementsUnsafe(InterlockedHelper.Read(ref _renderTimestamp), out count);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private UIElement?[] GetElementsUnsafe(ulong timestamp, out int count)
+    {
+        if (InterlockedHelper.Read(ref _elementsCacheTimestamp) == timestamp)
+        {
+            count = _elementsCacheCount;
+            return _elementsCache ?? Array.Empty<UIElement>();
+        }
+        return GetElementsUnsafe_SlowRoute(timestamp, out count);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private UIElement?[] GetElementsUnsafe_SlowRoute(ulong timestamp, out int count)
+    {
+        lock (_syncLock)
+        {
+            if (InterlockedHelper.Read(ref _elementsCacheTimestamp) == timestamp)
+            {
+                count = _elementsCacheCount;
+                return _elementsCache ?? Array.Empty<UIElement>();
+            }
+            ArrayPool<UIElement?> pool = _elementArrayPool;
+            UIElement?[]? oldCache = _elementsCache;
+            if (oldCache is not null)
+                pool.Return(oldCache);
+            (UIElement?[] elements, count) = pool.EnterRentScopeAndCapture(EnumerateElements());
+            _elementsCache = elements;
+            _elementsCacheCount = count;
+            _elementsCacheTimestamp = timestamp;
+            return elements;
+        }
+    }
+
     public virtual void RenderBackground(UIElement element, in RegionalRenderingContext context)
         => context.Clear(_windowBaseColor);
 
@@ -626,6 +740,8 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
     public IThemeResourceProvider? GetThemeResourceProvider() => InterlockedHelper.Read(ref _resourceProvider);
 
     IEnumerable<UIElement?> IElementContainer.GetActiveElements() => GetActiveElements();
+
+    IEnumerable<UIElement?> IElementContainer.GetElements() => GetElements();
 
     bool IElementContainer.IsBackgroundOpaque(UIElement element) => IsBackgroundOpaque();
 
@@ -661,25 +777,25 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
     #region Abstract Methods
     protected abstract void InitializeElements();
 
-    protected abstract IEnumerable<UIElement?> GetActiveElements();
+    protected abstract IEnumerable<UIElement?> EnumerateActiveElements();
     #endregion
 
     #region Virtual Methods
-    public virtual IEnumerable<UIElement?> GetElements() => GetActiveElements();
+    protected virtual IEnumerable<UIElement?> EnumerateElements() => EnumerateActiveElements();
 
     protected virtual void ApplyThemeCore(IThemeResourceProvider provider)
     {
         _clearDCColor = provider.TryGetColor(ThemeConstants.ClearDCColorNode, out D2D1ColorF color) ? color : default;
         _windowBaseColor = provider.TryGetColor(ThemeConstants.WindowBaseColorNode, out color) ? color : default;
-        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
+        UIElementHelper.ApplyThemeBrushesUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
         ShioUtils.ResetBlur(this);
 
-        UIElementHelper.ApplyTheme(provider, GetOverlayElement());
+        UIElementHelper.ApplyThemeForElement(provider, GetOverlayElement());
         ApplyThemeToElements(provider);
     }
 
     protected virtual void ApplyThemeToElements(IThemeResourceProvider provider)
-        => UIElementHelper.ApplyTheme(provider, GetElements());
+        => UIElementHelper.ApplyThemeForElementsUnsafe(provider, GetElementsUnsafe(out int count), count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual Point PageToWindow(Point point)
@@ -730,14 +846,14 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
             if (overlayElement is not null)
                 UIElementHelper.OnGlobalMouseDownForElement(overlayElement, in readonlyArgs);
             else
-                UIElementHelper.OnGlobalMouseDownForElements(GetActiveElements(), in readonlyArgs);
+                UIElementHelper.OnGlobalMouseDownForElementsUnsafe(GetActiveElementsUnsafe(out int count), count, in readonlyArgs);
         }
         else
         {
             if (overlayElement is not null)
                 UIElementHelper.OnMouseDownForElement(overlayElement, ref args, ref data);
             else
-                UIElementHelper.OnMouseDownForElements(GetActiveElements(), ref args, ref data);
+                UIElementHelper.OnMouseDownForElementsUnsafe(GetActiveElementsUnsafe(out int count), count, ref args, ref data);
         }
     }
 
@@ -747,7 +863,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
         if (overlayElement is not null)
             UIElementHelper.OnMouseMoveForElement(overlayElement, args, ref data);
         else
-            UIElementHelper.OnMouseMoveForElements(GetActiveElements(), args, ref data);
+            UIElementHelper.OnMouseMoveForElementsUnsafe(GetActiveElementsUnsafe(out int count), count, args, ref data);
     }
 
     protected virtual void OnMouseUpForElements(in MouseEventArgs args, ref MouseUpData data)
@@ -758,14 +874,14 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
             if (overlayElement is not null)
                 UIElementHelper.OnGlobalMouseUpForElement(overlayElement, in args);
             else
-                UIElementHelper.OnGlobalMouseUpForElements(GetActiveElements(), in args);
+                UIElementHelper.OnGlobalMouseUpForElementsUnsafe(GetActiveElementsUnsafe(out int count), count, in args);
         }
         else
         {
             if (overlayElement is not null)
                 UIElementHelper.OnMouseUpForElement(overlayElement, in args, ref data);
             else
-                UIElementHelper.OnMouseUpForElements(GetActiveElements(), in args, ref data);
+                UIElementHelper.OnMouseUpForElementsUnsafe(GetActiveElementsUnsafe(out int count), count, in args, ref data);
         }
     }
 
@@ -778,14 +894,14 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
             if (overlayElement is not null)
                 UIElementHelper.OnGlobalMouseScrollForElement(overlayElement, in readonlyArgs);
             else
-                UIElementHelper.OnGlobalMouseScrollForElements(GetActiveElements(), in readonlyArgs);
+                UIElementHelper.OnGlobalMouseScrollForElementsUnsafe(GetActiveElementsUnsafe(out int count), count, in readonlyArgs);
         }
         else
         {
             if (overlayElement is not null)
                 UIElementHelper.OnMouseScrollForElement(overlayElement, ref args, ref data);
             else
-                UIElementHelper.OnMouseScrollForElements(GetActiveElements(), ref args, ref data);
+                UIElementHelper.OnMouseScrollForElementsUnsafe(GetActiveElementsUnsafe(out int count), count, ref args, ref data);
         }
     }
 
@@ -797,7 +913,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
         if (overlayElement is not null)
             UIElementHelper.OnKeyDownForElement(overlayElement, ref args);
         else
-            UIElementHelper.OnKeyDownForElements(GetActiveElements(), ref args);
+            UIElementHelper.OnKeyDownForElementsUnsafe(GetActiveElementsUnsafe(out int count), count, ref args);
     }
 
     protected virtual void OnKeyUpForElements(ref KeyEventArgs args)
@@ -808,7 +924,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
         if (overlayElement is not null)
             UIElementHelper.OnKeyUpForElement(overlayElement, ref args);
         else
-            UIElementHelper.OnKeyUpForElements(GetActiveElements(), ref args);
+            UIElementHelper.OnKeyUpForElementsUnsafe(GetActiveElementsUnsafe(out int count), count, ref args);
     }
 
     protected virtual void OnCharacterInputForElements(ref CharacterEventArgs args)
@@ -819,13 +935,13 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
         if (overlayElement is not null)
             UIElementHelper.OnCharacterInputForElement(overlayElement, ref args);
         else
-            UIElementHelper.OnCharacterInputForElements(GetActiveElements(), ref args);
+            UIElementHelper.OnCharacterInputForElementsUnsafe(GetActiveElementsUnsafe(out int count), count, ref args);
     }
 
     protected virtual void OnDpiChangedForElements(in DpiChangedEventArgs args)
     {
         UIElementHelper.OnDpiChangedForElement(GetOverlayElement(), in args);
-        UIElementHelper.OnDpiChangedForElements(GetActiveElements(), in args);
+        UIElementHelper.OnDpiChangedForElementsUnsafe(GetActiveElementsUnsafe(out int count), count, in args);
     }
 
     protected unsafe virtual void RecalculateLayout(ref WindowLayoutData data, Size windowSize)
@@ -885,7 +1001,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
     protected virtual void RecalculatePageLayout(Size pageSize, in RecalculateLayoutInformation information)
     {
         using LayoutEngineRentScope engine = LayoutEngine.Rent();
-        engine.RecalculateLayout(pageSize, GetActiveElements(), information);
+        engine.RecalculateLayoutUnsafe(pageSize, GetActiveElementsUnsafe(out int count), count, information);
         engine.RecalculateLayout(pageSize, GetOverlayElement(), information);
         Thread.MemoryBarrier();
     }
@@ -943,9 +1059,10 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
                 ActiveBorderWidth = _activeBorderWidth
             },
             ResizeTimestamp = _resizeTimestamp,
-            LastRenderTimestamp = ReferenceHelper.Exchange(ref _renderTimestamp, renderTimestamp),
+            LastRenderTimestamp = _renderTimestamp,
             CurrentRenderTimestamp = renderTimestamp
         };
+        InterlockedHelper.Write(ref _renderTimestamp, renderTimestamp);
         bool renderAll = flags.HasRedrawAll();
         if (flags.HasResize())
         {
@@ -997,7 +1114,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
                     }
                     else
                     {
-                        RecalculatePageLayout(pageSize, new (data.ResizeTimestamp, clearCache: true));
+                        RecalculatePageLayout(pageSize, new(data.ResizeTimestamp, clearCache: true));
                     }
                 }
                 else
@@ -1137,7 +1254,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
         if (force)
             RenderPageBackground(context, in data);
 
-        RenderResult result = UIElementHelper.RenderElements(context, GetActiveElements(), data.CreateRenderInformation(force));
+        RenderResult result = UIElementHelper.RenderElementsUnsafe(context, GetActiveElementsUnsafe(out int count), count, data.CreateRenderInformation(force));
         if (result.ShouldImmediatelyReturn())
             return result;
         return result | UIElementHelper.RenderElement(context, _overlayElement, data.CreateRenderInformation(ignoreNeedRefresh: force || context.HasAnyDirtyArea()));
@@ -1851,7 +1968,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
 
     #region Disposing
     protected virtual void DisposeAllElements()
-        => UIElementHelper.DisposeForElements(GetElements());
+        => UIElementHelper.DisposeForElementsUnsafe(GetElementsUnsafe(out int count), count);
 
     private static void SafeDispose(ref GCHandle handle)
     {
@@ -1879,6 +1996,12 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
                 InterlockedHelper.Write(ref _graphicsDeviceProvider, null);
         }
         _overlayElement = null;
+        _activeElementsCacheCount = _elementsCacheCount = 0;
+        _activeElementsCacheView = _elementsCacheView = LimitedImmutableArrayView<UIElement?>.Empty;
+        ArrayPool<UIElement?> pool = _elementArrayPool;
+        pool.Return(ReferenceHelper.Exchange(ref _activeElementsCache, Array.Empty<UIElement?>()));
+        pool.Return(ReferenceHelper.Exchange(ref _elementsCache, Array.Empty<UIElement?>()));
+
         SafeDispose(ref _recordedLastMouseMoveHitElementRef);
         SafeDispose(ref _lastMouseMoveHitElementRef);
         SafeDispose(ref _focusElementRef);

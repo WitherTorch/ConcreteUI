@@ -148,7 +148,7 @@ public abstract class TabbedWindow : PagedWindow
     protected override void ApplyThemeCore(IThemeResourceProvider provider)
     {
         base.ApplyThemeCore(provider);
-        UIElementHelper.ApplyThemeUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
+        UIElementHelper.ApplyThemeBrushesUnsafe(provider, _brushes, _brushNames, (nuint)Brush._Last);
         GenerateMenu(_menuTitles, provider.FontName, baseX: 0, baseY: 27, menuExtraWidth: UIConstants.ElementMarginDouble,
             out Rectangle[] menuBarButtonRects, out DWriteTextLayout[] menuBarButtonLayouts);
         InterlockedHelper.Write(ref _menuBarButtonRects, menuBarButtonRects);
