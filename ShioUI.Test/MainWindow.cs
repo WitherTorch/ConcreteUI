@@ -49,6 +49,17 @@ internal sealed partial class MainWindow : TabbedWindow
         Icon = new Icon(stream);
     }
 
+    private void TextBox_KeyDown(UIElement sender, ref KeyEventArgs args)
+    {
+        if (sender is not TextBox textBox || args.Key != VirtualKey.Enter)
+            return;
+        string text = textBox.Text;
+        textBox.Text = string.Empty;
+
+        if (SequenceHelper.Equals(text, "cleanup"))
+            GC.Collect();
+    }
+
     private void ComboBox_RequestDropdownListOpening(object? sender, DropdownListEventArgs e)
     {
         ChangeOverlayElement(e.DropdownList);

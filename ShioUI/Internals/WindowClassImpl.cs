@@ -99,7 +99,7 @@ internal sealed unsafe class WindowClassImpl
 #if NET8_0_OR_GREATER
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
 #endif
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static nint ProcessWindowMessage(IntPtr hwnd, uint message, nint wParam, nint lParam)
     {
         WindowClassImpl instance = Instance;

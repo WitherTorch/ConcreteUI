@@ -4,6 +4,7 @@ using ShioUI.Controls;
 using ShioUI.Controls.Extensions;
 using ShioUI.Layout;
 using ShioUI.Input;
+using System;
 
 namespace ShioUI.Test;
 
@@ -46,6 +47,7 @@ partial class MainWindow
             HeightExpression = button.HeightDefinition,
             Watermark = "這裡可以輸入文字喔!"
         };
+        textBox.KeyDown += TextBox_KeyDown;
         elementList.Add(textBox);
 
         ListBox listBox = new ListBox(this)

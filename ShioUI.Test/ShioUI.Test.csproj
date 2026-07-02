@@ -3,6 +3,7 @@
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFrameworks>net8;net472</TargetFrameworks>
+		<Deterministic>false</Deterministic>
 		<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>disable</ImplicitUsings>
