@@ -49,6 +49,7 @@ public static class ContainerAutoSizeHelper
 
             if (recorded_delta != delta)
                 goto Failed;
+
             if (recorded_start != start)
             {
                 virtualContext.ClearTemporaryCacheForNodes();

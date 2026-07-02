@@ -73,6 +73,7 @@ partial class MainWindow
         GroupBox groupBox2 = new GroupBox(this)
         {
             LeftExpression = listBox.RightDefinition + UIConstants.ElementMargin,
+            //TopExpression = groupBox.BottomDefinition + UIConstants.ElementMargin,
             BottomExpression = PageHeightDefinition - UIConstants.ElementMargin,
             RightExpression = PageWidthDefinition - UIConstants.ElementMargin,
             Title = "群組容器(倒轉)",

@@ -1,9 +1,15 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using RiceTea.Core.Extensions;
+using RiceTea.Core.Helpers;
+
 using ShioUI.Graphics;
+using ShioUI.Internals;
 using ShioUI.Utils;
 
 namespace ShioUI.Windows;

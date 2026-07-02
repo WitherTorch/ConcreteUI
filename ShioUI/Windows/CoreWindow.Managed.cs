@@ -3,8 +3,12 @@ using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
+
+using RiceTea.Core.Buffers;
+using RiceTea.Core.Collections;
+using RiceTea.Core.Helpers;
+using RiceTea.Core.Structures;
 
 using ShioUI.Graphics;
 using ShioUI.Internals;
@@ -12,19 +16,12 @@ using ShioUI.Internals.Native;
 using ShioUI.Theme;
 using ShioUI.Utils;
 
-using RiceTea.Core.Collections;
-using RiceTea.Core.Helpers;
-using RiceTea.Core.Structures;
-using RiceTea.Core.Threading;
-using RiceTea.Core.Buffers;
-
 namespace ShioUI.Windows;
 
 public abstract partial class CoreWindow : NativeWindow
 {
     #region Static Fields
     private static readonly UnwrappableList<GCHandle> _rootWindowList = new UnwrappableList<GCHandle>();
-    private static readonly Func<WeakReference> _weakReferenceFactory = static () => new WeakReference(null);
     #endregion
 
     #region Fields
@@ -292,12 +289,19 @@ public abstract partial class CoreWindow : NativeWindow
         }
     }
     #endregion
-    protected CoreWindow() : this(deviceProvider: null) { }
-
-    protected CoreWindow(GraphicsDeviceProvider? deviceProvider) : base(null)
+    protected unsafe CoreWindow() : this(deviceProvider: null)
     {
         _parent = null;
-        Func<WeakReference> weakReferenceFactory = _weakReferenceFactory;
+        _activeElementsCacheStore = new(this, &CreateSnapshotForActiveElements, &DropSnapshot);
+        _elementsCacheStore = new(this, &CreateSnapshotForElements, &DropSnapshot);
+    }
+
+    protected unsafe CoreWindow(GraphicsDeviceProvider? deviceProvider) : base(null)
+    {
+        _parent = null;
+        _activeElementsCacheStore = new(this, &CreateSnapshotForActiveElements, &DropSnapshot);
+        _elementsCacheStore = new(this, &CreateSnapshotForElements, &DropSnapshot);
+
         _graphicsDeviceProvider = deviceProvider;
         _windowMaterial = ShioSettings.WindowMaterial;
         UnwrappableList<GCHandle> windowList = _rootWindowList;
@@ -306,10 +310,12 @@ public abstract partial class CoreWindow : NativeWindow
         InitUnmanagedPart();
     }
 
-    protected CoreWindow(CoreWindow? parent, bool passParentToUnderlyingWindow = false) : base(passParentToUnderlyingWindow ? parent : null)
+    protected unsafe CoreWindow(CoreWindow? parent, bool passParentToUnderlyingWindow = false) : base(passParentToUnderlyingWindow ? parent : null)
     {
         _parent = parent;
-        Func<WeakReference> weakReferenceFactory = _weakReferenceFactory;
+        _activeElementsCacheStore = new(this, &CreateSnapshotForActiveElements, &DropSnapshot);
+        _elementsCacheStore = new(this, &CreateSnapshotForElements, &DropSnapshot);
+
         UnwrappableList<GCHandle> windowList;
         if (parent is null)
         {
