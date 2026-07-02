@@ -207,7 +207,6 @@ public sealed class LayoutEngine : ILayoutEngine
 
         element.EnsureThemeIsApplied();
 
-        bool clearCache = information.ClearCache;
         for (LayoutProperty prop = LayoutProperty.Left; prop < LayoutProperty._Last; prop++)
         {
             LayoutNode? expression = element.GetLayoutExpression(prop);
@@ -220,8 +219,6 @@ public sealed class LayoutEngine : ILayoutEngine
                 array = segment.Array;
             }
             array!.AsUnsafeRef()[segment.Offset + (int)prop] = expression;
-            if (clearCache)
-                expression.ClearCache();
         }
         if (segment.Array is null)
             element.UpdateLayoutTimestamp(information.LayoutTimestamp);

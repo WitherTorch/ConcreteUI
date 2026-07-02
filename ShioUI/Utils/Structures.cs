@@ -7,12 +7,10 @@ namespace ShioUI.Utils;
 public readonly struct RecalculateLayoutInformation
 {
     public readonly ulong LayoutTimestamp;
-    public readonly bool ClearCache;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public RecalculateLayoutInformation(ulong layoutTimestamp, bool clearCache)
+    public RecalculateLayoutInformation(ulong layoutTimestamp)
     {
         LayoutTimestamp = layoutTimestamp;
-        ClearCache = clearCache;
     }
 }

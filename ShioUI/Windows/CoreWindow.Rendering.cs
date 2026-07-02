@@ -1078,7 +1078,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
         bool renderAll = flags.HasRedrawAll();
         if (flags.HasResize())
         {
-            if (!TryResize(host, controller, ref data, flags, clearCache: false, ref renderAll))
+            if (!TryResize(host, controller, ref data, flags, ref renderAll))
                 return false;
             if (host is OptimizedGraphicsHost optimizedHost)
                 renderAll |= optimizedHost.ForcePresentAll;
@@ -1101,7 +1101,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
             return Overdraw(host, controller, resultFlags, ref data);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        bool TryResize(SimpleGraphicsHost host, RenderingController controller, ref WindowRenderingData data, RenderingFlags flags, bool clearCache, ref bool renderAll)
+        bool TryResize(SimpleGraphicsHost host, RenderingController controller, ref WindowRenderingData data, RenderingFlags flags, ref bool renderAll)
         {
             bool resizeTemporarily = flags.HasResizeTemporarily();
             Size clirentSizeInPixel = RawClientSize;
@@ -1114,7 +1114,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
             Thread.MemoryBarrier();
             if (renderAll)
             {
-                data.ResizeTimestamp = data.CurrentRenderTimestamp;
+                data.ResizeTimestamp = NativeMethods.GetTicksForSystem();
 
                 ref WindowLayoutData layoutData = ref data.Layout;
                 RecalculateLayout(
@@ -1134,7 +1134,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
 
                 Size pageSize = layoutData.PageBounds.Size;
                 if (pageSize.IsValid())
-                    RecalculatePageLayout(pageSize, new(data.ResizeTimestamp, clearCache: clearCache));
+                    RecalculatePageLayout(pageSize, new(data.ResizeTimestamp));
             }
             flags = controller.GetAndResetRenderingFlags();
             renderAll |= flags.HasRedrawAll();
@@ -1224,12 +1224,14 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
                     if (flags.HasResize())
                     {
                         bool dropped = true;
-                        if (!TryResize(host, controller, ref data, flags, clearCache: true, ref dropped) || !(pageSize = data.Layout.PageBounds.Size).IsValid())
+                        if (!TryResize(host, controller, ref data, flags, ref dropped) || !(pageSize = data.Layout.PageBounds.Size).IsValid())
                             return false;
                     }
                     else
                     {
-                        RecalculatePageLayout(pageSize, new(data.ResizeTimestamp, clearCache: true));
+                        ulong timestamp = NativeMethods.GetTicksForSystem();
+                        data.ResizeTimestamp = timestamp;
+                        RecalculatePageLayout(pageSize, new(timestamp));
                     }
                 }
                 else
