@@ -1087,81 +1087,20 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
         if (deviceContext is null || deviceContext.IsDisposed)
             return true;
 
-        (bool Presented, RenderResult ResultFlags) result;
+        bool presented;
+        RenderResult resultFlags;
         ClearTypeSwitcher.SetClearType(deviceContext, false);
         if (renderAll)
-            result = Render_All(host, deviceContext, in data);
+            (presented, resultFlags) = Render_All(host, deviceContext, in data);
         else
-            result = Render_Incremental(host, deviceContext, collector, in data);
+            (presented, resultFlags) = Render_Incremental(host, deviceContext, collector, in data);
 
-        RenderResult resultFlags = result.ResultFlags;
-        if (!resultFlags.IsSuccessed())
-        {
-            Size pageSize = data.Layout.PageBounds.Size;
-            if (!pageSize.IsValid())
-                return false;
+        if (resultFlags.IsSuccessed())
+            return presented;
+        else
+            return Overdraw(host, controller, resultFlags, ref data);
 
-            bool debugMode = ShioSettings.UseDebugMode && Debugger.IsAttached;
-            nuint renderDesyncTimes = 0, layoutDesyncTimes = 0, retryTimes = 0;
-            do
-            {
-                if (resultFlags >= RenderResult.LayoutDesync)
-                {
-                    if (debugMode)
-                    {
-                        renderDesyncTimes = 0;
-                        if (++layoutDesyncTimes > 3)
-                        {
-                            layoutDesyncTimes = 3;
-                            Debugger.Log(level: 1, "UI Rendering warning",
-                                $"Thread {NativeMethods.GetCurrentThreadId()}(Name = {Thread.CurrentThread.Name}) is re-rendering in LayoutDesync state for this frame over 3 times! (Timestamp = ${data.CurrentRenderTimestamp})\n");
-                        }
-                    }
-
-                    flags = controller.GetAndResetRenderingFlags(); // 反正都要二次重繪，那就在拉取一次最新的渲染旗標並重置，以減少過度渲染的機會
-                    if (flags.HasResize())
-                    {
-                        if (!TryResize(host, controller, ref data, flags, clearCache: true, ref renderAll) || !(pageSize = data.Layout.PageBounds.Size).IsValid())
-                            return false;
-                    }
-                    else
-                    {
-                        RecalculatePageLayout(pageSize, new(data.ResizeTimestamp, clearCache: true));
-                    }
-                }
-                else
-                {
-                    DebugHelper.ThrowIf(resultFlags != RenderResult.RenderDesync);
-                    if (debugMode)
-                    {
-                        layoutDesyncTimes = 0;
-                        if (++renderDesyncTimes > 3)
-                        {
-                            renderDesyncTimes = 3;
-                            Debugger.Log(level: 1, "UI Rendering warning",
-                                $"Thread {NativeMethods.GetCurrentThreadId()}(Name = {Thread.CurrentThread.Name}) is re-rendering in RenderDesync state for this frame over 3 times! (Timestamp = ${data.CurrentRenderTimestamp})\n");
-                        }
-                    }
-                }
-                if (debugMode && ++retryTimes > 3 && layoutDesyncTimes <= 1 && renderDesyncTimes <= 1)
-                {
-                    retryTimes = 3;
-                    Debugger.Log(level: 1, "UI Rendering warning",
-                        $"Thread {NativeMethods.GetCurrentThreadId()}(Name = {Thread.CurrentThread.Name}) is re-rendering for this frame over 3 times! (Timestamp = ${data.CurrentRenderTimestamp})\n");
-                }
-
-                deviceContext = host.BeginDraw();
-                if (deviceContext is null || deviceContext.IsDisposed)
-                    return true;
-
-                ClearTypeSwitcher.SetClearType(deviceContext, false);
-                result = Render_All(host, deviceContext, in data);
-                resultFlags = result.ResultFlags;
-            } while (!resultFlags.IsSuccessed());
-        }
-
-        return result.Presented;
-
+        [MethodImpl(MethodImplOptions.NoInlining)]
         bool TryResize(SimpleGraphicsHost host, RenderingController controller, ref WindowRenderingData data, RenderingFlags flags, bool clearCache, ref bool renderAll)
         {
             bool resizeTemporarily = flags.HasResizeTemporarily();
@@ -1204,6 +1143,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         (bool Presented, RenderResult ResultFlags) Render_All(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, in WindowRenderingData data)
         {
             RenderResult result = RenderResult.Successed;
@@ -1227,6 +1167,7 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
             return (Presented: result.IsSuccessed() && host.TryPresent(), ResultFlags: result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         (bool Presented, RenderResult ResultFlags) Render_Incremental(SimpleGraphicsHost host, D2D1DeviceContext deviceContext, DirtyAreaCollector collector, in WindowRenderingData data)
         {
             Vector2 pixelsPerPoint = _pixelsPerPoint;
@@ -1252,6 +1193,76 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
 
             collector.Clear();
             return (Presented: false, ResultFlags: result);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        bool Overdraw(SimpleGraphicsHost host, RenderingController controller, RenderResult resultFlags, ref WindowRenderingData data)
+        {
+            Size pageSize = data.Layout.PageBounds.Size;
+            if (!pageSize.IsValid())
+                return false;
+
+            (bool Presented, RenderResult ResultFlags) result;
+            bool debugMode = ShioSettings.UseDebugMode && Debugger.IsAttached;
+            nuint renderDesyncTimes = 0, layoutDesyncTimes = 0, retryTimes = 0;
+            do
+            {
+                if (resultFlags >= RenderResult.LayoutDesync)
+                {
+                    if (debugMode)
+                    {
+                        renderDesyncTimes = 0;
+                        if (++layoutDesyncTimes > 3)
+                        {
+                            layoutDesyncTimes = 3;
+                            Debugger.Log(level: 1, "UI Rendering warning",
+                                $"Thread {NativeMethods.GetCurrentThreadId()}(Name = {Thread.CurrentThread.Name}) is re-rendering in LayoutDesync state for this frame over 3 times! (Timestamp = ${data.CurrentRenderTimestamp})\n");
+                        }
+                    }
+
+                    RenderingFlags flags = controller.GetAndResetRenderingFlags(); // 反正都要二次重繪，那就在拉取一次最新的渲染旗標並重置，以減少過度渲染的機會
+                    if (flags.HasResize())
+                    {
+                        bool dropped = true;
+                        if (!TryResize(host, controller, ref data, flags, clearCache: true, ref dropped) || !(pageSize = data.Layout.PageBounds.Size).IsValid())
+                            return false;
+                    }
+                    else
+                    {
+                        RecalculatePageLayout(pageSize, new(data.ResizeTimestamp, clearCache: true));
+                    }
+                }
+                else
+                {
+                    DebugHelper.ThrowIf(resultFlags != RenderResult.RenderDesync);
+                    if (debugMode)
+                    {
+                        layoutDesyncTimes = 0;
+                        if (++renderDesyncTimes > 3)
+                        {
+                            renderDesyncTimes = 3;
+                            Debugger.Log(level: 1, "UI Rendering warning",
+                                $"Thread {NativeMethods.GetCurrentThreadId()}(Name = {Thread.CurrentThread.Name}) is re-rendering in RenderDesync state for this frame over 3 times! (Timestamp = ${data.CurrentRenderTimestamp})\n");
+                        }
+                    }
+                }
+                if (debugMode && ++retryTimes > 3 && layoutDesyncTimes <= 1 && renderDesyncTimes <= 1)
+                {
+                    retryTimes = 3;
+                    Debugger.Log(level: 1, "UI Rendering warning",
+                        $"Thread {NativeMethods.GetCurrentThreadId()}(Name = {Thread.CurrentThread.Name}) is re-rendering for this frame over 3 times! (Timestamp = ${data.CurrentRenderTimestamp})\n");
+                }
+
+                D2D1DeviceContext? deviceContext = host.BeginDraw();
+                if (deviceContext is null || deviceContext.IsDisposed)
+                    return true;
+
+                ClearTypeSwitcher.SetClearType(deviceContext, false);
+                result = Render_All(host, deviceContext, in data);
+                resultFlags = result.ResultFlags;
+            } while (!resultFlags.IsSuccessed());
+
+            return result.Presented;
         }
     }
 
