@@ -23,9 +23,10 @@ internal sealed unsafe class WindowClassImpl
 #endif
 
     private readonly Dictionary<IntPtr, GCHandle> _hwndOwnerDict = new();
-    private readonly Lock _hwndOwnerDictLock = new();
     private readonly IntPtr _hInstance;
     private readonly ushort _atom;
+
+    private nuint _barrier;
 
     static WindowClassImpl()
     {
@@ -119,6 +120,21 @@ internal sealed unsafe class WindowClassImpl
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void EnterBarrier()
+    {
+        ref nuint barrier = ref _barrier;
+        while (InterlockedHelper.Exchange(ref barrier, 1) != 0)
+        {
+            SpinWait wait = new SpinWait();
+            while (InterlockedHelper.Read(ref barrier) != 0)
+                wait.SpinOnce();
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void ExitBarrier() => InterlockedHelper.Exchange(ref _barrier, 0);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryRegisterWindow<T>(T owner) where T : IHwndOwner
         => TryRegisterWindowUnsafe(owner.Handle, owner);
 
@@ -128,7 +144,8 @@ internal sealed unsafe class WindowClassImpl
             return false;
 
         Dictionary<IntPtr, GCHandle> dict = _hwndOwnerDict;
-        lock (_hwndOwnerDictLock)
+        EnterBarrier();
+        try
         {
             if (!dict.TryGetValue(handle, out GCHandle weakRef))
             {
@@ -145,6 +162,10 @@ internal sealed unsafe class WindowClassImpl
             }
             return false;
         }
+        finally
+        {
+            ExitBarrier();
+        }
     }
 
     public bool TryUnregisterWindow<T>(T owner) where T : IHwndOwner
@@ -156,7 +177,8 @@ internal sealed unsafe class WindowClassImpl
             return false;
 
         Dictionary<IntPtr, GCHandle> dict = _hwndOwnerDict;
-        lock (_hwndOwnerDictLock)
+        EnterBarrier();
+        try
         {
             if (!dict.TryGetValue(handle, out GCHandle weakRef))
                 return false;
@@ -174,16 +196,25 @@ internal sealed unsafe class WindowClassImpl
             }
             return false;
         }
+        finally
+        {
+            ExitBarrier();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryProcessWindowMessage(IntPtr hwnd, uint message, nint wParam, nint lParam, out nint result)
     {
         IHwndOwner? owner;
-        lock (_hwndOwnerDictLock)
+        EnterBarrier();
+        try
         {
             if (!_hwndOwnerDict.TryGetValue(hwnd, out GCHandle weakRef) || (owner = weakRef.Target as IHwndOwner) is null)
                 goto Failed;
+        }
+        finally
+        {
+            ExitBarrier();
         }
 
         return owner.TryProcessWindowMessage(hwnd, (WindowMessage)message, wParam, lParam, out result);
