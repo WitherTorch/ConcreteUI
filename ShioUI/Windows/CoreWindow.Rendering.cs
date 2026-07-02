@@ -661,12 +661,12 @@ public abstract partial class CoreWindow : IRenderable, IRenderWindow
                 if (result is not null)
                     return result;
             }
-            using (ElementsCacheScope scope = EnterActiveElementsCacheScope())
+            using (ElementsCacheScope scope = EnterElementsCacheScope())
             {
                 result = new LimitedImmutableArrayView<UIElement?>(scope.ToArray(), scope.Count);
                 _elementsCacheTimestamp = scope.Timestamp;
             }
-            _activeElementsCacheView = result;
+            _elementsCacheView = result;
             return result;
         }
     }
